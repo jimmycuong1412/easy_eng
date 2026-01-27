@@ -39,12 +39,26 @@ const sortOptions = [
   { label: 'Giá cao nhất', value: 'price_desc' },
 ];
 
-// Mock data
+// Mock data - includes real teacher from database
 const mockTeachers = [
   {
-    id: '1',
+    id: '7a46e4e2-782c-471a-ba1b-cea449e75028', // Real teacher ID from Supabase
+    name: 'Teacher', // Real teacher name from database
+    avatar: undefined, // Will use fallback with user initials
+    bio: 'Experienced English teacher with 5 years of teaching experience. Specialized in conversational English and IELTS preparation.',
+    specializations: ['IELTS', 'Conversational', 'Business English'], // From teacher_profiles.specialties
+    languages: ['English', 'Vietnamese'],
+    hourlyRate: 200000, // From teacher_profiles.hourly_rate
+    rating: 4.85, // From teacher_profiles.avg_rating
+    totalReviews: 42, // From teacher_profiles.total_reviews
+    totalClasses: 150,
+    isOnline: true,
+    isVerified: true, // From teacher_profiles.verified
+  },
+  {
+    id: '2',
     name: 'Sarah Johnson',
-    avatar: null,
+    avatar: undefined,
     bio: 'Native English speaker with 5+ years of teaching experience. Specializing in Business English and interview preparation.',
     specializations: ['Business English', 'Conversation', 'IELTS'],
     languages: ['English', 'Vietnamese (Basic)'],
@@ -56,9 +70,9 @@ const mockTeachers = [
     isVerified: true,
   },
   {
-    id: '2',
+    id: '3',
     name: 'Michael Chen',
-    avatar: null,
+    avatar: undefined,
     bio: 'IELTS certified examiner. Helped 200+ students achieve their target scores. Fluent in English and Mandarin.',
     specializations: ['IELTS', 'TOEIC', 'Academic Writing'],
     languages: ['English', 'Mandarin', 'Vietnamese'],
@@ -70,9 +84,9 @@ const mockTeachers = [
     isVerified: true,
   },
   {
-    id: '3',
+    id: '4',
     name: 'Emily Davis',
-    avatar: null,
+    avatar: undefined,
     bio: 'Fun and engaging lessons for kids! I make learning English an adventure with games and interactive activities.',
     specializations: ['Kids English', 'Conversation', 'Pronunciation'],
     languages: ['English'],
@@ -84,9 +98,9 @@ const mockTeachers = [
     isVerified: true,
   },
   {
-    id: '4',
+    id: '5',
     name: 'James Wilson',
-    avatar: null,
+    avatar: undefined,
     bio: 'TOEIC specialist with proven track record. Average score improvement of 150+ points for my students.',
     specializations: ['TOEIC', 'Business English', 'Academic Writing'],
     languages: ['English', 'Japanese'],
@@ -98,9 +112,9 @@ const mockTeachers = [
     isVerified: true,
   },
   {
-    id: '5',
+    id: '6',
     name: 'Lisa Park',
-    avatar: null,
+    avatar: undefined,
     bio: 'Patient and friendly teacher. Perfect for beginners who want to build confidence in speaking English.',
     specializations: ['Conversation', 'Pronunciation', 'Kids English'],
     languages: ['English', 'Korean', 'Vietnamese'],
@@ -112,9 +126,9 @@ const mockTeachers = [
     isVerified: false,
   },
   {
-    id: '6',
+    id: '7',
     name: 'David Thompson',
-    avatar: null,
+    avatar: undefined,
     bio: 'British accent specialist. Former BBC journalist. Teaching proper pronunciation and British English idioms.',
     specializations: ['Pronunciation', 'Business English', 'Conversation'],
     languages: ['English'],

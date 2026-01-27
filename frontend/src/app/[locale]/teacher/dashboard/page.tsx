@@ -25,59 +25,47 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 
-// Mock teacher data
+// Mock teacher data - real teacher from Supabase (ID: 7a46e4e2-782c-471a-ba1b-cea449e75028)
 const mockTeacher = {
-  name: 'Nguyễn Minh Anh',
-  avatar: '/avatars/teacher1.png',
+  name: 'Teacher', // Real teacher name from database
+  avatar: undefined, // Will use fallback with initials
   role: 'Giáo viên Tiếng Anh',
-  rating: 4.9,
-  totalReviews: 156,
+  rating: 4.85, // From teacher_profiles.avg_rating
+  totalReviews: 42, // From teacher_profiles.total_reviews
 };
 
 const mockStats = {
-  todayClasses: 3,
-  weekClasses: 12,
-  totalStudents: 48,
-  monthlyEarnings: 15600000,
-  avgRating: 4.9,
-  completionRate: 98,
+  todayClasses: 2,
+  weekClasses: 8,
+  totalStudents: 25,
+  monthlyEarnings: 8000000, // Based on 200k hourly rate * ~40 hours
+  avgRating: 4.85,
+  completionRate: 96,
 };
 
 const mockUpcomingClasses = [
   {
     id: 'class-1',
-    topic: 'IELTS Speaking Part 1',
+    topic: 'IELTS Speaking Practice', // Real booking from database
     student: {
-      name: 'Trần Văn Nam',
-      avatar: '/avatars/student1.png',
+      name: 'Jimmy', // Real student (ID: 70311902-706f-416c-9520-192a6cc96072)
+      avatar: undefined, // Will use fallback with initials
       level: 'Intermediate',
     },
-    scheduledAt: '2026-01-23T09:00:00+07:00',
-    duration: 25,
+    scheduledAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
+    duration: 60,
     type: '1-on-1',
   },
   {
     id: 'class-2',
-    topic: 'Business English: Email Writing',
+    topic: 'Business English Conversation', // Real booking from database
     student: {
-      name: 'Lê Thị Hoa',
-      avatar: '/avatars/student2.png',
-      level: 'Advanced',
+      name: 'Jimmy',
+      avatar: undefined,
+      level: 'Intermediate',
     },
-    scheduledAt: '2026-01-23T10:00:00+07:00',
-    duration: 25,
-    type: '1-on-1',
-  },
-  {
-    id: 'class-3',
-    topic: 'Grammar Review: Tenses',
-    student: {
-      name: 'Nguyễn Hoàng Minh',
-      avatar: '/avatars/student3.png',
-      level: 'Beginner',
-    },
-    scheduledAt: '2026-01-23T14:00:00+07:00',
-    duration: 25,
+    scheduledAt: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(), // Tomorrow
+    duration: 60,
     type: '1-on-1',
   },
 ];

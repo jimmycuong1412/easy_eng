@@ -31,53 +31,53 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock data - replace with real API calls
+// Mock data - includes real teacher from database
 const mockUpcomingClasses = [
   {
     id: '1',
-    teacherName: 'Sarah Johnson',
-    teacherAvatar: null,
-    subject: 'Business English',
+    teacherName: 'Teacher', // Real teacher from Supabase (ID: 7a46e4e2-782c-471a-ba1b-cea449e75028)
+    teacherAvatar: undefined, // Will use fallback with initials
+    subject: 'IELTS Speaking Practice', // From real booking data
     scheduledAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-    duration: 25,
+    duration: 60, // 1 hour session
   },
   {
     id: '2',
-    teacherName: 'Michael Chen',
-    teacherAvatar: null,
-    subject: 'IELTS Speaking',
+    teacherName: 'Teacher',
+    teacherAvatar: undefined,
+    subject: 'Business English Conversation',
     scheduledAt: new Date(Date.now() + 26 * 60 * 60 * 1000), // Tomorrow
-    duration: 25,
+    duration: 60,
   },
 ];
 
 const mockRecommendedTeachers = [
   {
-    id: '1',
-    name: 'Emily Davis',
-    avatar: null,
-    specialization: 'Conversation',
-    rating: 4.9,
-    hourlyRate: 150000,
+    id: '7a46e4e2-782c-471a-ba1b-cea449e75028', // Real teacher ID from Supabase
+    name: 'Teacher',
+    avatar: undefined, // Will use fallback with initials
+    specialization: 'IELTS', // From teacher_profiles.specialties
+    rating: 4.85, // From teacher_profiles.avg_rating
+    hourlyRate: 200000, // From teacher_profiles.hourly_rate
     isOnline: true,
   },
   {
     id: '2',
-    name: 'James Wilson',
-    avatar: null,
-    specialization: 'TOEIC Prep',
-    rating: 4.8,
+    name: 'Sarah Johnson',
+    avatar: undefined,
+    specialization: 'Business English',
+    rating: 4.9,
     hourlyRate: 180000,
-    isOnline: false,
+    isOnline: true,
   },
   {
     id: '3',
-    name: 'Lisa Park',
-    avatar: null,
-    specialization: 'Kids English',
+    name: 'Emily Davis',
+    avatar: undefined,
+    specialization: 'Conversation',
     rating: 5.0,
     hourlyRate: 120000,
-    isOnline: true,
+    isOnline: false,
   },
 ];
 

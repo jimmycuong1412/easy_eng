@@ -36,35 +36,35 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock bookings data
+// Mock bookings data - includes real bookings from database
 const mockBookings = {
   upcoming: [
     {
       id: '1',
       classId: '1',
-      topic: 'Business English: Meeting Skills',
-      teacherName: 'Nguyễn Minh Anh',
-      teacherAvatar: '/avatars/teacher1.png',
-      scheduledAt: '2026-01-23T09:00:00+07:00',
-      duration: 25,
+      topic: 'Business English Conversation', // Real booking from database
+      teacherName: 'Teacher', // Real teacher (ID: 7a46e4e2-782c-471a-ba1b-cea449e75028)
+      teacherAvatar: undefined, // Will use fallback with initials
+      scheduledAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day from now
+      duration: 60,
       status: 'confirmed',
-      originalPrice: 200000,
-      cookiesUsed: 75,
-      finalPrice: 125000,
+      originalPrice: 200000, // From teacher_profiles.hourly_rate
+      cookiesUsed: 0,
+      finalPrice: 200000,
       canJoin: false,
     },
     {
       id: '2',
       classId: '2',
-      topic: 'IELTS Speaking Part 2',
-      teacherName: 'Trần Hải Đăng',
-      teacherAvatar: '/avatars/teacher2.png',
-      scheduledAt: '2026-01-24T14:00:00+07:00',
-      duration: 25,
+      topic: 'IELTS Speaking Practice', // Real booking from database
+      teacherName: 'Teacher',
+      teacherAvatar: undefined,
+      scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+      duration: 60,
       status: 'confirmed',
-      originalPrice: 250000,
+      originalPrice: 200000,
       cookiesUsed: 0,
-      finalPrice: 250000,
+      finalPrice: 200000,
       canJoin: false,
     },
   ],
@@ -72,45 +72,32 @@ const mockBookings = {
     {
       id: '3',
       classId: '3',
-      topic: 'Grammar: Conditional Sentences',
-      teacherName: 'Lê Thu Hà',
-      teacherAvatar: '/avatars/teacher3.png',
-      scheduledAt: '2026-01-20T10:00:00+07:00',
-      duration: 25,
+      topic: 'IELTS Speaking Practice', // Real completed booking from database
+      teacherName: 'Teacher',
+      teacherAvatar: undefined,
+      scheduledAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+      duration: 60,
       status: 'attended',
-      originalPrice: 150000,
-      cookiesUsed: 50,
-      finalPrice: 100000,
+      originalPrice: 200000,
+      cookiesUsed: 0,
+      finalPrice: 200000,
       rating: 5,
-      cookiesEarned: 5,
+      cookiesEarned: 10,
     },
     {
       id: '4',
       classId: '4',
-      topic: 'Pronunciation Workshop',
-      teacherName: 'Võ Ngọc Lan',
-      teacherAvatar: '/avatars/teacher4.png',
-      scheduledAt: '2026-01-18T15:00:00+07:00',
-      duration: 25,
+      topic: 'Conversational English', // Real completed booking from database
+      teacherName: 'Teacher',
+      teacherAvatar: undefined,
+      scheduledAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+      duration: 60,
       status: 'attended',
-      originalPrice: 300000,
-      cookiesUsed: 100,
+      originalPrice: 200000,
+      cookiesUsed: 0,
       finalPrice: 200000,
-      rating: 4,
-      cookiesEarned: 5,
-    },
-    {
-      id: '5',
-      classId: '5',
-      topic: 'TOEIC Listening Practice',
-      teacherName: 'Phạm Quang Huy',
-      teacherAvatar: '/avatars/teacher5.png',
-      scheduledAt: '2026-01-15T09:00:00+07:00',
-      duration: 25,
-      status: 'no_show',
-      originalPrice: 175000,
-      cookiesUsed: 25,
-      finalPrice: 150000,
+      rating: 5,
+      cookiesEarned: 10,
     },
   ],
   cancelled: [
