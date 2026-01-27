@@ -1,0 +1,474 @@
+'use client';
+
+import * as React from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import {
+  Calendar,
+  Clock,
+  Video,
+  Star,
+  Cookie,
+  ChevronRight,
+  Filter,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from 'lucide-react';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+// Mock bookings data
+const mockBookings = {
+  upcoming: [
+    {
+      id: '1',
+      classId: '1',
+      topic: 'Business English: Meeting Skills',
+      teacherName: 'Nguyễn Minh Anh',
+      teacherAvatar: '/avatars/teacher1.png',
+      scheduledAt: '2026-01-23T09:00:00+07:00',
+      duration: 25,
+      status: 'confirmed',
+      originalPrice: 200000,
+      cookiesUsed: 75,
+      finalPrice: 125000,
+      canJoin: false,
+    },
+    {
+      id: '2',
+      classId: '2',
+      topic: 'IELTS Speaking Part 2',
+      teacherName: 'Trần Hải Đăng',
+      teacherAvatar: '/avatars/teacher2.png',
+      scheduledAt: '2026-01-24T14:00:00+07:00',
+      duration: 25,
+      status: 'confirmed',
+      originalPrice: 250000,
+      cookiesUsed: 0,
+      finalPrice: 250000,
+      canJoin: false,
+    },
+  ],
+  past: [
+    {
+      id: '3',
+      classId: '3',
+      topic: 'Grammar: Conditional Sentences',
+      teacherName: 'Lê Thu Hà',
+      teacherAvatar: '/avatars/teacher3.png',
+      scheduledAt: '2026-01-20T10:00:00+07:00',
+      duration: 25,
+      status: 'attended',
+      originalPrice: 150000,
+      cookiesUsed: 50,
+      finalPrice: 100000,
+      rating: 5,
+      cookiesEarned: 5,
+    },
+    {
+      id: '4',
+      classId: '4',
+      topic: 'Pronunciation Workshop',
+      teacherName: 'Võ Ngọc Lan',
+      teacherAvatar: '/avatars/teacher4.png',
+      scheduledAt: '2026-01-18T15:00:00+07:00',
+      duration: 25,
+      status: 'attended',
+      originalPrice: 300000,
+      cookiesUsed: 100,
+      finalPrice: 200000,
+      rating: 4,
+      cookiesEarned: 5,
+    },
+    {
+      id: '5',
+      classId: '5',
+      topic: 'TOEIC Listening Practice',
+      teacherName: 'Phạm Quang Huy',
+      teacherAvatar: '/avatars/teacher5.png',
+      scheduledAt: '2026-01-15T09:00:00+07:00',
+      duration: 25,
+      status: 'no_show',
+      originalPrice: 175000,
+      cookiesUsed: 25,
+      finalPrice: 150000,
+    },
+  ],
+  cancelled: [
+    {
+      id: '6',
+      classId: '6',
+      topic: 'Conversation Practice',
+      teacherName: 'Nguyễn Minh Anh',
+      teacherAvatar: '/avatars/teacher1.png',
+      scheduledAt: '2026-01-16T11:00:00+07:00',
+      duration: 25,
+      status: 'cancelled',
+      originalPrice: 125000,
+      cookiesUsed: 0,
+      finalPrice: 125000,
+      refundAmount: 125000,
+      cookiesRefunded: 0,
+    },
+  ],
+};
+
+function formatVND(amount: number): string {
+  return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+}
+
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('vi-VN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function formatTime(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case 'confirmed':
+      return <Badge className="bg-[#3B82F6]/20 text-[#3B82F6] border-0">Đã xác nhận</Badge>;
+    case 'attended':
+      return <Badge className="bg-emerald-500/20 text-emerald-400 border-0">Đã tham gia</Badge>;
+    case 'no_show':
+      return <Badge className="bg-red-500/20 text-red-400 border-0">Vắng mặt</Badge>;
+    case 'cancelled':
+      return <Badge className="bg-slate-500/20 text-slate-400 border-0">Đã hủy</Badge>;
+    default:
+      return null;
+  }
+}
+
+export default function MyBookingsPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-3xl font-bold text-white mb-2">Lớp học của tôi 📚</h1>
+          <p className="text-slate-400">Quản lý các lớp học đã đặt</p>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+        >
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-4 text-center">
+              <p className="text-3xl font-bold text-white">{mockBookings.upcoming.length}</p>
+              <p className="text-sm text-slate-400">Sắp tới</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-4 text-center">
+              <p className="text-3xl font-bold text-emerald-400">
+                {mockBookings.past.filter((b) => b.status === 'attended').length}
+              </p>
+              <p className="text-sm text-slate-400">Đã hoàn thành</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-4 text-center">
+              <p className="text-3xl font-bold text-amber-400">
+                {mockBookings.past.reduce((sum, b) => sum + (b.cookiesEarned || 0), 0)} 🍪
+              </p>
+              <p className="text-sm text-slate-400">Cookies kiếm được</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-4 text-center">
+              <p className="text-3xl font-bold text-purple-400">
+                {[...mockBookings.upcoming, ...mockBookings.past].reduce((sum, b) => sum + b.cookiesUsed, 0)} 🍪
+              </p>
+              <p className="text-sm text-slate-400">Cookies đã dùng</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="upcoming" className="space-y-6">
+          <TabsList className="bg-white/5 border border-white/10">
+            <TabsTrigger value="upcoming" className="data-[state=active]:bg-[#3B82F6]">
+              Sắp tới ({mockBookings.upcoming.length})
+            </TabsTrigger>
+            <TabsTrigger value="past" className="data-[state=active]:bg-[#3B82F6]">
+              Đã hoàn thành ({mockBookings.past.length})
+            </TabsTrigger>
+            <TabsTrigger value="cancelled" className="data-[state=active]:bg-[#3B82F6]">
+              Đã hủy ({mockBookings.cancelled.length})
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Upcoming Bookings */}
+          <TabsContent value="upcoming">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-4"
+            >
+              {mockBookings.upcoming.length > 0 ? (
+                mockBookings.upcoming.map((booking) => (
+                  <motion.div key={booking.id} variants={itemVariants}>
+                    <Card className="bg-white/5 border-white/10 hover:border-[#3B82F6]/50 transition-colors">
+                      <CardContent className="p-5">
+                        <div className="flex flex-col md:flex-row md:items-center gap-4">
+                          {/* Teacher & Class Info */}
+                          <div className="flex items-center gap-4 flex-1">
+                            <Avatar className="h-14 w-14 border-2 border-[#3B82F6]/30">
+                              <AvatarImage src={booking.teacherAvatar} />
+                              <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6]">
+                                {booking.teacherName.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-white truncate mb-1">
+                                {booking.topic}
+                              </h3>
+                              <p className="text-sm text-slate-400 mb-2">
+                                với {booking.teacherName}
+                              </p>
+                              <div className="flex flex-wrap gap-3 text-sm text-slate-400">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  <span>{formatDate(booking.scheduledAt)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  <span>{formatTime(booking.scheduledAt)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Price & Status */}
+                          <div className="flex items-center gap-4 md:gap-6">
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-white">
+                                {formatVND(booking.finalPrice)}
+                              </p>
+                              {booking.cookiesUsed > 0 && (
+                                <p className="text-xs text-amber-400">
+                                  -{booking.cookiesUsed} 🍪 đã dùng
+                                </p>
+                              )}
+                            </div>
+
+                            {getStatusBadge(booking.status)}
+
+                            <Button
+                              className={`min-w-[100px] ${
+                                booking.canJoin
+                                  ? 'bg-emerald-500 hover:bg-emerald-500/90'
+                                  : 'bg-[#3B82F6] hover:bg-[#3B82F6]/90'
+                              }`}
+                              asChild
+                            >
+                              <Link href={`/class/${booking.classId}/live`}>
+                                <Video className="w-4 h-4 mr-2" />
+                                {booking.canJoin ? 'Vào lớp' : 'Chi tiết'}
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <Calendar className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Chưa có lớp học nào sắp tới
+                  </h3>
+                  <p className="text-slate-400 mb-4">
+                    Khám phá và đặt lớp học phù hợp với bạn ngay!
+                  </p>
+                  <Button asChild className="bg-[#3B82F6] hover:bg-[#3B82F6]/90">
+                    <Link href="/classes">
+                      Tìm lớp học
+                      <ChevronRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          </TabsContent>
+
+          {/* Past Bookings */}
+          <TabsContent value="past">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-4"
+            >
+              {mockBookings.past.map((booking) => (
+                <motion.div key={booking.id} variants={itemVariants}>
+                  <Card className="bg-white/5 border-white/10">
+                    <CardContent className="p-5">
+                      <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="flex items-center gap-4 flex-1">
+                          <Avatar className="h-14 w-14 border-2 border-slate-500/30">
+                            <AvatarImage src={booking.teacherAvatar} />
+                            <AvatarFallback className="bg-slate-500/20 text-slate-400">
+                              {booking.teacherName.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-white truncate mb-1">
+                              {booking.topic}
+                            </h3>
+                            <p className="text-sm text-slate-400 mb-2">
+                              với {booking.teacherName}
+                            </p>
+                            <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+                              <span>{formatDate(booking.scheduledAt)}</span>
+                              <span>{formatTime(booking.scheduledAt)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 md:gap-6">
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-white">
+                              {formatVND(booking.finalPrice)}
+                            </p>
+                            {booking.cookiesEarned && (
+                              <p className="text-xs text-amber-400">
+                                +{booking.cookiesEarned} 🍪 kiếm được
+                              </p>
+                            )}
+                          </div>
+
+                          {getStatusBadge(booking.status)}
+
+                          {booking.rating ? (
+                            <div className="flex items-center gap-1 min-w-[80px] justify-end">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${
+                                    i < booking.rating
+                                      ? 'text-amber-400 fill-amber-400'
+                                      : 'text-slate-600'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          ) : booking.status === 'attended' ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                            >
+                              Đánh giá
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          </TabsContent>
+
+          {/* Cancelled Bookings */}
+          <TabsContent value="cancelled">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-4"
+            >
+              {mockBookings.cancelled.map((booking) => (
+                <motion.div key={booking.id} variants={itemVariants}>
+                  <Card className="bg-white/5 border-white/10 opacity-75">
+                    <CardContent className="p-5">
+                      <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="flex items-center gap-4 flex-1">
+                          <Avatar className="h-14 w-14 border-2 border-slate-600/30 grayscale">
+                            <AvatarImage src={booking.teacherAvatar} />
+                            <AvatarFallback className="bg-slate-600/20 text-slate-500">
+                              {booking.teacherName.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-slate-400 truncate mb-1 line-through">
+                              {booking.topic}
+                            </h3>
+                            <p className="text-sm text-slate-500 mb-2">
+                              với {booking.teacherName}
+                            </p>
+                            <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+                              <span>{formatDate(booking.scheduledAt)}</span>
+                              <span>{formatTime(booking.scheduledAt)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 md:gap-6">
+                          {booking.refundAmount > 0 && (
+                            <div className="text-right">
+                              <p className="text-sm text-emerald-400">
+                                Hoàn tiền: {formatVND(booking.refundAmount)}
+                              </p>
+                              {booking.cookiesRefunded > 0 && (
+                                <p className="text-xs text-amber-400">
+                                  +{booking.cookiesRefunded} 🍪 hoàn lại
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {getStatusBadge(booking.status)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}

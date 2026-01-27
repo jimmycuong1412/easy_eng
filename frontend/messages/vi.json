@@ -1,0 +1,176 @@
+{
+  "common": {
+    "appName": "EasyEng",
+    "loading": "Đang tải...",
+    "error": "Đã xảy ra lỗi",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Chỉnh sửa",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "submit": "Gửi",
+    "search": "Tìm kiếm",
+    "or": "hoặc",
+    "settings": "Cài đặt",
+    "logout": "Đăng xuất",
+    "copyright": "© {year} EasyEng. All rights reserved.",
+    "searchPlaceholder": "Tìm kiếm giáo viên, bài học..."
+  },
+  "home": {
+    "tagline": "Học Tiếng Anh vui hơn với Cookie rewards, Career Avatars và live video classes",
+    "startFree": "Bắt đầu miễn phí",
+    "login": "Đăng nhập",
+    "features": {
+      "gamification": {
+        "title": "Gamification",
+        "description": "Earn XP, level up your avatar, and unlock rewards"
+      },
+      "cookies": {
+        "title": "Cookie Rewards",
+        "description": "Collect cookies for discounts on classes"
+      },
+      "liveClasses": {
+        "title": "Live Classes",
+        "description": "1-on-1 video sessions with native speakers"
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Đăng nhập",
+      "subtitle": "Chào mừng trở lại! Đăng nhập để tiếp tục học tiếng Anh",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "forgotPassword": "Quên mật khẩu?",
+      "submit": "Đăng nhập",
+      "googleSignIn": "Đăng nhập bằng Google",
+      "noAccount": "Chưa có tài khoản?",
+      "signUp": "Đăng ký ngay",
+      "errors": {
+        "emptyFields": "Vui lòng nhập email và mật khẩu",
+        "invalidCredentials": "Email hoặc mật khẩu không đúng",
+        "googleFailed": "Không thể đăng nhập bằng Google"
+      }
+    },
+    "signup": {
+      "title": "Đăng ký",
+      "subtitle": "Tạo tài khoản để bắt đầu học tiếng Anh",
+      "fullName": "Họ và tên",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "confirmPassword": "Xác nhận mật khẩu",
+      "submit": "Đăng ký",
+      "googleSignUp": "Đăng ký bằng Google",
+      "hasAccount": "Đã có tài khoản?",
+      "login": "Đăng nhập"
+    },
+    "forgotPassword": {
+      "title": "Quên mật khẩu",
+      "subtitle": "Nhập email để nhận link đặt lại mật khẩu",
+      "submit": "Gửi link",
+      "backToLogin": "Quay lại đăng nhập"
+    }
+  },
+  "dashboard": {
+    "nav": {
+      "home": "Trang chủ",
+      "findTeachers": "Tìm giáo viên",
+      "schedule": "Lịch học",
+      "avatar": "Avatar",
+      "progress": "Tiến trình",
+      "recordings": "Bản ghi",
+      "teachingSchedule": "Lịch dạy",
+      "createQuiz": "Tạo Quiz",
+      "notifications": "Thông báo",
+      "analytics": "Phân tích"
+    }
+  },
+  "bookings": {
+    "title": "Lớp học của tôi",
+    "subtitle": "Quản lý các lớp học đã đặt",
+    "tabs": {
+      "upcoming": "Sắp tới",
+      "past": "Đã hoàn thành",
+      "cancelled": "Đã hủy"
+    },
+    "stats": {
+      "upcoming": "Sắp tới",
+      "completed": "Đã hoàn thành",
+      "cookiesEarned": "Cookies kiếm được",
+      "cookiesUsed": "Cookies đã dùng"
+    },
+    "status": {
+      "confirmed": "Đã xác nhận",
+      "attended": "Đã tham gia",
+      "noShow": "Vắng mặt",
+      "cancelled": "Đã hủy"
+    },
+    "with": "với",
+    "cookiesUsed": "đã dùng",
+    "cookiesEarned": "kiếm được",
+    "joinClass": "Vào lớp",
+    "details": "Chi tiết",
+    "rate": "Đánh giá",
+    "refund": "Hoàn tiền",
+    "cookiesRefunded": "hoàn lại",
+    "empty": {
+      "title": "Chưa có lớp học nào sắp tới",
+      "subtitle": "Khám phá và đặt lớp học phù hợp với bạn ngay!",
+      "findClasses": "Tìm lớp học"
+    }
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "subtitle": "Quản lý tài khoản và tùy chỉnh trải nghiệm của bạn",
+    "backToDashboard": "Quay lại Dashboard",
+    "nav": {
+      "profile": {
+        "title": "Hồ sơ",
+        "description": "Thông tin cá nhân và avatar"
+      },
+      "security": {
+        "title": "Bảo mật",
+        "description": "Mật khẩu và xác thực"
+      },
+      "notifications": {
+        "title": "Thông báo",
+        "description": "Email và push notifications"
+      },
+      "preferences": {
+        "title": "Ngôn ngữ & Khu vực",
+        "description": "Ngôn ngữ, múi giờ, tiền tệ"
+      },
+      "billing": {
+        "title": "Thanh toán",
+        "description": "Phương thức thanh toán"
+      },
+      "referral": {
+        "title": "Giới thiệu bạn bè",
+        "description": "Mã giới thiệu và rewards"
+      }
+    },
+    "preferences": {
+      "language": {
+        "title": "Ngôn ngữ",
+        "description": "Chọn ngôn ngữ hiển thị cho giao diện."
+      },
+      "timezone": {
+        "title": "Múi giờ",
+        "description": "Múi giờ được sử dụng để hiển thị lịch học và thông báo.",
+        "currentTime": "Giờ hiện tại:"
+      },
+      "currency": {
+        "title": "Tiền tệ",
+        "description": "Đơn vị tiền tệ để hiển thị giá cả."
+      },
+      "saveButton": "Lưu cài đặt",
+      "saving": "Đang lưu...",
+      "saved": "Đã lưu thay đổi"
+    }
+  },
+  "language": {
+    "title": "Ngôn ngữ",
+    "select": "Chọn ngôn ngữ"
+  }
+}

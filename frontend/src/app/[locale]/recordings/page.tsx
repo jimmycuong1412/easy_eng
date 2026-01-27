@@ -1,0 +1,383 @@
+'use client';
+
+import * as React from 'react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import {
+  Video,
+  Play,
+  Download,
+  Calendar,
+  Clock,
+  User,
+  Search,
+  Filter,
+  ChevronRight,
+  PlayCircle,
+} from 'lucide-react';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+// Mock recordings data
+const mockRecordings = [
+  {
+    id: 'rec-1',
+    classId: 'class-1',
+    topic: 'Business English: Meeting Skills',
+    teacher: {
+      name: 'Nguyễn Minh Anh',
+      avatar: '/avatars/teacher1.png',
+    },
+    recordedAt: '2026-01-23T09:00:00+07:00',
+    duration: 25,
+    thumbnail: '/thumbnails/rec1.png',
+    expiresAt: '2026-02-22T09:00:00+07:00',
+    watched: true,
+    watchedProgress: 100,
+  },
+  {
+    id: 'rec-2',
+    classId: 'class-2',
+    topic: 'IELTS Speaking Part 2: Describe a Person',
+    teacher: {
+      name: 'Trần Văn Nam',
+      avatar: '/avatars/teacher2.png',
+    },
+    recordedAt: '2026-01-20T14:00:00+07:00',
+    duration: 25,
+    thumbnail: '/thumbnails/rec2.png',
+    expiresAt: '2026-02-19T14:00:00+07:00',
+    watched: true,
+    watchedProgress: 60,
+  },
+  {
+    id: 'rec-3',
+    classId: 'class-3',
+    topic: 'Conversational English: Travel Topics',
+    teacher: {
+      name: 'Nguyễn Minh Anh',
+      avatar: '/avatars/teacher1.png',
+    },
+    recordedAt: '2026-01-18T10:00:00+07:00',
+    duration: 25,
+    thumbnail: '/thumbnails/rec3.png',
+    expiresAt: '2026-02-17T10:00:00+07:00',
+    watched: false,
+    watchedProgress: 0,
+  },
+  {
+    id: 'rec-4',
+    classId: 'class-4',
+    topic: 'Pronunciation: Difficult Sounds for Vietnamese Speakers',
+    teacher: {
+      name: 'Lê Thị Hoa',
+      avatar: '/avatars/teacher3.png',
+    },
+    recordedAt: '2026-01-15T16:00:00+07:00',
+    duration: 25,
+    thumbnail: '/thumbnails/rec4.png',
+    expiresAt: '2026-02-14T16:00:00+07:00',
+    watched: true,
+    watchedProgress: 100,
+  },
+  {
+    id: 'rec-5',
+    classId: 'class-5',
+    topic: 'Grammar Focus: Past Perfect Tense',
+    teacher: {
+      name: 'Trần Văn Nam',
+      avatar: '/avatars/teacher2.png',
+    },
+    recordedAt: '2026-01-12T09:00:00+07:00',
+    duration: 25,
+    thumbnail: '/thumbnails/rec5.png',
+    expiresAt: '2026-02-11T09:00:00+07:00',
+    watched: false,
+    watchedProgress: 0,
+  },
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+export default function RecordingsPage() {
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [filterTeacher, setFilterTeacher] = React.useState('all');
+
+  const filteredRecordings = mockRecordings.filter((recording) => {
+    const matchesSearch = recording.topic.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTeacher =
+      filterTeacher === 'all' || recording.teacher.name === filterTeacher;
+    return matchesSearch && matchesTeacher;
+  });
+
+  const uniqueTeachers = [...new Set(mockRecordings.map((r) => r.teacher.name))];
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  const getDaysUntilExpiry = (expiresAt: string) => {
+    const now = new Date();
+    const expiry = new Date(expiresAt);
+    const diffTime = expiry.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-2xl font-bold text-white mb-2">Bản ghi buổi học</h1>
+          <p className="text-slate-400">
+            Xem lại các buổi học đã hoàn thành trong 30 ngày qua
+          </p>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+        >
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-4 text-center">
+              <Video className="w-8 h-8 text-[#3B82F6] mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{mockRecordings.length}</p>
+              <p className="text-sm text-slate-400">Tổng bản ghi</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-4 text-center">
+              <PlayCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">
+                {mockRecordings.filter((r) => r.watchedProgress === 100).length}
+              </p>
+              <p className="text-sm text-slate-400">Đã xem xong</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-4 text-center">
+              <Clock className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">
+                {mockRecordings.filter((r) => !r.watched).length}
+              </p>
+              <p className="text-sm text-slate-400">Chưa xem</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-4 text-center">
+              <Calendar className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">
+                {mockRecordings.reduce((acc, r) => acc + r.duration, 0)}
+              </p>
+              <p className="text-sm text-slate-400">Tổng phút</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex flex-col md:flex-row gap-4 mb-6"
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              placeholder="Tìm kiếm theo chủ đề..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <Select value={filterTeacher} onValueChange={setFilterTeacher}>
+            <SelectTrigger className="w-full md:w-[200px] bg-white/5 border-white/10 text-white">
+              <Filter className="w-4 h-4 mr-2 text-slate-400" />
+              <SelectValue placeholder="Giáo viên" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả giáo viên</SelectItem>
+              {uniqueTeachers.map((teacher) => (
+                <SelectItem key={teacher} value={teacher}>
+                  {teacher}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </motion.div>
+
+        {/* Recordings Grid */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {filteredRecordings.map((recording) => {
+            const daysUntilExpiry = getDaysUntilExpiry(recording.expiresAt);
+
+            return (
+              <motion.div key={recording.id} variants={itemVariants}>
+                <Card className="bg-white/5 border-white/10 overflow-hidden hover:border-[#3B82F6]/50 transition-all group">
+                  {/* Thumbnail */}
+                  <div className="aspect-video bg-slate-800 relative">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Video className="w-12 h-12 text-slate-600" />
+                    </div>
+
+                    {/* Play overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-[#3B82F6] flex items-center justify-center">
+                        <Play className="w-8 h-8 text-white ml-1" />
+                      </div>
+                    </div>
+
+                    {/* Duration badge */}
+                    <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0">
+                      {recording.duration} phút
+                    </Badge>
+
+                    {/* Progress bar */}
+                    {recording.watchedProgress > 0 && recording.watchedProgress < 100 && (
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-700">
+                        <div
+                          className="h-full bg-[#3B82F6]"
+                          style={{ width: `${recording.watchedProgress}%` }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Watched badge */}
+                    {recording.watchedProgress === 100 && (
+                      <Badge className="absolute top-2 right-2 bg-emerald-500/80 text-white border-0">
+                        Đã xem
+                      </Badge>
+                    )}
+                  </div>
+
+                  <CardContent className="p-4">
+                    {/* Topic */}
+                    <h3 className="font-semibold text-white mb-2 line-clamp-2">
+                      {recording.topic}
+                    </h3>
+
+                    {/* Teacher */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={recording.teacher.avatar} />
+                        <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6] text-xs">
+                          {recording.teacher.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm text-slate-400">{recording.teacher.name}</span>
+                    </div>
+
+                    {/* Date and expiry */}
+                    <div className="flex items-center justify-between text-xs mb-4">
+                      <span className="text-slate-500">
+                        {formatDate(recording.recordedAt)}
+                      </span>
+                      <span
+                        className={`${
+                          daysUntilExpiry <= 7 ? 'text-amber-400' : 'text-slate-500'
+                        }`}
+                      >
+                        Còn {daysUntilExpiry} ngày
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <Link href={`/class/${recording.classId}/materials?tab=recording`} className="flex-1">
+                        <Button className="w-full bg-[#3B82F6] hover:bg-[#3B82F6]/90">
+                          <Play className="w-4 h-4 mr-1" />
+                          Xem
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="border-white/20 text-white"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+
+        {/* Empty State */}
+        {filteredRecordings.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-12"
+          >
+            <Video className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Không tìm thấy bản ghi
+            </h3>
+            <p className="text-slate-400">
+              Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+            </p>
+          </motion.div>
+        )}
+
+        {/* Info Note */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-8"
+        >
+          <Card className="bg-amber-500/10 border-amber-500/30">
+            <CardContent className="p-4">
+              <p className="text-sm text-amber-400">
+                💡 <strong>Lưu ý:</strong> Bản ghi được lưu trữ trong 30 ngày sau buổi học. 
+                Hãy tải xuống nếu bạn muốn lưu trữ lâu dài.
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </div>
+  );
+}

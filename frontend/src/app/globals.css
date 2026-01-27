@@ -1,0 +1,261 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables for Design System */
+:root {
+  /* Background Colors */
+  --bg-primary: #0a1628;
+  --bg-secondary: #1e3a5f;
+  --bg-surface: #1e293b;
+  --bg-elevated: #334155;
+
+  /* Accent Colors */
+  --accent-primary: #3b82f6;
+  --accent-secondary: #06b6d4;
+  --accent-gold: #ffd700;
+  --accent-cookie: #f97316;
+
+  /* Semantic Colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Border Colors */
+  --border-default: #334155;
+  --border-focus: #3b82f6;
+
+  /* Shadows */
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+  --shadow-glow-lg: 0 0 40px rgba(59, 130, 246, 0.4);
+  --shadow-card-hover: 0 20px 40px rgba(59, 130, 246, 0.15);
+
+  /* Animation Durations */
+  --duration-instant: 50ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --duration-slower: 600ms;
+
+  /* Easing Functions */
+  --ease-out-expo: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-in-out-expo: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Font families */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-pixel: 'Press Start 2P', monospace;
+
+  /* Z-index scale */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* Base Styles */
+@layer base {
+  * {
+    @apply box-border border-border-default;
+  }
+
+  html {
+    @apply scroll-smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-bg-primary text-text-primary antialiased;
+    font-family: var(--font-sans);
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /* Smooth scrollbar for webkit browsers */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-surface rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border-default rounded-full transition-colors;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-text-muted;
+  }
+
+  /* Selection styling */
+  ::selection {
+    @apply bg-accent-primary/30 text-text-primary;
+  }
+
+  /* Focus visible outline */
+  :focus-visible {
+    @apply outline-none ring-2 ring-border-focus ring-offset-2 ring-offset-bg-primary;
+  }
+}
+
+/* Utility Classes */
+@layer utilities {
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-bg-surface/80 backdrop-blur-lg border border-border-default;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    transition: all var(--duration-normal) var(--ease-out-expo);
+  }
+
+  .transition-fast {
+    transition: all var(--duration-fast) var(--ease-out-expo);
+  }
+
+  /* Glow effects */
+  .glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-lg {
+    box-shadow: var(--shadow-glow-lg);
+  }
+
+  .glow-gold {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  }
+
+  .glow-cookie {
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area padding for mobile */
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Pixel font for avatar system */
+  .font-pixel {
+    font-family: var(--font-pixel);
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* Skeleton loading animation */
+  .skeleton {
+    @apply bg-gradient-to-r from-bg-surface via-bg-elevated to-bg-surface;
+    background-size: 400% 100%;
+    animation: skeleton 1.5s ease-in-out infinite;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Component Layer */
+@layer components {
+  /* Button base styles */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium;
+    @apply transition-smooth focus-visible:ring-2 focus-visible:ring-border-focus;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent-primary text-white hover:bg-accent-primary/90;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply btn bg-bg-elevated text-text-primary hover:bg-bg-elevated/80;
+    @apply border border-border-default;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-text-secondary hover:bg-bg-surface hover:text-text-primary;
+  }
+
+  /* Card styles */
+  .card {
+    @apply rounded-xl bg-bg-surface border border-border-default;
+    @apply transition-smooth hover:shadow-card-hover;
+  }
+
+  .card-elevated {
+    @apply card bg-bg-elevated;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full rounded-lg bg-bg-surface border border-border-default px-4 py-3;
+    @apply text-text-primary placeholder:text-text-muted;
+    @apply transition-smooth focus:border-border-focus focus:ring-1 focus:ring-border-focus;
+  }
+
+  /* Avatar container for pixel art */
+  .avatar-pixel {
+    @apply relative overflow-hidden;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* Cookie counter badge */
+  .cookie-badge {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-full;
+    @apply bg-accent-cookie/20 text-accent-cookie font-medium text-sm;
+  }
+
+  /* XP progress bar */
+  .xp-bar {
+    @apply relative h-2 w-full rounded-full bg-bg-elevated overflow-hidden;
+  }
+
+  .xp-bar-fill {
+    @apply h-full rounded-full bg-gradient-to-r from-accent-primary to-accent-secondary;
+    @apply transition-all duration-500 ease-out-expo;
+  }
+
+  /* Level badge */
+  .level-badge {
+    @apply inline-flex items-center justify-center min-w-[2rem] h-8 px-2;
+    @apply rounded-lg bg-accent-gold/20 text-accent-gold font-bold text-sm;
+  }
+}

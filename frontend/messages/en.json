@@ -1,0 +1,176 @@
+{
+  "common": {
+    "appName": "EasyEng",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "search": "Search",
+    "or": "or",
+    "settings": "Settings",
+    "logout": "Log out",
+    "copyright": "© {year} EasyEng. All rights reserved.",
+    "searchPlaceholder": "Search teachers, lessons..."
+  },
+  "home": {
+    "tagline": "Learn English more fun with Cookie rewards, Career Avatars and live video classes",
+    "startFree": "Start for free",
+    "login": "Log in",
+    "features": {
+      "gamification": {
+        "title": "Gamification",
+        "description": "Earn XP, level up your avatar, and unlock rewards"
+      },
+      "cookies": {
+        "title": "Cookie Rewards",
+        "description": "Collect cookies for discounts on classes"
+      },
+      "liveClasses": {
+        "title": "Live Classes",
+        "description": "1-on-1 video sessions with native speakers"
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "subtitle": "Welcome back! Log in to continue learning English",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Log in",
+      "googleSignIn": "Sign in with Google",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up now",
+      "errors": {
+        "emptyFields": "Please enter email and password",
+        "invalidCredentials": "Invalid email or password",
+        "googleFailed": "Could not sign in with Google"
+      }
+    },
+    "signup": {
+      "title": "Sign up",
+      "subtitle": "Create an account to start learning English",
+      "fullName": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "submit": "Sign up",
+      "googleSignUp": "Sign up with Google",
+      "hasAccount": "Already have an account?",
+      "login": "Log in"
+    },
+    "forgotPassword": {
+      "title": "Forgot password",
+      "subtitle": "Enter your email to receive a password reset link",
+      "submit": "Send link",
+      "backToLogin": "Back to login"
+    }
+  },
+  "dashboard": {
+    "nav": {
+      "home": "Home",
+      "findTeachers": "Find Teachers",
+      "schedule": "Schedule",
+      "avatar": "Avatar",
+      "progress": "Progress",
+      "recordings": "Recordings",
+      "teachingSchedule": "Teaching Schedule",
+      "createQuiz": "Create Quiz",
+      "notifications": "Notifications",
+      "analytics": "Analytics"
+    }
+  },
+  "bookings": {
+    "title": "My Classes",
+    "subtitle": "Manage your booked classes",
+    "tabs": {
+      "upcoming": "Upcoming",
+      "past": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "stats": {
+      "upcoming": "Upcoming",
+      "completed": "Completed",
+      "cookiesEarned": "Cookies earned",
+      "cookiesUsed": "Cookies used"
+    },
+    "status": {
+      "confirmed": "Confirmed",
+      "attended": "Attended",
+      "noShow": "No show",
+      "cancelled": "Cancelled"
+    },
+    "with": "with",
+    "cookiesUsed": "used",
+    "cookiesEarned": "earned",
+    "joinClass": "Join",
+    "details": "Details",
+    "rate": "Rate",
+    "refund": "Refund",
+    "cookiesRefunded": "refunded",
+    "empty": {
+      "title": "No upcoming classes",
+      "subtitle": "Explore and book classes that suit you!",
+      "findClasses": "Find classes"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account and customize your experience",
+    "backToDashboard": "Back to Dashboard",
+    "nav": {
+      "profile": {
+        "title": "Profile",
+        "description": "Personal information and avatar"
+      },
+      "security": {
+        "title": "Security",
+        "description": "Password and authentication"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Email and push notifications"
+      },
+      "preferences": {
+        "title": "Language & Region",
+        "description": "Language, timezone, currency"
+      },
+      "billing": {
+        "title": "Billing",
+        "description": "Payment methods"
+      },
+      "referral": {
+        "title": "Refer Friends",
+        "description": "Referral code and rewards"
+      }
+    },
+    "preferences": {
+      "language": {
+        "title": "Language",
+        "description": "Choose your preferred display language."
+      },
+      "timezone": {
+        "title": "Timezone",
+        "description": "Used to display class schedules and notifications.",
+        "currentTime": "Current time:"
+      },
+      "currency": {
+        "title": "Currency",
+        "description": "Currency unit for displaying prices."
+      },
+      "saveButton": "Save Settings",
+      "saving": "Saving...",
+      "saved": "Changes saved"
+    }
+  },
+  "language": {
+    "title": "Language",
+    "select": "Select language"
+  }
+}
