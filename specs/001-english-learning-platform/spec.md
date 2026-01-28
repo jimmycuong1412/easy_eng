@@ -146,12 +146,18 @@ Administrators can view comprehensive platform metrics including user growth, cl
 - **FR-014**: System MUST log all Cookie transactions (earned, spent, refunded) for audit purposes
 - **FR-015**: System MUST provide a stunning, responsive UI that works on desktop and mobile devices
 - **FR-016**: System MUST perform automatic rollback with immediate Cookie restoration when booking transactions fail after Cookie deduction
+- **FR-017**: System MUST deliver notifications within 5 seconds of triggering event (booking confirmations, Cookie earnings, class reminders)
+- **FR-018**: Email notifications MUST have 99% delivery rate measured via email service provider metrics
+- **FR-019**: Browser push notifications MUST respect user preferences and system permissions
+- **FR-020**: System MUST calculate teacher earnings as 70% of final booking price (after Cookie discounts applied)
+- **FR-021**: System MUST track teacher earnings per class and provide weekly payout calculations
+- **FR-022**: System MUST support minimum payout threshold of 500,000 VND ($20 USD equivalent)
 
 ### Key Entities *(include if feature involves data)*
 
 - **User**: Represents a platform user with role (Student/Teacher/Administrator), authentication credentials, profile information
 - **Student**: Extends User, includes Cookie balance, booking history, achievement data, referral tracking
-- **Teacher**: Extends User, includes class history, rating, bio, availability schedule
+- **Teacher**: Extends User, includes class history, rating, bio, availability schedule, earnings balance (70% of final booking prices), payout history, payout threshold (500,000 VND minimum)
 - **Class**: Represents an English class with topic, teacher, schedule (date/time), capacity, price, enrolled students
 - **Booking**: Links a Student to a Class with booking details (Cookies used, discount amount, final price paid, status)
 - **Cookie Transaction**: Records Cookie movements (type: earned/spent/refunded, amount, reason, timestamp, related entity)
@@ -181,6 +187,9 @@ Administrators can view comprehensive platform metrics including user growth, cl
 - **SC-008**: Cookie earning system triggers automatically within 1 second of qualifying activity completion
 - **SC-009**: Mobile UI renders correctly on devices with screens as small as 320px width
 - **SC-010**: System achieves 99.9% uptime during business hours (measured monthly)
+- **SC-011**: 95% of booking confirmation emails delivered within 30 seconds of transaction completion
+- **SC-012**: 90% of students enable in-app notifications within first week of account creation
+- **SC-013**: Class reminder push notifications sent 15 minutes before class start with 99% accuracy
 
 ## Assumptions *(mandatory)*
 
@@ -203,6 +212,15 @@ Administrators can view comprehensive platform metrics including user growth, cl
 - Cookie balance expires after 12 months of account inactivity using FIFO (first-in, first-out) expiration
 - Free Cookie giveaways for promotions must be approved by administrators
 - Refund policies must comply with consumer protection regulations in operating jurisdictions
+
+### Teacher Revenue Constraints
+- Teacher earnings calculated as 70% of final booking price (after Cookie discounts)
+- Platform retains 30% of final booking price as commission
+- Minimum class price is $5 USD to ensure viable teacher earnings
+- Cookie discounts reduce both teacher earnings and platform commission proportionally
+- Weekly payout minimum threshold: 500,000 VND ($20 USD equivalent)
+- Teachers must complete tax documentation before receiving payouts
+- Payout processing occurs weekly (every Monday for previous week's earnings)
 
 ### User Experience Constraints
 - Student UI must be mobile-first design (majority of users expected on mobile devices)

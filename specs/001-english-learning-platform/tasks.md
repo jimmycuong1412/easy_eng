@@ -196,6 +196,14 @@
 - [ ] T059 [US2] Create admin dashboard page in frontend/src/app/admin/dashboard/page.tsx
 - [ ] T060 [US2] Create user management page in frontend/src/app/admin/users/page.tsx
 
+### Admin Cookie Management (P1 Fix - F2)
+
+- [ ] T060A [P] [US2] [ADMIN] Create Cookie rules editor page in frontend/src/app/admin/cookie-rules/page.tsx
+- [ ] T060B [P] [US2] [ADMIN] Create Cookie rule editor component in frontend/src/components/admin/CookieRuleEditor.tsx
+- [ ] T060C [P] [US2] [ADMIN] Create update-cookie-rule Edge Function in supabase/functions/update-cookie-rule/index.ts
+- [ ] T060D [P] [US2] [ADMIN] Add audit logging for Cookie rule changes in supabase/migrations/044_cookie_rule_audit.sql
+- [ ] T060E [US2] [ADMIN] Create Cookie rule validation in frontend/src/utils/cookieRuleValidation.ts
+
 ### Access Control Enforcement
 
 - [ ] T061 [P] [US2] Create protected route wrapper component in frontend/src/components/auth/ProtectedRoute.tsx
@@ -330,7 +338,15 @@
 - [ ] T110 [P] [US5] Create date range picker component in frontend/src/components/admin/DateRangePicker.tsx
 - [ ] T111 [US5] Implement time period filtering logic in frontend/src/hooks/useAnalyticsFilters.ts
 
-**Checkpoint**: Admin has full visibility into platform metrics
+### Database Reconciliation (P1 Fix - F3)
+
+- [ ] T111A [P] [US5] [ADMIN] Create Cookie balance reconciliation script in supabase/functions/reconcile-cookie-balances/index.ts
+- [ ] T111B [P] [US5] [ADMIN] Create booking-payment reconciliation report in frontend/src/app/admin/reconciliation/page.tsx
+- [ ] T111C [P] [US5] [ADMIN] Create discrepancy detection Edge Function in supabase/functions/detect-discrepancies/index.ts
+- [ ] T111D [P] [US5] [ADMIN] Schedule daily reconciliation cron job in .github/workflows/reconcile-cookies.yml
+- [ ] T111E [US5] [ADMIN] Create reconciliation report viewer in frontend/src/components/admin/ReconciliationReport.tsx
+
+**Checkpoint**: Admin has full visibility into platform metrics AND data integrity monitoring
 
 ---
 
@@ -402,7 +418,16 @@
 - [ ] T138 Create transaction audit log in supabase/migrations/025_transaction_audit.sql
 - [ ] T139 Create failed transaction recovery in supabase/functions/recover-failed-transaction/index.ts
 
-**Checkpoint**: Cookie system is robust and fraud-resistant
+### Transaction Rollback Testing (P1 Fix - F4)
+
+- [ ] T139A [P] [CURRENCY] [TEST] Write E2E test for payment failure rollback in frontend/tests/e2e/rollback/payment-failure.spec.ts
+- [ ] T139B [P] [CURRENCY] [TEST] Write E2E test for booking capacity rollback in frontend/tests/e2e/rollback/capacity-conflict.spec.ts
+- [ ] T139C [P] [CURRENCY] [TEST] Write integration test for Cookie deduction rollback in supabase/functions/__tests__/cookie-rollback-scenarios.test.ts
+- [ ] T139D [P] [CURRENCY] [TEST] Write stress test for concurrent rollbacks in supabase/functions/__tests__/concurrent-rollback.test.ts
+- [ ] T139E [CURRENCY] Create rollback monitoring dashboard in frontend/src/app/admin/monitoring/rollbacks/page.tsx
+- [ ] T139F [CURRENCY] Document rollback scenarios in docs/operations/rollback-handling.md
+
+**Checkpoint**: Cookie system is robust, fraud-resistant, AND rollback-tested
 
 ---
 
@@ -672,6 +697,50 @@
 - [ ] T245 Create health check endpoints in supabase/functions/health-check/index.ts
 
 **Checkpoint**: Production-ready application
+
+---
+
+## Phase 17: Performance Testing & Validation (P1 Fix - C8)
+
+**Purpose**: Validate all NFR performance requirements before production (NFR-007, SC-002, SC-006)
+
+### Load Testing Setup
+
+- [ ] T246 [P] [PERF] Install k6 load testing framework in tests/performance/
+- [ ] T247 [P] [PERF] Configure load test environment in tests/performance/k6.config.js
+- [ ] T248 [P] [PERF] Create test data generation script in tests/performance/generate-test-data.ts
+
+### API Performance Tests
+
+- [ ] T249 [P] [PERF] Create booking API load test (500 bookings/min validation) in tests/performance/booking-load.test.js
+- [ ] T250 [P] [PERF] Create class search performance test (<500ms response) in tests/performance/class-search.test.js
+- [ ] T251 [P] [PERF] Create dashboard load test (p95 <200ms) in tests/performance/dashboard-load.test.js
+- [ ] T252 [P] [PERF] Create Cookie transaction performance test in tests/performance/cookie-transaction.test.js
+
+### Concurrency Tests
+
+- [ ] T253 [P] [PERF] Create concurrent user simulation (1000+ users) in tests/performance/concurrent-users.test.js
+- [ ] T254 [P] [PERF] Create concurrent booking conflict test in tests/performance/concurrent-bookings.test.js
+
+### Frontend Performance
+
+- [ ] T255 [P] [PERF] Configure Lighthouse CI in .github/workflows/lighthouse.yml
+- [ ] T256 [P] [PERF] Create page load performance budgets (<3s target) in frontend/lighthouse-budget.json
+- [ ] T257 [P] [PERF] Create Core Web Vitals monitoring in frontend/src/lib/vitals.ts
+- [ ] T258 [PERF] Create bundle size monitoring in frontend/package.json scripts
+
+### Database Performance
+
+- [ ] T259 [P] [PERF] Run EXPLAIN ANALYZE on critical queries in tests/performance/query-analysis.sql
+- [ ] T260 [P] [PERF] Create database indexing recommendations report in docs/performance/indexing.md
+- [ ] T261 [PERF] Validate backup/restore time meets 6-hour requirement in tests/performance/backup-validation.sh
+
+### Monitoring Setup
+
+- [ ] T262 [P] [PERF] Configure performance monitoring dashboard (Grafana/Datadog)
+- [ ] T263 [PERF] Setup performance regression alerts in .github/workflows/perf-regression.yml
+
+**Checkpoint**: All performance NFRs validated and documented - ready for production scale
 
 ---
 

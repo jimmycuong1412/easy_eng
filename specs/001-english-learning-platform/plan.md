@@ -290,11 +290,11 @@ export const smoothTransitions = {
 
 | Activity | Cookies Earned | Conditions |
 |----------|----------------|------------|
-| **Referral Coupon** | 50 Cookies | When referred friend completes first booking |
+| **Referral Coupon** | 100 Cookies | When referred friend completes first booking (per spec.md line 55) |
 | **First Booking Bonus** | 20 Cookies | One-time for new students |
-| **Class Completion** | 5 Cookies | Per class attended (separate from XP/Gold) |
-| **Leave a Review** | 10 Cookies | First review per teacher |
-| **Profile Completion** | 15 Cookies | One-time for completing all profile fields |
+| **Class Completion** | 10 Cookies | Per class attended (per spec.md line 53) |
+| **Leave a Review** | 5 Cookies | First review per teacher (per spec.md line 57) |
+| **Profile Completion** | 10 Cookies | One-time for completing all profile fields (per spec.md line 56) |
 
 > **Note**: Primary Cookie earning is via referral coupons. Each student gets a unique referral code.
 
