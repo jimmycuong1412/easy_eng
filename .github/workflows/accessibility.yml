@@ -1,0 +1,54 @@
+name: Accessibility Tests (WCAG 2.1 Level AA)
+
+on:
+  push:
+    branches: [main, 001-english-learning-platform]
+  pull_request:
+    branches: [main, 001-english-learning-platform]
+
+jobs:
+  accessibility-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run accessibility unit tests
+        working-directory: frontend
+        run: npm run test -- --testMatch="**/*.a11y.test.tsx"
+
+      - name: Install Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps
+
+      - name: Run accessibility E2E tests
+        working-directory: frontend
+        run: npx playwright test tests/e2e/accessibility.spec.ts
+
+      - name: Generate accessibility report
+        if: always()
+        working-directory: frontend
+        run: npx playwright show-report --reporter=html
+
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-report
+          path: frontend/playwright-report/
+
+      - name: Fail on violations
+        working-directory: frontend
+        run: |
+          if grep -q "violations" playwright-report/index.html 2>/dev/null; then
+            echo "❌ Accessibility violations found. See report artifact."
+            exit 1
+          fi
+          echo "✅ No accessibility violations found."

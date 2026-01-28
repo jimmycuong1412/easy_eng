@@ -8,3 +8,4 @@ export { Avatar, AvatarImage, AvatarFallback } from './avatar';
 export { Progress } from './progress';
 export { Skeleton } from './skeleton';
 export { Separator } from './separator';
+export { Textarea } from './textarea';

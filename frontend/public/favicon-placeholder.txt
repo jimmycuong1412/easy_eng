@@ -1,0 +1,32 @@
+# Favicon Missing
+
+The application is looking for favicon.ico in the public directory.
+
+## To fix this:
+1. Create or obtain a favicon.ico file (16x16 or 32x32 pixel icon)
+2. Place it in: frontend/public/favicon.ico
+
+## Alternative: Use Next.js metadata
+Add to app/layout.tsx:
+
+```tsx
+export const metadata = {
+  icons: {
+    icon: '/favicon.ico',
+  },
+}
+```
+
+## Quick fix: Generate a simple favicon
+You can use online tools like:
+- https://favicon.io/
+- https://www.favicon-generator.org/
+
+Or use an emoji as favicon by creating favicon.svg in public/:
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <text y=".9em" font-size="90">📚</text>
+</svg>
+```
+
+This is a non-critical error and won't affect functionality.
