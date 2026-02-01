@@ -1,0 +1,380 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Supabase MCP Tools Specification",
+  "description": "MCP tool definitions for Supabase database interaction via hosted MCP server",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "query_database",
+      "description": "Execute a natural language query against the Supabase database. The MCP server translates natural language to SQL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural language description of what data to retrieve",
+            "examples": [
+              "Show all students who have more than 100 gems",
+              "List classes scheduled for tomorrow",
+              "Find bookings where gems were used"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of rows to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": ["query"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "description": "Array of result rows"
+          },
+          "rowCount": {
+            "type": "integer",
+            "description": "Number of rows returned"
+          },
+          "sql": {
+            "type": "string",
+            "description": "Generated SQL query (for transparency)"
+          }
+        }
+      }
+    },
+    {
+      "name": "describe_table",
+      "description": "Get the schema definition for a database table including columns, types, constraints, and relationships",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tableName": {
+            "type": "string",
+            "description": "Name of the table to describe",
+            "examples": ["profiles", "classes", "bookings", "gem_transactions"]
+          },
+          "includeRelationships": {
+            "type": "boolean",
+            "description": "Whether to include foreign key relationships",
+            "default": true
+          }
+        },
+        "required": ["tableName"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "tableName": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "type": {"type": "string"},
+                "nullable": {"type": "boolean"},
+                "default": {"type": "string"},
+                "isPrimaryKey": {"type": "boolean"},
+                "isForeignKey": {"type": "boolean"}
+              }
+            }
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "foreignTable": {"type": "string"},
+                "foreignColumn": {"type": "string"},
+                "localColumn": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "execute_sql",
+      "description": "Execute a raw SQL query directly. Use with caution on development databases only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "description": "SQL query to execute"
+          },
+          "params": {
+            "type": "array",
+            "description": "Parameterized query values",
+            "items": {
+              "type": ["string", "number", "boolean", "null"]
+            }
+          }
+        },
+        "required": ["sql"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array"
+          },
+          "rowCount": {
+            "type": "integer"
+          },
+          "command": {
+            "type": "string",
+            "enum": ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP"]
+          }
+        }
+      },
+      "security": {
+        "requiresApproval": true,
+        "reason": "Raw SQL execution can modify data"
+      }
+    },
+    {
+      "name": "generate_migration",
+      "description": "Generate a Supabase migration SQL file based on natural language schema change description",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Natural language description of schema change",
+            "examples": [
+              "Add email_verified column to profiles table",
+              "Create an index on bookings.created_at",
+              "Add a check constraint ensuring gems_used is not negative"
+            ]
+          },
+          "migrationName": {
+            "type": "string",
+            "description": "Optional name for the migration file"
+          }
+        },
+        "required": ["description"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "migrationSQL": {
+            "type": "string",
+            "description": "Generated SQL for the migration"
+          },
+          "migrationName": {
+            "type": "string",
+            "description": "Suggested migration file name"
+          },
+          "rollbackSQL": {
+            "type": "string",
+            "description": "SQL to rollback the migration"
+          }
+        }
+      },
+      "security": {
+        "requiresApproval": true,
+        "reason": "Migrations alter database schema"
+      }
+    },
+    {
+      "name": "generate_types",
+      "description": "Generate TypeScript type definitions from database schema",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tables": {
+            "type": "array",
+            "description": "Specific tables to generate types for (empty = all tables)",
+            "items": {
+              "type": "string"
+            }
+          },
+          "outputFormat": {
+            "type": "string",
+            "enum": ["typescript", "zod"],
+            "description": "Type definition format",
+            "default": "typescript"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "types": {
+            "type": "string",
+            "description": "Generated TypeScript type definitions"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Suggested file name for the types"
+          }
+        }
+      }
+    },
+    {
+      "name": "get_project_info",
+      "description": "Retrieve Supabase project configuration and credentials",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "projectRef": {
+            "type": "string",
+            "description": "Project reference ID"
+          },
+          "supabaseUrl": {
+            "type": "string",
+            "description": "Supabase API URL"
+          },
+          "anonKey": {
+            "type": "string",
+            "description": "Anonymous (public) API key"
+          },
+          "region": {
+            "type": "string",
+            "description": "Database region"
+          },
+          "postgresVersion": {
+            "type": "string",
+            "description": "PostgreSQL version"
+          }
+        }
+      },
+      "security": {
+        "requiresApproval": false,
+        "reason": "Read-only project information"
+      }
+    },
+    {
+      "name": "view_logs",
+      "description": "View database logs for debugging and monitoring",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "logType": {
+            "type": "string",
+            "enum": ["postgres", "api", "auth", "realtime", "storage"],
+            "description": "Type of logs to retrieve"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Number of log entries to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start time for log range"
+          }
+        },
+        "required": ["logType"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "logs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timestamp": {"type": "string"},
+                "level": {"type": "string"},
+                "message": {"type": "string"},
+                "metadata": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "create_database_branch",
+      "description": "Create a database branch for testing schema changes safely",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "branchName": {
+            "type": "string",
+            "description": "Name for the new database branch",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "baseBranch": {
+            "type": "string",
+            "description": "Branch to create from (default: main)",
+            "default": "main"
+          }
+        },
+        "required": ["branchName"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "branchUrl": {
+            "type": "string",
+            "description": "URL to access the branch database"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["creating", "active"]
+          }
+        }
+      },
+      "security": {
+        "requiresApproval": true,
+        "reason": "Creates new database resources"
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "supabase://tables",
+      "name": "Database Tables",
+      "description": "List of all tables in the database",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "supabase://schema",
+      "name": "Full Database Schema",
+      "description": "Complete schema definition including tables, views, functions, and policies",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "supabase://migrations",
+      "name": "Applied Migrations",
+      "description": "List of migrations that have been applied to the database",
+      "mimeType": "application/json"
+    }
+  ],
+  "authentication": {
+    "type": "oauth2.1",
+    "authorizationUrl": "https://supabase.com/dashboard/oauth/authorize",
+    "tokenUrl": "https://supabase.com/dashboard/oauth/token",
+    "scopes": {
+      "read": "Read database schema and data",
+      "write": "Execute queries that modify data",
+      "admin": "Create migrations and modify schema"
+    }
+  },
+  "securityPolicies": {
+    "productionAccess": "PROHIBITED",
+    "manualApproval": "REQUIRED for write operations",
+    "readOnlyMode": "RECOMMENDED for exploration",
+    "databaseBranching": "RECOMMENDED for schema changes"
+  }
+}

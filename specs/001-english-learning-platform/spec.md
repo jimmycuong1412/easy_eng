@@ -7,18 +7,18 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Student Class Booking with Cookies Discount (Priority: P1)
+### User Story 1 - Student Class Booking with Gems Discount (Priority: P1)
 
-Students can browse available English classes, earn "Cookies" through platform engagement, and use those Cookies to get discounts when booking classes.
+Students can browse available English classes, earn "Gems" through platform engagement, and use those Gems to get discounts when booking classes.
 
 **Why this priority**: Core value proposition - enables students to book classes affordably while incentivizing platform engagement.
 
-**Independent Test**: Student can log in, view their Cookie balance, browse classes, apply Cookies to get a discount, and successfully book a class.
+**Independent Test**: Student can log in, view their Gem balance, browse classes, apply Gems to get a discount, and successfully book a class.
 
 **Acceptance Scenarios**:
 
-1. **Given** a student has 100 Cookies, **When** they select a class worth $50 and apply 50 Cookies (each Cookie = $0.50 discount), **Then** the final price should be $25
-2. **Given** a student has insufficient Cookies, **When** they try to apply more Cookies than they have, **Then** the system should show an error and limit the discount to available Cookies
+1. **Given** a student has 100 Gems, **When** they select a class worth $50 and apply 50 Gems (each Gem = $0.50 discount), **Then** the final price should be $25
+2. **Given** a student has insufficient Gems, **When** they try to apply more Gems than they have, **Then** the system should show an error and limit the discount to available Gems
 3. **Given** a student books a class successfully, **When** they view their booking history, **Then** they should see the booking with the original price, discount applied, and final price paid
 
 ---
@@ -33,28 +33,54 @@ Different user roles (Students, Teachers, Administrators) can log in and access 
 
 **Acceptance Scenarios**:
 
-1. **Given** a student logs in, **When** they access the dashboard, **Then** they see their upcoming classes, Cookie balance, and booking options
+1. **Given** a student logs in, **When** they access the dashboard, **Then** they see their upcoming classes, Gem balance, and booking options
 2. **Given** a teacher logs in, **When** they access the dashboard, **Then** they see their schedule, student roster, and class materials
 3. **Given** an administrator logs in, **When** they access the dashboard, **Then** they see platform analytics, user management, and system configuration options
 4. **Given** a student tries to access teacher features, **When** they attempt unauthorized access, **Then** they receive a permission denied message
 
 ---
 
-### User Story 3 - Cookie Earning System (Priority: P2)
+### User Story 3 - Career Path Avatar Progression System (Priority: P1)
 
-Students can earn Cookies through various platform activities such as completing lessons, maintaining attendance streaks, referring friends, and achieving milestones.
+Students can select their dream career path and see their 8-bit pixel art character evolve based on classroom performance, staying motivated to attend classes, complete assignments, and visualize their future career journey.
 
-**Why this priority**: Drives engagement and retention by rewarding student participation.
+**Why this priority**: Elevated from P2 to P1 - Core engagement driver that directly ties learning activities to visible, emotionally resonant character progression. Expected to increase attendance by 30% and assignment completion by 25%.
 
-**Independent Test**: Student performs qualifying activities and sees their Cookie balance increase with appropriate notifications.
+**Independent Test**: Student selects a career path during onboarding, completes a class with quiz, earns XP and Gold, sees their character level up with visual evolution, and purchases a cosmetic item from the marketplace.
 
 **Acceptance Scenarios**:
 
-1. **Given** a student completes a lesson, **When** the lesson is marked complete, **Then** they earn 10 Cookies and receive a notification
-2. **Given** a student maintains a 7-day attendance streak, **When** they attend their 7th consecutive class, **Then** they earn 50 Cookies (streak bonus)
-3. **Given** a student refers a friend who completes signup, **When** the friend books their first class, **Then** both students earn 100 Cookies
-4. **Given** a student completes their profile information, **When** they save their profile, **Then** they earn 10 Cookies (one-time bonus)
-5. **Given** a student writes their first class review, **When** they submit the review, **Then** they earn 5 Cookies
+#### Career Path Selection
+1. **Given** a new student completes registration, **When** they reach the onboarding flow, **Then** they can choose from 6 career archetypes: Doctor, Engineer, Warrior, Business Person, Artist, Scientist
+2. **Given** a student selects "Doctor" career path, **When** the selection is confirmed, **Then** they see their 8-bit character with medical theme (green color scheme, healing animations)
+3. **Given** a student wants to change their career path, **When** they access profile settings, **Then** they can switch careers (once per month) with a warning about incompatible equipped items
+
+#### Dual Reward Currency System
+4. **Given** a student completes a class (attendance + quiz), **When** the class is marked complete, **Then** they earn base 50 XP points
+5. **Given** a student scores 90%+ on a class quiz, **When** the score is recorded, **Then** they earn bonus +25 XP (total 75 XP for the class)
+6. **Given** a student completes a class, **When** rewards are calculated, **Then** they earn 10-30 Gold coins based on performance tier (10 for <75%, 20 for 75-89%, 30 for 90%+)
+7. **Given** a student logs in for the first time today, **When** they access the dashboard, **Then** they earn 5 Gold as daily login bonus
+8. **Given** a student has logged in 7 consecutive days, **When** they log in on day 7, **Then** they earn 50 Gold weekly streak bonus
+
+#### Character Progression & Visualization
+9. **Given** a student accumulates 500 XP, **When** the threshold is crossed, **Then** their character levels up from Level 1 to Level 2 with celebration animation
+10. **Given** a student reaches Level 6, **When** they view their character, **Then** they see upgraded uniform and first skill animation unlocked
+11. **Given** a student reaches Level 11, **When** they view their character, **Then** they see professional attire and advanced animations
+12. **Given** a student reaches Level 21+, **When** they view their character, **Then** they see master-level appearance with career-specific effects
+13. **Given** a student views their dashboard, **When** the page loads, **Then** they see real-time character preview with current equipment and level
+
+#### Customization Marketplace
+14. **Given** a student has 100 Gold, **When** they browse the marketplace, **Then** they see purchasable items: Hats (50-200 Gold), Outfits (100-500 Gold), Backgrounds (150 Gold), Emotes (75 Gold), Pets (300 Gold)
+15. **Given** a student wants to buy a hat costing 75 Gold, **When** they have 100 Gold and click purchase, **Then** the item is added to inventory, 75 Gold is deducted, and they see purchase confirmation
+16. **Given** a student owns an item, **When** they access customization, **Then** they can equip/unequip items and see live preview on their character
+17. **Given** a student has 50 Gold but tries to buy a 75 Gold item, **When** they click purchase, **Then** they see "Insufficient Gold" error with their current balance
+
+#### Leaderboards & Social
+18. **Given** a student views leaderboards, **When** the page loads, **Then** they see top characters ranked by XP within each career path
+19. **Given** a student is ranked #15 in "Engineer" leaderboard, **When** they view the leaderboard, **Then** they see their position highlighted with character preview
+
+#### Parental Controls
+20. **Given** parental controls are enabled with 100 Gold/day spending limit, **When** a student tries to spend 150 Gold in one day, **Then** the purchase is blocked with explanation message
 
 ---
 
@@ -74,7 +100,38 @@ Teachers can create class schedules, manage class capacity, view enrolled studen
 
 ---
 
-### User Story 5 - Admin Platform Analytics (Priority: P3)
+### User Story 5 - Live Video Classes (Priority: P1)
+
+Teachers and students can participate in real-time video classes with face-to-face interaction, screen sharing, and in-call chat functionality.
+
+**Why this priority**: Core learning experience - students need direct video interaction with teachers for effective English learning.
+
+**Independent Test**: Teacher starts a scheduled class video session, students with valid bookings can join, both parties can see and hear each other, teacher can share screen, and attendance is tracked for rewards.
+
+**Acceptance Scenarios**:
+
+#### Teacher Starting a Class
+1. **Given** a teacher has a scheduled class starting within 15 minutes, **When** they view their dashboard, **Then** they see a "Start Class" button for that class
+2. **Given** a teacher clicks "Start Class", **When** the video room loads, **Then** they see their own video preview and waiting room for students
+3. **Given** a teacher is in the video room, **When** students join, **Then** the teacher sees each student's video feed and name
+
+#### Student Joining a Class
+4. **Given** a student has booked a class that is currently live, **When** they view their dashboard, **Then** they see a "Join Class" button with a green "LIVE" indicator
+5. **Given** a student clicks "Join Class", **When** they enter the video room, **Then** they see the teacher's video and can enable their own camera/microphone
+6. **Given** a student has not booked the class, **When** they try to access the video room URL, **Then** they receive an "Access Denied - Booking Required" message
+
+#### In-Class Features
+7. **Given** a video class is in progress, **When** the teacher enables screen sharing, **Then** all students see the teacher's shared screen
+8. **Given** a video class is in progress, **When** a participant sends a chat message, **Then** all participants see the message within 1 second
+9. **Given** a student's internet connection is unstable, **When** video quality drops, **Then** the system automatically adjusts to maintain audio quality
+
+#### Class End and Rewards
+10. **Given** a teacher ends the class, **When** the session closes, **Then** all participants are redirected to a "Class Ended" summary page
+11. **Given** a class has ended, **When** the system processes attendance, **Then** students who attended receive their XP and Gold rewards
+
+---
+
+### User Story 6 - Admin Platform Analytics (Priority: P3)
 
 Administrators can view comprehensive platform metrics including user growth, class bookings, Cookie circulation, revenue, and engagement trends.
 
@@ -98,33 +155,43 @@ Administrators can view comprehensive platform metrics including user growth, cl
 3. **Class time conflicts**: When a student tries to book a class that overlaps with an already-booked class, system prevents the booking and shows the conflict
 4. **Timezone handling**: When students and teachers are in different timezones, all times displayed in user's local timezone with UTC offset shown for clarity
 
-#### Cookie System Edge Cases
+#### Gem System Edge Cases
 
-5. **Cookie expiration and caps**: System enforces a maximum Cookie balance of 1000 Cookies per student; any Cookies earned beyond this cap are forfeited. Cookies expire after 12 months of account inactivity (no login or activity). Oldest Cookies expire first (FIFO). Students receive notifications 30 days before expiration
-6. **Partial Cookie discounts**: When applying Cookies to a booking, system enforces both the 50% maximum discount cap and the 25% minimum price floor. For a $100 class, students can apply maximum 100 Cookies ($50 discount, bringing price to $50); system will not allow more than 150 Cookies to be applied as that would violate the $25 minimum (25% of $100)
-7. **Cookie fraud prevention**: System detects patterns like rapid account creation for referral bonuses, completion of same activity repeatedly, or bot-like behavior and flags suspicious accounts for admin review
-8. **Negative Cookie balance**: System prevents Cookie balance from going negative; all spending transactions check balance first
-9. **Cookie transaction failures**: If Cookie deduction succeeds but booking fails, system performs automatic rollback with immediate Cookie restoration to the student's account and logs the incident for audit purposes
+5. **Gem expiration**: Gems earned do NOT expire by default; however, administrators can configure expiration policies (e.g., expire after 12 months of inactivity) if needed for business reasons
+6. **Partial Gem discounts**: When a class costs $45 and student has 100 Gems (max $50 discount), but maximum discount is capped at 50%, system allows using only 45 Gems ($22.50 discount)
+7. **Gem fraud prevention**: System detects patterns like rapid account creation for referral bonuses, completion of same activity repeatedly, or bot-like behavior and flags suspicious accounts for admin review
+8. **Negative Gem balance**: System prevents Gem balance from going negative; all spending transactions check balance first
+9. **Gem transaction failures**: If Gem deduction succeeds but booking fails, system automatically refunds the Gems and logs the incident
 
 #### Cancellation and Refund Edge Cases
 
-10. **Teacher-initiated cancellations**: When a teacher cancels a class that students booked with Cookies, students receive standard full refund (both money paid AND Cookies spent returned to their account); no additional compensation Cookies are provided
-11. **Student-initiated cancellations**: When a student cancels a booking, refund policy applies (e.g., full refund if >24 hours before class, 50% if 12-24 hours, no refund if <12 hours); Cookies are refunded following same timeline
-12. **No-show students**: When a student doesn't attend a booked class, no refund is issued; Cookies spent are not returned
-13. **Partial refunds**: When partial refunds are issued, both money and Cookies are refunded proportionally (e.g., 50% refund = 50% of money + 50% of Cookies)
+10. **Teacher-initiated cancellations**: When a teacher cancels a class that students booked with Gems, students receive full refund (both money paid AND Gems spent) plus bonus compensation Gems for inconvenience
+11. **Student-initiated cancellations**: When a student cancels a booking, refund policy applies (e.g., full refund if >24 hours before class, 50% if 2-24 hours, no refund if <2 hours); Gems are refunded following same timeline
+12. **No-show students**: When a student doesn't attend a booked class, no refund is issued; Gems spent are not returned
+13. **Partial refunds**: When partial refunds are issued, both money and Gems are refunded proportionally (e.g., 50% refund = 50% of money + 50% of Gems)
 
 #### Role and Permission Edge Cases
 
-14. **Role changes**: When a user's role changes (e.g., student becomes teacher), system preserves their existing data (student keeps Cookie balance) while granting new permissions
-15. **Account suspension**: When an account is suspended for policy violations, Cookie balance is frozen but not deleted; restored upon reinstatement
+14. **Role changes**: When a user's role changes (e.g., student becomes teacher), system preserves their existing data (student keeps Gem balance) while granting new permissions
+15. **Account suspension**: When an account is suspended for policy violations, Gem balance is frozen but not deleted; restored upon reinstatement
 16. **Multiple role assignments**: System allows users to have multiple roles simultaneously (e.g., a teacher who is also a student) with unified dashboard showing both perspectives
 
 #### System and Data Edge Cases
 
-17. **Database inconsistencies**: If Cookie balance calculation error is detected, system flags discrepancy for admin review and prevents further transactions until resolved
+17. **Database inconsistencies**: If Gem balance calculation error is detected, system flags discrepancy for admin review and prevents further transactions until resolved
 18. **Payment processing failures**: When payment succeeds but booking creation fails, system initiates automatic refund and notifies support team
 19. **Orphaned data**: When a teacher deletes their account, their past classes remain in students' booking history but marked as "Former Teacher"
 20. **Class capacity changes**: When a teacher reduces class capacity after bookings exceed new limit, existing bookings are honored; no new bookings accepted
+
+#### Video Class Edge Cases
+
+21. **Teacher no-show**: When a teacher doesn't start the class within 15 minutes of scheduled time, system sends automated notification to admin and students receive option to reschedule or get full refund
+22. **Connection drops**: When a participant loses connection during class, system attempts automatic reconnection for 60 seconds; if unsuccessful, logs partial attendance
+23. **Browser compatibility**: When a student's browser doesn't support WebRTC, system displays clear error message with supported browser list and download links
+24. **Device permissions denied**: When camera/microphone permissions are blocked, system shows step-by-step guide to enable permissions for each browser type
+25. **Multiple device login**: When same user attempts to join video class from multiple devices simultaneously, system allows only one active session and disconnects older sessions
+26. **Class overrun**: When a teacher continues past scheduled end time, system sends 5-minute warning; after 15 minutes overrun, displays "Class Extended" to students but doesn't force disconnect
+27. **Network bandwidth**: When detected bandwidth is below 500kbps, system automatically disables video and maintains audio-only mode with notification to user
 
 ## Requirements *(mandatory)*
 
@@ -132,95 +199,106 @@ Administrators can view comprehensive platform metrics including user growth, cl
 
 - **FR-001**: System MUST support user authentication with role-based access control (Student, Teacher, Administrator)
 - **FR-002**: System MUST allow students to browse and search available classes with filters (date, time, topic, teacher, price)
-- **FR-003**: System MUST maintain a Cookie balance for each student account
-- **FR-004**: System MUST calculate class prices with Cookie discounts applied (1 Cookie = $0.50 discount) while enforcing minimum price of 25% of original class price
-- **FR-005**: System MUST prevent students from using more Cookies than they have
-- **FR-006**: System MUST award Cookies automatically when students complete qualifying activities
+- **FR-003**: System MUST maintain a Gem balance for each student account
+- **FR-004**: System MUST calculate class prices with Gem discounts applied (1 Gem = $0.50 discount)
+- **FR-005**: System MUST prevent students from using more Gems than they have
+- **FR-006**: System MUST award Gems automatically when students complete qualifying activities
 - **FR-007**: System MUST allow teachers to create, update, and manage their class schedules
 - **FR-008**: System MUST enforce class capacity limits and prevent overbooking
 - **FR-009**: System MUST provide role-specific dashboards with appropriate features for each user type
-- **FR-010**: System MUST track and display booking history with price breakdowns (original price, Cookie discount, final price)
-- **FR-011**: System MUST send notifications for important events (booking confirmations, Cookie earnings, class reminders)
+- **FR-010**: System MUST track and display booking history with price breakdowns (original price, Gem discount, final price)
+- **FR-011**: System MUST send notifications for important events (booking confirmations, Gem earnings, class reminders)
 - **FR-012**: System MUST provide administrators with analytics and reporting capabilities
 - **FR-013**: System MUST handle payment processing for class bookings
-- **FR-014**: System MUST log all Cookie transactions (earned, spent, refunded) for audit purposes
+- **FR-014**: System MUST log all Gem transactions (earned, spent, refunded) for audit purposes
 - **FR-015**: System MUST provide a stunning, responsive UI that works on desktop and mobile devices
-- **FR-016**: System MUST perform automatic rollback with immediate Cookie restoration when booking transactions fail after Cookie deduction
-- **FR-017**: System MUST deliver notifications within 5 seconds of triggering event (booking confirmations, Cookie earnings, class reminders)
-- **FR-018**: Email notifications MUST have 99% delivery rate measured via email service provider metrics
-- **FR-019**: Browser push notifications MUST respect user preferences and system permissions
-- **FR-020**: System MUST calculate teacher earnings as 70% of final booking price (after Cookie discounts applied)
-- **FR-021**: System MUST track teacher earnings per class and provide weekly payout calculations
-- **FR-022**: System MUST support minimum payout threshold of 500,000 VND ($20 USD equivalent)
+- **FR-016**: System MUST allow students to select one of six career paths (Doctor, Engineer, Warrior, Business, Artist, Scientist) during onboarding
+- **FR-017**: System MUST maintain XP and Gold balances for each student character
+- **FR-018**: System MUST award XP (50 base + 25 quiz bonus) automatically upon class completion
+- **FR-019**: System MUST award Gold (10-30 based on performance tier) automatically upon class completion
+- **FR-020**: System MUST calculate character level as floor(totalXP / 500) + 1
+- **FR-021**: System MUST display 8-bit character with visual evolution based on level ranges (1-5, 6-10, 11-20, 21+)
+- **FR-022**: System MUST provide a marketplace where students can purchase cosmetic items with Gold
+- **FR-023**: System MUST prevent Gold purchases when balance is insufficient
+- **FR-024**: System MUST allow students to equip/unequip owned items on their character
+- **FR-025**: System MUST track daily login streaks and award 5 Gold per daily login
+- **FR-026**: System MUST track weekly streaks and award 50 Gold bonus every 7 consecutive days
+- **FR-027**: System MUST display career-specific leaderboards ranked by XP
+- **FR-028**: System MUST support parental controls for marketplace purchase limits
+- **FR-029**: System MUST log all XP and Gold transactions for audit purposes
+- **FR-030**: System MUST provide real-time video calling for live classes via CometChat integration
+- **FR-031**: System MUST allow teachers to start video sessions for scheduled classes
+- **FR-032**: System MUST allow students with valid bookings to join live video classes
+- **FR-033**: System MUST track video session attendance for XP/Gold reward calculation
+- **FR-034**: System MUST provide in-call chat functionality during video sessions
+- **FR-035**: System MUST support screen sharing for teachers during video classes
+- **FR-036**: System MUST display class session status (scheduled, live, ended) in real-time
 
 ### Key Entities *(include if feature involves data)*
 
 - **User**: Represents a platform user with role (Student/Teacher/Administrator), authentication credentials, profile information
-- **Student**: Extends User, includes Cookie balance, booking history, achievement data, referral tracking
-- **Teacher**: Extends User, includes class history, rating, bio, availability schedule, earnings balance (70% of final booking prices), payout history, payout threshold (500,000 VND minimum)
+- **Student**: Extends User, includes Gem balance, booking history, achievement data, referral tracking
+- **Teacher**: Extends User, includes class history, rating, bio, availability schedule
 - **Class**: Represents an English class with topic, teacher, schedule (date/time), capacity, price, enrolled students
-- **Booking**: Links a Student to a Class with booking details (Cookies used, discount amount, final price paid, status)
-- **Cookie Transaction**: Records Cookie movements (type: earned/spent/refunded, amount, reason, timestamp, related entity)
-- **Activity Rule**: Defines how students earn Cookies (activity type, Cookie reward amount, qualifying conditions). Standard rewards: 10 Cookies per lesson completed, 50 Cookies per 7-day attendance streak, 100 Cookies per successful referral, 10 Cookies for profile completion, 5 Cookies for first class review
-
-## Clarifications
-
-### Session 2026-01-22
-
-- Q: What specific Cookie reward amounts should be awarded for each earning activity? → A: Option C - Balanced earning rates (10/lesson, 50/streak, 100/referral, 10/profile, 5/first review)
-- Q: How should the system handle maximum Cookie balance caps and expiration policies? → A: Option D - Rolling cap with 12-month expiry for unused Cookies
-- Q: What should the minimum price threshold be when Cookie discounts are applied? → A: Option C - 25% of original price minimum (proportional protection for teacher earnings)
-- Q: How should the system handle failed transactions after Cookie deduction? → A: Option B - Automatic rollback with immediate Cookie restoration (for failed transactions)
-- Q: What compensation should students receive when teachers cancel booked classes? → A: Option A - Standard refund only, no extra compensation for teacher cancellations
+- **Booking**: Links a Student to a Class with booking details (Gems used, discount amount, final price paid, status)
+- **Gem Transaction**: Records Gem movements (type: earned/spent/refunded, amount, reason, timestamp, related entity)
+- **Activity Rule**: Defines how students earn Gems (activity type, Gem reward amount, qualifying conditions)
+- **Career Path**: Defines a career archetype (Doctor, Engineer, Warrior, Business, Artist, Scientist) with unique theme colors, base character sprite, and level evolution stages
+- **Student Character**: Links a Student to their chosen Career Path with XP balance, Gold balance, current level, equipped items, and streak tracking
+- **Marketplace Item**: Cosmetic item purchasable with Gold (category: hat/outfit/background/emote/pet) with price, sprite, and career compatibility
+- **Student Inventory**: Records items owned by a student with purchase timestamp and Gold spent
+- **Progression Transaction**: Audit log of XP/Gold movements (type: xp_earned/gold_earned/gold_spent/level_up) with balance tracking
+- **Class Session**: Tracks live video session metadata (CometChat group ID, session status, start/end times, participant count, recording URL)
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Students can complete a full booking flow (browse → select → apply Cookies → book) in under 3 minutes
+- **SC-001**: Students can complete a full booking flow (browse → select → apply Gems → book) in under 3 minutes
 - **SC-002**: System maintains <200ms p95 response time for class browsing and booking operations
 - **SC-003**: UI achieves WCAG 2.1 Level AA accessibility standards
 - **SC-004**: 90% of students successfully book their first class on first attempt without support
-- **SC-005**: System accurately calculates and applies Cookie discounts with 100% accuracy (zero calculation errors)
+- **SC-005**: System accurately calculates and applies Gem discounts with 100% accuracy (zero calculation errors)
 - **SC-006**: Platform handles 1000+ concurrent users without performance degradation
 - **SC-007**: All role-based access controls enforce proper permissions with zero unauthorized access incidents
-- **SC-008**: Cookie earning system triggers automatically within 1 second of qualifying activity completion
+- **SC-008**: Gem earning system triggers automatically within 1 second of qualifying activity completion
 - **SC-009**: Mobile UI renders correctly on devices with screens as small as 320px width
 - **SC-010**: System achieves 99.9% uptime during business hours (measured monthly)
-- **SC-011**: 95% of booking confirmation emails delivered within 30 seconds of transaction completion
-- **SC-012**: 90% of students enable in-app notifications within first week of account creation
-- **SC-013**: Class reminder push notifications sent 15 minutes before class start with 99% accuracy
+- **SC-011**: 80% of students select a career path within their first week on the platform
+- **SC-012**: 30% increase in class attendance after Career Path system launch (measured over 3 months)
+- **SC-013**: 25% improvement in assignment/quiz completion rates after Career Path system launch
+- **SC-014**: Character viewer renders at 60fps on modern devices with <100ms XP update reflection
+- **SC-015**: XP and Gold calculations achieve 100% accuracy with zero balance discrepancies
+- **SC-016**: Video calls connect within 5 seconds of joining for 95% of attempts
+- **SC-017**: Video quality maintains minimum 720p resolution on stable broadband connections
+- **SC-018**: In-call chat messages deliver within 500ms during active video sessions
 
 ## Assumptions *(mandatory)*
 
 - Students have basic internet access and can use modern web browsers or mobile devices
-- Payment processing is handled through integration with third-party payment providers (not building payment infrastructure from scratch)
+- Payment processing is handled through VNPay, MoMo, ZaloPay (Vietnam market) with Stripe as international fallback
 - Teachers are verified before being granted access to create and manage classes
-- Cookie-to-dollar conversion rate (1 Cookie = $0.50) is set by business team and may be adjusted in future
+- Gem-to-dollar conversion rate (1 Gem = $0.50) is set by business team and may be adjusted in future
 - Students understand basic gamification concepts (earning rewards, spending currency)
-- Platform initially launches in English language only
-- Class scheduling assumes teachers set their own availability
-- Email is the primary communication channel for notifications (with optional in-app notifications)
-- Cookie transactions follow the same refund timeline as monetary payments; automatic rollback occurs for failed transactions
+- Platform launches with Vietnamese UI (primary) and English (secondary)
+- Standard class duration is **25 minutes** (optimized for focus and scheduling flexibility)
+- Class scheduling assumes teachers set their own availability in their declared timezone
+- Users declare their timezone in profile settings (default: Asia/Ho_Chi_Minh UTC+7)
+- Email, in-app, and browser push notifications are primary communication channels
+- Gem transactions are non-refundable once spent (except in case of class cancellations by teachers)
+- Teachers receive **70% of booking price** (after Gem discounts); platform retains 30%
+- Gems are primarily earned through **referral coupons** (100 Gems when referred friend completes first booking)
+- Quizzes are **built into the platform** with 5-10 questions, 70% pass threshold
+- Character sprites are **AI-generated** with manual cleanup for consistency
 
 ## Constraints *(optional)*
 
 ### Business Constraints
-- Cookie discounts cannot reduce class price below 25% of the original price (proportional minimum to protect teacher earnings)
-- Maximum Cookie discount per booking is capped at 50% of class price to ensure revenue sustainability
-- Maximum Cookie balance per student is capped at 1000 Cookies to prevent excessive accumulation
-- Cookie balance expires after 12 months of account inactivity using FIFO (first-in, first-out) expiration
-- Free Cookie giveaways for promotions must be approved by administrators
-- Refund policies must comply with consumer protection regulations in operating jurisdictions
-
-### Teacher Revenue Constraints
-- Teacher earnings calculated as 70% of final booking price (after Cookie discounts)
-- Platform retains 30% of final booking price as commission
-- Minimum class price is $5 USD to ensure viable teacher earnings
-- Cookie discounts reduce both teacher earnings and platform commission proportionally
-- Weekly payout minimum threshold: 500,000 VND ($20 USD equivalent)
-- Teachers must complete tax documentation before receiving payouts
-- Payout processing occurs weekly (every Monday for previous week's earnings)
+- Gem discounts cannot reduce class price below **$5 USD minimum** (approximately 125,000 VND)
+- Maximum Gem discount per booking is capped at 50% of class price to ensure revenue sustainability
+- Teachers receive 70% of final booking price (after Gem discounts applied)
+- Free Gem giveaways for promotions must be approved by administrators
+- Refund policies must comply with Vietnamese consumer protection regulations
 
 ### User Experience Constraints
 - Student UI must be mobile-first design (majority of users expected on mobile devices)
@@ -229,7 +307,7 @@ Administrators can view comprehensive platform metrics including user growth, cl
 - Platform must support users with disabilities per WCAG 2.1 Level AA
 
 ### Data Constraints
-- Cookie balance history must be retained for minimum 12 months for audit purposes
+- Gem balance history must be retained for minimum 12 months for audit purposes
 - User data must be retained according to data protection regulations (GDPR, CCPA compliance)
 - Class booking data must be available for reporting for minimum 24 months
 
@@ -241,23 +319,26 @@ Administrators can view comprehensive platform metrics including user growth, cl
 - Authentication service for secure user login and session management
 - Cloud storage for class materials and user profile images
 - Analytics platform for tracking user behavior and platform metrics
+- **CometChat** for real-time video/voice calling and in-call chat (Build Plan - Free Tier for development, Basic Plan for production)
 
 ### Prerequisites
 - User registration and authentication system must be operational before class booking
 - Payment integration must be tested and verified before enabling paid bookings
-- Cookie earning rules must be configured by administrators before student activities can earn Cookies
+- Gem earning rules must be configured by administrators before student activities can earn Gems
 - Teacher onboarding process must be complete before they can create classes
+- **CometChat account must be created and API keys configured before video classes can function**
+- **User sync between Supabase Auth and CometChat must be operational for video class access**
 
 ## Out of Scope *(optional)*
 
 This feature specification explicitly **excludes**:
 
-- Video conferencing or live class delivery infrastructure (may integrate with third-party tools)
+- ~~Video conferencing or live class delivery infrastructure~~ *(NOW IN SCOPE via CometChat integration)*
 - Content creation tools for teachers (teachers provide their own materials)
 - Automated grading or assessment systems
 - Social networking features (friend connections, messaging between students)
 - Multi-language support (English only for initial release)
-- Cookie trading or gifting between students
+- Gem trading or gifting between students
 - Marketplace for third-party course content
 - Integration with external learning management systems (LMS)
 - Mobile native apps (web-based responsive design only for initial release)
@@ -269,23 +350,23 @@ This feature specification explicitly **excludes**:
 - All user passwords must be securely hashed (never stored in plain text)
 - All payment transactions must be processed over encrypted connections
 - Role-based access control must prevent unauthorized access to dashboards and features
-- Cookie transaction logs must be tamper-proof to prevent fraud
+- Gem transaction logs must be tamper-proof to prevent fraud
 - Session management must automatically expire inactive sessions
-- Admin actions (user management, Cookie adjustments) must be logged for audit trail
+- Admin actions (user management, Gem adjustments) must be logged for audit trail
 
 ### Privacy Requirements
 - Students' personal information visible only to authorized teachers and administrators
-- Students cannot see other students' Cookie balances or transaction histories
+- Students cannot see other students' Gem balances or transaction histories
 - Teachers cannot access student data from classes they don't teach
-- Cookie earning activities must not expose sensitive student learning data publicly
+- Gem earning activities must not expose sensitive student learning data publicly
 - User consent required before collecting analytics or behavioral data
 - Data retention policies must allow users to request data deletion per regulations
 
 ### Fraud Prevention
-- System must detect and prevent Cookie farming or gaming the earning system
-- Referral Cookie bonuses must verify legitimate new user signups (prevent fake accounts)
+- System must detect and prevent Gem farming or gaming the earning system
+- Referral Gem bonuses must verify legitimate new user signups (prevent fake accounts)
 - Multiple accounts from same user must be detected and prevented
-- Unusual Cookie spending patterns should trigger review flags
+- Unusual Gem spending patterns should trigger review flags
 
 ## Non-Functional Requirements *(optional)*
 
@@ -297,22 +378,33 @@ This feature specification explicitly **excludes**:
 
 ### Scalability
 - **NFR-005**: Platform architecture supports horizontal scaling to accommodate 100,000+ registered users
-- **NFR-006**: Database design supports efficient queries as Cookie transaction history grows to millions of records
+- **NFR-006**: Database design supports efficient queries as Gem transaction history grows to millions of records
 - **NFR-007**: System handles peak booking loads (e.g., 500 bookings/minute during promotions)
 
 ### Reliability
 - **NFR-008**: System maintains 99.9% uptime during business hours (6am-midnight local time)
-- **NFR-009**: Booking transactions are atomic (either fully complete or fully rollback with immediate Cookie restoration, no partial states)
-- **NFR-010**: Automatic backup of critical data (user accounts, bookings, Cookie balances) every 6 hours
+- **NFR-009**: Booking transactions are atomic (either fully complete or fully rollback, no partial states)
+- **NFR-010**: Automatic backup of critical data (user accounts, bookings, Gem balances) every 6 hours
 
 ### Usability
 - **NFR-011**: New students can create account and book first class without help documentation (intuitive UI)
 - **NFR-012**: UI works on all modern browsers (Chrome, Firefox, Safari, Edge - latest 2 versions)
 - **NFR-013**: Forms provide clear validation messages that guide users to correct errors
-- **NFR-014**: Dashboard provides contextual help tooltips for Cookie system features
+- **NFR-014**: Dashboard provides contextual help tooltips for Gem system features
+
+### Smooth UI & Animations
+- **NFR-018**: All UI transitions MUST run at 60fps with no visible jank or stuttering
+- **NFR-019**: Page transitions use smooth fade/slide animations (200-300ms duration, ease-out curve)
+- **NFR-020**: Interactive elements provide immediate visual feedback (<50ms response time)
+- **NFR-021**: Loading states use smooth skeleton animations instead of spinners where appropriate
+- **NFR-022**: Micro-interactions (button clicks, toggles, hovers, Gem counter updates) have subtle, satisfying animations
+- **NFR-023**: Modal/drawer appearances use spring physics for natural feel
+- **NFR-024**: Scroll behavior is smooth with momentum on touch devices
+- **NFR-025**: Character sprite animations maintain consistent 60fps playback
+- **NFR-026**: Users can disable animations via "Reduce Motion" accessibility preference
 
 ### Maintainability
-- **NFR-015**: Cookie earning rules can be updated by administrators without code deployment
+- **NFR-015**: Gem earning rules can be updated by administrators without code deployment
 - **NFR-016**: New user roles can be added without major system redesign
 - **NFR-017**: System logs sufficient information for debugging issues reported by users
 
@@ -322,15 +414,15 @@ To achieve the "stunning student UI" goal, the platform must embody these princi
 
 ### Visual Design
 - **Modern, clean aesthetic**: Minimalist design with ample white space, avoiding clutter
-- **Vibrant color palette**: Energetic colors that appeal to language learners (suggest: warm, friendly tones)
+- **Vibrant color palette**: Energetic colors that appeal to language learners (dark blue theme with vibrant accents)
 - **Consistent design language**: Unified visual style across all pages and components
-- **Delightful interactions**: Smooth animations, satisfying micro-interactions (e.g., Cookie counter animations)
+- **Buttery smooth interactions**: All animations at 60fps, spring-physics transitions, satisfying micro-interactions (Cookie counters, XP gains, level-ups)
 
 ### Information Architecture
-- **Student-centric navigation**: Most important features (Browse Classes, My Cookies, My Bookings) easily accessible
+- **Student-centric navigation**: Most important features (Browse Classes, My Gems, My Bookings) easily accessible
 - **Progressive disclosure**: Show essential information first, details available on demand
 - **Clear visual hierarchy**: Typography and spacing guide users' attention to key actions
-- **Contextual guidance**: Inline help and tooltips explain Cookie system without overwhelming users
+- **Contextual guidance**: Inline help and tooltips explain Gem system without overwhelming users
 
 ### Mobile Experience
 - **Touch-optimized**: Large tap targets, swipe gestures where appropriate
@@ -339,9 +431,9 @@ To achieve the "stunning student UI" goal, the platform must embody these princi
 - **Offline-aware**: Graceful handling of connectivity issues with clear feedback
 
 ### Gamification UX
-- **Celebrate achievements**: Visual feedback when earning Cookies (animations, sounds, confetti effects)
-- **Progress visibility**: Clear display of Cookie balance, upcoming rewards, achievement milestones
-- **Motivation cues**: Remind students how many more Cookies needed for desired discounts
+- **Celebrate achievements**: Visual feedback when earning Gems (animations, shimmer effects, gem shine particles)
+- **Progress visibility**: Clear display of Gem balance, upcoming rewards, achievement milestones
+- **Motivation cues**: Remind students how many more Gems needed for desired discounts
 - **Social proof**: Show (anonymized) leaderboards or achievement badges to inspire engagement
 
 ### Accessibility
@@ -352,44 +444,64 @@ To achieve the "stunning student UI" goal, the platform must embody these princi
 
 ## Glossary *(optional)*
 
-**Cookies**: Virtual currency units earned by students through platform engagement and activities. Can be spent for discounts on class bookings. Conversion rate: 1 Cookie = $0.50 discount.
+**Gems**: Virtual currency units earned by students through platform engagement and activities. Can be spent for discounts on class bookings. Conversion rate: 1 Gem = $0.50 discount. Represented by precious gemstone icons (💎💠) with shimmer effects in the UI.
 
-**Cookie Transaction**: A recorded event of Cookie movement, including earnings (credited) and spending (debited). Each transaction logs the amount, type, reason, timestamp, and related entity.
+**Gem Transaction**: A recorded event of Gem movement, including earnings (credited) and spending (debited). Each transaction logs the amount, type, reason, timestamp, and related entity.
 
-**Booking**: A confirmed reservation linking a student to a specific class. Includes details of payment, any Cookie discount applied, and final amount charged.
+**Booking**: A confirmed reservation linking a student to a specific class. Includes details of payment, any Gem discount applied, and final amount charged.
 
 **Class**: An English learning session with defined attributes: topic, teacher, scheduled date/time, capacity limit, and price.
 
 **Role**: User permission level determining dashboard access and features. Three roles: Student (learning), Teacher (instruction), Administrator (management).
 
-**Dashboard**: Personalized home screen showing role-specific information and actions. Students see classes and Cookies; Teachers see schedules and rosters; Admins see analytics and controls.
+**Dashboard**: Personalized home screen showing role-specific information and actions. Students see classes and Gems; Teachers see schedules and rosters; Admins see analytics and controls.
 
-**Activity Rule**: Configuration defining how students earn Cookies. Specifies the qualifying activity type, Cookie reward amount, and any conditions required.
+**Activity Rule**: Configuration defining how students earn Gems. Specifies the qualifying activity type, Gem reward amount, and any conditions required.
 
 **Capacity**: Maximum number of students who can enroll in a class. Set by teacher when creating the class.
 
-**Refund Policy**: Rules governing when and how much money/Cookies are returned when bookings are cancelled. Varies based on timing and who initiates cancellation.
+**Refund Policy**: Rules governing when and how much money/Gems are returned when bookings are cancelled. Varies based on timing and who initiates cancellation.
 
 **P95 Response Time**: Performance metric indicating that 95% of requests complete within the specified time threshold.
 
 **WCAG 2.1 Level AA**: Web Content Accessibility Guidelines standard ensuring the platform is usable by people with disabilities.
 
-**Attendance Streak**: Consecutive number of classes attended without gaps. Used to calculate bonus Cookie rewards.
+**Attendance Streak**: Consecutive number of classes attended without gaps. Used to calculate bonus Gem rewards.
 
 **Waitlist**: Queue of students interested in a full class, who will be notified if a spot becomes available.
+
+**Career Path**: One of six predefined career archetypes (Doctor, Engineer, Warrior, Business Person, Artist, Scientist) that determines a student's 8-bit character appearance, color theme, and evolution animations.
+
+**Experience Points (XP)**: Primary progression currency earned through class completion. 50 XP base per class, +25 bonus for 90%+ quiz scores. Every 500 XP = 1 level up.
+
+**Gold Coins**: Secondary cosmetic currency earned through class performance (10-30 per class), daily login (5), and weekly streaks (50). Used to purchase items in the marketplace.
+
+**Character Level**: Student's progression tier calculated as floor(totalXP / 500) + 1. Determines character visual evolution: Levels 1-5 (basic), 6-10 (upgraded), 11-20 (professional), 21+ (master).
+
+**Marketplace**: In-platform store where students spend Gold to purchase cosmetic items (hats, outfits, backgrounds, emotes, pets) for their 8-bit character.
+
+**8-bit Character**: Retro pixel art avatar representing the student's chosen career path. Evolves visually as the student levels up and can be customized with marketplace items.
+
+**CometChat**: Third-party real-time communication platform providing video/voice calling and chat functionality for live classes. Integrated via JavaScript SDK and React UI Kit.
+
+**Class Session**: A live video instance of a scheduled class. Tracked by session ID, status (scheduled/live/ended), and participant attendance for reward calculation.
+
+**Video Room**: The virtual classroom interface where teachers and students interact via video call. Includes video feeds, screen sharing, and in-call chat.
+
+**WebRTC**: Web Real-Time Communication technology underlying CometChat's video calling, enabling peer-to-peer audio/video streams in the browser.
 
 ## Future Enhancements *(optional)*
 
 Ideas for potential features beyond the current scope (not planned for initial release):
 
 ### Advanced Gamification
-- **Achievement badges**: Visual badges for milestones (e.g., "10 Classes Completed", "Cookie Collector")
+- **Achievement badges**: Visual badges for milestones (e.g., "10 Classes Completed", "Gem Collector")
 - **Student levels**: Progression system where students level up based on activity, unlocking perks
-- **Leaderboards**: Public or class-specific rankings showing top Cookie earners or most active learners
-- **Challenges**: Time-limited special activities offering bonus Cookie rewards
+- **Leaderboards**: Public or class-specific rankings showing top Gem earners or most active learners
+- **Challenges**: Time-limited special activities offering bonus Gem rewards
 
 ### Social Features
-- **Student profiles**: Public profiles showing achievements, level, and optionally Cookie earnings
+- **Student profiles**: Public profiles showing achievements, level, and optionally Gem earnings
 - **Peer reviews**: Students can rate and review classes, visible to other students
 - **Study groups**: Students form groups to book classes together or share learning resources
 - **Direct messaging**: Secure messaging between students and teachers for questions
@@ -404,7 +516,7 @@ Ideas for potential features beyond the current scope (not planned for initial r
 - **Progress tracking**: Detailed analytics showing student's learning progress over time
 - **Lesson notes**: Students can take and store notes during/after classes
 - **Recording access**: Students can review recordings of classes they attended (if teachers opt-in)
-- **Homework assignments**: Teachers assign and grade homework, students earn Cookies for completion
+- **Homework assignments**: Teachers assign and grade homework, students earn Gems for completion
 
 ### Platform Expansion
 - **Mobile native apps**: iOS and Android apps with push notifications and offline features
@@ -418,11 +530,11 @@ Ideas for potential features beyond the current scope (not planned for initial r
 - **Chatbot support**: Automated assistant for common student questions
 - **Smart scheduling**: Suggest optimal class times based on student's booking history
 
-### Cookie System Enhancements
-- **Cookie tiers**: Different Cookie types (Bronze, Silver, Gold) with varying benefits
-- **Cookie gifting**: Students can send Cookies to friends as gifts or rewards
-- **Cookie marketplace**: Students trade Cookies for merchandise or other rewards
-- **Time-limited Cookie bonuses**: Special promotions offering double Cookies for certain activities
+### Gem System Enhancements
+- **Gem tiers**: Different Gem types (Ruby, Sapphire, Emerald, Diamond) with varying benefits
+- **Gem gifting**: Students can send Gems to friends as gifts or rewards
+- **Gem marketplace**: Students trade Gems for merchandise or other rewards
+- **Time-limited Gem bonuses**: Special promotions offering double Gems for certain activities ("Gem Rush" events)
 
 ---
 

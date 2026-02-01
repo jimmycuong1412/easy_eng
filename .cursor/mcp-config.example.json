@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Cursor MCP Server Configuration Template for Supabase Integration",
+  "version": "1.0",
+  "servers": [
+    {
+      "name": "supabase-dev",
+      "url": "https://mcp.supabase.com/mcp?project_ref=YOUR_DEV_PROJECT_REF",
+      "transport": "sse",
+      "enabled": true,
+      "description": "Supabase development database MCP server",
+      "security": {
+        "requireManualApproval": true,
+        "approvalForTools": [
+          "execute_sql",
+          "generate_migration",
+          "create_database_branch"
+        ]
+      }
+    },
+    {
+      "name": "supabase-staging",
+      "url": "https://mcp.supabase.com/mcp?project_ref=YOUR_STAGING_PROJECT_REF",
+      "transport": "sse",
+      "enabled": false,
+      "description": "Supabase staging database MCP server (optional)",
+      "security": {
+        "requireManualApproval": true,
+        "readOnly": false
+      }
+    }
+  ],
+  "globalSettings": {
+    "maxConcurrentConnections": 1,
+    "timeout": 30000,
+    "retryAttempts": 3
+  },
+  "security": {
+    "productionWarning": "NEVER configure production database project references in MCP",
+    "auditLog": {
+      "enabled": true,
+      "path": ".cursor/mcp-audit.log"
+    }
+  }
+}

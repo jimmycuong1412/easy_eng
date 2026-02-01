@@ -21,25 +21,29 @@
 
 ### Frontend Testing Setup
 
-- [ ] T000 [P] Install Jest 29+ and React Testing Library in frontend/package.json
-- [ ] T001a [P] Create Jest configuration with 80% coverage threshold in frontend/jest.config.js
-- [ ] T001b [P] Create test setup file in frontend/src/test/setup.ts
-- [ ] T001c [P] Install Playwright and configure E2E testing in frontend/playwright.config.ts
-- [ ] T001d [P] Create test utilities and helpers in frontend/src/test/utils.ts
-- [ ] T001e [P] Create mock Supabase client for testing in frontend/src/test/mocks/supabase.ts
+- [x] T000 [P] Install Jest 29+ and React Testing Library in frontend/package.json ✅
+- [x] T001a [P] Create Jest configuration with 80% coverage threshold in frontend/jest.config.js ✅
+- [x] T001b [P] Create test setup file in frontend/src/test/setup.ts ✅
+- [x] T001c [P] Install Playwright and configure E2E testing in frontend/playwright.config.ts ✅
+- [x] T001d [P] Create test utilities and helpers in frontend/src/test/utils.tsx ✅
+- [x] T001e [P] Create mock Supabase client for testing in frontend/src/test/mocks/supabase.ts ✅
 
-### Backend Testing Setup
+### Backend API Testing Setup
 
-- [ ] T001f [P] Install Vitest for Edge Functions testing in supabase/functions/
-- [ ] T001g [P] Create Edge Function test helpers in supabase/functions/_shared/test-utils.ts
-- [ ] T001h [P] Setup database test fixtures in supabase/tests/fixtures/
+- [x] T001f [P] Install Vitest + Supertest for API testing in backend/package.json ✅
+- [x] T001g [P] Create Vitest configuration with 80% coverage in backend/vitest.config.ts ✅
+- [x] T001h [P] Create API test helpers in backend/src/test/helpers.ts ✅
+- [x] T001i [P] Create mock Supabase client for backend tests in backend/src/test/mocks/supabase.ts ✅
+- [x] T001j [P] Setup test database fixtures in backend/src/test/fixtures/ ✅
 
 ### CI/CD Integration
 
-- [ ] T001i [P] Create GitHub Actions test workflow in .github/workflows/test.yml
-- [ ] T001j [P] Create GitHub Actions coverage workflow in .github/workflows/coverage.yml
-- [ ] T001k [P] Configure pre-commit hooks for testing in .husky/pre-commit
-- [ ] T001l Create test documentation in docs/testing-guide.md
+- [x] T001k [P] Create GitHub Actions test workflow in .github/workflows/test.yml ✅
+- [x] T001l [P] Create GitHub Actions coverage workflow in .github/workflows/coverage.yml ✅
+- [x] T001m [P] Configure pre-commit hooks for testing in .husky/pre-commit ✅
+- [x] T001n Create test documentation in docs/testing-guide.md ✅
+- [x] T001o [P] Create Docker build workflow in .github/workflows/docker-build.yml ✅
+- [x] T001p [P] Create container integration tests in tests/integration/containers.test.ts ✅
 
 **Checkpoint**: Test infrastructure ready - TDD can begin for all user stories
 
@@ -47,17 +51,44 @@
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Project initialization and basic structure
+**Purpose**: Project initialization and containerized architecture setup
 
-- [ ] T001 Create project structure with frontend/ and supabase/ directories
-- [ ] T002 Initialize Next.js 14+ project with App Router in frontend/
-- [ ] T003 [P] Configure TypeScript, ESLint, and Prettier in frontend/
-- [ ] T004 [P] Install and configure Tailwind CSS + shadcn/ui in frontend/tailwind.config.js
-- [ ] T005 [P] Setup Supabase CLI and initialize project in supabase/
-- [ ] T006 [P] Configure dark blue theme design tokens in frontend/src/app/globals.css
-- [ ] T007 [P] Install Framer Motion and configure animation system in frontend/src/lib/animations.ts
-- [ ] T008 [P] Setup shared TypeScript types in shared/types/index.ts
-- [ ] T009 [P] Configure test frameworks (Jest, React Testing Library, Playwright) in frontend/
+### Project Structure & Containerization
+
+- [x] T001 Create containerized project structure: frontend/, backend/, shared/, docker/ ✅
+- [x] T001a [P] Create root docker-compose.yml for development environment ✅
+- [x] T001b [P] Create frontend/Dockerfile with Node 20 Alpine and Next.js optimization ✅
+- [x] T001c [P] Create backend/Dockerfile with Node 20 Alpine and Express setup ✅
+- [x] T001d [P] Create .dockerignore files for frontend and backend ✅
+- [x] T001e [P] Create docker-compose.prod.yml for production deployment ✅
+- [x] T001f [P] Setup shared TypeScript types in shared/types/ (symlinked to both services) ✅
+
+### Frontend Container Setup
+
+- [x] T002 Initialize Next.js 14+ project with App Router in frontend/ ✅
+- [x] T003 [P] Configure TypeScript, ESLint, and Prettier in frontend/ ✅
+- [x] T004 [P] Install and configure Tailwind CSS + shadcn/ui in frontend/tailwind.config.js ✅
+- [x] T006 [P] Configure dark blue theme design tokens in frontend/app/globals.css ✅
+- [x] T007 [P] Install Framer Motion and configure animation system in frontend/lib/animations.ts ✅
+- [x] T008 [P] Create API client for backend communication in frontend/lib/api-client.ts ✅
+- [x] T009 [P] Configure environment variables in frontend/.env.example ✅
+
+### Backend API Container Setup
+
+- [x] T010 [P] Initialize Express.js + TypeScript project in backend/ ✅
+- [x] T011 [P] Configure TypeScript, ESLint, and Prettier in backend/ ✅
+- [x] T012 [P] Setup Express middleware (CORS, helmet, compression) in backend/src/middleware/ ✅
+- [x] T013 [P] Create Supabase client wrapper in backend/src/lib/supabase.ts ✅
+- [x] T014 [P] Setup request validation with Zod in backend/src/middleware/validation.ts ✅
+- [x] T015 [P] Create error handling middleware in backend/src/middleware/error-handler.ts ✅
+- [x] T016 [P] Setup Winston logger in backend/src/lib/logger.ts ✅
+- [x] T017 [P] Configure environment variables in backend/.env.example ✅
+
+### Database Setup
+
+- [x] T018 [P] Setup Supabase CLI and initialize project in supabase/ ✅
+- [x] T019 [P] Create database connection pool configuration in backend/src/lib/db.ts ✅
+- [x] T020 [P] Setup database migration strategy in supabase/migrations/ ✅
 
 ---
 
@@ -69,101 +100,110 @@
 
 ### Database Foundation
 
-- [ ] T010 [P] Create users table with role-based fields in supabase/migrations/001_users.sql
-- [ ] T011 [P] Create profiles table extending auth.users in supabase/migrations/002_profiles.sql
-- [ ] T012 [P] Setup Row Level Security (RLS) policies for users and profiles in supabase/migrations/003_rls_policies.sql
+- [x] T021 [P] Create users table with role-based fields in supabase/migrations/001_users.sql ✅
+- [x] T022 [P] Create profiles table extending auth.users in supabase/migrations/002_profiles.sql ✅
+- [x] T023 [P] Setup Row Level Security (RLS) policies for users and profiles in supabase/migrations/003_rls_policies.sql ✅
 
-### Authentication Foundation
+### Backend API - Authentication Foundation
 
-- [ ] T013 [P] Configure Supabase Auth in frontend/src/lib/supabase.ts
-- [ ] T014 [P] Create auth context and hooks in frontend/src/hooks/useAuth.ts
-- [ ] T015 [P] Implement role-based access control middleware in frontend/src/middleware.ts
-- [ ] T016 [P] Create login page in frontend/src/app/auth/login/page.tsx
-- [ ] T017 [P] Create registration page in frontend/src/app/auth/register/page.tsx
+- [x] T024 [P] Create auth service in backend/src/services/auth.service.ts ✅
+- [x] T025 [P] Create JWT validation middleware in backend/src/middleware/auth.middleware.ts ✅
+- [x] T026 [P] Create role-based access control (RBAC) middleware in backend/src/middleware/rbac.middleware.ts ✅
+- [x] T027 [P] Create auth routes (login, register, logout) in backend/src/routes/auth.routes.ts ✅
+- [x] T028 [P] Create auth controller in backend/src/controllers/auth.controller.ts ✅
+
+### Frontend - Authentication Integration
+
+- [x] T029 [P] Create auth context and hooks in frontend/hooks/useAuth.ts ✅
+- [x] T030 [P] Create API client auth methods in frontend/lib/api-client.ts ✅
+- [x] T031 [P] Implement client-side route protection in frontend/middleware.ts ✅
+- [x] T032 [P] Create login page in frontend/app/auth/login/page.tsx ✅
+- [x] T033 [P] Create registration page in frontend/app/auth/register/page.tsx ✅
 
 ### UI Foundation
 
-- [ ] T018 [P] Create base layout component with navigation in frontend/src/components/layout/MainLayout.tsx
-- [ ] T019 [P] Create role-based navigation component in frontend/src/components/layout/RoleBasedNav.tsx
-- [ ] T020 [P] Implement common UI components (Button, Card, Input, Modal) in frontend/src/components/common/
-- [ ] T021 [P] Create notification system component in frontend/src/components/common/NotificationCenter.tsx
-- [ ] T022 [P] Setup Zustand stores for auth and notifications in frontend/src/stores/
+- [x] T034 [P] Create base layout component with navigation in frontend/components/layout/MainLayout.tsx ✅
+- [x] T035 [P] Create role-based navigation component in frontend/components/layout/RoleBasedNav.tsx ✅
+- [x] T036 [P] Implement common UI components (Button, Card, Input, Modal) in frontend/components/ui/ ✅
+- [x] T037 [P] Create notification system component in frontend/components/common/NotificationCenter.tsx ✅
+- [x] T038 [P] Setup Zustand stores for auth and notifications in frontend/stores/ ✅
+- [x] T039 [P] Create loading states and skeletons in frontend/components/common/LoadingStates.tsx ✅
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---
 
-## Phase 3: User Story 1 - Student Class Booking with Cookies Discount (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Student Class Booking with Gems Discount (Priority: P1) 🎯 MVP
 
-**Goal**: Enable students to browse classes, view Cookie balance, apply discounts, and book classes
+**Goal**: Enable students to browse classes, view Gems balance, apply discounts, and book classes
 
-**Independent Test**: Student can log in, see Cookie balance, browse classes, apply Cookies for discount, and complete booking
+**Independent Test**: Student can log in, see Gems balance, browse classes, apply Gems for discount, and complete booking
 
 ### Test Suite for US1 (Test-First Approach - CRITICAL)
 
 **⚠️ CONSTITUTION REQUIREMENT**: Write and verify these tests FAIL before implementing US1
 
-- [ ] T023A [P] [US1] [TEST] Write unit tests for Cookie calculation utilities in frontend/src/utils/__tests__/cookieCalculator.test.ts
-- [ ] T023B [P] [US1] [TEST] Write unit tests for Cookie discount validation (50% cap, 25% floor) in frontend/src/utils/__tests__/discountValidation.test.ts
-- [ ] T023C [P] [US1] [TEST] Write integration tests for atomic Cookie transactions in supabase/functions/__tests__/cookie-atomicity.test.ts
-- [ ] T023D [P] [US1] [TEST] Write integration tests for negative balance prevention in supabase/functions/__tests__/cookie-negative-balance.test.ts
-- [ ] T023E [P] [US1] [TEST] Write integration tests for booking flow with rollback in frontend/tests/integration/booking-rollback.test.tsx
-- [ ] T023F [P] [US1] [TEST] Write E2E test for complete booking with Cookie discount in frontend/tests/e2e/booking-flow.spec.ts
-- [ ] T023G [US1] [TEST] Verify all US1 tests FAIL (Red phase of TDD)
+- [x] T023A [P] [US1] [TEST] Write unit tests for Gems calculation utilities in frontend/src/utils/__tests__/gemCalculator.test.ts
+- [x] T023B [P] [US1] [TEST] Write unit tests for Gems Discount validation (50% cap, $5 floor) in frontend/src/utils/__tests__/discountValidation.test.ts
+- [x] T023C [P] [US1] [TEST] Write integration tests for atomic Gems transactions in backend/src/__tests__/Gems-atomicity.test.ts ✅
+- [x] T023D [P] [US1] [TEST] Write integration tests for negative balance prevention in backend/src/__tests__/Gems-negative-balance.test.ts ✅
+- [x] T023E [P] [US1] [TEST] Write integration tests for booking flow with rollback in frontend/tests/integration/booking-rollback.test.tsx
+- [x] T023F [P] [US1] [TEST] Write E2E test for complete booking with Gems Discount in frontend/tests/e2e/booking-flow.spec.ts
+- [x] T023G [US1] [TEST] Verify all US1 tests FAIL (Red phase of TDD) ✅
 
 **Checkpoint**: All tests written and failing - proceed with implementation
 
 ### Database Schema for US1
 
-- [ ] T023 [P] [US1] Create classes table in supabase/migrations/004_classes.sql
-- [ ] T024 [P] [US1] Create bookings table with Cookie discount fields in supabase/migrations/005_bookings.sql
-- [ ] T025 [P] [US1] Create cookie_transactions table in supabase/migrations/006_cookie_transactions.sql
-- [ ] T026 [P] [US1] Create student_cookies view for balance calculation in supabase/migrations/007_cookie_views.sql
-- [ ] T027 [US1] Setup RLS policies for classes, bookings, and cookies in supabase/migrations/008_booking_rls.sql
+- [x] T023 [P] [US1] Create classes table in supabase/migrations/004_classes.sql
+- [x] T024 [P] [US1] Create bookings table with Gems Discount fields in supabase/migrations/005_bookings.sql
+- [x] T025 [P] [US1] Create gem_transactions table in supabase/migrations/006_gem_transactions.sql
+- [x] T026 [P] [US1] Create student_Gems view for balance calculation in supabase/migrations/007_gem_views.sql
+- [x] T027 [US1] Setup RLS policies for classes, bookings, and Gems in supabase/migrations/008_booking_rls.sql
 
-### Cookie System Core (US1)
+### Gems System Core (US1)
 
-- [ ] T028 [P] [US1] Define Cookie constants (conversion rate, caps, rules) in shared/constants/cookies.ts
-- [ ] T029 [P] [US1] Create Cookie calculation utilities in frontend/src/utils/cookieCalculator.ts
-- [ ] T030 [US1] Implement Cookie transaction logger in supabase/functions/log-cookie-transaction/index.ts
-- [ ] T031 [US1] Create Cookie balance hook in frontend/src/hooks/useCookieBalance.ts
+- [x] T028 [P] [US1] Define Gems constants (conversion rate, caps, rules) in shared/constants/Gems.ts
+- [x] T029 [P] [US1] Create Gems calculation utilities in frontend/src/utils/gemCalculator.ts
+- [x] T030 [US1] Implement Gems transaction logger in backend/src/services/Gems-transaction.service.ts ✅
+- [x] T031 [US1] Create Gems balance hook in frontend/src/hooks/useGemBalance.ts
 
-### Cookie Transaction Integrity Testing (CRITICAL - Constitution Principle VI)
+### Gems Transaction Integrity Testing (CRITICAL - Constitution Principle VI)
 
-- [ ] T031A [P] [US1] [CURRENCY] [TEST] Write atomic transaction tests in supabase/tests/cookies/atomic-transactions.test.sql
-- [ ] T031B [P] [US1] [CURRENCY] [TEST] Write rollback scenario tests in supabase/functions/__tests__/cookie-rollback.test.ts
-- [ ] T031C [P] [US1] [CURRENCY] [TEST] Write concurrent booking conflict tests in frontend/tests/integration/cookie-concurrency.test.ts
-- [ ] T031D [P] [US1] [CURRENCY] [TEST] Write double-spending prevention tests in frontend/tests/integration/cookie-double-spend.test.ts
-- [ ] T031E [P] [US1] [CURRENCY] [TEST] Write Cookie audit log completeness tests in supabase/tests/cookies/audit-log.test.sql
-- [ ] T031F [US1] [CURRENCY] Add database constraint to prevent negative balances in supabase/migrations/006a_cookie_constraints.sql
+- [ ] T031A [P] [US1] [CURRENCY] [TEST] Write atomic transaction tests in backend/src/__tests__/Gems-atomic-transactions.test.ts
+- [ ] T031B [P] [US1] [CURRENCY] [TEST] Write rollback scenario tests in backend/src/__tests__/Gems-rollback.test.ts
+- [ ] T031C [P] [US1] [CURRENCY] [TEST] Write concurrent booking conflict tests in frontend/tests/integration/Gems-concurrency.test.ts
+- [ ] T031D [P] [US1] [CURRENCY] [TEST] Write double-spending prevention tests in frontend/tests/integration/Gems-double-spend.test.ts
+- [ ] T031E [P] [US1] [CURRENCY] [TEST] Write Gems audit log completeness tests in backend/src/__tests__/Gems-audit-log.test.ts
+- [x] T031F [US1] [CURRENCY] Add database constraint to prevent negative balances in supabase/migrations/006a_gem_constraints.sql ✅
 
-**Checkpoint**: Cookie transaction integrity validated and enforced
+**Checkpoint**: Gems transaction integrity validated and enforced
 
 ### Class Browsing (US1)
 
-- [ ] T032 [P] [US1] Create class catalog component in frontend/src/components/booking/ClassCatalog.tsx
-- [ ] T033 [P] [US1] Create class card component with pricing in frontend/src/components/booking/ClassCard.tsx
-- [ ] T034 [P] [US1] Create class filters component in frontend/src/components/booking/ClassFilters.tsx
-- [ ] T035 [US1] Implement class search/filter logic in frontend/src/hooks/useClassSearch.ts
-- [ ] T036 [US1] Create class detail page in frontend/src/app/student/classes/[id]/page.tsx
+- [x] T032 [P] [US1] Create class catalog component in frontend/src/components/booking/ClassCatalog.tsx
+- [x] T033 [P] [US1] Create class card component with pricing in frontend/src/components/booking/ClassCard.tsx
+- [x] T034 [P] [US1] Create class filters component in frontend/src/components/booking/ClassFilters.tsx
+- [x] T035 [US1] Implement class search/filter logic in frontend/src/hooks/useClassSearch.ts
+- [x] T036 [US1] Create class detail page in frontend/src/app/student/classes/[id]/page.tsx
 
 ### Booking Flow (US1)
 
-- [ ] T037 [P] [US1] Create Cookie discount slider component in frontend/src/components/booking/CookieDiscountSlider.tsx
-- [ ] T038 [P] [US1] Create booking summary component in frontend/src/components/booking/BookingSummary.tsx
-- [ ] T039 [US1] Implement booking validation (capacity, price floor) in supabase/functions/validate-booking/index.ts
-- [ ] T040 [US1] Create process-booking Edge Function with atomic transactions in supabase/functions/process-booking/index.ts
-- [ ] T041 [US1] Implement payment integration in frontend/src/lib/payment.ts
-- [ ] T042 [US1] Create booking confirmation page in frontend/src/app/student/bookings/confirm/page.tsx
+- [x] T037 [P] [US1] Create Gems Discount slider component in frontend/src/components/booking/GemDiscountSlider.tsx
+- [x] T038 [P] [US1] Create booking summary component in frontend/src/components/booking/BookingSummary.tsx
+- [x] T039 [US1] Implement booking validation (capacity, price floor) in backend/src/services/booking-validation.service.ts
+- [x] T040 [US1] Create process-booking API endpoint with atomic transactions in backend/src/routes/bookings.routes.ts
+- [x] T041 [US1] Implement payment integration in backend/src/services/payment.service.ts
+- [x] T042 [US1] Create booking confirmation page in frontend/src/app/student/bookings/confirm/page.tsx
 
 ### Student Dashboard (US1)
 
-- [ ] T043 [P] [US1] Create Cookie balance widget in frontend/src/components/dashboard/CookieBalanceWidget.tsx
-- [ ] T044 [P] [US1] Create upcoming classes widget in frontend/src/components/dashboard/UpcomingClassesWidget.tsx
-- [ ] T045 [US1] Create student dashboard page in frontend/src/app/student/dashboard/page.tsx
-- [ ] T046 [US1] Create booking history page in frontend/src/app/student/bookings/page.tsx
+- [x] T043 [P] [US1] Create Gems balance widget in frontend/src/components/dashboard/GemBalanceWidget.tsx
+- [x] T044 [P] [US1] Create upcoming classes widget in frontend/src/components/dashboard/UpcomingClassesWidget.tsx
+- [x] T045 [US1] Create student dashboard page in frontend/src/app/student/dashboard/page.tsx
+- [x] T046 [US1] Create booking history page in frontend/src/app/student/bookings/page.tsx
 
-**Checkpoint**: At this point, User Story 1 should be fully functional - students can browse, book, and use Cookies
+**Checkpoint**: At this point, User Story 1 should be fully functional - students can browse, book, and use Gems
 
 ---
 
@@ -175,101 +215,105 @@
 
 ### Role Management
 
-- [ ] T047 [P] [US2] Add role management functions to profiles in supabase/migrations/009_role_management.sql
-- [ ] T048 [P] [US2] Create role-checking utilities in frontend/src/utils/roleCheck.ts
-- [ ] T049 [US2] Implement server-side role enforcement in frontend/src/middleware.ts
+- [x] T047 [P] [US2] Add role management functions to profiles in supabase/migrations/009_role_management.sql ✅
+- [x] T048 [P] [US2] Create role-checking utilities in frontend/src/utils/roleCheck.ts ✅
+- [x] T049 [US2] Implement server-side role enforcement in frontend/src/middleware.ts ✅
 
 ### Teacher Dashboard
 
-- [ ] T050 [P] [US2] Create teacher schedule widget in frontend/src/components/dashboard/TeacherScheduleWidget.tsx
-- [ ] T051 [P] [US2] Create student roster widget in frontend/src/components/dashboard/StudentRosterWidget.tsx
-- [ ] T052 [P] [US2] Create teacher earnings widget in frontend/src/components/dashboard/TeacherEarningsWidget.tsx
-- [ ] T053 [US2] Create teacher dashboard page in frontend/src/app/teacher/dashboard/page.tsx
-- [ ] T054 [US2] Create teacher class list page in frontend/src/app/teacher/classes/page.tsx
+- [x] T050 [P] [US2] Create teacher schedule widget in frontend/src/components/dashboard/TeacherScheduleWidget.tsx ✅
+- [x] T051 [P] [US2] Create student roster widget in frontend/src/components/dashboard/StudentRosterWidget.tsx ✅
+- [x] T052 [P] [US2] Create teacher earnings widget in frontend/src/components/dashboard/TeacherEarningsWidget.tsx ✅
+- [x] T053 [US2] Create teacher dashboard page in frontend/src/app/teacher/dashboard/page.tsx ✅
+- [x] T054 [US2] Create teacher class list page in frontend/src/app/teacher/classes/page.tsx ✅
 
 ### Admin Dashboard
 
-- [ ] T055 [P] [US2] Create user analytics widget in frontend/src/components/dashboard/UserAnalyticsWidget.tsx
-- [ ] T056 [P] [US2] Create booking analytics widget in frontend/src/components/dashboard/BookingAnalyticsWidget.tsx
-- [ ] T057 [P] [US2] Create Cookie analytics widget in frontend/src/components/dashboard/CookieAnalyticsWidget.tsx
-- [ ] T058 [P] [US2] Create revenue analytics widget in frontend/src/components/dashboard/RevenueWidget.tsx
-- [ ] T059 [US2] Create admin dashboard page in frontend/src/app/admin/dashboard/page.tsx
-- [ ] T060 [US2] Create user management page in frontend/src/app/admin/users/page.tsx
+- [x] T055 [P] [US2] Create user analytics widget in frontend/src/components/dashboard/UserAnalyticsWidget.tsx ✅
+- [x] T056 [P] [US2] Create booking analytics widget in frontend/src/components/dashboard/BookingAnalyticsWidget.tsx ✅
+- [x] T057 [P] [US2] Create Gems analytics widget in frontend/src/components/dashboard/GemAnalyticsWidget.tsx ✅
+- [x] T058 [P] [US2] Create revenue analytics widget in frontend/src/components/dashboard/RevenueWidget.tsx ✅
+- [x] T059 [US2] Create admin dashboard page in frontend/src/app/admin/dashboard/page.tsx ✅
+- [x] T060 [US2] Create user management page in frontend/src/app/admin/users/page.tsx ✅
 
-### Admin Cookie Management (P1 Fix - F2)
+### Admin Gems Management (P1 Fix - F2)
 
-- [ ] T060A [P] [US2] [ADMIN] Create Cookie rules editor page in frontend/src/app/admin/cookie-rules/page.tsx
-- [ ] T060B [P] [US2] [ADMIN] Create Cookie rule editor component in frontend/src/components/admin/CookieRuleEditor.tsx
-- [ ] T060C [P] [US2] [ADMIN] Create update-cookie-rule Edge Function in supabase/functions/update-cookie-rule/index.ts
-- [ ] T060D [P] [US2] [ADMIN] Add audit logging for Cookie rule changes in supabase/migrations/044_cookie_rule_audit.sql
-- [ ] T060E [US2] [ADMIN] Create Cookie rule validation in frontend/src/utils/cookieRuleValidation.ts
+- [x] T061 [P] [US2] Create Gems adjustment modal in frontend/src/components/admin/GemAdjustmentModal.tsx ✅
+- [x] T062 [US2] Create admin Gems adjustment endpoint in backend/src/routes/admin/gems.routes.ts ✅
+- [x] T063 [US2] Create Gems adjustment audit log in backend/src/services/gems-audit.service.ts ✅
+
+- [x] T060A [P] [US2] [ADMIN] Create Gems rules editor page in frontend/src/app/[locale]/admin/gems-rules/page.tsx ✅
+- [x] T060B [P] [US2] [ADMIN] Create Gems rule editor component in frontend/src/components/admin/GemRuleEditor.tsx ✅
+- [x] T060C [P] [US2] [ADMIN] Create update-Gems-rule API endpoint in backend/src/routes/admin/gems-rules.routes.ts ✅
+- [x] T060D [P] [US2] [ADMIN] Add audit logging for Gems rule changes in supabase/migrations/044_gem_rule_audit.sql ✅
+- [x] T060E [US2] [ADMIN] Create Gems rule validation in frontend/src/utils/GemRuleValidation.ts ✅
 
 ### Access Control Enforcement
 
-- [ ] T061 [P] [US2] Create protected route wrapper component in frontend/src/components/auth/ProtectedRoute.tsx
-- [ ] T062 [US2] Add role-based redirects to all dashboard routes in frontend/src/app/*/layout.tsx
-- [ ] T063 [US2] Implement RLS policies preventing cross-role data access in supabase/migrations/010_cross_role_rls.sql
+- [x] T061 [P] [US2] Create protected route wrapper component in frontend/src/components/auth/ProtectedRoute.tsx ✅
+- [x] T062 [US2] Add role-based redirects to all dashboard routes in frontend/src/app/*/layout.tsx ✅
+- [x] T063 [US2] Implement RLS policies preventing cross-role data access in supabase/migrations/010_cross_role_rls.sql ✅
 
 ### RBAC Security Testing (CRITICAL - Constitution Principle V)
 
 **⚠️ SECURITY GATE**: These tests MUST pass before production deployment
 
-- [ ] T063A [P] [US2] [SECURITY] [TEST] Write RLS policy tests for student-only data access in supabase/tests/rls/student-access.test.sql
-- [ ] T063B [P] [US2] [SECURITY] [TEST] Write RLS policy tests for teacher-only data access in supabase/tests/rls/teacher-access.test.sql
-- [ ] T063C [P] [US2] [SECURITY] [TEST] Write RLS policy tests for admin-only data access in supabase/tests/rls/admin-access.test.sql
-- [ ] T063D [P] [US2] [SECURITY] [TEST] Write cross-role permission violation tests in supabase/tests/rls/cross-role-violations.test.sql
-- [ ] T063E [P] [US2] [SECURITY] [TEST] Create E2E test for role escalation prevention in frontend/tests/e2e/security/role-escalation.spec.ts
-- [ ] T063F [US2] [SECURITY] [TEST] Create E2E test for unauthorized dashboard access in frontend/tests/e2e/security/unauthorized-access.spec.ts
+- [x] T063A [P] [US2] [SECURITY] [TEST] Write RLS policy tests for student-only data access in supabase/tests/rls/student-access.test.sql ✅
+- [x] T063B [P] [US2] [SECURITY] [TEST] Write RLS policy tests for teacher-only data access in supabase/tests/rls/teacher-access.test.sql ✅
+- [x] T063C [P] [US2] [SECURITY] [TEST] Write RLS policy tests for admin-only data access in supabase/tests/rls/admin-access.test.sql ✅
+- [x] T063D [P] [US2] [SECURITY] [TEST] Write cross-role permission violation tests in supabase/tests/rls/cross-role-violations.test.sql ✅
+- [x] T063E [P] [US2] [SECURITY] [TEST] Create E2E test for role escalation prevention in frontend/tests/e2e/security/role-escalation.spec.ts ✅
+- [x] T063F [US2] [SECURITY] [TEST] Create E2E test for unauthorized dashboard access in frontend/tests/e2e/security/unauthorized-access.spec.ts ✅
 
 **Checkpoint**: All three roles should have functioning dashboards with proper isolation AND security validated
 
 ---
 
-## Phase 5: User Story 3 - Cookie Earning System (Priority: P2)
+## Phase 5: User Story 3 - Gem Earning System (Priority: P2)
 
-**Goal**: Enable students to earn Cookies through platform activities (lessons, streaks, referrals, profile completion, reviews)
+**Goal**: Enable students to earn Gems through platform activities (lessons, streaks, referrals, profile completion, reviews)
 
-**Independent Test**: Student performs qualifying activities and sees Cookie balance increase with notifications
+**Independent Test**: Student performs qualifying activities and sees Gem balance increase with notifications
 
-### Cookie Earning Rules
+### Gem Earning Rules
 
-- [ ] T064 [P] [US3] Create activity_rules table in supabase/migrations/011_activity_rules.sql
-- [ ] T065 [P] [US3] Seed initial Cookie earning rules (10/lesson, 50/streak, 100/referral, etc.) in supabase/seed.sql
-- [ ] T066 [US3] Create activity tracking table in supabase/migrations/012_activity_tracking.sql
+- [x] T064 [P] [US3] Create activity_rules table in supabase/migrations/011_activity_rules.sql ✅
+- [x] T065 [P] [US3] Seed initial Gem earning rules (10/lesson, 50/streak, 100/referral, etc.) in supabase/seed.sql ✅
+- [x] T066 [US3] Create activity tracking table in supabase/migrations/012_activity_tracking.sql ✅
 
 ### Lesson Completion Rewards
 
-- [ ] T067 [P] [US3] Create lesson completion trigger in supabase/migrations/013_lesson_completion_trigger.sql
-- [ ] T068 [US3] Implement award-lesson-cookies Edge Function in supabase/functions/award-lesson-cookies/index.ts
+- [x] T067 [P] [US3] Create lesson completion trigger in supabase/migrations/013_lesson_completion_trigger.sql ✅
+- [x] T068 [US3] Implement award-lesson-gems Edge Function in supabase/functions/award-lesson-gems/index.ts ✅
 
 ### Attendance Streak Rewards
 
-- [ ] T069 [P] [US3] Create attendance_streaks table in supabase/migrations/014_attendance_streaks.sql
-- [ ] T070 [US3] Implement streak calculation Edge Function in supabase/functions/calculate-streak/index.ts
-- [ ] T071 [US3] Create daily streak check Edge Function in supabase/functions/daily-streak-check/index.ts
+- [x] T069 [P] [US3] Create attendance_streaks table in supabase/migrations/014_attendance_streaks.sql ✅
+- [x] T070 [US3] Implement streak calculation Edge Function in supabase/functions/calculate-streak/index.ts ✅
+- [x] T071 [US3] Create daily streak check Edge Function in supabase/functions/daily-streak-check/index.ts ✅
 
 ### Referral System
 
-- [ ] T072 [P] [US3] Create referral_codes table in supabase/migrations/015_referral_codes.sql
-- [ ] T073 [P] [US3] Generate unique referral code on student signup in supabase/functions/generate-referral-code/index.ts
-- [ ] T074 [P] [US3] Create referral link component in frontend/src/components/student/ReferralLink.tsx
-- [ ] T075 [US3] Implement referral validation and reward in supabase/functions/process-referral/index.ts
+- [x] T072 [P] [US3] Create referral_codes table in supabase/migrations/015_referral_codes.sql ✅
+- [x] T073 [P] [US3] Generate unique referral code on student signup in supabase/functions/generate-referral-code/index.ts ✅
+- [x] T074 [P] [US3] Create referral link component in frontend/src/components/student/ReferralLink.tsx ✅
+- [x] T075 [US3] Implement referral validation and reward in supabase/functions/process-referral/index.ts ✅
 
 ### Profile and Review Rewards
 
-- [ ] T076 [P] [US3] Create profile completion check in frontend/src/utils/profileCompleteness.ts
-- [ ] T077 [P] [US3] Create reviews table in supabase/migrations/016_reviews.sql
-- [ ] T078 [US3] Implement profile completion reward in supabase/functions/award-profile-cookies/index.ts
-- [ ] T079 [US3] Implement first review reward in supabase/functions/award-review-cookies/index.ts
-- [ ] T080 [US3] Create review form component in frontend/src/components/booking/ReviewForm.tsx
+- [x] T076 [P] [US3] Create profile completion check in frontend/src/utils/profileCompleteness.ts ✅
+- [x] T077 [P] [US3] Create reviews table in supabase/migrations/016_reviews.sql ✅
+- [x] T078 [US3] Implement profile completion reward in supabase/functions/award-profile-gems/index.ts ✅
+- [x] T079 [US3] Implement first review reward in supabase/functions/award-review-gems/index.ts ✅
+- [x] T080 [US3] Create review form component in frontend/src/components/booking/ReviewForm.tsx ✅
 
-### Cookie Earning Notifications
+### Gem Earning Notifications
 
-- [ ] T081 [P] [US3] Create Cookie earned notification component in frontend/src/components/common/CookieEarnedToast.tsx
-- [ ] T082 [US3] Setup real-time Cookie transaction listener in frontend/src/hooks/useCookieNotifications.ts
-- [ ] T083 [US3] Create Cookie history page in frontend/src/app/student/cookies/history/page.tsx
+- [x] T081 [P] [US3] Create Gem earned notification component in frontend/src/components/common/GemEarnedToast.tsx ✅
+- [x] T082 [US3] Setup real-time Gem transaction listener in frontend/src/hooks/useGemNotifications.ts ✅
+- [x] T083 [US3] Create Gem history page in frontend/src/app/[locale]/student/gems/history/page.tsx ✅
 
-**Checkpoint**: Students should earn Cookies from all activities with proper notifications
+**Checkpoint**: Students should earn Gems from all activities with proper notifications
 
 ---
 
@@ -315,21 +359,21 @@
 
 - [ ] T097 [P] [US5] Create user growth analytics view in supabase/migrations/020_analytics_views.sql
 - [ ] T098 [P] [US5] Create booking analytics view in supabase/migrations/020_analytics_views.sql
-- [ ] T099 [P] [US5] Create Cookie circulation analytics view in supabase/migrations/020_analytics_views.sql
+- [ ] T099 [P] [US5] Create Gem circulation analytics view in supabase/migrations/020_analytics_views.sql
 - [ ] T100 [P] [US5] Create revenue analytics view in supabase/migrations/020_analytics_views.sql
 
 ### Analytics API Functions
 
 - [ ] T101 [P] [US5] Create get-user-analytics Edge Function in supabase/functions/get-user-analytics/index.ts
 - [ ] T102 [P] [US5] Create get-booking-analytics Edge Function in supabase/functions/get-booking-analytics/index.ts
-- [ ] T103 [P] [US5] Create get-cookie-analytics Edge Function in supabase/functions/get-cookie-analytics/index.ts
+- [ ] T103 [P] [US5] Create get-gem-analytics Edge Function in supabase/functions/get-gem-analytics/index.ts
 - [ ] T104 [P] [US5] Create get-revenue-analytics Edge Function in supabase/functions/get-revenue-analytics/index.ts
 
 ### Analytics UI Components
 
 - [ ] T105 [P] [US5] Create user growth chart component in frontend/src/components/admin/UserGrowthChart.tsx
 - [ ] T106 [P] [US5] Create booking trends chart in frontend/src/components/admin/BookingTrendsChart.tsx
-- [ ] T107 [P] [US5] Create Cookie circulation chart in frontend/src/components/admin/CookieCirculationChart.tsx
+- [ ] T107 [P] [US5] Create Gem circulation chart in frontend/src/components/admin/GemCirculationChart.tsx
 - [ ] T108 [P] [US5] Create revenue chart in frontend/src/components/admin/RevenueChart.tsx
 - [ ] T109 [US5] Create comprehensive analytics page in frontend/src/app/admin/analytics/page.tsx
 
@@ -340,10 +384,10 @@
 
 ### Database Reconciliation (P1 Fix - F3)
 
-- [ ] T111A [P] [US5] [ADMIN] Create Cookie balance reconciliation script in supabase/functions/reconcile-cookie-balances/index.ts
+- [ ] T111A [P] [US5] [ADMIN] Create Gem balance reconciliation script in supabase/functions/reconcile-gem-balances/index.ts
 - [ ] T111B [P] [US5] [ADMIN] Create booking-payment reconciliation report in frontend/src/app/admin/reconciliation/page.tsx
 - [ ] T111C [P] [US5] [ADMIN] Create discrepancy detection Edge Function in supabase/functions/detect-discrepancies/index.ts
-- [ ] T111D [P] [US5] [ADMIN] Schedule daily reconciliation cron job in .github/workflows/reconcile-cookies.yml
+- [ ] T111D [P] [US5] [ADMIN] Schedule daily reconciliation cron job in .github/workflows/reconcile-gems.yml
 - [ ] T111E [US5] [ADMIN] Create reconciliation report viewer in frontend/src/components/admin/ReconciliationReport.tsx
 
 **Checkpoint**: Admin has full visibility into platform metrics AND data integrity monitoring
@@ -393,18 +437,18 @@
 
 ---
 
-## Phase 9: Cookie System Advanced Features (Priority: P2)
+## Phase 9: Gem System Advanced Features (Priority: P2)
 
-**Goal**: Implement Cookie expiration, fraud prevention, and transaction rollback
+**Goal**: Implement Gem expiration, fraud prevention, and transaction rollback
 
-**Independent Test**: System enforces Cookie caps, expires old Cookies, and handles transaction failures gracefully
+**Independent Test**: System enforces Gem caps, expires old Gems, and handles transaction failures gracefully
 
-### Cookie Caps and Expiration
+### Gem Caps and Expiration
 
-- [ ] T130 [P] Implement Cookie balance cap (1000) in supabase/functions/award-cookies/index.ts
-- [ ] T131 [P] Create Cookie expiration tracking in supabase/migrations/023_cookie_expiration.sql
-- [ ] T132 Create daily Cookie expiration job in supabase/functions/expire-cookies/index.ts
-- [ ] T133 Create Cookie expiration notification in supabase/functions/notify-cookie-expiration/index.ts
+- [ ] T130 [P] Implement Gem balance cap (1000) in supabase/functions/award-gems/index.ts
+- [ ] T131 [P] Create Gem expiration tracking in supabase/migrations/023_gem_expiration.sql
+- [ ] T132 Create daily Gem expiration job in supabase/functions/expire-gems/index.ts
+- [ ] T133 Create Gem expiration notification in supabase/functions/notify-gem-expiration/index.ts
 
 ### Fraud Prevention
 
@@ -422,12 +466,12 @@
 
 - [ ] T139A [P] [CURRENCY] [TEST] Write E2E test for payment failure rollback in frontend/tests/e2e/rollback/payment-failure.spec.ts
 - [ ] T139B [P] [CURRENCY] [TEST] Write E2E test for booking capacity rollback in frontend/tests/e2e/rollback/capacity-conflict.spec.ts
-- [ ] T139C [P] [CURRENCY] [TEST] Write integration test for Cookie deduction rollback in supabase/functions/__tests__/cookie-rollback-scenarios.test.ts
+- [ ] T139C [P] [CURRENCY] [TEST] Write integration test for Gem deduction rollback in supabase/functions/__tests__/gem-rollback-scenarios.test.ts
 - [ ] T139D [P] [CURRENCY] [TEST] Write stress test for concurrent rollbacks in supabase/functions/__tests__/concurrent-rollback.test.ts
 - [ ] T139E [CURRENCY] Create rollback monitoring dashboard in frontend/src/app/admin/monitoring/rollbacks/page.tsx
 - [ ] T139F [CURRENCY] Document rollback scenarios in docs/operations/rollback-handling.md
 
-**Checkpoint**: Cookie system is robust, fraud-resistant, AND rollback-tested
+**Checkpoint**: Gem system is robust, fraud-resistant, AND rollback-tested
 
 ---
 
@@ -491,7 +535,7 @@
 - [ ] T164 [P] Setup email service integration (SendGrid/Postmark) in supabase/functions/send-email/index.ts
 - [ ] T165 [P] Create email templates in supabase/functions/email-templates/
 - [ ] T166 [P] Create booking confirmation email in supabase/functions/send-booking-confirmation/index.ts
-- [ ] T167 [P] Create Cookie earning email in supabase/functions/send-cookie-notification/index.ts
+- [ ] T167 [P] Create Gem earning email in supabase/functions/send-gem-notification/index.ts
 - [ ] T168 Create class reminder email in supabase/functions/send-class-reminder/index.ts
 
 ### In-App Notifications
@@ -556,24 +600,24 @@
 
 ### Payment Gateway Setup
 
-- [ ] T191 [P] Configure VNPay integration in supabase/functions/payment-vnpay/index.ts
-- [ ] T192 [P] Configure MoMo integration in supabase/functions/payment-momo/index.ts
-- [ ] T193 [P] Configure ZaloPay integration in supabase/functions/payment-zalopay/index.ts
-- [ ] T194 [P] Configure Stripe integration in supabase/functions/payment-stripe/index.ts
+- [x] T191 [P] Configure VNPay integration in backend/src/services/payment-gateways/vnpay.service.ts ✅
+- [x] T192 [P] Configure MoMo integration in backend/src/services/payment-gateways/momo.service.ts ✅
+- [x] T193 [P] Configure ZaloPay integration in backend/src/services/payment-gateways/zalopay.service.ts ✅
+- [x] T194 [P] Configure Stripe integration in backend/src/services/payment-gateways/stripe.service.ts ✅
 
 ### Payment Processing
 
-- [ ] T195 [P] Create payments table in supabase/migrations/039_payments.sql
-- [ ] T196 [P] Create payment method selector in frontend/src/components/booking/PaymentMethodSelector.tsx
-- [ ] T197 Create unified payment processor in supabase/functions/process-payment/index.ts
-- [ ] T198 Create payment webhook handler in supabase/functions/payment-webhook/index.ts
+- [x] T195 [P] Create payments table in supabase/migrations/039_payments.sql ✅
+- [x] T196 [P] Create payment method selector in frontend/src/components/booking/PaymentMethodSelector.tsx ✅
+- [x] T197 Create unified payment processor in backend/src/services/payment.unified.service.ts ✅
+- [x] T198 Create payment webhook handler in backend/src/routes/payment-webhook.routes.ts ✅
 
 ### Payment Flows
 
-- [ ] T199 [P] Create payment page in frontend/src/app/student/bookings/payment/page.tsx
-- [ ] T200 Create payment success page in frontend/src/app/student/bookings/success/page.tsx
-- [ ] T201 Create payment failure handling in frontend/src/app/student/bookings/failed/page.tsx
-- [ ] T202 Implement refund processing in supabase/functions/process-refund/index.ts
+- [x] T199 [P] Create payment page in frontend/src/app/[locale]/student/bookings/payment/page.tsx ✅
+- [x] T200 Create payment success page in frontend/src/app/[locale]/student/bookings/success/page.tsx ✅
+- [x] T201 Create payment failure handling in frontend/src/app/[locale]/student/bookings/failed/page.tsx ✅
+- [x] T202 Implement refund processing in backend/src/services/refund.service.ts ✅
 
 **Checkpoint**: Full payment processing with multiple gateways
 
@@ -612,7 +656,7 @@
 
 - [ ] T210 [P] Create cancellation policies table in supabase/migrations/043_cancellation_policies.sql
 - [ ] T211 Create cancellation processor with time checks in supabase/functions/process-cancellation/index.ts
-- [ ] T212 Implement proportional Cookie refund in supabase/functions/refund-cookies/index.ts
+- [ ] T212 Implement proportional Gem refund in supabase/functions/refund-gems/index.ts
 
 ### Cancellation UI
 
@@ -715,7 +759,7 @@
 - [ ] T249 [P] [PERF] Create booking API load test (500 bookings/min validation) in tests/performance/booking-load.test.js
 - [ ] T250 [P] [PERF] Create class search performance test (<500ms response) in tests/performance/class-search.test.js
 - [ ] T251 [P] [PERF] Create dashboard load test (p95 <200ms) in tests/performance/dashboard-load.test.js
-- [ ] T252 [P] [PERF] Create Cookie transaction performance test in tests/performance/cookie-transaction.test.js
+- [ ] T252 [P] [PERF] Create Gem transaction performance test in tests/performance/gem-transaction.test.js
 
 ### Concurrency Tests
 
@@ -744,6 +788,67 @@
 
 ---
 
+## Phase 18: Supabase MCP Integration (Developer Tooling)
+
+**Purpose**: Enable AI-assisted database management through Model Context Protocol
+
+**Goal**: Configure Supabase MCP server integration to allow developers to query, explore, and manage the database using natural language through AI assistants (Claude Code, Cursor, Windsurf)
+
+**Independent Test**: Developer can authenticate with MCP server, query database via natural language, generate TypeScript types, and create migrations through AI assistance
+
+**⚠️ NOTE**: This phase is **configuration and documentation only** - zero application code changes. Can be worked on independently at any time after database schema exists.
+
+### MCP Configuration Setup
+
+- [x] T264 [P] [MCP] Identify Supabase development project reference ID from dashboard ✅
+- [x] T265 [P] [MCP] Create MCP server configuration template in .claude/mcp-servers.example.json ✅
+- [x] T266 [P] [MCP] Create MCP server configuration template for Cursor in .cursor/mcp-config.example.json ✅
+- [x] T267 [P] [MCP] Create MCP server configuration template for Windsurf in .windsurf/mcp.example.json ✅
+- [x] T268 [P] [MCP] Update .gitignore to exclude sensitive MCP configuration files (.claude/mcp-servers.json, .cursor/mcp-config.json, .windsurf/mcp.json) ✅
+- [x] T269 [MCP] Document project reference ID location in docs/supabase-mcp-setup.md ✅
+
+### Documentation & Security Policies
+
+- [x] T270 [P] [MCP] Create comprehensive MCP setup guide in docs/supabase-mcp-setup.md ✅
+- [x] T271 [P] [MCP] Create MCP security policy document in docs/supabase-mcp-security.md ✅
+- [x] T272 [P] [MCP] Create MCP usage examples and common workflows in docs/supabase-mcp-examples.md ✅
+- [x] T273 [P] [MCP] Document MCP tool definitions (query_database, describe_table, etc.) in docs/supabase-mcp-tools.md ✅
+- [x] T274 [MCP] Create MCP troubleshooting guide in docs/supabase-mcp-troubleshooting.md ✅
+
+### Team Onboarding
+
+- [x] T275 [P] [MCP] Create team member access checklist in docs/supabase-mcp-access-checklist.md ✅
+- [ ] T276 [P] [MCP] Document OAuth 2.1 authentication flow with screenshots in docs/supabase-mcp-auth.md
+- [x] T277 [P] [MCP] Create quick reference card for common MCP queries in docs/supabase-mcp-quick-ref.md ✅
+- [ ] T278 [MCP] Schedule team training session (record date and attendees in docs/supabase-mcp-training-log.md)
+
+### Testing & Validation
+
+- [ ] T279 [P] [MCP] Test MCP connection with natural language query ("Show all tables")
+- [ ] T280 [P] [MCP] Test schema exploration with describe_table tool
+- [ ] T281 [P] [MCP] Test TypeScript type generation for database schema
+- [ ] T282 [P] [MCP] Test migration generation from natural language description
+- [ ] T283 [P] [MCP] Verify manual approval prompts for write operations (execute_sql, generate_migration)
+- [ ] T284 [P] [MCP] Test read-only mode configuration (optional)
+- [ ] T285 [MCP] Validate that production database project ref is NOT configured (security check)
+
+### Best Practices & Guidelines
+
+- [x] T286 [P] [MCP] Document when to use MCP vs. Supabase CLI in docs/supabase-mcp-vs-cli.md ✅
+- [ ] T287 [P] [MCP] Create code review checklist for MCP-generated migrations in docs/mcp-migration-review.md
+- [ ] T288 [P] [MCP] Document MCP usage patterns for common tasks in docs/supabase-mcp-patterns.md
+- [ ] T289 [MCP] Establish audit process for MCP-generated schema changes in docs/supabase-mcp-audit.md
+
+### Monitoring & Maintenance
+
+- [ ] T290 [P] [MCP] Document MCP server status monitoring process in docs/supabase-mcp-monitoring.md
+- [ ] T291 [P] [MCP] Create incident response plan for MCP authentication failures in docs/supabase-mcp-incidents.md
+- [ ] T292 [MCP] Establish quarterly MCP access review process in docs/supabase-mcp-access-review.md
+
+**Checkpoint**: Supabase MCP fully configured, documented, and team onboarded - AI-assisted database development enabled
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -753,12 +858,12 @@
 - **User Stories (Phase 3-7)**: All depend on Foundational phase completion
   - US1 (Phase 3): Class Booking - Can start after Foundational ✅ MVP START
   - US2 (Phase 4): Multi-Role Dashboards - Can start after Foundational
-  - US3 (Phase 5): Cookie Earning - Depends on US1 (Cookie system)
+  - US3 (Phase 5): Gem Earning - Depends on US1 (Gem system)
   - US4 (Phase 6): Teacher Management - Can start after Foundational
   - US5 (Phase 7): Admin Analytics - Can start after Foundational
 - **Supporting Features (Phase 8-15)**: Can be worked on in parallel with user stories or after core user stories
   - Phase 8 (Video): Can start after US1, US4 (classes and bookings exist)
-  - Phase 9 (Cookie Advanced): Depends on US1, US3 (Cookie system)
+  - Phase 9 (Gem Advanced): Depends on US1, US3 (Gem system)
   - Phase 10 (Gamification): Can start after US1 (students exist)
   - Phase 11 (Notifications): Can integrate throughout, after Foundational
   - Phase 12 (Quizzes): Depends on US4 (teachers need to create quizzes)
@@ -766,12 +871,14 @@
   - Phase 14 (Teacher Revenue): Depends on US1, Phase 13 (bookings and payments)
   - Phase 15 (Cancellation): Depends on US1, Phase 13 (bookings and payments)
 - **Polish (Phase 16)**: Depends on all desired features being complete
+- **Performance Testing (Phase 17)**: Can start after core features implemented
+- **Developer Tooling (Phase 18)**: Supabase MCP Integration - Independent, can start anytime after database schema exists (Phase 2 complete)
 
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: Class Booking - No dependencies on other stories ✅ MVP START
 - **User Story 2 (P1)**: Multi-Role Dashboards - Independent (can be worked alongside US1)
-- **User Story 3 (P2)**: Cookie Earning - Depends on US1 (Cookie transaction system exists)
+- **User Story 3 (P2)**: Gem Earning - Depends on US1 (Gem transaction system exists)
 - **User Story 4 (P2)**: Teacher Management - Independent
 - **User Story 5 (P3)**: Admin Analytics - Can read from existing data, independent
 
@@ -787,7 +894,7 @@
 
 - **Setup Phase**: All [P] tasks (T003-T009) can run in parallel
 - **Foundational Phase**: Database tasks (T010-T012), Auth tasks (T013-T017), UI tasks (T018-T022) can run in parallel within their groups
-- **User Story 1**: Schema tasks (T023-T026), Cookie utilities (T028-T029), UI components can run in parallel within their groups
+- **User Story 1**: Schema tasks (T023-T026), Gem utilities (T028-T029), UI components can run in parallel within their groups
 - **User Story 2**: Teacher widgets (T050-T052), Admin widgets (T055-T058) can run in parallel
 - **User Story 3**: All earning mechanism Edge Functions can run in parallel
 - **Cross-phase**: After Foundational is complete, multiple user stories can be worked on by different team members in parallel
@@ -800,12 +907,12 @@
 # Launch all database schema tasks together:
 Task T023: "Create classes table in supabase/migrations/004_classes.sql"
 Task T024: "Create bookings table in supabase/migrations/005_bookings.sql"
-Task T025: "Create cookie_transactions table in supabase/migrations/006_cookie_transactions.sql"
-Task T026: "Create student_cookies view in supabase/migrations/007_cookie_views.sql"
+Task T025: "Create gem_transactions table in supabase/migrations/006_gem_transactions.sql"
+Task T026: "Create student_gems view in supabase/migrations/007_gem_views.sql"
 
-# Launch all Cookie utility tasks together:
-Task T028: "Define Cookie constants in shared/constants/cookies.ts"
-Task T029: "Create Cookie calculator in frontend/src/utils/cookieCalculator.ts"
+# Launch all Gem utility tasks together:
+Task T028: "Define Gem constants in shared/constants/gems.ts"
+Task T029: "Create Gem calculator in frontend/src/utils/gemCalculator.ts"
 
 # Launch all browsing UI components together:
 Task T032: "Create ClassCatalog component"
@@ -821,22 +928,22 @@ Task T034: "Create ClassFilters component"
 
 1. ✅ Complete Phase 1: Setup
 2. ✅ Complete Phase 2: Foundational (CRITICAL - blocks all stories)
-3. ✅ Complete Phase 3: User Story 1 (Class Booking with Cookies)
+3. ✅ Complete Phase 3: User Story 1 (Class Booking with Gems)
 4. ✅ Complete Phase 4: User Story 2 (Multi-Role Dashboards)
 5. ✅ Complete Phase 13: Payment Integration (Required for bookings)
 6. **STOP and VALIDATE**: Test both user stories independently
 7. Deploy MVP with core booking functionality
 
-**MVP Scope**: Students can browse classes, use Cookies for discounts, and book. Different roles have appropriate dashboards. Payments work.
+**MVP Scope**: Students can browse classes, use Gems for discounts, and book. Different roles have appropriate dashboards. Payments work.
 
 **MVP Task Count**: ~80 tasks (Setup + Foundational + US1 + US2 + Payment)
 
 ### Incremental Delivery (After MVP)
 
-1. Add Phase 5: Cookie Earning System → Drives engagement
+1. Add Phase 5: Gem Earning System → Drives engagement
 2. Add Phase 6: Teacher Management → Teacher independence
 3. Add Phase 8: Video Integration → Live classes enabled
-4. Add Phase 9: Cookie Advanced Features → Robust system
+4. Add Phase 9: Gem Advanced Features → Robust system
 5. Add Phase 10: Gamification → Enhanced engagement
 6. Add Phase 7: User Story 5 (Admin Analytics) → Business insights
 7. Each addition is independently tested and deployed
@@ -847,7 +954,7 @@ With multiple developers after Foundational phase:
 
 - **Developer A**: User Story 1 (Class Booking) + Payment Integration
 - **Developer B**: User Story 2 (Multi-Role Dashboards)
-- **Developer C**: User Story 3 (Cookie Earning)
+- **Developer C**: User Story 3 (Gem Earning)
 - **Developer D**: User Story 4 (Teacher Management)
 
 Stories integrate at checkpoints but remain independently functional.
@@ -856,16 +963,17 @@ Stories integrate at checkpoints but remain independently functional.
 
 ## Task Summary
 
-- **Total Tasks**: 245
-- **Phase 1 (Setup)**: 9 tasks
+- **Total Tasks**: 274
+- **Phase 0 (Test Infrastructure)**: 16 tasks
+- **Phase 1 (Setup)**: 20 tasks
 - **Phase 2 (Foundational)**: 13 tasks
 - **Phase 3 (US1 - Booking)**: 24 tasks
 - **Phase 4 (US2 - Dashboards)**: 17 tasks
-- **Phase 5 (US3 - Cookie Earning)**: 20 tasks
+- **Phase 5 (US3 - Gem Earning)**: 20 tasks
 - **Phase 6 (US4 - Teacher Management)**: 13 tasks
 - **Phase 7 (US5 - Admin Analytics)**: 15 tasks
 - **Phase 8 (Video)**: 18 tasks
-- **Phase 9 (Cookie Advanced)**: 10 tasks
+- **Phase 9 (Gem Advanced)**: 10 tasks
 - **Phase 10 (Gamification)**: 24 tasks
 - **Phase 11 (Notifications)**: 13 tasks
 - **Phase 12 (Quizzes)**: 14 tasks
@@ -873,8 +981,10 @@ Stories integrate at checkpoints but remain independently functional.
 - **Phase 14 (Revenue)**: 7 tasks
 - **Phase 15 (Cancellation)**: 5 tasks
 - **Phase 16 (Polish)**: 31 tasks
+- **Phase 17 (Performance Testing)**: 18 tasks
+- **Phase 18 (Supabase MCP Integration)**: 29 tasks
 
-**Parallel Opportunities**: 150+ tasks marked [P] can run in parallel with other tasks in their phase
+**Parallel Opportunities**: 175+ tasks marked [P] can run in parallel with other tasks in their phase
 
 ---
 
@@ -885,16 +995,19 @@ Stories integrate at checkpoints but remain independently functional.
 - [Story] labels (US1, US2, etc.) map tasks to user stories from spec.md for traceability
 - Each user story is independently completable and testable
 - Tests are NOT included in this implementation plan (not explicitly requested in spec)
-- Cookie calculations follow strict business rules (1 Cookie = $0.50, 25% min price, 50% max discount)
+- Gem calculations follow strict business rules (1 Gem = $0.50, $5 min price, 50% max discount)
 - Stop at any checkpoint to validate story independently
 - Dark blue theme (#0A1628) should be applied consistently across all UI components
 - Video integration uses CometChat Free tier (100 MAU limit for development)
 - Payment integration prioritizes Vietnam gateways (VNPay, MoMo, ZaloPay) with Stripe fallback
 - All database operations use Supabase RLS for security
 - All monetary calculations enforce 70/30 teacher/platform split
+- Supabase MCP integration (Phase 18) is configuration-only - enables AI-assisted database development without code changes
+- MCP tasks can be completed independently at any time after database schema exists
 
 ---
 
-**Document Version**: 2.0
+**Document Version**: 2.1
 **Generated By**: /speckit.tasks command
-**Last Updated**: 2026-01-28
+**Last Updated**: 2026-01-31 (Added Phase 18: Supabase MCP Integration)
+

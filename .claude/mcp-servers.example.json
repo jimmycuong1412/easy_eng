@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Claude Code MCP Server Configuration Template for Supabase Integration",
+  "mcpServers": {
+    "supabase-dev": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=YOUR_DEV_PROJECT_REF",
+      "transport": "sse",
+      "description": "Supabase MCP server for development database (DO NOT use production project ref)"
+    },
+    "supabase-staging": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=YOUR_STAGING_PROJECT_REF",
+      "transport": "sse",
+      "description": "Supabase MCP server for staging database (optional)",
+      "disabled": true
+    }
+  },
+  "mcpSettings": {
+    "requireManualApproval": true,
+    "approvalRequired": [
+      "execute_sql",
+      "generate_migration",
+      "create_database_branch"
+    ],
+    "comment": "Manual approval required for all write operations to prevent accidental data changes"
+  }
+}

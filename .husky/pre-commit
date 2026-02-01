@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run tests before commit
+echo "🧪 Running tests..."
+cd frontend && npm run test -- --run --passWithNoTests || exit 1
+cd ../backend && npm run test || exit 1
+
+# Run linting
+echo "🔍 Running linters..."
+cd ../frontend && npm run lint || exit 1
+cd ../backend && npm run lint || exit 1
+
+# Run type checking
+echo "📝 Type checking..."
+cd ../frontend && npm run type-check || exit 1
+cd ../backend && npm run type-check || exit 1
+
+echo "✅ Pre-commit checks passed!"

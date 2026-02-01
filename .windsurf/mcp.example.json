@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Windsurf MCP Server Configuration Template for Supabase Integration",
+  "version": "1.0",
+  "mcpServers": {
+    "supabase-dev": {
+      "serverID": "supabase-dev",
+      "endpoint": "https://mcp.supabase.com/mcp?project_ref=YOUR_DEV_PROJECT_REF",
+      "transport": "sse",
+      "oauth": {
+        "enabled": true,
+        "provider": "supabase"
+      },
+      "enabled": true,
+      "description": "Supabase development database - AI-assisted query and schema management",
+      "security": {
+        "manualApproval": true,
+        "writeOperationsRequireApproval": true,
+        "readOnlyMode": false
+      }
+    },
+    "supabase-staging": {
+      "serverID": "supabase-staging",
+      "endpoint": "https://mcp.supabase.com/mcp?project_ref=YOUR_STAGING_PROJECT_REF",
+      "transport": "sse",
+      "oauth": {
+        "enabled": true,
+        "provider": "supabase"
+      },
+      "enabled": false,
+      "description": "Supabase staging database (optional)",
+      "security": {
+        "manualApproval": true,
+        "writeOperationsRequireApproval": true,
+        "readOnlyMode": false
+      }
+    }
+  },
+  "settings": {
+    "connectionTimeout": 30,
+    "queryTimeout": 120,
+    "enableTelemetry": false
+  },
+  "warnings": {
+    "productionDatabase": "CRITICAL: Never use production project references with MCP. Development/staging only!",
+    "manualReview": "All MCP-generated migrations must go through code review before applying to any environment."
+  }
+}
