@@ -1,0 +1,144 @@
+# Daily Gem Balance Reconciliation Cron Job
+#
+# Runs automated data integrity checks daily at 2 AM UTC
+# Alerts on critical discrepancies via GitHub Issues
+#
+# Related Tasks: T111D [P] [US5] [ADMIN] Schedule daily reconciliation cron job
+
+name: Daily Gem Reconciliation
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC (adjust for your timezone)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gem Balance Reconciliation
+        id: gem_reconciliation
+        run: |
+          # Call Supabase Edge Function for Gem reconciliation
+          response=$(curl -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/reconcile-gem-balances" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+
+          echo "Gem reconciliation response: $response"
+          echo "gem_response=$response" >> $GITHUB_OUTPUT
+
+      - name: Run Discrepancy Detection
+        id: discrepancy_detection
+        run: |
+          # Call Supabase Edge Function for discrepancy detection
+          response=$(curl -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/detect-discrepancies" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+
+          echo "Discrepancy detection response: $response"
+          echo "discrepancy_response=$response" >> $GITHUB_OUTPUT
+
+      - name: Parse Results
+        id: parse_results
+        run: |
+          # Extract critical counts from responses
+          gem_response='${{ steps.gem_reconciliation.outputs.gem_response }}'
+          disc_response='${{ steps.discrepancy_detection.outputs.discrepancy_response }}'
+
+          # Extract total discrepancies (simple grep for now, can use jq in production)
+          critical_count=$(echo "$disc_response" | grep -oP '"critical":\s*\K\d+' || echo "0")
+          warning_count=$(echo "$disc_response" | grep -oP '"warnings":\s*\K\d+' || echo "0")
+
+          echo "Critical issues: $critical_count"
+          echo "Warnings: $warning_count"
+
+          echo "critical_count=$critical_count" >> $GITHUB_OUTPUT
+          echo "warning_count=$warning_count" >> $GITHUB_OUTPUT
+
+          # Set failure flag if critical issues found
+          if [ "$critical_count" -gt "0" ]; then
+            echo "has_critical_issues=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_critical_issues=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Issue on Critical Discrepancies
+        if: steps.parse_results.outputs.has_critical_issues == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const criticalCount = '${{ steps.parse_results.outputs.critical_count }}';
+            const warningCount = '${{ steps.parse_results.outputs.warning_count }}';
+            const date = new Date().toISOString().split('T')[0];
+
+            const issueBody = `## 🚨 Critical Data Integrity Issues Detected
+
+            **Date:** ${date}
+            **Critical Issues:** ${criticalCount}
+            **Warnings:** ${warningCount}
+
+            ### Summary
+            The automated daily reconciliation check has detected **${criticalCount} critical discrepancies** that require immediate attention.
+
+            ### Possible Issues
+            - Missing payments for confirmed bookings
+            - Negative Gem balances
+            - Class capacity exceeded
+            - Data synchronization failures
+
+            ### Action Required
+            1. Log into the admin dashboard: [Reconciliation Report](/admin/reconciliation)
+            2. Review all critical discrepancies
+            3. Investigate root causes
+            4. Apply fixes or rollbacks as needed
+            5. Re-run reconciliation to verify fixes
+
+            ### Details
+            \`\`\`json
+            Gem Reconciliation: ${{ steps.gem_reconciliation.outputs.gem_response }}
+
+            Discrepancy Detection: ${{ steps.discrepancy_detection.outputs.discrepancy_response }}
+            \`\`\`
+
+            ### Next Steps
+            - [ ] Review discrepancies in admin dashboard
+            - [ ] Identify root cause
+            - [ ] Apply fixes
+            - [ ] Re-run reconciliation
+            - [ ] Close this issue when resolved
+
+            ---
+            *This issue was automatically created by the daily reconciliation workflow.*
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Data Reconciliation Alert: ${criticalCount} Critical Issues (${date})`,
+              body: issueBody,
+              labels: ['data-integrity', 'critical', 'automated']
+            });
+
+      - name: Send Slack Notification (Optional)
+        if: steps.parse_results.outputs.has_critical_issues == 'true'
+        run: |
+          # Uncomment and configure if you have Slack webhook
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          #   -H 'Content-Type: application/json' \
+          #   -d '{
+          #     "text": "🚨 Critical data integrity issues detected: ${{ steps.parse_results.outputs.critical_count }} critical, ${{ steps.parse_results.outputs.warning_count }} warnings"
+          #   }'
+          echo "Slack notification disabled (no webhook configured)"
+
+      - name: Summary
+        run: |
+          echo "### Reconciliation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Critical Issues:** ${{ steps.parse_results.outputs.critical_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Warnings:** ${{ steps.parse_results.outputs.warning_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ steps.parse_results.outputs.has_critical_issues == 'true' && '⚠️ Issues Found' || '✅ All Clear' }}" >> $GITHUB_STEP_SUMMARY
