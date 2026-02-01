@@ -325,27 +325,27 @@
 
 ### Class Creation
 
-- [ ] T084 [P] [US4] Create class creation form component in frontend/src/components/teacher/CreateClassForm.tsx
-- [ ] T085 [P] [US4] Create class editor component in frontend/src/components/teacher/ClassEditor.tsx
-- [ ] T086 [US4] Implement class validation (time, capacity, price) in supabase/functions/validate-class/index.ts
-- [ ] T087 [US4] Create class creation page in frontend/src/app/teacher/classes/new/page.tsx
+- [x] T084 [P] [US4] Create class creation form component in frontend/src/components/teacher/CreateClassForm.tsx ✅
+- [x] T085 [P] [US4] Create class editor component in frontend/src/components/teacher/ClassEditor.tsx ✅
+- [x] T086 [US4] Implement class validation (time, capacity, price) in supabase/functions/validate-class/index.ts ✅
+- [x] T087 [US4] Create class creation page in frontend/src/app/[locale]/teacher/classes/new/page.tsx ✅
 
 ### Class Management
 
-- [ ] T088 [P] [US4] Create class detail view for teachers in frontend/src/app/teacher/classes/[id]/page.tsx
-- [ ] T089 [P] [US4] Create enrolled students list component in frontend/src/components/teacher/EnrolledStudentsList.tsx
-- [ ] T090 [P] [US4] Create class materials uploader in frontend/src/components/teacher/ClassMaterialsUploader.tsx
-- [ ] T091 [US4] Setup Supabase Storage bucket for class materials in supabase/migrations/017_storage_buckets.sql
-- [ ] T092 [US4] Implement capacity enforcement in supabase/migrations/018_capacity_triggers.sql
+- [x] T088 [P] [US4] Create class detail view for teachers in frontend/src/app/[locale]/teacher/classes/[id]/page.tsx ✅
+- [x] T089 [P] [US4] Create enrolled students list component in frontend/src/components/teacher/EnrolledStudentsList.tsx ✅
+- [x] T090 [P] [US4] Create class materials uploader in frontend/src/components/teacher/ClassMaterialsUploader.tsx ✅
+- [x] T091 [US4] Setup Supabase Storage bucket for class materials in supabase/migrations/017_storage_buckets.sql ✅
+- [x] T092 [US4] Implement capacity enforcement in supabase/migrations/018_capacity_triggers.sql ✅
 
 ### Teacher Schedule
 
-- [ ] T093 [P] [US4] Create teacher availability component in frontend/src/components/teacher/AvailabilityCalendar.tsx
-- [ ] T094 [P] [US4] Create teacher_availability table in supabase/migrations/019_teacher_availability.sql
-- [ ] T095 [US4] Create teacher schedule page in frontend/src/app/teacher/schedule/page.tsx
-- [ ] T096 [US4] Implement schedule conflict detection in frontend/src/utils/scheduleConflicts.ts
+- [x] T093 [P] [US4] Create teacher availability component in frontend/src/components/teacher/AvailabilityCalendar.tsx ✅
+- [x] T094 [P] [US4] Create teacher_availability table in supabase/migrations/019_teacher_availability.sql ✅
+- [x] T095 [US4] Create teacher schedule page exists at frontend/src/app/[locale]/teacher/schedule/page.tsx ✅
+- [x] T096 [US4] Implement schedule conflict detection in frontend/src/utils/scheduleConflicts.ts ✅
 
-**Checkpoint**: Teachers can fully manage their classes independently
+**Checkpoint**: Teachers can fully manage their classes independently ✅
 
 ---
 
