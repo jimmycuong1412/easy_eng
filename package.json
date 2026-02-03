@@ -1,0 +1,17 @@
+{
+  "name": "easy_eng",
+  "version": "1.0.0",
+  "description": "Modern English Learning Platform with Gems & Video Classes",
+  "private": true,
+  "scripts": {
+    "supabase": "supabase",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:logs": "supabase functions logs",
+    "supabase:deploy": "supabase functions deploy"
+  },
+  "devDependencies": {
+    "supabase": "^2.75.0"
+  }
+}
