@@ -464,12 +464,12 @@
 
 ### Transaction Rollback Testing (P1 Fix - F4)
 
-- [ ] T139A [P] [CURRENCY] [TEST] Write E2E test for payment failure rollback in frontend/tests/e2e/rollback/payment-failure.spec.ts
-- [ ] T139B [P] [CURRENCY] [TEST] Write E2E test for booking capacity rollback in frontend/tests/e2e/rollback/capacity-conflict.spec.ts
-- [ ] T139C [P] [CURRENCY] [TEST] Write integration test for Gem deduction rollback in supabase/functions/__tests__/gem-rollback-scenarios.test.ts
-- [ ] T139D [P] [CURRENCY] [TEST] Write stress test for concurrent rollbacks in supabase/functions/__tests__/concurrent-rollback.test.ts
-- [ ] T139E [CURRENCY] Create rollback monitoring dashboard in frontend/src/app/admin/monitoring/rollbacks/page.tsx
-- [ ] T139F [CURRENCY] Document rollback scenarios in docs/operations/rollback-handling.md
+- [x] T139A [P] [CURRENCY] [TEST] Write E2E test for payment failure rollback in frontend/tests/e2e/rollback/payment-failure.spec.ts ✅
+- [x] T139B [P] [CURRENCY] [TEST] Write E2E test for booking capacity rollback in frontend/tests/e2e/rollback/capacity-conflict.spec.ts ✅
+- [x] T139C [P] [CURRENCY] [TEST] Write integration test for Gem deduction rollback in backend/src/__tests__/gem-rollback-scenarios.test.ts ✅
+- [x] T139D [P] [CURRENCY] [TEST] Write stress test for concurrent rollbacks in backend/src/__tests__/concurrent-rollback.test.ts ✅
+- [x] T139E [CURRENCY] Create rollback monitoring dashboard in frontend/src/app/admin/monitoring/rollbacks/page.tsx ✅
+- [x] T139F [CURRENCY] Document rollback scenarios in docs/operations/rollback-handling.md ✅
 
 **Checkpoint**: Gem system is robust, fraud-resistant, AND rollback-tested
 
