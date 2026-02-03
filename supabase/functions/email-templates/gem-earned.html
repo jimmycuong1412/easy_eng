@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gems Earned!</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 40px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #78350f;
+      padding: 30px;
+      border-radius: 8px 8px 0 0;
+      text-align: center;
+      margin: -40px -40px 30px -40px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .gem-icon {
+      font-size: 60px;
+      margin: 20px 0;
+    }
+    .gems-earned {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #fbbf24;
+      padding: 30px;
+      text-align: center;
+      border-radius: 8px;
+      margin: 30px 0;
+    }
+    .gems-amount {
+      font-size: 48px;
+      font-weight: 700;
+      color: #92400e;
+      margin: 10px 0;
+    }
+    .gems-label {
+      font-size: 20px;
+      color: #78350f;
+      font-weight: 600;
+    }
+    .reason {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .reason-label {
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 5px;
+    }
+    .reason-text {
+      color: #111827;
+      font-size: 18px;
+    }
+    .balance-info {
+      background-color: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 15px 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .balance-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #fbbf24;
+      color: #78350f;
+      text-decoration: none;
+      padding: 12px 30px;
+      border-radius: 6px;
+      margin: 20px 0;
+      font-weight: 600;
+    }
+    .button:hover {
+      background-color: #f59e0b;
+    }
+    .xp-bonus {
+      background-color: #dbeafe;
+      color: #1e40af;
+      padding: 15px;
+      border-radius: 4px;
+      text-align: center;
+      margin: 20px 0;
+      font-weight: 600;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .tips {
+      background-color: #f0fdf4;
+      border-left: 4px solid #10b981;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .tips h3 {
+      margin-top: 0;
+      color: #065f46;
+    }
+    ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    li {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="gem-icon">💎</div>
+      <h1>You Earned Gems!</h1>
+    </div>
+
+    <div class="content">
+      <p>Congratulations, <strong>{{studentName}}</strong>!</p>
+
+      <div class="gems-earned">
+        <div class="gems-amount">+{{gemsEarned}}</div>
+        <div class="gems-label">GEMS</div>
+      </div>
+
+      <div class="reason">
+        <div class="reason-label">Earned For:</div>
+        <div class="reason-text">{{reason}}</div>
+      </div>
+
+      {{#if xpEarned}}
+      <div class="xp-bonus">
+        <strong>Bonus:</strong> You also earned <strong>+{{xpEarned}} XP</strong>! 🌟
+      </div>
+      {{/if}}
+
+      <div class="balance-info">
+        <div class="balance-row">
+          <span>Previous Balance:</span>
+          <span><strong>{{previousBalance}} Gems</strong></span>
+        </div>
+        <div class="balance-row">
+          <span>Earned:</span>
+          <span style="color: #10b981;"><strong>+{{gemsEarned}} Gems</strong></span>
+        </div>
+        <div class="balance-row" style="border-top: 1px solid #cbd5e1; padding-top: 10px; margin-top: 5px;">
+          <span><strong>New Balance:</strong></span>
+          <span style="color: #3b82f6; font-size: 20px;"><strong>{{newBalance}} Gems</strong></span>
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <a href="{{dashboardUrl}}" class="button">View Your Dashboard</a>
+      </div>
+
+      <div class="tips">
+        <h3>💡 Ways to Use Your Gems:</h3>
+        <ul>
+          <li><strong>Book Classes:</strong> Use Gems to get discounts on class bookings (up to 50% off!)</li>
+          <li><strong>Shop Items:</strong> Redeem Gems in the Gem shop for exclusive items</li>
+          <li><strong>Save & Stack:</strong> Keep earning to unlock bigger rewards</li>
+        </ul>
+      </div>
+
+      <p style="text-align: center; color: #6b7280; margin-top: 30px;">
+        Keep attending classes and completing activities to earn more Gems!
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Easy English</strong></p>
+      <p>Master English, One Class at a Time</p>
+      <p style="font-size: 12px; color: #9ca3af;">
+        This email was sent to {{studentEmail}}
+      </p>
+    </div>
+  </div>
+</body>
+</html>

@@ -12,6 +12,7 @@
     "supabase:deploy": "supabase functions deploy"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.93.3",
     "supabase": "^2.75.0"
   }
 }

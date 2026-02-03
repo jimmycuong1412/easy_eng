@@ -21,10 +21,10 @@
 4. Copy these 4 values:
 
 ```
-App ID:    ___________________________
-API Key:   ___________________________
-Auth Key:  ___________________________
-Region:    us  (or eu)
+App ID:    167456197b8d940a5
+API Key:   d8ec90d5e42f017d8ef65c7532b1268d01683137
+Auth Key:  31c272dc8c2dec4220071992f5605e8c2bb483ab
+Region:    us
 ```
 
 ---
@@ -35,9 +35,9 @@ Create/edit `frontend/.env.local`:
 
 ```env
 # CometChat - Get from https://app.cometchat.com/
-NEXT_PUBLIC_COMETCHAT_APP_ID=your-app-id-here
+NEXT_PUBLIC_COMETCHAT_APP_ID=167456197b8d940a5
 NEXT_PUBLIC_COMETCHAT_REGION=us
-NEXT_PUBLIC_COMETCHAT_AUTH_KEY=your-auth-key-here
+NEXT_PUBLIC_COMETCHAT_AUTH_KEY=31c272dc8c2dec4220071992f5605e8c2bb483ab
 ```
 
 ---
@@ -48,8 +48,8 @@ NEXT_PUBLIC_COMETCHAT_AUTH_KEY=your-auth-key-here
 # Set secrets for Edge Functions
 cd F:/Git/easy_eng
 
-supabase secrets set COMETCHAT_APP_ID=your-app-id-here
-supabase secrets set COMETCHAT_API_KEY=your-api-key-here
+supabase secrets set COMETCHAT_APP_ID=167456197b8d940a5
+supabase secrets set COMETCHAT_API_KEY=d8ec90d5e42f017d8ef65c7532b1268d01683137
 supabase secrets set COMETCHAT_REGION=us
 ```
 
