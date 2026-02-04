@@ -7,6 +7,8 @@ import type { Metadata, Viewport } from 'next';
 import { locales, type Locale } from '@/i18n/config';
 import DevDebugPopup from '@/components/DevDebugPopup';
 import { GlobalHomeButton } from '@/components/common';
+import { OfflineIndicator } from '@/components/common/OfflineIndicator';
+import Analytics from '@/components/Analytics';
 import '../globals.css';
 
 // Fonts
@@ -48,7 +50,10 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: '/favicon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   openGraph: {
@@ -58,6 +63,15 @@ export const metadata: Metadata = {
     url: '/',
     siteName: 'EasyEng',
     type: 'website',
+    locale: 'en_US',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'EasyEng - Learn English Platform',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
@@ -116,6 +130,12 @@ export default async function LocaleLayout({
     >
       <body className="min-h-screen bg-bg-primary font-sans antialiased">
         <NextIntlClientProvider messages={messages}>
+          {/* Analytics */}
+          <Analytics />
+
+          {/* Offline/Online Indicator */}
+          <OfflineIndicator />
+
           {/* Skip to main content link for accessibility */}
           <a
             href="#main-content"

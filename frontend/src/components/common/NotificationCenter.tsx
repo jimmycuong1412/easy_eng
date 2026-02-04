@@ -29,7 +29,13 @@ export default function NotificationCenter() {
   const { notifications, removeNotification } = useNotificationStore();
 
   return (
-    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-md">
+    <div
+      className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-md"
+      role="region"
+      aria-label="Notifications"
+      aria-live="polite"
+      aria-atomic="false"
+    >
       <AnimatePresence>
         {notifications.map((notification) => {
           const Icon = iconMap[notification.type];
@@ -41,12 +47,13 @@ export default function NotificationCenter() {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 100, scale: 0.9 }}
               transition={{ duration: 0.2 }}
+              role={notification.type === 'error' ? 'alert' : 'status'}
               className={`flex items-start gap-3 p-4 rounded-lg border shadow-lg backdrop-blur-sm ${
                 colorMap[notification.type]
               }`}
             >
-              <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              
+              <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+
               <div className="flex-1 min-w-0">
                 {notification.title && (
                   <h4 className="font-semibold text-sm mb-1">{notification.title}</h4>
@@ -57,9 +64,9 @@ export default function NotificationCenter() {
               <button
                 onClick={() => removeNotification(notification.id)}
                 className="flex-shrink-0 p-1 hover:bg-black/10 rounded transition-colors"
-                aria-label="Close notification"
+                aria-label={`Dismiss ${notification.title || notification.message}`}
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </motion.div>
           );
