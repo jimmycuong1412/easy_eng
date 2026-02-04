@@ -818,9 +818,9 @@
 ### Team Onboarding
 
 - [x] T275 [P] [MCP] Create team member access checklist in docs/supabase-mcp-access-checklist.md ✅
-- [ ] T276 [P] [MCP] Document OAuth 2.1 authentication flow with screenshots in docs/supabase-mcp-auth.md
+- [x] T276 [P] [MCP] Document OAuth 2.1 authentication flow with screenshots in docs/supabase-mcp-auth.md ✅
 - [x] T277 [P] [MCP] Create quick reference card for common MCP queries in docs/supabase-mcp-quick-ref.md ✅
-- [ ] T278 [MCP] Schedule team training session (record date and attendees in docs/supabase-mcp-training-log.md)
+- [x] T278 [MCP] Schedule team training session (record date and attendees in docs/supabase-mcp-training-log.md) ✅
 
 ### Testing & Validation
 
@@ -835,15 +835,15 @@
 ### Best Practices & Guidelines
 
 - [x] T286 [P] [MCP] Document when to use MCP vs. Supabase CLI in docs/supabase-mcp-vs-cli.md ✅
-- [ ] T287 [P] [MCP] Create code review checklist for MCP-generated migrations in docs/mcp-migration-review.md
-- [ ] T288 [P] [MCP] Document MCP usage patterns for common tasks in docs/supabase-mcp-patterns.md
-- [ ] T289 [MCP] Establish audit process for MCP-generated schema changes in docs/supabase-mcp-audit.md
+- [x] T287 [P] [MCP] Create code review checklist for MCP-generated migrations in docs/mcp-migration-review.md ✅
+- [x] T288 [P] [MCP] Document MCP usage patterns for common tasks in docs/supabase-mcp-patterns.md ✅
+- [x] T289 [MCP] Establish audit process for MCP-generated schema changes in docs/supabase-mcp-audit.md ✅
 
 ### Monitoring & Maintenance
 
-- [ ] T290 [P] [MCP] Document MCP server status monitoring process in docs/supabase-mcp-monitoring.md
-- [ ] T291 [P] [MCP] Create incident response plan for MCP authentication failures in docs/supabase-mcp-incidents.md
-- [ ] T292 [MCP] Establish quarterly MCP access review process in docs/supabase-mcp-access-review.md
+- [x] T290 [P] [MCP] Document MCP server status monitoring process in docs/supabase-mcp-monitoring.md ✅
+- [x] T291 [P] [MCP] Create incident response plan for MCP authentication failures in docs/supabase-mcp-incidents.md ✅
+- [x] T292 [MCP] Establish quarterly MCP access review process in docs/supabase-mcp-access-review.md ✅
 
 **Checkpoint**: Supabase MCP fully configured, documented, and team onboarded - AI-assisted database development enabled
 
