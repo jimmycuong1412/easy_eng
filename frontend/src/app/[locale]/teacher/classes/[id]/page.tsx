@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import ClassEditor from '@/components/teacher/ClassEditor';
 import EnrolledStudentsList from '@/components/teacher/EnrolledStudentsList';
@@ -36,15 +36,15 @@ interface ClassData {
   id: string;
   title: string;
   description: string;
-  scheduled_at: string;
+  start_time: string;
   duration_minutes: number;
-  capacity: number;
+  max_students: number;
   price: number;
   level: string;
-  topic: string;
+  tags: string[] | null;
   status: string;
   teacher: {
-    display_name: string;
+    full_name: string;
   };
   _count?: {
     bookings: number;
@@ -53,7 +53,6 @@ interface ClassData {
 
 export default function TeacherClassDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const classId = params.id as string;
   const supabase = createClient();
 
@@ -65,6 +64,7 @@ export default function TeacherClassDetailPage() {
 
   useEffect(() => {
     loadClassData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId]);
 
   const loadClassData = async () => {
@@ -75,7 +75,7 @@ export default function TeacherClassDetailPage() {
           `
           *,
           teacher:profiles!teacher_id (
-            display_name
+            full_name
           )
         `
         )
@@ -187,7 +187,7 @@ export default function TeacherClassDetailPage() {
             <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                {new Date(classData.scheduled_at).toLocaleDateString('en-US', {
+                {new Date(classData.start_time).toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -196,7 +196,7 @@ export default function TeacherClassDetailPage() {
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                {new Date(classData.scheduled_at).toLocaleTimeString('en-US', {
+                {new Date(classData.start_time).toLocaleTimeString('en-US', {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}{' '}
@@ -204,7 +204,7 @@ export default function TeacherClassDetailPage() {
               </span>
               <span className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
-                {classData._count?.bookings || 0} / {classData.capacity} students
+                {classData._count?.bookings || 0} / {classData.max_students} students
               </span>
               <span className="flex items-center gap-1">
                 <DollarSign className="h-4 w-4" />
@@ -294,7 +294,7 @@ export default function TeacherClassDetailPage() {
                       <BookOpen className="inline h-4 w-4 mr-1" />
                       Topic
                     </h3>
-                    <p className="text-gray-900 dark:text-white">{classData.topic}</p>
+                    <p className="text-gray-900 dark:text-white">{classData.tags?.[0] || '—'}</p>
                   </div>
                   <div>
                     <h3 className="mb-2 text-sm font-semibold text-gray-500 dark:text-gray-400">

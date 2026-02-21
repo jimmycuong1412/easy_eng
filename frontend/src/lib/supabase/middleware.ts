@@ -1,7 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-import type { Database, UserRole } from '@/types/database';
+import type { UserRole } from '@/types/database';
+
+const locales = ['vi', 'en'];
 
 // Route protection configuration
 interface RouteConfig {
@@ -66,15 +68,23 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase environment variables in middleware');
+    return supabaseResponse;
+  }
+
+  const supabase = createServerClient(
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: any[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
@@ -99,56 +109,121 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Strip locale prefix (e.g. /vi/dashboard -> /dashboard) for route matching
+  const segments = pathname.split('/');
+  const hasLocale = segments.length > 1 && locales.includes(segments[1]);
+  const pathnameWithoutLocale = hasLocale
+    ? '/' + segments.slice(2).join('/')
+    : pathname;
+
   // Protected routes check
-  const isAuthRoute = pathname.startsWith('/auth');
+  const isAuthRoute = pathnameWithoutLocale.startsWith('/auth');
   const isProtectedRoute =
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/settings') ||
-    pathname.startsWith('/booking') ||
-    pathname.startsWith('/class');
+    pathnameWithoutLocale.startsWith('/dashboard') ||
+    pathnameWithoutLocale.startsWith('/settings') ||
+    pathnameWithoutLocale.startsWith('/booking') ||
+    pathnameWithoutLocale.startsWith('/class') ||
+    pathnameWithoutLocale.startsWith('/student') ||
+    pathnameWithoutLocale.startsWith('/teacher') ||
+    pathnameWithoutLocale.startsWith('/admin');
 
   // Redirect unauthenticated users to login
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = '/auth/login';
+    url.pathname = hasLocale
+      ? `/${segments[1]}/auth/login`
+      : '/auth/login';
     url.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
-  if (user && isAuthRoute) {
-    // Fetch user profile to get role for proper redirect
+  // Helper: get user role and locale with cookie caching (avoids DB call on every request)
+  const ROLE_COOKIE = 'x-user-role';
+  const LOCALE_COOKIE = 'x-user-locale';
+  const USER_ID_COOKIE = 'x-user-id';
+  const PROFILE_COOKIE_MAX_AGE = 300; // 5 minutes
+
+  const getUserProfile = async (): Promise<{ role: UserRole; locale: string }> => {
+    // Check cookie cache — only valid if the cached user ID matches the current user
+    const cachedUserId = request.cookies.get(USER_ID_COOKIE)?.value;
+    const cachedRole = request.cookies.get(ROLE_COOKIE)?.value as UserRole | undefined;
+    const cachedLocale = request.cookies.get(LOCALE_COOKIE)?.value;
+    if (
+      cachedUserId === user!.id &&
+      cachedRole && ['student', 'teacher', 'parent', 'admin'].includes(cachedRole) &&
+      cachedLocale && locales.includes(cachedLocale)
+    ) {
+      return { role: cachedRole, locale: cachedLocale };
+    }
+
+    // Fetch from DB (single query)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
-      .eq('id', user.id)
+      .select('role, locale')
+      .eq('id', user!.id)
       .single();
 
     const role = (profile?.role as UserRole) || 'student';
+    const locale = (profile?.locale && locales.includes(profile.locale))
+      ? profile.locale
+      : 'vi';
+
+    const cookieOpts = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      maxAge: PROFILE_COOKIE_MAX_AGE,
+      path: '/',
+    };
+
+    // Cache in cookies for subsequent requests (keyed by user ID)
+    supabaseResponse.cookies.set(USER_ID_COOKIE, user!.id, cookieOpts);
+    supabaseResponse.cookies.set(ROLE_COOKIE, role, cookieOpts);
+    supabaseResponse.cookies.set(LOCALE_COOKIE, locale, cookieOpts);
+
+    return { role, locale };
+  };
+
+  // Keep getUserRole as a convenience wrapper
+  const getUserRole = async (): Promise<UserRole> => {
+    return (await getUserProfile()).role;
+  };
+
+  // Redirect authenticated users away from auth pages
+  if (user && isAuthRoute) {
+    const { role, locale: preferredLocale } = await getUserProfile();
     const url = request.nextUrl.clone();
-    url.pathname = DEFAULT_DASHBOARD[role];
+    const dashboardPath = DEFAULT_DASHBOARD[role];
+    // Use user's preferred locale when redirecting to dashboard
+    const targetLocale = hasLocale ? segments[1] : preferredLocale;
+    url.pathname = `/${targetLocale}${dashboardPath}`;
     return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users to their preferred locale if the URL uses a different one
+  if (user && hasLocale && isProtectedRoute) {
+    const currentUrlLocale = segments[1];
+    const { locale: preferredLocale } = await getUserProfile();
+    if (preferredLocale !== currentUrlLocale) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${preferredLocale}${pathnameWithoutLocale}`;
+      return NextResponse.redirect(url);
+    }
   }
 
   // Role-based route protection
   if (user && isProtectedRoute) {
-    const routeConfig = getRouteConfig(pathname);
+    const routeConfig = getRouteConfig(pathnameWithoutLocale);
 
     if (routeConfig) {
-      // Fetch user profile to check role
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      const userRole = (profile?.role as UserRole) || 'student';
+      const userRole = await getUserRole();
 
       // Check if user has permission for this route
       if (!routeConfig.allowedRoles.includes(userRole)) {
-        // Redirect to unauthorized page or default dashboard
         const url = request.nextUrl.clone();
-        url.pathname = '/unauthorized';
+        url.pathname = hasLocale
+          ? `/${segments[1]}/unauthorized`
+          : '/unauthorized';
         url.searchParams.set('from', pathname);
         return NextResponse.redirect(url);
       }

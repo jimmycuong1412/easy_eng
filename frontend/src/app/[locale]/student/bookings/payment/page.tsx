@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import PaymentMethodSelector, {
   PaymentMethod,
 } from '@/components/booking/PaymentMethodSelector';
@@ -29,13 +29,12 @@ interface BookingDetails {
     description: string;
     scheduled_at: string;
     teacher: {
-      display_name: string;
+      full_name: string;
     };
   };
 }
 
 export default function PaymentPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('booking_id');
 
@@ -55,6 +54,7 @@ export default function PaymentPage() {
     }
 
     loadBookingDetails();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
   const loadBookingDetails = async () => {
@@ -67,13 +67,13 @@ export default function PaymentPage() {
           class_id,
           final_price,
           gems_used,
-          discount_amount,
+          gems_discount_amount,
           class:classes (
             title,
             description,
-            scheduled_at,
-            teacher:profiles!teacher_id (
-              display_name
+            start_time,
+            teacher:profiles!classes_teacher_id_profiles_fkey (
+              full_name
             )
           )
         `
@@ -238,10 +238,10 @@ export default function PaymentPage() {
                   {booking.class.title}
                 </h3>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  with {booking.class.teacher.display_name}
+                  with {(booking.class.teacher as any)?.full_name || 'Teacher'}
                 </p>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-500">
-                  {new Date(booking.class.scheduled_at).toLocaleDateString('en-US', {
+                  {new Date((booking.class as any).start_time).toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -259,7 +259,7 @@ export default function PaymentPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Original Price</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    ${(booking.final_price + booking.discount_amount).toFixed(2)}
+                    ${(booking.final_price + (booking as any).gems_discount_amount).toFixed(2)}
                   </span>
                 </div>
 
@@ -269,7 +269,7 @@ export default function PaymentPage() {
                       Gems Discount ({booking.gems_used} gems)
                     </span>
                     <span className="font-semibold text-green-600 dark:text-green-400">
-                      -${booking.discount_amount.toFixed(2)}
+                      -${(booking as any).gems_discount_amount.toFixed(2)}
                     </span>
                   </div>
                 )}

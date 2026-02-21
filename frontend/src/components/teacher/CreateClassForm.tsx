@@ -41,7 +41,7 @@ export default function CreateClassForm({ onSuccess, onCancel }: CreateClassForm
     title: '',
     description: '',
     scheduled_at: '',
-    duration_minutes: 50,
+    duration_minutes: 25,
     capacity: 10,
     price: 25,
     level: 'intermediate',
@@ -99,11 +99,9 @@ export default function CreateClassForm({ onSuccess, onCancel }: CreateClassForm
       errors.capacity = 'Capacity cannot exceed 50 students';
     }
 
-    // Price validation
-    if (formData.price < 5) {
-      errors.price = 'Price must be at least $5';
-    } else if (formData.price > 500) {
-      errors.price = 'Price cannot exceed $500';
+    // Price validation (in VND)
+    if (formData.price < 0) {
+      errors.price = 'Price must be 0 or greater';
     }
 
     // Topic validation
@@ -146,6 +144,10 @@ export default function CreateClassForm({ onSuccess, onCancel }: CreateClassForm
         throw new Error('Only teachers can create classes');
       }
 
+      // Map form fields to DB columns
+      const startTime = new Date(formData.scheduled_at);
+      const endTime = new Date(startTime.getTime() + formData.duration_minutes * 60 * 1000);
+
       // Create class
       const { data: newClass, error: createError } = await supabase
         .from('classes')
@@ -153,12 +155,14 @@ export default function CreateClassForm({ onSuccess, onCancel }: CreateClassForm
           teacher_id: user.id,
           title: formData.title.trim(),
           description: formData.description.trim(),
-          scheduled_at: formData.scheduled_at,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
           duration_minutes: formData.duration_minutes,
-          capacity: formData.capacity,
+          max_students: formData.capacity,
           price: formData.price,
           level: formData.level,
-          topic: formData.topic.trim(),
+          tags: [formData.topic.trim()],
+          schedule_type: 'one_time',
           status: 'scheduled',
         })
         .select()
@@ -375,9 +379,8 @@ export default function CreateClassForm({ onSuccess, onCancel }: CreateClassForm
             name="price"
             value={formData.price}
             onChange={handleChange}
-            min="5"
-            max="500"
-            step="0.01"
+            min="0"
+            step="1000"
             className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 ${
               validationErrors.price
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500'

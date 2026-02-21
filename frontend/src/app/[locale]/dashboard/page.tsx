@@ -1,17 +1,20 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { motion } from 'framer-motion';
+
+import { useTranslations } from 'next-intl';
 
 import { formatNumber } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useGemsBalance } from '@/hooks/useGemsBalance';
+import { GemImage } from '@/components/common/GemImage';
+import { createClient } from '@/lib/supabase/client';
+import { getDashboardData, getTeachers, getStudentProgress } from '@/lib/queries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CookieBadge } from '@/components/features/CookieBadge';
 import { XPProgressBar } from '@/components/features/XPProgressBar';
 import { PixelAvatar } from '@/components/features/PixelAvatar';
 
@@ -31,67 +34,100 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock data - includes real teacher from database
-const mockUpcomingClasses = [
-  {
-    id: '1',
-    teacherName: 'Teacher', // Real teacher from Supabase (ID: 7a46e4e2-782c-471a-ba1b-cea449e75028)
-    teacherAvatar: undefined, // Will use fallback with initials
-    subject: 'IELTS Speaking Practice', // From real booking data
-    scheduledAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-    duration: 60, // 1 hour session
-  },
-  {
-    id: '2',
-    teacherName: 'Teacher',
-    teacherAvatar: undefined,
-    subject: 'Business English Conversation',
-    scheduledAt: new Date(Date.now() + 26 * 60 * 60 * 1000), // Tomorrow
-    duration: 60,
-  },
-];
-
-const mockRecommendedTeachers = [
-  {
-    id: '7a46e4e2-782c-471a-ba1b-cea449e75028', // Real teacher ID from Supabase
-    name: 'Teacher',
-    avatar: undefined, // Will use fallback with initials
-    specialization: 'IELTS', // From teacher_profiles.specialties
-    rating: 4.85, // From teacher_profiles.avg_rating
-    hourlyRate: 200000, // From teacher_profiles.hourly_rate
-    isOnline: true,
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    avatar: undefined,
-    specialization: 'Business English',
-    rating: 4.9,
-    hourlyRate: 180000,
-    isOnline: true,
-  },
-  {
-    id: '3',
-    name: 'Emily Davis',
-    avatar: undefined,
-    specialization: 'Conversation',
-    rating: 5.0,
-    hourlyRate: 120000,
-    isOnline: false,
-  },
-];
-
 export default function StudentDashboardPage() {
-  const { profile, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
+  const { balance: gemBalance } = useGemsBalance();
+  const t = useTranslations('dashboard');
 
-  // Mock data
-  const cookieBalance = 150;
-  const totalXp = 1250;
-  const streakDays = 7;
-  const completedClasses = 12;
+  const [upcomingClasses, setUpcomingClasses] = React.useState<Array<{
+    id: string;
+    teacherName: string;
+    teacherAvatar: string | undefined;
+    subject: string;
+    scheduledAt: Date;
+    duration: number;
+  }>>([]);
+  const [recommendedTeachers, setRecommendedTeachers] = React.useState<Array<{
+    id: string;
+    name: string;
+    avatar: string | undefined;
+    specialization: string;
+    rating: number;
+    hourlyRate: number;
+    isOnline: boolean;
+  }>>([]);
+  const [totalXp, setTotalXp] = React.useState(0);
+  const [streakDays, setStreakDays] = React.useState(0);
+  const [completedClasses, setCompletedClasses] = React.useState(0);
+  const [studentCareer, setStudentCareer] = React.useState<{
+    current_level: number;
+    character_name: string | null;
+    career_paths: { name: string } | null;
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    // Fetch dashboard data, teachers, student progress, and streak in parallel
+    Promise.all([
+      getDashboardData(user.id).catch(() => ({ upcomingClasses: [], recentActivity: [], gemsBalance: 0 })),
+      getTeachers({ limit: 3 }).catch(() => []),
+      getStudentProgress(user.id).catch(() => null),
+      createClient().from('attendance_streaks').select('current_streak').eq('student_id', user.id).maybeSingle().then(r => r.data).catch(() => null),
+    ]).then(([dashboard, teachers, progress, streak]) => {
+      // Map upcoming classes from bookings
+      const mapped = (dashboard.upcomingClasses || [])
+        .filter((b: Record<string, unknown>) => b.classes)
+        .map((b: Record<string, unknown>) => {
+          const cls = b.classes as Record<string, unknown>;
+          return {
+            id: b.id as string,
+            teacherName: 'Teacher',
+            teacherAvatar: undefined,
+            subject: (cls.title as string) || 'Class',
+            scheduledAt: new Date(cls.start_time as string),
+            duration: (cls.duration_minutes as number) || 25,
+          };
+        });
+      setUpcomingClasses(mapped);
+
+      // Map teachers
+      const mappedTeachers = (teachers || []).slice(0, 3).map((t: Record<string, unknown>) => ({
+        id: t.id as string,
+        name: (t.full_name as string) || 'Teacher',
+        avatar: (t.avatar_url as string) || undefined,
+        specialization: (t.bio as string)?.split('.')[0] || 'English',
+        rating: (t.average_rating as number) || 0,
+        hourlyRate: 200000,
+        isOnline: true,
+      }));
+      setRecommendedTeachers(mappedTeachers);
+
+      // Set progress data
+      if (progress) {
+        setTotalXp(progress.total_xp_earned || 0);
+        setStudentCareer({
+          current_level: progress.current_level || 1,
+          character_name: progress.character_name,
+          career_paths: progress.career_paths,
+        });
+      }
+
+      // Set streak data
+      if (streak) {
+        setStreakDays(streak.current_streak || 0);
+      }
+
+      // Count completed classes from recent bookings
+      const completed = (dashboard.upcomingClasses || []).filter(
+        (b: Record<string, unknown>) => b.status === 'completed'
+      ).length;
+      setCompletedClasses(completed);
+    });
+  }, [user?.id]);
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('vi-VN', {
+    return date.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -103,20 +139,19 @@ export default function StudentDashboardPage() {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     if (date.toDateString() === today.toDateString()) {
-      return 'Hôm nay';
+      return t('today');
     } else if (date.toDateString() === tomorrow.toDateString()) {
-      return 'Ngày mai';
+      return t('tomorrow');
     }
-    return date.toLocaleDateString('vi-VN', {
+    return date.toLocaleDateString(undefined, {
       weekday: 'long',
       day: 'numeric',
       month: 'numeric',
     });
   };
 
-  if (isLoading) {
-    return <DashboardSkeleton />;
-  }
+  // Don't block render on auth loading — middleware already guarantees authentication.
+  // Individual widgets show their own loading states as data loads.
 
   return (
     <motion.div
@@ -128,10 +163,10 @@ export default function StudentDashboardPage() {
       {/* Welcome section */}
       <motion.div variants={itemVariants}>
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary">
-          Xin chào, {profile?.full_name?.split(' ').pop() || 'bạn'}! 👋
+          {t('welcome', { name: profile?.full_name?.split(' ').pop() || 'you' })} 👋
         </h1>
         <p className="text-text-secondary mt-1">
-          Tiếp tục hành trình học tiếng Anh của bạn
+          {t('welcomeSubtitle')}
         </p>
       </motion.div>
 
@@ -141,20 +176,20 @@ export default function StudentDashboardPage() {
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
         <StatCard
-          icon="🍪"
-          label="Cookies"
-          value={formatNumber(cookieBalance)}
-          color="cookie"
+          icon={<GemImage size={28} />}
+          label="Gems"
+          value={formatNumber(gemBalance)}
+          color="gem"
         />
         <StatCard
           icon="🔥"
           label="Streak"
-          value={`${streakDays} ngày`}
+          value={t('streak', { days: streakDays })}
           color="warning"
         />
         <StatCard
           icon="📚"
-          label="Lớp học"
+          label={t('classes')}
           value={completedClasses.toString()}
           color="primary"
         />
@@ -174,16 +209,16 @@ export default function StudentDashboardPage() {
           <motion.div variants={itemVariants}>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">Lớp học sắp tới</CardTitle>
+                <CardTitle className="text-lg">{t('upcomingClasses')}</CardTitle>
                 <Link href="/student/bookings">
                   <Button variant="ghost" size="sm">
-                    Xem tất cả →
+                    {t('viewAll')} →
                   </Button>
                 </Link>
               </CardHeader>
               <CardContent className="space-y-4">
-                {mockUpcomingClasses.length > 0 ? (
-                  mockUpcomingClasses.map((cls) => (
+                {upcomingClasses.length > 0 ? (
+                  upcomingClasses.map((cls) => (
                     <div
                       key={cls.id}
                       className="flex items-center gap-4 p-4 rounded-xl bg-bg-elevated border border-border-default hover:border-border-focus transition-colors"
@@ -199,7 +234,7 @@ export default function StudentDashboardPage() {
                           {cls.subject}
                         </p>
                         <p className="text-sm text-text-secondary">
-                          với {cls.teacherName}
+                          {t('with')} {cls.teacherName}
                         </p>
                       </div>
                       <div className="text-right">
@@ -211,17 +246,17 @@ export default function StudentDashboardPage() {
                         </p>
                       </div>
                       <Button size="sm" variant="outline">
-                        Chi tiết
+                        {t('details')}
                       </Button>
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-text-muted mb-4">
-                      Bạn chưa có lớp học nào được đặt
+                      {t('noClassesBooked')}
                     </p>
                     <Link href="/dashboard/teachers">
-                      <Button>Tìm giáo viên ngay</Button>
+                      <Button>{t('findTeachersNow')}</Button>
                     </Link>
                   </div>
                 )}
@@ -233,16 +268,16 @@ export default function StudentDashboardPage() {
           <motion.div variants={itemVariants}>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">Giáo viên đề xuất</CardTitle>
+                <CardTitle className="text-lg">{t('recommendedTeachers')}</CardTitle>
                 <Link href="/dashboard/teachers">
                   <Button variant="ghost" size="sm">
-                    Xem tất cả →
+                    {t('viewAll')} →
                   </Button>
                 </Link>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {mockRecommendedTeachers.map((teacher) => (
+                  {recommendedTeachers.map((teacher) => (
                     <Link
                       key={teacher.id}
                       href={`/dashboard/teachers/${teacher.id}`}
@@ -291,62 +326,62 @@ export default function StudentDashboardPage() {
           <motion.div variants={itemVariants}>
             <Card variant="glow">
               <CardHeader>
-                <CardTitle className="text-lg">Avatar của bạn</CardTitle>
+                <CardTitle className="text-lg">{t('yourAvatar')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-center">
                   <PixelAvatar
                     fallbackEmoji="🧑‍💼"
-                    level={3}
-                    name="Business Pro"
-                    careerPath="Business"
+                    level={studentCareer?.current_level || 1}
+                    name={studentCareer?.character_name || 'Student'}
+                    careerPath={studentCareer?.career_paths?.name || 'Business'}
                     size="xl"
                   />
                 </div>
                 <XPProgressBar totalXp={totalXp} size="md" />
                 <Link href="/student/progress" className="block">
                   <Button variant="secondary" className="w-full">
-                    Xem chi tiết Avatar
+                    {t('viewAvatarDetails')}
                   </Button>
                 </Link>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* Cookie balance */}
+          {/* Gem balance */}
           <motion.div variants={itemVariants}>
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <span>🍪</span> Cookies của bạn
+                  <GemImage size={20} alt="Gem" /> {t('yourGems')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <p className="text-4xl font-bold text-accent-cookie">
-                    {cookieBalance}
+                  <p className="text-4xl font-bold text-accent-gem">
+                    {gemBalance}
                   </p>
                   <p className="text-sm text-text-muted">
-                    = {formatNumber(cookieBalance * 1000)}đ giảm giá
+                    {t('discount', { amount: `${formatNumber(gemBalance * 1000)}đ` })}
                   </p>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between text-text-secondary">
-                    <span>Hoàn thành lớp học</span>
-                    <span className="text-success">+5 🍪</span>
+                    <span>{t('completeClass')}</span>
+                    <span className="text-success">+5 <GemImage size={14} className="inline-block align-middle" /></span>
                   </div>
                   <div className="flex justify-between text-text-secondary">
-                    <span>Giới thiệu bạn bè</span>
-                    <span className="text-success">+50 🍪</span>
+                    <span>{t('referFriend')}</span>
+                    <span className="text-success">+50 <GemImage size={14} className="inline-block align-middle" /></span>
                   </div>
                   <div className="flex justify-between text-text-secondary">
-                    <span>Đặt lớp đầu tiên</span>
-                    <span className="text-success">+20 🍪</span>
+                    <span>{t('firstBooking')}</span>
+                    <span className="text-success">+20 <GemImage size={14} className="inline-block align-middle" /></span>
                   </div>
                 </div>
                 <Link href="/student/rewards">
-                  <Button variant="cookie" className="w-full">
-                    Sử dụng Cookies
+                  <Button variant="secondary" className="w-full">
+                    {t('useGems')}
                   </Button>
                 </Link>
               </CardContent>
@@ -358,7 +393,7 @@ export default function StudentDashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <span>🔥</span> Chuỗi học tập
+                  <span>🔥</span> {t('learningStreak')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -377,7 +412,7 @@ export default function StudentDashboardPage() {
                   ))}
                 </div>
                 <p className="text-center text-sm text-text-secondary mt-3">
-                  {streakDays} ngày liên tiếp!
+                  {t('consecutiveDays', { days: streakDays })}
                 </p>
               </CardContent>
             </Card>
@@ -394,13 +429,13 @@ function StatCard({
   value,
   color,
 }: {
-  icon: string;
+  icon: string | React.ReactNode;
   label: string;
   value: string;
-  color: 'cookie' | 'warning' | 'primary' | 'gold';
+  color: 'gem' | 'warning' | 'primary' | 'gold';
 }) {
   const colorClasses = {
-    cookie: 'text-accent-cookie',
+    gem: 'text-accent-gem',
     warning: 'text-warning',
     primary: 'text-accent-primary',
     gold: 'text-accent-gold',

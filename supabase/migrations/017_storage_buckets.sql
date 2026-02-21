@@ -167,3 +167,65 @@ COMMENT ON COLUMN public.class_materials.teacher_id IS 'Teacher who uploaded the
 COMMENT ON COLUMN public.class_materials.file_path IS 'Path to file in Supabase Storage';
 COMMENT ON COLUMN public.class_materials.file_size IS 'File size in bytes';
 COMMENT ON COLUMN public.class_materials.file_type IS 'MIME type of the file';
+
+-- ============================================================================
+-- CHARACTER SPRITES STORAGE BUCKET (T152 - Phase 10)
+-- ============================================================================
+
+-- Create storage bucket for character sprites (64x64px 8-bit assets)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'character-sprites',
+  'character-sprites',
+  true, -- Public bucket for fast CDN delivery
+  524288, -- 512KB limit (sprites are small)
+  ARRAY[
+    'image/png',
+    'image/webp',
+    'image/gif'
+  ]
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage bucket RLS policies for character sprites
+-- Public read access (sprites are public assets)
+CREATE POLICY "Anyone can view character sprites"
+  ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'character-sprites');
+
+-- Only admins can upload sprites
+CREATE POLICY "Only admins can upload character sprites"
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'character-sprites' AND
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Only admins can update sprites
+CREATE POLICY "Only admins can update character sprites"
+  ON storage.objects
+  FOR UPDATE
+  USING (
+    bucket_id = 'character-sprites' AND
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Only admins can delete sprites
+CREATE POLICY "Only admins can delete character sprites"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'character-sprites' AND
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );

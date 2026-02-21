@@ -9,15 +9,22 @@ CREATE POLICY "Users can view own profile"
   ON profiles
   FOR SELECT
   TO authenticated
-  USING ((SELECT auth.uid()) = id);
+  USING (auth.uid() = id);
+
+-- Policy: Users can insert their own profile (for signup trigger)
+CREATE POLICY "Users can insert own profile"
+  ON profiles
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = id);
 
 -- Policy: Users can update their own profile
 CREATE POLICY "Users can update own profile"
   ON profiles
   FOR UPDATE
   TO authenticated
-  USING ((SELECT auth.uid()) = id)
-  WITH CHECK ((SELECT auth.uid()) = id);
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
 -- Policy: Admins can view all profiles
 CREATE POLICY "Admins can view all profiles"
@@ -25,11 +32,7 @@ CREATE POLICY "Admins can view all profiles"
   FOR SELECT
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = (SELECT auth.uid())
-      AND role = 'admin'
-    )
+    (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
   );
 
 -- Policy: Admins can update all profiles
@@ -38,18 +41,10 @@ CREATE POLICY "Admins can update all profiles"
   FOR UPDATE
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = (SELECT auth.uid())
-      AND role = 'admin'
-    )
+    (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
   )
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = (SELECT auth.uid())
-      AND role = 'admin'
-    )
+    (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
   );
 
 -- Policy: Admins can delete profiles
@@ -58,11 +53,7 @@ CREATE POLICY "Admins can delete profiles"
   FOR DELETE
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = (SELECT auth.uid())
-      AND role = 'admin'
-    )
+    (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
   );
 
 -- Policy: Teachers can view student profiles (for their classes)
@@ -73,11 +64,7 @@ CREATE POLICY "Teachers can view student profiles"
   TO authenticated
   USING (
     role = 'student'
-    AND EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = (SELECT auth.uid())
-      AND role IN ('teacher', 'admin')
-    )
+    AND (SELECT role FROM profiles WHERE id = auth.uid()) IN ('teacher', 'admin')
   );
 
 -- Policy: Students can view teacher profiles
@@ -87,11 +74,7 @@ CREATE POLICY "Students can view teacher profiles"
   TO authenticated
   USING (
     role = 'teacher'
-    AND EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = (SELECT auth.uid())
-      AND role IN ('student', 'parent', 'admin')
-    )
+    AND (SELECT role FROM profiles WHERE id = auth.uid()) IN ('student', 'parent', 'admin')
   );
 
 -- Policy: Parents can view their children's profiles
@@ -102,11 +85,7 @@ CREATE POLICY "Parents can view children profiles"
   TO authenticated
   USING (
     role = 'student'
-    AND EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = (SELECT auth.uid())
-      AND role = 'parent'
-    )
+    AND (SELECT role FROM profiles WHERE id = auth.uid()) = 'parent'
     -- TODO: Add parent_children table relationship check
   );
 

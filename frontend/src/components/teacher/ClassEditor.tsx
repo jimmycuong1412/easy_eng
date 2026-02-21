@@ -44,6 +44,7 @@ export default function ClassEditor({ classId, onSuccess, onCancel }: ClassEdito
 
   useEffect(() => {
     loadClassData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId]);
 
   const loadClassData = async () => {
@@ -283,7 +284,7 @@ export default function ClassEditor({ classId, onSuccess, onCancel }: ClassEdito
           <select
             id="duration_minutes"
             name="duration_minutes"
-            value={formData.duration_minutes || 50}
+            value={formData.duration_minutes || 25}
             onChange={handleChange}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           >

@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { User, Mail, DollarSign, Gem, Loader2, CheckCircle, XCircle } from 'lucide-react';
 
@@ -25,7 +26,7 @@ interface EnrolledStudent {
   created_at: string;
   student: {
     id: string;
-    display_name: string;
+    full_name: string;
     email: string;
     avatar_url: string | null;
   };
@@ -43,6 +44,7 @@ export default function EnrolledStudentsList({ classId }: EnrolledStudentsListPr
 
   useEffect(() => {
     loadStudents();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId]);
 
   const loadStudents = async () => {
@@ -59,7 +61,7 @@ export default function EnrolledStudentsList({ classId }: EnrolledStudentsListPr
           created_at,
           student:profiles!student_id (
             id,
-            display_name,
+            full_name,
             email,
             avatar_url
           )
@@ -128,9 +130,11 @@ export default function EnrolledStudentsList({ classId }: EnrolledStudentsListPr
                 {/* Avatar */}
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20">
                   {enrollment.student.avatar_url ? (
-                    <img
+                    <Image
                       src={enrollment.student.avatar_url}
-                      alt={enrollment.student.display_name}
+                      alt={enrollment.student.full_name}
+                      width={48}
+                      height={48}
                       className="h-12 w-12 rounded-full"
                     />
                   ) : (
@@ -141,7 +145,7 @@ export default function EnrolledStudentsList({ classId }: EnrolledStudentsListPr
                 {/* Student Info */}
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 dark:text-white">
-                    {enrollment.student.display_name}
+                    {enrollment.student.full_name}
                   </h4>
                   <div className="mt-1 flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                     <Mail className="h-4 w-4" />

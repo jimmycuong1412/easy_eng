@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
 import { format } from 'date-fns';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 interface UpcomingClass {
   id: string;
@@ -37,30 +38,43 @@ export function UpcomingClassesWidget() {
 
       try {
         setIsLoading(true);
-        // TODO: Replace with actual API call
-        // const response = await fetch(`/api/students/${user.id}/upcoming-classes`);
-        // const data = await response.json();
-        // setClasses(data.classes);
+        const supabase = getSupabaseClient();
 
-        // Mock data for now
-        setClasses([
-          {
-            id: '1',
-            title: 'English Conversation Practice',
-            teacher: 'Teacher Sarah',
-            scheduledAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-            duration: 25,
-            topic: 'Daily Conversations',
-          },
-          {
-            id: '2',
-            title: 'Business English',
-            teacher: 'Teacher Mike',
-            scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-            duration: 25,
-            topic: 'Professional Communication',
-          },
-        ]);
+        const { data, error } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            class:classes (
+              id,
+              title,
+              description,
+              start_time,
+              duration_minutes,
+              teacher:profiles!teacher_id (
+                full_name
+              )
+            )
+          `)
+          .eq('user_id', user.id)
+          .in('status', ['confirmed', 'pending'])
+          .gte('classes.start_time', new Date().toISOString())
+          .order('classes(start_time)', { ascending: true })
+          .limit(3);
+
+        if (error) throw error;
+
+        const mapped: UpcomingClass[] = (data || [])
+          .filter((b: any) => b.class)
+          .map((b: any) => ({
+            id: b.class.id,
+            title: b.class.title,
+            teacher: b.class.teacher?.full_name || 'Teacher',
+            scheduledAt: new Date(b.class.start_time),
+            duration: b.class.duration_minutes,
+            topic: b.class.description || '',
+          }));
+
+        setClasses(mapped);
       } catch (error) {
         console.error('Error fetching upcoming classes:', error);
       } finally {

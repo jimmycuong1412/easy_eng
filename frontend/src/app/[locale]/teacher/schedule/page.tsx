@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Calendar,
@@ -8,17 +9,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Video,
-  User,
-  BookOpen,
   Plus,
   X,
   Settings,
+  Loader2,
 } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -28,122 +28,122 @@ import {
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/hooks/useAuth';
+import { getTeacherSchedule } from '@/lib/queries';
 
-// Mock schedule data
-const mockSchedule = {
-  '2026-01-20': [
-    {
-      id: 'slot-1',
-      time: '09:00',
-      duration: 25,
-      status: 'completed',
-      student: { name: 'Trần Văn Nam', avatar: '', level: 'Intermediate' },
-      topic: 'IELTS Speaking',
-    },
-    {
-      id: 'slot-2',
-      time: '10:00',
-      duration: 25,
-      status: 'completed',
-      student: { name: 'Lê Thị Hoa', avatar: '', level: 'Advanced' },
-      topic: 'Business English',
-    },
-  ],
-  '2026-01-21': [
-    {
-      id: 'slot-3',
-      time: '14:00',
-      duration: 25,
-      status: 'completed',
-      student: { name: 'Nguyễn Hoàng Minh', avatar: '', level: 'Beginner' },
-      topic: 'Grammar Review',
-    },
-  ],
-  '2026-01-22': [],
-  '2026-01-23': [
-    {
-      id: 'slot-4',
-      time: '09:00',
-      duration: 25,
-      status: 'upcoming',
-      student: { name: 'Trần Văn Nam', avatar: '', level: 'Intermediate' },
-      topic: 'IELTS Speaking Part 1',
-    },
-    {
-      id: 'slot-5',
-      time: '10:00',
-      duration: 25,
-      status: 'upcoming',
-      student: { name: 'Lê Thị Hoa', avatar: '', level: 'Advanced' },
-      topic: 'Business Email Writing',
-    },
-    {
-      id: 'slot-6',
-      time: '14:00',
-      duration: 25,
-      status: 'upcoming',
-      student: { name: 'Nguyễn Hoàng Minh', avatar: '', level: 'Beginner' },
-      topic: 'Grammar: Tenses',
-    },
-  ],
-  '2026-01-24': [
-    {
-      id: 'slot-7',
-      time: '09:00',
-      duration: 25,
-      status: 'available',
-      student: null,
-      topic: null,
-    },
-    {
-      id: 'slot-8',
-      time: '11:00',
-      duration: 25,
-      status: 'available',
-      student: null,
-      topic: null,
-    },
-    {
-      id: 'slot-9',
-      time: '15:00',
-      duration: 25,
-      status: 'booked',
-      student: { name: 'Phạm Thị Mai', avatar: '', level: 'Intermediate' },
-      topic: 'Conversational English',
-    },
-  ],
-  '2026-01-25': [
-    {
-      id: 'slot-10',
-      time: '10:00',
-      duration: 25,
-      status: 'available',
-      student: null,
-      topic: null,
-    },
-    {
-      id: 'slot-11',
-      time: '14:00',
-      duration: 25,
-      status: 'available',
-      student: null,
-      topic: null,
-    },
-  ],
-  '2026-01-26': [],
-};
+interface ScheduleSlot {
+  id: string;
+  time: string;
+  duration: number;
+  status: string;
+  student: { name: string; avatar: string; level: string } | null;
+  topic: string | null;
+}
 
-const timeSlots = [
-  '08:00', '09:00', '10:00', '11:00', '12:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00',
-  '18:00', '19:00', '20:00', '21:00',
-];
+type ScheduleData = Record<string, ScheduleSlot[]>;
+
+// 25-minute class slots from 08:00 to 21:25
+const timeSlots = (() => {
+  const slots: string[] = [];
+  let totalMinutes = 8 * 60; // 08:00
+  while (totalMinutes <= 21 * 60 + 25) {
+    const h = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
+    const m = (totalMinutes % 60).toString().padStart(2, '0');
+    slots.push(`${h}:${m}`);
+    totalMinutes += 25;
+  }
+  return slots;
+})();
 
 export default function TeacherSchedulePage() {
-  const [currentWeekStart, setCurrentWeekStart] = React.useState(new Date('2026-01-20'));
-  const [selectedSlot, setSelectedSlot] = React.useState<any>(null);
+  const { user, isLoading: authLoading } = useAuth();
+  const [schedule, setSchedule] = useState<ScheduleData>({});
+  const [loading, setLoading] = useState(true);
+  const [currentWeekStart, setCurrentWeekStart] = React.useState(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+    return new Date(now.setDate(diff));
+  });
+  const [selectedSlot, setSelectedSlot] = React.useState<ScheduleSlot | null>(null);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = React.useState(false);
-  const [availableSlots, setAvailableSlots] = React.useState<Record<string, boolean>>({});
+  const [_availableSlots, _setAvailableSlots] = React.useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchSchedule = async () => {
+      try {
+        setLoading(true);
+        const data = await getTeacherSchedule(user.id) as Record<string, unknown>;
+        const sessions = (data.sessions as Record<string, unknown>[]) || [];
+        const availability = (data.availability as Record<string, unknown>[]) || [];
+
+        const scheduleMap: ScheduleData = {};
+
+        // Map sessions to schedule slots
+        sessions.forEach((session) => {
+          const startTime = new Date(session.scheduled_start_time as string);
+          const dateKey = startTime.toISOString().split('T')[0];
+          const timeStr = startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const cls = session.classes as Record<string, unknown> | null;
+
+          if (!scheduleMap[dateKey]) scheduleMap[dateKey] = [];
+
+          const now = new Date();
+          let status = 'upcoming';
+          if (startTime < now) status = 'completed';
+          if (session.status === 'cancelled') status = 'cancelled';
+
+          scheduleMap[dateKey].push({
+            id: session.id as string,
+            time: timeStr,
+            duration: (cls?.duration_minutes as number) || 25,
+            status,
+            student: null, // Session data does not include student info directly
+            topic: (cls?.title as string) || null,
+          });
+        });
+
+        // Map availability to available slots
+        availability.forEach((avail) => {
+          const dayOfWeek = avail.day_of_week as number;
+          const startTimeStr = avail.start_time as string;
+
+          // Generate dates for this availability within visible range
+          const weekStart = new Date(currentWeekStart);
+          for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(weekStart.getDate() + i);
+            if (date.getDay() === dayOfWeek) {
+              const dateKey = date.toISOString().split('T')[0];
+              if (!scheduleMap[dateKey]) scheduleMap[dateKey] = [];
+              // Only add if no session at this time
+              const existingTimes = scheduleMap[dateKey].map(s => s.time);
+              if (!existingTimes.includes(startTimeStr.slice(0, 5))) {
+                scheduleMap[dateKey].push({
+                  id: `avail-${avail.id}-${dateKey}`,
+                  time: startTimeStr.slice(0, 5),
+                  duration: 25,
+                  status: 'available',
+                  student: null,
+                  topic: null,
+                });
+              }
+            }
+          }
+        });
+
+        setSchedule(scheduleMap);
+      } catch (err) {
+        console.error('Error fetching teacher schedule:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSchedule();
+  }, [user?.id, currentWeekStart]);
 
   const getWeekDays = (startDate: Date) => {
     const days = [];
@@ -183,7 +183,7 @@ export default function TeacherSchedulePage() {
 
   const getSlotForTime = (date: Date, time: string) => {
     const dateStr = formatDate(date);
-    const daySchedule = mockSchedule[dateStr as keyof typeof mockSchedule] || [];
+    const daySchedule = schedule[dateStr] || [];
     return daySchedule.find((slot) => slot.time === time);
   };
 
@@ -203,9 +203,17 @@ export default function TeacherSchedulePage() {
   };
 
   const isToday = (date: Date) => {
-    const today = new Date('2026-01-23'); // Mock today
+    const today = new Date();
     return formatDate(date) === formatDate(today);
   };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] py-8">
