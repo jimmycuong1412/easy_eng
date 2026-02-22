@@ -5,7 +5,6 @@ import { VideoStream } from './VideoStream';
 import { CallControls } from './CallControls';
 import { useVideoCall } from '@/hooks/useVideoCall';
 import { logger } from '@/lib/cometchat/logger';
-import type { CallSession } from '@/types/cometchat';
 
 interface CometChatVideoCallProps {
   remoteUserId: string;
@@ -37,34 +36,38 @@ export function CometChatVideoCall({
     cameraEnabled,
     remoteVideoStream,
     localVideoStream,
+    incomingCall: hookIncomingCall,
     startCall,
     acceptCall,
-    rejectCall,
+    rejectCall: _rejectCall,
     endCall,
     toggleMicrophone,
     toggleCamera,
     startScreenShare,
     stopScreenShare,
-  } = useVideoCall();
+  } = useVideoCall() as any;
 
   const [callDuration, setCallDuration] = useState(0);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [hasAttemptedCall, setHasAttemptedCall] = useState(false);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Start call if not incoming
+  // Start call if not incoming — only attempt once to avoid infinite retry loop
   useEffect(() => {
-    if (!isIncoming && !isCallActive && !isConnecting) {
+    if (!isIncoming && !isCallActive && !isConnecting && !hasAttemptedCall && remoteUserId) {
+      setHasAttemptedCall(true);
       startCall(remoteUserId, 'video');
     }
-  }, [isIncoming, isCallActive, isConnecting, remoteUserId, startCall]);
+  }, [isIncoming, isCallActive, isConnecting, hasAttemptedCall, remoteUserId, startCall]);
 
-  // Handle incoming call
+  // Handle incoming call — use prop if provided, otherwise fall back to hook state
+  const resolvedIncomingCall = incomingCall ?? hookIncomingCall;
   useEffect(() => {
-    if (isIncoming && incomingCall && !isCallActive) {
-      // Auto-accept for demo purposes, in production show UI to user
-      acceptCall(incomingCall);
+    if (isIncoming && resolvedIncomingCall && !isCallActive) {
+      // Auto-accept when teacher receives a student's call
+      acceptCall(resolvedIncomingCall);
     }
-  }, [isIncoming, incomingCall, isCallActive, acceptCall]);
+  }, [isIncoming, resolvedIncomingCall, isCallActive, acceptCall]);
 
   // Call duration timer
   useEffect(() => {
@@ -79,6 +82,7 @@ export function CometChatVideoCall({
         }
       };
     }
+    return undefined;
   }, [isCallActive, callSession]);
 
   const handleEndCall = async () => {
@@ -128,6 +132,23 @@ export function CometChatVideoCall({
           >
             Close
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Teacher waiting for student to call
+  if (isIncoming && !isCallActive && !isConnecting && !resolvedIncomingCall) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900 rounded-lg">
+        <div className="text-center">
+          <div className="animate-pulse rounded-full h-12 w-12 border-4 border-green-500 mx-auto mb-4 flex items-center justify-center">
+            <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
+          </div>
+          <p className="text-white text-lg font-medium">Waiting for student to join...</p>
+          <p className="text-gray-400 text-sm mt-2">The call will start automatically when the student connects</p>
         </div>
       </div>
     );

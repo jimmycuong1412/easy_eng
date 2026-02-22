@@ -86,10 +86,44 @@ export default function LiveClassPage() {
   const [useCometChatIntegration, _setUseCometChatIntegration] = React.useState(true);
 
   // CometChat integration
-  const { isInitialized, isLoggedIn, currentUser: cometChatUser, error: cometChatError } = useCometChat();
+  const { isInitialized, isLoggedIn, currentUser: cometChatUser, error: cometChatError, login: cometChatLogin } = useCometChat();
   const teacherName = classSession?.classes?.profiles?.full_name || '';
-  const { messages, sendMessage, isSending: _isSending } = useCometChatMessages(teacherName);
+  const teacherId = classSession?.teacher_id || '';
+
+  // Determine if the current user is the teacher or the student.
+  // Teachers wait for the student's incoming call — they don't initiate.
+  // Students initiate the call to the teacher.
+  const isTeacher = !!(currentUser && teacherId && currentUser.id === teacherId);
+
+  const { messages, sendMessage, isSending: _isSending } = useCometChatMessages(teacherId);
   const { setActiveCall: _setActiveCall } = useVideoCallStore();
+
+  // Auto-login to CometChat once initialized and user data is available.
+  // Also pre-register the teacher so calls can be directed to them.
+  const [teacherPreRegistered, setTeacherPreRegistered] = React.useState(false);
+  React.useEffect(() => {
+    if (!isInitialized || !currentUser) return;
+
+    if (!isLoggedIn) {
+      // Login — pass teacherId if available so backend registers teacher at same time
+      cometChatLogin(currentUser.id, undefined, teacherId || undefined)
+        .then(() => {
+          if (teacherId) setTeacherPreRegistered(true);
+        })
+        .catch((err) => {
+          console.error('[LiveClass] CometChat login failed:', err);
+        });
+    } else if (isLoggedIn && teacherId && !teacherPreRegistered) {
+      // Already logged in but teacher not yet pre-registered — register now
+      fetch('/api/cometchat/auth-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: teacherId }),
+      })
+        .then(() => setTeacherPreRegistered(true))
+        .catch((err) => console.error('[LiveClass] Teacher pre-registration failed:', err));
+    }
+  }, [isInitialized, isLoggedIn, currentUser, teacherId, teacherPreRegistered, cometChatLogin]);
 
   // Fallback mock messages
   const [fallbackMessages, setFallbackMessages] = React.useState<Array<{
@@ -125,7 +159,7 @@ export default function LiveClassPage() {
         // Fetch the active class session for this class
         const { data: sessionData, error: sessionError } = await supabase
           .from('class_sessions')
-          .select('*, classes(id, title, description, duration_minutes, level, price, profiles!classes_teacher_id_fkey(full_name, avatar_url, average_rating))')
+          .select('*, classes(id, title, description, duration_minutes, level, price, profiles!classes_teacher_id_profiles_fkey(full_name, avatar_url))')
           .eq('class_id', classId)
           .in('status', ['live', 'waiting', 'scheduled'])
           .order('scheduled_start_time', { ascending: false })
@@ -136,7 +170,7 @@ export default function LiveClassPage() {
           // If no active session found, try to get class info directly
           const { data: classData, error: classError } = await supabase
             .from('classes')
-            .select('*, profiles!classes_teacher_id_fkey(full_name, avatar_url, average_rating)')
+            .select('*, profiles!classes_teacher_id_profiles_fkey(full_name, avatar_url)')
             .eq('id', classId)
             .single();
 
@@ -271,7 +305,7 @@ export default function LiveClassPage() {
   const studentName = currentUser?.full_name || 'Student';
   const studentAvatar = currentUser?.avatar_url || '';
   const xpReward = 100;
-  const cookiesReward = 5;
+  const gemsReward = 5;
 
   return (
     <div className="h-screen bg-[#0A1628] flex flex-col">
@@ -334,14 +368,29 @@ export default function LiveClassPage() {
           {useCometChatIntegration && isInitialized && cometChatUser ? (
             <CallErrorBoundary>
               <div className="flex-1 rounded-2xl overflow-hidden">
-                <CometChatVideoCall
-                  remoteUserId={teacherName}
-                  remoteUserName={teacherName}
-                  remoteUserAvatar={teacherAvatarUrl}
-                  localUserName={studentName}
-                  localUserAvatar={studentAvatar}
-                  onCallEnded={() => setShowEndDialog(true)}
-                />
+                {isTeacher ? (
+                  // Teacher waits for student to call — renders in receive/waiting mode
+                  <CometChatVideoCall
+                    remoteUserId=""
+                    remoteUserName="Student"
+                    remoteUserAvatar=""
+                    localUserName={teacherName || studentName}
+                    localUserAvatar={teacherAvatarUrl || studentAvatar}
+                    isIncoming={true}
+                    onCallEnded={() => setShowEndDialog(true)}
+                  />
+                ) : (
+                  // Student initiates the call to the teacher
+                  <CometChatVideoCall
+                    remoteUserId={teacherId}
+                    remoteUserName={teacherName}
+                    remoteUserAvatar={teacherAvatarUrl}
+                    localUserName={studentName}
+                    localUserAvatar={studentAvatar}
+                    isIncoming={false}
+                    onCallEnded={() => setShowEndDialog(true)}
+                  />
+                )}
               </div>
             </CallErrorBoundary>
           ) : (
@@ -542,7 +591,7 @@ export default function LiveClassPage() {
                 +{xpReward} XP
               </Badge>
               <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
-                +{cookiesReward} Gems
+                +{gemsReward} Gems
               </Badge>
             </div>
           </div>

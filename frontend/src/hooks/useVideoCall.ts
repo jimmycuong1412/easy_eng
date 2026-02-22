@@ -3,7 +3,27 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { CometChat } from '@/lib/cometchat/client';
 import { logger } from '@/lib/cometchat/logger';
-import type { UseVideoCallReturn, CallSession } from '@/types/cometchat';
+import type { CallSession } from '@/types/cometchat';
+
+interface UseVideoCallReturn {
+  callSession: CallSession | null;
+  isCallActive: boolean;
+  isConnecting: boolean;
+  error: Error | null;
+  micEnabled: boolean;
+  cameraEnabled: boolean;
+  remoteVideoStream: MediaStream | null;
+  localVideoStream: MediaStream | null;
+  incomingCall: CometChat.Call | null;
+  startCall: (receiverId: string, callType?: 'audio' | 'video') => Promise<void>;
+  acceptCall: (call: CometChat.Call) => Promise<void>;
+  rejectCall: (call: CometChat.Call) => Promise<void>;
+  endCall: (session: CallSession) => Promise<void>;
+  toggleMicrophone: () => Promise<void>;
+  toggleCamera: () => Promise<void>;
+  startScreenShare: () => Promise<void>;
+  stopScreenShare: () => Promise<void>;
+}
 
 export function useVideoCall(): UseVideoCallReturn {
   const [callSession, setCallSession] = useState<CallSession | null>(null);
@@ -14,9 +34,8 @@ export function useVideoCall(): UseVideoCallReturn {
   const [cameraEnabled, setCameraEnabled] = useState(true);
   const [remoteVideoStream, setRemoteVideoStream] = useState<MediaStream | null>(null);
   const [localVideoStream, setLocalVideoStream] = useState<MediaStream | null>(null);
+  const [incomingCall, setIncomingCall] = useState<CometChat.Call | null>(null);
   const callListenerRef = useRef<((call: CometChat.Call) => void) | null>(null);
-  const callEndedListenerRef = useRef<((call: CometChat.Call) => void) | null>(null);
-  const callIncomingListenerRef = useRef<((call: CometChat.Call) => void) | null>(null);
 
   // Setup call listeners
   useEffect(() => {
@@ -40,6 +59,7 @@ export function useVideoCall(): UseVideoCallReturn {
               fromUser: call.getCallInitiator().getName(),
               timestamp: new Date(),
             });
+            setIncomingCall(call);
           },
           onCallRejected: (call: CometChat.Call) => {
             logger.logCallEvent({
@@ -55,13 +75,13 @@ export function useVideoCall(): UseVideoCallReturn {
             logger.logCallEvent({
               type: 'call_ended',
               callId: call.getSessionId(),
-              duration: call.getDuration(),
               timestamp: new Date(),
             });
             setIsCallActive(false);
             setCallSession(null);
             setLocalVideoStream(null);
             setRemoteVideoStream(null);
+            setIncomingCall(null);
           },
         })
       );
@@ -88,9 +108,10 @@ export function useVideoCall(): UseVideoCallReturn {
         );
 
         const initiatedCall = await CometChat.initiateCall(call);
+        const sessionId = initiatedCall.getSessionId();
         setCallSession({
-          id: initiatedCall.getSessionId(),
-          callId: initiatedCall.getCallId(),
+          id: sessionId,
+          callId: sessionId,
           type: callType,
           status: 'initiated',
           startTime: new Date(),
@@ -99,7 +120,7 @@ export function useVideoCall(): UseVideoCallReturn {
 
         logger.logCallEvent({
           type: 'call_started',
-          callId: initiatedCall.getSessionId(),
+          callId: sessionId,
           callType,
           timestamp: new Date(),
         });
@@ -120,19 +141,24 @@ export function useVideoCall(): UseVideoCallReturn {
       setIsConnecting(true);
       setError(null);
 
-      const acceptedCall = await CometChat.acceptCall(call);
+      // CometChat.acceptCall takes a session ID string
+      const sessionId = call.getSessionId();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const acceptedCall = await (CometChat as any).acceptCall(sessionId);
+      const acceptedSessionId = acceptedCall.getSessionId();
       setCallSession({
-        id: acceptedCall.getSessionId(),
-        callId: acceptedCall.getCallId(),
+        id: acceptedSessionId,
+        callId: acceptedSessionId,
         type: acceptedCall.getType() === CometChat.CALL_TYPE.VIDEO ? 'video' : 'audio',
         status: 'accepted',
         startTime: new Date(),
       });
       setIsCallActive(true);
+      setIncomingCall(null);
 
       logger.logCallEvent({
         type: 'call_accepted',
-        callId: acceptedCall.getSessionId(),
+        callId: acceptedSessionId,
         timestamp: new Date(),
       });
     } catch (err) {
@@ -147,7 +173,8 @@ export function useVideoCall(): UseVideoCallReturn {
 
   const rejectCall = useCallback(async (call: CometChat.Call): Promise<void> => {
     try {
-      await CometChat.rejectCall(call);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (CometChat as any).rejectCall(call.getSessionId(), 'rejected');
 
       logger.logCallEvent({
         type: 'call_rejected',
@@ -157,6 +184,7 @@ export function useVideoCall(): UseVideoCallReturn {
 
       setIsCallActive(false);
       setCallSession(null);
+      setIncomingCall(null);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to reject call');
       setError(error);
@@ -175,10 +203,8 @@ export function useVideoCall(): UseVideoCallReturn {
         setLocalVideoStream(null);
       }
 
-      const call = await CometChat.getCall(session.callId);
-      if (call) {
-        await CometChat.endCall(call);
-      }
+      // session.id is the sessionId returned from initiateCall/acceptCall
+      await CometChat.endCall(session.id);
 
       logger.logCallEvent({
         type: 'call_ended',
@@ -203,16 +229,10 @@ export function useVideoCall(): UseVideoCallReturn {
     try {
       if (!callSession) return;
 
-      const call = await CometChat.getCall(callSession.callId);
-      if (!call) return;
-
       const newState = !micEnabled;
-
-      if (newState) {
-        await CometChat.startAudio(call);
-      } else {
-        await CometChat.stopAudio(call);
-      }
+      // Use CallController singleton for in-call media controls
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (CometChat as any).CallController.getInstance().muteAudio(!newState);
 
       setMicEnabled(newState);
       logger.info(`Microphone ${newState ? 'enabled' : 'disabled'}`, {
@@ -229,16 +249,10 @@ export function useVideoCall(): UseVideoCallReturn {
     try {
       if (!callSession) return;
 
-      const call = await CometChat.getCall(callSession.callId);
-      if (!call) return;
-
       const newState = !cameraEnabled;
-
-      if (newState) {
-        await CometChat.startVideo(call);
-      } else {
-        await CometChat.stopVideo(call);
-      }
+      // Use CallController singleton for in-call media controls
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (CometChat as any).CallController.getInstance().pauseVideo(!newState);
 
       setCameraEnabled(newState);
       logger.info(`Camera ${newState ? 'enabled' : 'disabled'}`, {
@@ -254,11 +268,8 @@ export function useVideoCall(): UseVideoCallReturn {
   const startScreenShare = useCallback(async (): Promise<void> => {
     try {
       if (!callSession) return;
-
-      const call = await CometChat.getCall(callSession.callId);
-      if (!call) return;
-
-      await CometChat.startScreenShare(call);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (CometChat as any).CallController.getInstance().startScreenShare();
       logger.info('Screen sharing started', { callId: callSession.id });
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to start screen share');
@@ -270,11 +281,8 @@ export function useVideoCall(): UseVideoCallReturn {
   const stopScreenShare = useCallback(async (): Promise<void> => {
     try {
       if (!callSession) return;
-
-      const call = await CometChat.getCall(callSession.callId);
-      if (!call) return;
-
-      await CometChat.stopScreenShare(call);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (CometChat as any).CallController.getInstance().stopScreenShare();
       logger.info('Screen sharing stopped', { callId: callSession.id });
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to stop screen share');
@@ -292,6 +300,7 @@ export function useVideoCall(): UseVideoCallReturn {
     cameraEnabled,
     remoteVideoStream,
     localVideoStream,
+    incomingCall,
     startCall,
     acceptCall,
     rejectCall,
