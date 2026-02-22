@@ -26,10 +26,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { getTeacherSchedule } from '@/lib/queries';
+import AvailabilityCalendar from '@/components/teacher/AvailabilityCalendar';
 
 interface ScheduleSlot {
   id: string;
@@ -463,49 +462,23 @@ export default function TeacherSchedulePage() {
 
         {/* Availability Settings Dialog */}
         <Dialog open={showAvailabilityDialog} onOpenChange={setShowAvailabilityDialog}>
-          <DialogContent className="bg-[#0A1628] border-white/10">
+          <DialogContent className="bg-[#0A1628] border-white/10 max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-white">
                 Cài đặt khung giờ dạy
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-slate-400">
-                Chọn các khung giờ bạn có thể dạy trong tuần
-              </p>
-
-              <div className="space-y-3">
-                {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'].map(
-                  (day, index) => (
-                    <div
-                      key={day}
-                      className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
-                    >
-                      <span className="text-white font-medium">{day}</span>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-slate-400 text-sm">
-                          08:00 - 22:00
-                        </Label>
-                        <Switch defaultChecked={index < 5} />
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-            <DialogFooter>
+            <p className="text-sm text-slate-400 -mt-2 mb-2">
+              Bật/tắt từng khung giờ 30 phút. Học viên chỉ thấy các slot đang bật.
+            </p>
+            <AvailabilityCalendar />
+            <DialogFooter className="mt-4">
               <Button
                 variant="outline"
                 className="border-white/20 text-white"
                 onClick={() => setShowAvailabilityDialog(false)}
               >
-                Hủy
-              </Button>
-              <Button
-                className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
-                onClick={() => setShowAvailabilityDialog(false)}
-              >
-                Lưu thay đổi
+                Đóng
               </Button>
             </DialogFooter>
           </DialogContent>

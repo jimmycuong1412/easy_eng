@@ -1,116 +1,135 @@
 'use client';
 
 /**
- * Availability Calendar Component
+ * AvailabilityCalendar — Teacher slot management
  *
- * Allows teachers to set their weekly availability schedule
- *
- * Related Tasks: T093 [P] [US4] Create teacher availability component
+ * Shows each day's 30-min slots derived from teacher_availability ranges.
+ * Teachers toggle individual slots on/off; state is saved to teacher_slot_overrides.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Clock, Plus, X, Save, Loader2 } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-interface TimeSlot {
-  id?: string;
+interface AvailabilityRow {
   day_of_week: number;
   start_time: string;
   end_time: string;
-  is_active: boolean;
 }
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+interface SlotState {
+  // "dayOfWeek:HH:MM" -> true=enabled, false=disabled
+  [key: string]: boolean;
+}
+
+const DAY_NAMES = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+const ORDERED_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun display order
+
+/** Expand an availability range into 30-min slot start times */
+function expandSlots(startTime: string, endTime: string): string[] {
+  const [sh, sm] = startTime.slice(0, 5).split(':').map(Number);
+  const [eh, em] = endTime.slice(0, 5).split(':').map(Number);
+  let mins = sh * 60 + sm;
+  const endMins = eh * 60 + em;
+  const slots: string[] = [];
+  while (mins + 25 <= endMins) {
+    const h = Math.floor(mins / 60).toString().padStart(2, '0');
+    const m = (mins % 60).toString().padStart(2, '0');
+    slots.push(`${h}:${m}`);
+    mins += 30;
+  }
+  return slots;
+}
 
 export default function AvailabilityCalendar() {
   const supabase = createClient();
-  const [availability, setAvailability] = useState<TimeSlot[]>([]);
+  const [availability, setAvailability] = useState<AvailabilityRow[]>([]);
+  const [slotState, setSlotState] = useState<SlotState>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    loadAvailability();
-  }, []);
-
-  const loadAvailability = async () => {
+  const load = useCallback(async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('teacher_availability')
-        .select('*')
-        .eq('teacher_id', user.id)
-        .order('day_of_week')
-        .order('start_time');
+      const [availResult, overridesResult] = await Promise.all([
+        supabase
+          .from('teacher_availability')
+          .select('day_of_week, start_time, end_time')
+          .eq('teacher_id', user.id)
+          .eq('is_active', true),
+        supabase
+          .from('teacher_slot_overrides')
+          .select('day_of_week, slot_time, is_enabled')
+          .eq('teacher_id', user.id),
+      ]);
 
-      if (error) throw error;
+      if (availResult.error) throw availResult.error;
 
-      setAvailability(data || []);
-      setLoading(false);
-    } catch (err: any) {
-      setError(err.message);
+      const rows = availResult.data ?? [];
+      setAvailability(rows);
+
+      // Build initial slot state: all slots enabled by default,
+      // then apply saved overrides
+      const state: SlotState = {};
+      rows.forEach((row) => {
+        expandSlots(row.start_time, row.end_time).forEach((slot) => {
+          state[`${row.day_of_week}:${slot}`] = true; // default enabled
+        });
+      });
+      (overridesResult.data ?? []).forEach((o) => {
+        const key = `${o.day_of_week}:${(o.slot_time as string).slice(0, 5)}`;
+        if (key in state) state[key] = o.is_enabled;
+      });
+
+      setSlotState(state);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load');
+    } finally {
       setLoading(false);
     }
+  }, [supabase]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const toggle = (key: string) => {
+    setSlotState((prev) => ({ ...prev, [key]: !prev[key] }));
+    setSaved(false);
   };
 
-  const addTimeSlot = (dayOfWeek: number) => {
-    const newSlot: TimeSlot = {
-      day_of_week: dayOfWeek,
-      start_time: '09:00',
-      end_time: '10:00',
-      is_active: true,
-    };
-    setAvailability([...availability, newSlot]);
-  };
-
-  const removeTimeSlot = (index: number) => {
-    setAvailability(availability.filter((_, i) => i !== index));
-  };
-
-  const updateTimeSlot = (index: number, field: keyof TimeSlot, value: any) => {
-    const updated = [...availability];
-    updated[index] = { ...updated[index], [field]: value };
-    setAvailability(updated);
-  };
-
-  const saveAvailability = async () => {
+  const save = async () => {
     setSaving(true);
     setError(null);
-
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Delete existing availability
-      await supabase.from('teacher_availability').delete().eq('teacher_id', user.id);
+      // Upsert all slots that exist in state
+      const rows = Object.entries(slotState).map(([key, isEnabled]) => {
+        const day = parseInt(key.split(':')[0]);
+        const hm = key.slice(key.indexOf(':') + 1); // "HH:MM"
+        return {
+          teacher_id: user.id,
+          day_of_week: day,
+          slot_time: hm,
+          is_enabled: isEnabled,
+        };
+      });
 
-      // Insert new availability
-      const slotsToInsert = availability.map((slot) => ({
-        teacher_id: user.id,
-        day_of_week: slot.day_of_week,
-        start_time: slot.start_time,
-        end_time: slot.end_time,
-        is_active: slot.is_active,
-      }));
-
-      if (slotsToInsert.length > 0) {
-        const { error: insertError } = await supabase
-          .from('teacher_availability')
-          .insert(slotsToInsert);
-
-        if (insertError) throw insertError;
+      if (rows.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from('teacher_slot_overrides')
+          .upsert(rows, { onConflict: 'teacher_id,day_of_week,slot_time' });
+        if (upsertErr) throw upsertErr;
       }
 
-      alert('Availability saved successfully!');
-      loadAvailability();
-    } catch (err: any) {
-      setError(err.message || 'Failed to save availability');
+      setSaved(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
     }
@@ -124,89 +143,96 @@ export default function AvailabilityCalendar() {
     );
   }
 
+  // Group availability by day
+  const byDay: Record<number, AvailabilityRow[]> = {};
+  availability.forEach((row) => {
+    if (!byDay[row.day_of_week]) byDay[row.day_of_week] = [];
+    byDay[row.day_of_week].push(row);
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20">
-          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-        </div>
+        <div className="rounded-md bg-red-900/20 p-3 text-sm text-red-300">{error}</div>
       )}
 
-      <div className="space-y-4">
-        {DAYS.map((day, dayIndex) => {
-          const daySlots = availability.filter((slot) => slot.day_of_week === dayIndex);
+      {availability.length === 0 ? (
+        <p className="text-sm text-slate-400 text-center py-8">
+          Chưa có khung giờ. Thêm availability range trước.
+        </p>
+      ) : (
+        ORDERED_DAYS.map((dayIndex) => {
+          const rows = byDay[dayIndex];
+          if (!rows) return null;
+
+          const allSlots = rows.flatMap((r) => expandSlots(r.start_time, r.end_time));
+          if (allSlots.length === 0) return null;
+
+          const enabledCount = allSlots.filter((s) => slotState[`${dayIndex}:${s}`] !== false).length;
+          const allOn = enabledCount === allSlots.length;
 
           return (
-            <div key={dayIndex} className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+            <div key={dayIndex} className="rounded-lg border border-white/10 bg-white/5 p-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900 dark:text-white">{day}</h4>
+                <div>
+                  <span className="font-semibold text-white">{DAY_NAMES[dayIndex]}</span>
+                  <span className="ml-2 text-xs text-slate-400">
+                    {enabledCount}/{allSlots.length} slot
+                  </span>
+                </div>
                 <button
-                  onClick={() => addTimeSlot(dayIndex)}
-                  className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1 text-sm font-semibold text-white hover:bg-blue-700"
+                  onClick={() => {
+                    const newVal = !allOn;
+                    setSlotState((prev) => {
+                      const next = { ...prev };
+                      allSlots.forEach((s) => { next[`${dayIndex}:${s}`] = newVal; });
+                      return next;
+                    });
+                    setSaved(false);
+                  }}
+                  className="text-xs text-slate-400 hover:text-white underline"
                 >
-                  <Plus className="h-4 w-4" />
-                  Add Time
+                  {allOn ? 'Tắt tất cả' : 'Bật tất cả'}
                 </button>
               </div>
 
-              {daySlots.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No availability set</p>
-              ) : (
-                <div className="space-y-2">
-                  {daySlots.map((slot, slotIndex) => {
-                    const globalIndex = availability.findIndex(
-                      (s) => s.day_of_week === slot.day_of_week && s.start_time === slot.start_time
-                    );
-
-                    return (
-                      <div key={slotIndex} className="flex items-center gap-3">
-                        <Clock className="h-5 w-5 text-gray-400" />
-                        <input
-                          type="time"
-                          value={slot.start_time}
-                          onChange={(e) => updateTimeSlot(globalIndex, 'start_time', e.target.value)}
-                          className="rounded-md border border-gray-300 px-3 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                        />
-                        <span className="text-gray-500">to</span>
-                        <input
-                          type="time"
-                          value={slot.end_time}
-                          onChange={(e) => updateTimeSlot(globalIndex, 'end_time', e.target.value)}
-                          className="rounded-md border border-gray-300 px-3 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                        />
-                        <button
-                          onClick={() => removeTimeSlot(globalIndex)}
-                          className="rounded-md p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="flex flex-wrap gap-2">
+                {allSlots.map((slot) => {
+                  const key = `${dayIndex}:${slot}`;
+                  const enabled = slotState[key] !== false;
+                  return (
+                    <button
+                      key={slot}
+                      onClick={() => toggle(key)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                        enabled
+                          ? 'bg-[#3B82F6]/20 border-[#3B82F6]/60 text-[#3B82F6] hover:bg-[#3B82F6]/30'
+                          : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20 line-through'
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           );
-        })}
-      </div>
+        })
+      )}
 
-      <button
-        onClick={saveAvailability}
-        disabled={saving}
-        className="w-full rounded-md bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+      <Button
+        onClick={save}
+        disabled={saving || saved}
+        className="w-full bg-[#3B82F6] hover:bg-[#3B82F6]/90"
       >
         {saving ? (
-          <span className="flex items-center justify-center">
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Saving...
-          </span>
+          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang lưu...</>
+        ) : saved ? (
+          '✓ Đã lưu'
         ) : (
-          <span className="flex items-center justify-center">
-            <Save className="mr-2 h-5 w-5" />
-            Save Availability
-          </span>
+          <><Save className="mr-2 h-4 w-4" />Lưu cài đặt slot</>
         )}
-      </button>
+      </Button>
     </div>
   );
 }

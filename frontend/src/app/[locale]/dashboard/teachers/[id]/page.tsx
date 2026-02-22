@@ -69,15 +69,19 @@ export default function TeacherDetailPage() {
           };
         });
 
+        const disabledSlots = new Set<string>((data.disabled_slots as string[]) || []);
+
         const avail = ((data.teacher_availability as Array<Record<string, unknown>>) || [])
           .filter((a) => a.is_active)
           .reduce((acc: Record<string, string[]>, a) => {
             const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-            const dayName = dayNames[(a.day_of_week as number) || 0];
+            const dayOfWeek = (a.day_of_week as number) || 0;
+            const dayName = dayNames[dayOfWeek];
             if (!acc[dayName]) acc[dayName] = [];
             const startTime = (a.start_time as string)?.slice(0, 5) || '09:00';
             const endTime = (a.end_time as string)?.slice(0, 5) || '17:00';
-            // Generate 25-min class slots with 5-min break between each (30-min intervals)
+            // Generate 25-min class slots with 5-min break (30-min intervals)
+            // Skip slots the teacher has disabled
             const [startH, startM] = startTime.split(':').map(Number);
             const [endH, endM] = endTime.split(':').map(Number);
             let totalMins = startH * 60 + startM;
@@ -85,8 +89,12 @@ export default function TeacherDetailPage() {
             while (totalMins + 25 <= endMins) {
               const h = Math.floor(totalMins / 60);
               const m = totalMins % 60;
-              acc[dayName].push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
-              totalMins += 30; // 25 min class + 5 min break
+              const slotStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+              const key = `${dayOfWeek}:${slotStr}`;
+              if (!disabledSlots.has(key)) {
+                acc[dayName].push(slotStr);
+              }
+              totalMins += 30;
             }
             return acc;
           }, {});
