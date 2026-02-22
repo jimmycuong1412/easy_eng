@@ -18,7 +18,7 @@
     "searchPlaceholder": "Tìm kiếm giáo viên, bài học..."
   },
   "home": {
-    "tagline": "Học Tiếng Anh vui hơn với Cookie rewards, Career Avatars và live video classes",
+    "tagline": "Học Tiếng Anh vui hơn với Gem rewards, Career Avatars và live video classes",
     "startFree": "Bắt đầu miễn phí",
     "login": "Đăng nhập",
     "features": {
@@ -26,9 +26,9 @@
         "title": "Gamification",
         "description": "Earn XP, level up your avatar, and unlock rewards"
       },
-      "cookies": {
-        "title": "Cookie Rewards",
-        "description": "Collect cookies for discounts on classes"
+      "gems": {
+        "title": "Gem Rewards",
+        "description": "Collect gems for discounts on classes"
       },
       "liveClasses": {
         "title": "Live Classes",
@@ -83,8 +83,81 @@
       "teachingSchedule": "Lịch dạy",
       "createQuiz": "Tạo Quiz",
       "notifications": "Thông báo",
-      "analytics": "Phân tích"
-    }
+      "analytics": "Phân tích",
+      "buyGems": "Nạp Gems",
+      "gemHistory": "Lịch sử Gems"
+    },
+    "welcome": "Xin chào, {name}!",
+    "welcomeSubtitle": "Tiếp tục hành trình học tiếng Anh của bạn",
+    "streak": "{days} ngày",
+    "classes": "Lớp học",
+    "upcomingClasses": "Lớp học sắp tới",
+    "viewAll": "Xem tất cả",
+    "with": "với",
+    "details": "Chi tiết",
+    "noClassesBooked": "Bạn chưa có lớp học nào được đặt",
+    "findTeachersNow": "Tìm giáo viên ngay",
+    "recommendedTeachers": "Giáo viên đề xuất",
+    "yourAvatar": "Avatar của bạn",
+    "viewAvatarDetails": "Xem chi tiết Avatar",
+    "yourGems": "Gems của bạn",
+    "discount": "= {amount} giảm giá",
+    "completeClass": "Hoàn thành lớp học",
+    "referFriend": "Giới thiệu bạn bè",
+    "firstBooking": "Đặt lớp đầu tiên",
+    "useGems": "Sử dụng Gems",
+    "learningStreak": "Chuỗi học tập",
+    "consecutiveDays": "{days} ngày liên tiếp!",
+    "today": "Hôm nay",
+    "tomorrow": "Ngày mai"
+  },
+  "teachers": {
+    "title": "Tìm giáo viên",
+    "matchCount": "{count} giáo viên phù hợp",
+    "searchPlaceholder": "Tìm theo tên, chuyên môn...",
+    "all": "Tất cả",
+    "price": "Giá:",
+    "priceAll": "Tất cả",
+    "priceUnder100k": "Dưới 100k",
+    "price100to200k": "100k - 200k",
+    "price200to300k": "200k - 300k",
+    "priceOver300k": "Trên 300k",
+    "sortBy": "Sắp xếp:",
+    "sortPopular": "Phổ biến nhất",
+    "sortRating": "Đánh giá cao",
+    "sortPriceAsc": "Giá thấp nhất",
+    "sortPriceDesc": "Giá cao nhất",
+    "onlineOnly": "Chỉ hiện online",
+    "noResults": "Không tìm thấy giáo viên phù hợp",
+    "clearFilters": "Xóa bộ lọc",
+    "reviews": "{count} đánh giá",
+    "totalClasses": "{count} lớp học",
+    "perSession": "/ 25 phút",
+    "viewDetails": "Xem chi tiết",
+    "backToList": "Quay lại danh sách",
+    "reviews_label": "{count} đánh giá",
+    "classes_label": "{count} lớp học",
+    "students_label": "{count} học sinh",
+    "responseTime": "Phản hồi: {time}",
+    "memberSince": "Thành viên từ {year}",
+    "about": "Giới thiệu",
+    "educationAndCerts": "Học vấn & Chứng chỉ",
+    "education": "Học vấn",
+    "certifications": "Chứng chỉ",
+    "studentReviews": "Đánh giá từ học sinh",
+    "viewAllReviews": "Xem tất cả đánh giá",
+    "bookClass": "Đặt lịch học",
+    "perSessionPrice": "/ 25 phút",
+    "selectDate": "Chọn ngày",
+    "selectTime": "Chọn giờ",
+    "applyGems": "Áp dụng Gems",
+    "discountAmount": "Giảm {amount}",
+    "total": "Tổng cộng",
+    "bookAt": "Đặt lịch {date} {time}",
+    "selectDateAndTime": "Chọn ngày và giờ",
+    "messageTeacher": "Nhắn tin cho giáo viên",
+    "minutes": "phút",
+    "maxDiscount": "Giảm tối đa {pct}%"
   },
   "bookings": {
     "title": "Lớp học của tôi",
@@ -97,8 +170,8 @@
     "stats": {
       "upcoming": "Sắp tới",
       "completed": "Đã hoàn thành",
-      "cookiesEarned": "Cookies kiếm được",
-      "cookiesUsed": "Cookies đã dùng"
+      "gemsEarned": "Gems kiếm được",
+      "gemsUsed": "Gems đã dùng"
     },
     "status": {
       "confirmed": "Đã xác nhận",
@@ -107,13 +180,13 @@
       "cancelled": "Đã hủy"
     },
     "with": "với",
-    "cookiesUsed": "đã dùng",
-    "cookiesEarned": "kiếm được",
+    "gemsUsed": "đã dùng",
+    "gemsEarned": "kiếm được",
     "joinClass": "Vào lớp",
     "details": "Chi tiết",
     "rate": "Đánh giá",
     "refund": "Hoàn tiền",
-    "cookiesRefunded": "hoàn lại",
+    "gemsRefunded": "hoàn lại",
     "empty": {
       "title": "Chưa có lớp học nào sắp tới",
       "subtitle": "Khám phá và đặt lớp học phù hợp với bạn ngay!",

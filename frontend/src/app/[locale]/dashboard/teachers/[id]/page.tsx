@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 
-import { formatNumber } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,92 +14,156 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PixelAvatar } from '@/components/features/PixelAvatar';
-import { CookieBadge } from '@/components/features/CookieBadge';
+import { GemBadge } from '@/components/features/CookieBadge';
+import { useGemsBalance } from '@/hooks/useGemsBalance';
+import { GemImage } from '@/components/common/GemImage';
+import { getTeacherById } from '@/lib/queries';
 
-// Mock teacher data (would come from API)
-const mockTeacher = {
-  id: '1',
-  name: 'Sarah Johnson',
-  avatar: null,
-  bio: 'Native English speaker with 5+ years of teaching experience. I specialize in Business English and interview preparation. My teaching style is conversational and practical - I believe the best way to learn is by speaking! I have helped hundreds of students achieve their goals, from passing job interviews at multinational companies to giving presentations with confidence.',
-  specializations: ['Business English', 'Conversation', 'IELTS', 'Interview Prep'],
-  languages: ['English (Native)', 'Vietnamese (Basic)'],
-  hourlyRate: 180000,
-  rating: 4.9,
-  totalReviews: 128,
-  totalClasses: 450,
-  totalStudents: 89,
-  isOnline: true,
-  isVerified: true,
-  responseTime: '< 1 hour',
-  memberSince: '2022',
-  education: [
-    { degree: 'MA TESOL', school: 'University of Cambridge', year: '2018' },
-    { degree: 'BA English Literature', school: 'Oxford University', year: '2016' },
-  ],
-  certifications: ['CELTA', 'IELTS Examiner', 'Business English Certificate'],
-  availability: [
-    { day: 'Thứ 2', slots: ['08:00', '09:00', '10:00', '14:00', '15:00', '19:00', '20:00'] },
-    { day: 'Thứ 3', slots: ['09:00', '10:00', '11:00', '15:00', '16:00', '20:00', '21:00'] },
-    { day: 'Thứ 4', slots: ['08:00', '09:00', '14:00', '15:00', '19:00', '20:00'] },
-    { day: 'Thứ 5', slots: ['10:00', '11:00', '15:00', '16:00', '20:00', '21:00'] },
-    { day: 'Thứ 6', slots: ['09:00', '10:00', '14:00', '15:00', '19:00'] },
-    { day: 'Thứ 7', slots: ['10:00', '11:00', '14:00', '15:00'] },
-  ],
-  reviews: [
-    {
-      id: '1',
-      studentName: 'Minh Anh',
-      rating: 5,
-      comment: 'Cô Sarah dạy rất hay! Sau 3 tháng học, tôi đã tự tin phỏng vấn bằng tiếng Anh.',
-      date: '2024-01-15',
-    },
-    {
-      id: '2',
-      studentName: 'Hoàng Nam',
-      rating: 5,
-      comment: 'Giáo viên rất kiên nhẫn và vui vẻ. Bài học luôn thú vị.',
-      date: '2024-01-10',
-    },
-    {
-      id: '3',
-      studentName: 'Thu Hà',
-      rating: 4,
-      comment: 'Cô giảng dễ hiểu, có nhiều tài liệu bổ ích. Highly recommended!',
-      date: '2024-01-05',
-    },
-  ],
-  ratingBreakdown: {
-    5: 85,
-    4: 10,
-    3: 3,
-    2: 1,
-    1: 1,
-  },
+type TeacherData = {
+  id: string;
+  name: string;
+  avatar: string | null;
+  bio: string;
+  specializations: string[];
+  languages: string[];
+  hourlyRate: number;
+  rating: number;
+  totalReviews: number;
+  totalClasses: number;
+  totalStudents: number;
+  isOnline: boolean;
+  isVerified: boolean;
+  responseTime: string;
+  memberSince: string;
+  education: Array<{ degree: string; school: string; year: string }>;
+  certifications: string[];
+  availability: Array<{ day: string; slots: string[] }>;
+  reviews: Array<{ id: string; studentName: string; rating: number; comment: string; date: string }>;
+  ratingBreakdown: Record<number, number>;
 };
 
 export default function TeacherDetailPage() {
   const params = useParams();
   const router = useRouter();
   const teacherId = params.id as string;
+  const t = useTranslations('teachers');
 
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [teacher, setTeacher] = React.useState<TeacherData | null>(null);
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [selectedTime, setSelectedTime] = React.useState<string | null>(null);
-  const [cookiesApplied, setCookiesApplied] = React.useState(0);
+  const [gemsApplied, setGemsApplied] = React.useState(0);
+  const { balance: userGems } = useGemsBalance();
 
-  const userCookies = 150; // Mock user cookie balance
-  const maxCookiesForDiscount = Math.min(userCookies, Math.floor(mockTeacher.hourlyRate / 1000));
-  const discount = cookiesApplied * 1000;
-  const finalPrice = mockTeacher.hourlyRate - discount;
+  React.useEffect(() => {
+    getTeacherById(teacherId)
+      .then((data: Record<string, unknown>) => {
+        const reviews = ((data.reviews as Array<Record<string, unknown>>) || []).map((r) => {
+          const student = r.profiles as Record<string, unknown> | undefined;
+          return {
+            id: r.id as string,
+            studentName: r.is_anonymous ? 'Ẩn danh' : ((student?.full_name as string) || 'Student'),
+            rating: (r.rating as number) || 5,
+            comment: (r.comment as string) || '',
+            date: new Date(r.created_at as string).toLocaleDateString('vi-VN'),
+          };
+        });
+
+        const avail = ((data.teacher_availability as Array<Record<string, unknown>>) || [])
+          .filter((a) => a.is_active)
+          .reduce((acc: Record<string, string[]>, a) => {
+            const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+            const dayName = dayNames[(a.day_of_week as number) || 0];
+            if (!acc[dayName]) acc[dayName] = [];
+            const startTime = (a.start_time as string)?.slice(0, 5) || '09:00';
+            const endTime = (a.end_time as string)?.slice(0, 5) || '17:00';
+            // Generate 25-minute slots
+            const [startH, startM] = startTime.split(':').map(Number);
+            const [endH, endM] = endTime.split(':').map(Number);
+            let totalMins = startH * 60 + startM;
+            const endMins = endH * 60 + endM;
+            while (totalMins + 25 <= endMins) {
+              const h = Math.floor(totalMins / 60);
+              const m = totalMins % 60;
+              acc[dayName].push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+              totalMins += 25;
+            }
+            return acc;
+          }, {});
+
+        const availability = Object.entries(avail).map(([day, slots]) => ({ day, slots }));
+        const createdAt = new Date(data.created_at as string);
+
+        // Calculate rating breakdown from reviews
+        const breakdown: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        reviews.forEach((r) => { breakdown[r.rating] = (breakdown[r.rating] || 0) + 1; });
+        const totalR = reviews.length || 1;
+        Object.keys(breakdown).forEach((k) => {
+          breakdown[Number(k)] = Math.round((breakdown[Number(k)] / totalR) * 100);
+        });
+
+        const classes = (data.classes as Array<Record<string, unknown>>) || [];
+
+        setTeacher({
+          id: data.id as string,
+          name: (data.full_name as string) || 'Teacher',
+          avatar: (data.avatar_url as string) || null,
+          bio: (data.bio as string) || '',
+          specializations: ['English'],
+          languages: ['English', 'Vietnamese'],
+          hourlyRate: 200000,
+          rating: (data.average_rating as number) || 0,
+          totalReviews: (data.total_reviews as number) || 0,
+          totalClasses: classes.length,
+          totalStudents: classes.reduce((sum, c) => sum + ((c.current_enrollments as number) || 0), 0),
+          isOnline: true,
+          isVerified: true,
+          responseTime: '< 1 hour',
+          memberSince: createdAt.getFullYear().toString(),
+          education: [],
+          certifications: [],
+          availability,
+          reviews,
+          ratingBreakdown: breakdown,
+        });
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, [teacherId]);
+
+  const mockTeacher = teacher || {
+    id: teacherId,
+    name: 'Loading...',
+    avatar: null,
+    bio: '',
+    specializations: [],
+    languages: [],
+    hourlyRate: 0,
+    rating: 0,
+    totalReviews: 0,
+    totalClasses: 0,
+    totalStudents: 0,
+    isOnline: false,
+    isVerified: false,
+    responseTime: '',
+    memberSince: '',
+    education: [],
+    certifications: [],
+    availability: [],
+    reviews: [],
+    ratingBreakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+  };
+
+  // Session price in Gems (1 Gem = 1,000 VND). hourlyRate is VND per 25-min session.
+  const sessionPriceGems = Math.round(mockTeacher.hourlyRate / 1000);
+  const maxGemsForDiscount = Math.min(userGems, Math.floor(sessionPriceGems * 0.5)); // max 50% discount
+  const finalPriceGems = sessionPriceGems - gemsApplied;
 
   const handleBook = () => {
     if (!selectedDate || !selectedTime) {
-      alert('Vui lòng chọn ngày và giờ học');
       return;
     }
-    // TODO: Navigate to booking confirmation page
-    router.push(`/dashboard/book/${teacherId}?date=${selectedDate}&time=${selectedTime}&cookies=${cookiesApplied}`);
+    router.push(`/student/bookings/confirm?teacher=${teacherId}&date=${encodeURIComponent(selectedDate)}&time=${encodeURIComponent(selectedTime)}&gems=${gemsApplied}`);
   };
 
   if (isLoading) {
@@ -116,7 +181,7 @@ export default function TeacherDetailPage() {
         href="/dashboard/teachers"
         className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
       >
-        ← Quay lại danh sách
+        ← {t('backToList')}
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -163,16 +228,16 @@ export default function TeacherDetailPage() {
                       <span className="text-accent-gold text-xl">⭐</span>
                       <span className="text-xl font-bold">{mockTeacher.rating}</span>
                       <span className="text-text-muted">
-                        ({mockTeacher.totalReviews} đánh giá)
+                        ({t('reviews_label', { count: mockTeacher.totalReviews })})
                       </span>
                     </div>
                     <Separator orientation="vertical" className="h-5" />
                     <span className="text-text-secondary">
-                      {mockTeacher.totalClasses} lớp học
+                      {t('classes_label', { count: mockTeacher.totalClasses })}
                     </span>
                     <Separator orientation="vertical" className="h-5" />
                     <span className="text-text-secondary">
-                      {mockTeacher.totalStudents} học sinh
+                      {t('students_label', { count: mockTeacher.totalStudents })}
                     </span>
                   </div>
 
@@ -188,8 +253,8 @@ export default function TeacherDetailPage() {
                   {/* Quick stats */}
                   <div className="flex flex-wrap gap-4 text-sm text-text-secondary">
                     <span>🗣️ {mockTeacher.languages.join(', ')}</span>
-                    <span>⏱️ Phản hồi: {mockTeacher.responseTime}</span>
-                    <span>📅 Thành viên từ {mockTeacher.memberSince}</span>
+                    <span>⏱️ {t('responseTime', { time: mockTeacher.responseTime })}</span>
+                    <span>📅 {t('memberSince', { year: mockTeacher.memberSince })}</span>
                   </div>
                 </div>
               </div>
@@ -199,7 +264,7 @@ export default function TeacherDetailPage() {
           {/* About */}
           <Card>
             <CardHeader>
-              <CardTitle>Giới thiệu</CardTitle>
+              <CardTitle>{t('about')}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-text-secondary whitespace-pre-line">
@@ -211,11 +276,11 @@ export default function TeacherDetailPage() {
           {/* Education & Certifications */}
           <Card>
             <CardHeader>
-              <CardTitle>Học vấn & Chứng chỉ</CardTitle>
+              <CardTitle>{t('educationAndCerts')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-medium text-text-primary mb-2">Học vấn</h4>
+                <h4 className="font-medium text-text-primary mb-2">{t('education')}</h4>
                 <ul className="space-y-2">
                   {mockTeacher.education.map((edu, i) => (
                     <li key={i} className="flex items-start gap-2 text-text-secondary">
@@ -229,7 +294,7 @@ export default function TeacherDetailPage() {
               </div>
               <Separator />
               <div>
-                <h4 className="font-medium text-text-primary mb-2">Chứng chỉ</h4>
+                <h4 className="font-medium text-text-primary mb-2">{t('certifications')}</h4>
                 <div className="flex flex-wrap gap-2">
                   {mockTeacher.certifications.map((cert) => (
                     <Badge key={cert} variant="outline">
@@ -244,7 +309,7 @@ export default function TeacherDetailPage() {
           {/* Reviews */}
           <Card>
             <CardHeader>
-              <CardTitle>Đánh giá từ học sinh</CardTitle>
+              <CardTitle>{t('studentReviews')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Rating breakdown */}
@@ -290,7 +355,7 @@ export default function TeacherDetailPage() {
               </div>
 
               <Button variant="outline" className="w-full">
-                Xem tất cả đánh giá
+                {t('viewAllReviews')}
               </Button>
             </CardContent>
           </Card>
@@ -301,21 +366,24 @@ export default function TeacherDetailPage() {
           {/* Booking card */}
           <Card variant="glow" className="sticky top-20">
             <CardHeader>
-              <CardTitle>Đặt lịch học</CardTitle>
+              <CardTitle>{t('bookClass')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Price */}
               <div className="text-center p-4 rounded-xl bg-bg-elevated">
-                <p className="text-3xl font-bold text-accent-primary">
-                  {formatNumber(mockTeacher.hourlyRate)}đ
-                </p>
-                <p className="text-text-muted">/ 25 phút</p>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-3xl font-bold text-accent-gem">
+                    {sessionPriceGems}
+                  </p>
+                  <GemImage size={28} />
+                </div>
+                <p className="text-text-muted">/ 25 {t('minutes')}</p>
               </div>
 
               {/* Date selection */}
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Chọn ngày
+                  {t('selectDate')}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {mockTeacher.availability.slice(0, 6).map((day) => (
@@ -341,7 +409,7 @@ export default function TeacherDetailPage() {
               {selectedDate && (
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-2">
-                    Chọn giờ
+                    {t('selectTime')}
                   </label>
                   <div className="grid grid-cols-4 gap-2">
                     {mockTeacher.availability
@@ -365,46 +433,46 @@ export default function TeacherDetailPage() {
 
               <Separator />
 
-              {/* Cookie discount */}
+              {/* Gem discount */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-sm font-medium text-text-secondary">
-                    Áp dụng Cookies
+                    {t('applyGems')}
                   </label>
-                  <CookieBadge count={userCookies} size="sm" />
+                  <GemBadge count={userGems} size="sm" />
                 </div>
                 <div className="flex items-center gap-3">
                   <input
                     type="range"
                     min="0"
-                    max={maxCookiesForDiscount}
-                    value={cookiesApplied}
-                    onChange={(e) => setCookiesApplied(Number(e.target.value))}
+                    max={maxGemsForDiscount}
+                    value={gemsApplied}
+                    onChange={(e) => setGemsApplied(Number(e.target.value))}
                     className="flex-1"
                   />
-                  <span className="text-sm font-medium text-accent-cookie w-16 text-right">
-                    {cookiesApplied} 🍪
+                  <span className="text-sm font-medium text-accent-gem w-20 text-right inline-flex items-center gap-1 justify-end">
+                    -{gemsApplied} <GemImage size={14} className="inline-block align-middle" />
                   </span>
                 </div>
-                {cookiesApplied > 0 && (
-                  <p className="text-sm text-success mt-1">
-                    Giảm {formatNumber(discount)}đ
-                  </p>
-                )}
+                <div className="flex justify-between text-xs text-text-muted mt-1">
+                  <span>0</span>
+                  <span>{t('maxDiscount', { pct: 50 })}</span>
+                  <span>{maxGemsForDiscount} <GemImage size={10} className="inline-block align-middle" /></span>
+                </div>
               </div>
 
               {/* Final price */}
-              <div className="p-4 rounded-xl bg-accent-primary/10 border border-accent-primary/20">
+              <div className="p-4 rounded-xl bg-accent-gem/10 border border-accent-gem/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-text-secondary">Tổng cộng</span>
+                  <span className="text-text-secondary">{t('total')}</span>
                   <div className="text-right">
-                    {discount > 0 && (
-                      <p className="text-sm text-text-muted line-through">
-                        {formatNumber(mockTeacher.hourlyRate)}đ
+                    {gemsApplied > 0 && (
+                      <p className="text-sm text-text-muted line-through inline-flex items-center gap-1">
+                        {sessionPriceGems} <GemImage size={12} className="inline-block align-middle" />
                       </p>
                     )}
-                    <p className="text-xl font-bold text-accent-primary">
-                      {formatNumber(finalPrice)}đ
+                    <p className="text-xl font-bold text-accent-gem inline-flex items-center gap-2">
+                      {finalPriceGems} <GemImage size={20} />
                     </p>
                   </div>
                 </div>
@@ -418,13 +486,13 @@ export default function TeacherDetailPage() {
                 disabled={!selectedDate || !selectedTime}
               >
                 {selectedDate && selectedTime
-                  ? `Đặt lịch ${selectedDate} ${selectedTime}`
-                  : 'Chọn ngày và giờ'}
+                  ? t('bookAt', { date: selectedDate, time: selectedTime })
+                  : t('selectDateAndTime')}
               </Button>
 
               {/* Message button */}
               <Button variant="outline" className="w-full">
-                💬 Nhắn tin cho giáo viên
+                💬 {t('messageTeacher')}
               </Button>
             </CardContent>
           </Card>

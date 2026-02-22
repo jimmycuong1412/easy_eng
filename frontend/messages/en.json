@@ -18,7 +18,7 @@
     "searchPlaceholder": "Search teachers, lessons..."
   },
   "home": {
-    "tagline": "Learn English more fun with Cookie rewards, Career Avatars and live video classes",
+    "tagline": "Learn English more fun with Gem rewards, Career Avatars and live video classes",
     "startFree": "Start for free",
     "login": "Log in",
     "features": {
@@ -26,9 +26,9 @@
         "title": "Gamification",
         "description": "Earn XP, level up your avatar, and unlock rewards"
       },
-      "cookies": {
-        "title": "Cookie Rewards",
-        "description": "Collect cookies for discounts on classes"
+      "gems": {
+        "title": "Gem Rewards",
+        "description": "Collect gems for discounts on classes"
       },
       "liveClasses": {
         "title": "Live Classes",
@@ -83,8 +83,81 @@
       "teachingSchedule": "Teaching Schedule",
       "createQuiz": "Create Quiz",
       "notifications": "Notifications",
-      "analytics": "Analytics"
-    }
+      "analytics": "Analytics",
+      "buyGems": "Buy Gems",
+      "gemHistory": "Gem History"
+    },
+    "welcome": "Hello, {name}!",
+    "welcomeSubtitle": "Continue your English learning journey",
+    "streak": "{days} days",
+    "classes": "Classes",
+    "upcomingClasses": "Upcoming classes",
+    "viewAll": "View all",
+    "with": "with",
+    "details": "Details",
+    "noClassesBooked": "You don't have any classes booked yet",
+    "findTeachersNow": "Find teachers now",
+    "recommendedTeachers": "Recommended teachers",
+    "yourAvatar": "Your avatar",
+    "viewAvatarDetails": "View avatar details",
+    "yourGems": "Your Gems",
+    "discount": "= {amount} discount",
+    "completeClass": "Complete a class",
+    "referFriend": "Refer a friend",
+    "firstBooking": "First booking",
+    "useGems": "Use Gems",
+    "learningStreak": "Learning streak",
+    "consecutiveDays": "{days} consecutive days!",
+    "today": "Today",
+    "tomorrow": "Tomorrow"
+  },
+  "teachers": {
+    "title": "Find Teachers",
+    "matchCount": "{count} matching teachers",
+    "searchPlaceholder": "Search by name, specialty...",
+    "all": "All",
+    "price": "Price:",
+    "priceAll": "All",
+    "priceUnder100k": "Under 100k",
+    "price100to200k": "100k - 200k",
+    "price200to300k": "200k - 300k",
+    "priceOver300k": "Over 300k",
+    "sortBy": "Sort by:",
+    "sortPopular": "Most popular",
+    "sortRating": "Highest rated",
+    "sortPriceAsc": "Lowest price",
+    "sortPriceDesc": "Highest price",
+    "onlineOnly": "Online only",
+    "noResults": "No matching teachers found",
+    "clearFilters": "Clear filters",
+    "reviews": "{count} reviews",
+    "totalClasses": "{count} classes",
+    "perSession": "/ 25 min",
+    "viewDetails": "View details",
+    "backToList": "Back to list",
+    "reviews_label": "{count} reviews",
+    "classes_label": "{count} classes",
+    "students_label": "{count} students",
+    "responseTime": "Response: {time}",
+    "memberSince": "Member since {year}",
+    "about": "About",
+    "educationAndCerts": "Education & Certifications",
+    "education": "Education",
+    "certifications": "Certifications",
+    "studentReviews": "Student reviews",
+    "viewAllReviews": "View all reviews",
+    "bookClass": "Book a class",
+    "perSessionPrice": "/ 25 min",
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "applyGems": "Apply Gems",
+    "discountAmount": "Save {amount}",
+    "total": "Total",
+    "bookAt": "Book {date} {time}",
+    "selectDateAndTime": "Select date and time",
+    "messageTeacher": "Message teacher",
+    "minutes": "min",
+    "maxDiscount": "Max {pct}% off"
   },
   "bookings": {
     "title": "My Classes",
@@ -97,8 +170,8 @@
     "stats": {
       "upcoming": "Upcoming",
       "completed": "Completed",
-      "cookiesEarned": "Cookies earned",
-      "cookiesUsed": "Cookies used"
+      "gemsEarned": "Gems earned",
+      "gemsUsed": "Gems used"
     },
     "status": {
       "confirmed": "Confirmed",
@@ -107,13 +180,13 @@
       "cancelled": "Cancelled"
     },
     "with": "with",
-    "cookiesUsed": "used",
-    "cookiesEarned": "earned",
+    "gemsUsed": "used",
+    "gemsEarned": "earned",
     "joinClass": "Join",
     "details": "Details",
     "rate": "Rate",
     "refund": "Refund",
-    "cookiesRefunded": "refunded",
+    "gemsRefunded": "refunded",
     "empty": {
       "title": "No upcoming classes",
       "subtitle": "Explore and book classes that suit you!",
