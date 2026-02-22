@@ -157,7 +157,12 @@
     "selectDateAndTime": "Select date and time",
     "messageTeacher": "Message teacher",
     "minutes": "min",
-    "maxDiscount": "Max {pct}% off"
+    "maxDiscount": "Max {pct}% off",
+    "selectSchedule": "Select Schedule",
+    "selectedSlot": "Selected slot",
+    "changeSlot": "Change slot",
+    "selectSlotHint": "Select a slot from the calendar above",
+    "confirmBook": "Confirm booking"
   },
   "bookings": {
     "title": "My Classes",

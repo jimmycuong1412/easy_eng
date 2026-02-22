@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Link } from '@/i18n/routing';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { useTranslations } from 'next-intl';
 
@@ -18,6 +19,10 @@ import { GemBadge } from '@/components/features/CookieBadge';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
 import { GemImage } from '@/components/common/GemImage';
 import { getTeacherById } from '@/lib/queries';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type AvailabilityEntry = { day: string; dayOfWeek: number; slots: string[] };
 
 type TeacherData = {
   id: string;
@@ -37,10 +42,206 @@ type TeacherData = {
   memberSince: string;
   education: Array<{ degree: string; school: string; year: string }>;
   certifications: string[];
-  availability: Array<{ day: string; slots: string[] }>;
+  availability: AvailabilityEntry[];
   reviews: Array<{ id: string; studentName: string; rating: number; comment: string; date: string }>;
   ratingBreakdown: Record<number, number>;
 };
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DAY_NAMES_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const DAY_NAMES_FULL  = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+// Display order: Mon(1)…Sat(6), Sun(0)
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+// ─── Helper: get the Monday of the week containing `date` ────────────────────
+function getMondayOf(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function addDays(date: Date, n: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+function fmtDate(date: Date): string {
+  return date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' });
+}
+
+function isToday(date: Date): boolean {
+  const t = new Date();
+  return date.getFullYear() === t.getFullYear() &&
+    date.getMonth() === t.getMonth() &&
+    date.getDate() === t.getDate();
+}
+
+function isPast(date: Date): boolean {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  return date < t;
+}
+
+// ─── WeeklyCalendar ───────────────────────────────────────────────────────────
+
+interface WeeklyCalendarProps {
+  availability: AvailabilityEntry[];
+  selectedDate: string | null; // "dayOfWeek:YYYY-MM-DD"
+  selectedTime: string | null;
+  onSelect: (dateKey: string, time: string) => void;
+}
+
+function WeeklyCalendar({ availability, selectedDate, selectedTime, onSelect }: WeeklyCalendarProps) {
+  const [weekStart, setWeekStart] = React.useState<Date>(() => getMondayOf(new Date()));
+
+  // Build availability map: dayOfWeek -> slots[]
+  const availMap: Record<number, string[]> = {};
+  availability.forEach(({ dayOfWeek, slots }) => {
+    availMap[dayOfWeek] = slots;
+  });
+
+  // Collect all unique slot times across all days, sorted
+  const allTimes = Array.from(
+    new Set(Object.values(availMap).flat())
+  ).sort();
+
+  // The 7 dates for the current week (Mon…Sun)
+  const weekDates = WEEK_ORDER.map((_, i) => addDays(weekStart, i));
+  // weekDates[0]=Mon, weekDates[6]=Sun; day-of-week for each:
+  const weekDayOfWeek = weekDates.map((d) => d.getDay()); // 1,2,3,4,5,6,0
+
+  const prevWeek = () => setWeekStart((w) => addDays(w, -7));
+  const nextWeek = () => setWeekStart((w) => addDays(w, 7));
+
+  const todayWeekStart = getMondayOf(new Date());
+  const isCurrentWeek = weekStart.toDateString() === todayWeekStart.toDateString();
+
+  if (allTimes.length === 0) {
+    return (
+      <div className="text-center py-12 text-text-muted">
+        Giáo viên chưa mở lịch dạy
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Week navigator */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={prevWeek}
+          disabled={isCurrentWeek}
+          className="text-text-secondary"
+        >
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          Tuần trước
+        </Button>
+        <span className="text-sm font-medium text-text-primary">
+          {fmtDate(weekDates[0])} – {fmtDate(weekDates[6])}
+        </span>
+        <Button variant="ghost" size="sm" onClick={nextWeek} className="text-text-secondary">
+          Tuần sau
+          <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      </div>
+
+      {/* Grid */}
+      <div className="overflow-x-auto rounded-xl border border-border-default">
+        <table className="w-full min-w-[560px] text-sm border-collapse">
+          <thead>
+            <tr className="bg-bg-elevated">
+              {/* Time label column */}
+              <th className="w-14 p-2 text-center text-text-muted font-normal border-b border-border-default" />
+              {weekDates.map((date, i) => {
+                const dow = weekDayOfWeek[i];
+                const hasSlots = (availMap[dow] ?? []).length > 0;
+                return (
+                  <th
+                    key={i}
+                    className={`p-2 text-center font-medium border-b border-border-default ${
+                      isToday(date) ? 'bg-accent-primary/10 text-accent-primary' : 'text-text-secondary'
+                    } ${!hasSlots ? 'opacity-40' : ''}`}
+                  >
+                    <div>{DAY_NAMES_SHORT[dow]}</div>
+                    <div className={`text-xs mt-0.5 ${isToday(date) ? 'text-accent-primary' : 'text-text-muted'}`}>
+                      {fmtDate(date)}
+                    </div>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {allTimes.map((time) => (
+              <tr key={time} className="border-b border-border-default last:border-0">
+                {/* Time label */}
+                <td className="p-1 text-center text-xs text-text-muted bg-bg-elevated border-r border-border-default whitespace-nowrap">
+                  {time}
+                </td>
+                {weekDates.map((date, i) => {
+                  const dow = weekDayOfWeek[i];
+                  const hasSlot = (availMap[dow] ?? []).includes(time);
+                  const past = isPast(date);
+                  const dateStr = date.toISOString().split('T')[0];
+                  const dateKey = `${dow}:${dateStr}`;
+                  const isSelected = selectedDate === dateKey && selectedTime === time;
+
+                  return (
+                    <td key={i} className={`p-1 text-center ${isToday(date) ? 'bg-accent-primary/5' : ''}`}>
+                      {hasSlot && !past ? (
+                        <button
+                          onClick={() => onSelect(dateKey, time)}
+                          className={`w-full py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                            isSelected
+                              ? 'bg-accent-primary text-white border-accent-primary shadow-sm'
+                              : 'bg-success/10 border-success/30 text-success hover:bg-success/20 hover:border-success/60'
+                          }`}
+                        >
+                          {isSelected ? '✓' : time}
+                        </button>
+                      ) : hasSlot && past ? (
+                        <div className="w-full py-1.5 rounded-lg text-xs text-text-muted bg-bg-elevated/50 border border-border-default opacity-40 select-none">
+                          —
+                        </div>
+                      ) : (
+                        <div className="py-1.5" />
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 text-xs text-text-muted">
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-success/20 border border-success/40" />
+          Còn trống
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-accent-primary border border-accent-primary" />
+          Đã chọn
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-bg-elevated border border-border-default opacity-40" />
+          Đã qua / Không có
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function TeacherDetailPage() {
   const params = useParams();
@@ -50,6 +251,7 @@ export default function TeacherDetailPage() {
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [teacher, setTeacher] = React.useState<TeacherData | null>(null);
+  // dateKey = "dayOfWeek:YYYY-MM-DD"  e.g. "1:2026-02-24"
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [selectedTime, setSelectedTime] = React.useState<string | null>(null);
   const [gemsApplied, setGemsApplied] = React.useState(0);
@@ -71,38 +273,36 @@ export default function TeacherDetailPage() {
 
         const disabledSlots = new Set<string>((data.disabled_slots as string[]) || []);
 
-        const avail = ((data.teacher_availability as Array<Record<string, unknown>>) || [])
+        const availMap: Record<number, string[]> = {};
+        ((data.teacher_availability as Array<Record<string, unknown>>) || [])
           .filter((a) => a.is_active)
-          .reduce((acc: Record<string, string[]>, a) => {
-            const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+          .forEach((a) => {
             const dayOfWeek = (a.day_of_week as number) || 0;
-            const dayName = dayNames[dayOfWeek];
-            if (!acc[dayName]) acc[dayName] = [];
+            if (!availMap[dayOfWeek]) availMap[dayOfWeek] = [];
             const startTime = (a.start_time as string)?.slice(0, 5) || '09:00';
-            const endTime = (a.end_time as string)?.slice(0, 5) || '17:00';
-            // Generate 25-min class slots with 5-min break (30-min intervals)
-            // Skip slots the teacher has disabled
-            const [startH, startM] = startTime.split(':').map(Number);
-            const [endH, endM] = endTime.split(':').map(Number);
-            let totalMins = startH * 60 + startM;
-            const endMins = endH * 60 + endM;
-            while (totalMins + 25 <= endMins) {
-              const h = Math.floor(totalMins / 60);
-              const m = totalMins % 60;
+            const endTime   = (a.end_time   as string)?.slice(0, 5) || '17:00';
+            const [sh, sm] = startTime.split(':').map(Number);
+            const [eh, em] = endTime.split(':').map(Number);
+            let mins = sh * 60 + sm;
+            const endMins = eh * 60 + em;
+            while (mins + 25 <= endMins) {
+              const h = Math.floor(mins / 60);
+              const m = mins % 60;
               const slotStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-              const key = `${dayOfWeek}:${slotStr}`;
-              if (!disabledSlots.has(key)) {
-                acc[dayName].push(slotStr);
+              if (!disabledSlots.has(`${dayOfWeek}:${slotStr}`)) {
+                availMap[dayOfWeek].push(slotStr);
               }
-              totalMins += 30;
+              mins += 30;
             }
-            return acc;
-          }, {});
+          });
 
-        const availability = Object.entries(avail).map(([day, slots]) => ({ day, slots }));
+        const availability: AvailabilityEntry[] = Object.entries(availMap).map(([dow, slots]) => ({
+          day: DAY_NAMES_FULL[Number(dow)],
+          dayOfWeek: Number(dow),
+          slots,
+        }));
+
         const createdAt = new Date(data.created_at as string);
-
-        // Calculate rating breakdown from reviews
         const breakdown: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
         reviews.forEach((r) => { breakdown[r.rating] = (breakdown[r.rating] || 0) + 1; });
         const totalR = reviews.length || 1;
@@ -140,125 +340,79 @@ export default function TeacherDetailPage() {
   }, [teacherId]);
 
   const mockTeacher = teacher || {
-    id: teacherId,
-    name: 'Loading...',
-    avatar: null,
-    bio: '',
-    specializations: [],
-    languages: [],
-    hourlyRate: 0,
-    rating: 0,
-    totalReviews: 0,
-    totalClasses: 0,
-    totalStudents: 0,
-    isOnline: false,
-    isVerified: false,
-    responseTime: '',
-    memberSince: '',
-    education: [],
-    certifications: [],
-    availability: [],
-    reviews: [],
+    id: teacherId, name: 'Loading...', avatar: null, bio: '',
+    specializations: [], languages: [], hourlyRate: 0,
+    rating: 0, totalReviews: 0, totalClasses: 0, totalStudents: 0,
+    isOnline: false, isVerified: false, responseTime: '', memberSince: '',
+    education: [], certifications: [], availability: [], reviews: [],
     ratingBreakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
   };
 
-  // Session price in Gems (1 Gem = 1,000 VND). hourlyRate is VND per 25-min session.
-  const sessionPriceGems = Math.round(mockTeacher.hourlyRate / 1000);
-  const maxGemsForDiscount = Math.min(userGems, Math.floor(sessionPriceGems * 0.5)); // max 50% discount
-  const finalPriceGems = sessionPriceGems - gemsApplied;
+  const sessionPriceGems   = Math.round(mockTeacher.hourlyRate / 1000);
+  const maxGemsForDiscount = Math.min(userGems, Math.floor(sessionPriceGems * 0.5));
+  const finalPriceGems     = sessionPriceGems - gemsApplied;
+
+  // Parse selectedDate "dayOfWeek:YYYY-MM-DD" for display
+  const selectedDateLabel = React.useMemo(() => {
+    if (!selectedDate) return null;
+    const [, dateStr] = selectedDate.split(':');
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' });
+  }, [selectedDate]);
 
   const handleBook = () => {
-    if (!selectedDate || !selectedTime) {
-      return;
-    }
-    router.push(`/student/bookings/confirm?teacher=${teacherId}&date=${encodeURIComponent(selectedDate)}&time=${encodeURIComponent(selectedTime)}&gems=${gemsApplied}`);
+    if (!selectedDate || !selectedTime) return;
+    const [, dateStr] = selectedDate.split(':');
+    router.push(
+      `/student/bookings/confirm?teacher=${teacherId}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(selectedTime)}&gems=${gemsApplied}`
+    );
   };
 
-  if (isLoading) {
-    return <TeacherDetailSkeleton />;
-  }
+  if (isLoading) return <TeacherDetailSkeleton />;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6"
-    >
-      {/* Back button */}
-      <Link
-        href="/dashboard/teachers"
-        className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
-      >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Back */}
+      <Link href="/dashboard/teachers" className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors">
         ← {t('backToList')}
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content - 2/3 */}
+        {/* ── Main content (2/3) ── */}
         <div className="lg:col-span-2 space-y-6">
+
           {/* Teacher header */}
           <Card>
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row gap-6">
-                {/* Avatar */}
                 <div className="flex-shrink-0">
                   <div className="relative">
-                    <PixelAvatar
-                      src={mockTeacher.avatar}
-                      fallbackEmoji="👨‍🏫"
-                      size="xl"
-                      showLevel={false}
-                    />
+                    <PixelAvatar src={mockTeacher.avatar} fallbackEmoji="👨‍🏫" size="xl" showLevel={false} />
                     {mockTeacher.isOnline && (
                       <span className="absolute bottom-2 right-2 w-5 h-5 bg-success rounded-full border-2 border-bg-surface" />
                     )}
                   </div>
                 </div>
-
-                {/* Info */}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <h1 className="text-2xl font-bold text-text-primary">
-                      {mockTeacher.name}
-                    </h1>
-                    {mockTeacher.isVerified && (
-                      <Badge variant="success">✓ Verified</Badge>
-                    )}
-                    {mockTeacher.isOnline && (
-                      <Badge variant="outline" className="text-success border-success">
-                        Online
-                      </Badge>
-                    )}
+                    <h1 className="text-2xl font-bold text-text-primary">{mockTeacher.name}</h1>
+                    {mockTeacher.isVerified && <Badge variant="success">✓ Verified</Badge>}
+                    {mockTeacher.isOnline && <Badge variant="outline" className="text-success border-success">Online</Badge>}
                   </div>
-
-                  {/* Rating */}
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex items-center gap-1">
                       <span className="text-accent-gold text-xl">⭐</span>
                       <span className="text-xl font-bold">{mockTeacher.rating}</span>
-                      <span className="text-text-muted">
-                        ({t('reviews_label', { count: mockTeacher.totalReviews })})
-                      </span>
+                      <span className="text-text-muted">({t('reviews_label', { count: mockTeacher.totalReviews })})</span>
                     </div>
                     <Separator orientation="vertical" className="h-5" />
-                    <span className="text-text-secondary">
-                      {t('classes_label', { count: mockTeacher.totalClasses })}
-                    </span>
+                    <span className="text-text-secondary">{t('classes_label', { count: mockTeacher.totalClasses })}</span>
                     <Separator orientation="vertical" className="h-5" />
-                    <span className="text-text-secondary">
-                      {t('students_label', { count: mockTeacher.totalStudents })}
-                    </span>
+                    <span className="text-text-secondary">{t('students_label', { count: mockTeacher.totalStudents })}</span>
                   </div>
-
-                  {/* Specializations */}
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {mockTeacher.specializations.map((spec) => (
-                      <Badge key={spec} variant="secondary">
-                        {spec}
-                      </Badge>
-                    ))}
+                    {mockTeacher.specializations.map((s) => <Badge key={s} variant="secondary">{s}</Badge>)}
                   </div>
-
-                  {/* Quick stats */}
                   <div className="flex flex-wrap gap-4 text-sm text-text-secondary">
                     <span>🗣️ {mockTeacher.languages.join(', ')}</span>
                     <span>⏱️ {t('responseTime', { time: mockTeacher.responseTime })}</span>
@@ -269,89 +423,97 @@ export default function TeacherDetailPage() {
             </CardContent>
           </Card>
 
-          {/* About */}
+          {/* ── Weekly Schedule Calendar ── */}
           <Card>
             <CardHeader>
-              <CardTitle>{t('about')}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>{t('selectSchedule')}</CardTitle>
+                {selectedDate && selectedTime && (
+                  <Badge variant="success" className="text-sm px-3 py-1">
+                    ✓ {selectedDateLabel} · {selectedTime}
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
-              <p className="text-text-secondary whitespace-pre-line">
-                {mockTeacher.bio}
-              </p>
+              <WeeklyCalendar
+                availability={mockTeacher.availability}
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
+                onSelect={(dateKey, time) => {
+                  setSelectedDate(dateKey);
+                  setSelectedTime(time);
+                  setGemsApplied(0);
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          {/* About */}
+          <Card>
+            <CardHeader><CardTitle>{t('about')}</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-text-secondary whitespace-pre-line">{mockTeacher.bio || '—'}</p>
             </CardContent>
           </Card>
 
           {/* Education & Certifications */}
           <Card>
-            <CardHeader>
-              <CardTitle>{t('educationAndCerts')}</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>{t('educationAndCerts')}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <h4 className="font-medium text-text-primary mb-2">{t('education')}</h4>
-                <ul className="space-y-2">
-                  {mockTeacher.education.map((edu, i) => (
-                    <li key={i} className="flex items-start gap-2 text-text-secondary">
-                      <span>🎓</span>
-                      <span>
-                        {edu.degree} - {edu.school} ({edu.year})
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                {mockTeacher.education.length > 0 ? (
+                  <ul className="space-y-2">
+                    {mockTeacher.education.map((edu, i) => (
+                      <li key={i} className="flex items-start gap-2 text-text-secondary">
+                        <span>🎓</span>
+                        <span>{edu.degree} - {edu.school} ({edu.year})</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p className="text-text-muted text-sm">—</p>}
               </div>
               <Separator />
               <div>
                 <h4 className="font-medium text-text-primary mb-2">{t('certifications')}</h4>
-                <div className="flex flex-wrap gap-2">
-                  {mockTeacher.certifications.map((cert) => (
-                    <Badge key={cert} variant="outline">
-                      {cert}
-                    </Badge>
-                  ))}
-                </div>
+                {mockTeacher.certifications.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {mockTeacher.certifications.map((c) => <Badge key={c} variant="outline">{c}</Badge>)}
+                  </div>
+                ) : <p className="text-text-muted text-sm">—</p>}
               </div>
             </CardContent>
           </Card>
 
           {/* Reviews */}
           <Card>
-            <CardHeader>
-              <CardTitle>{t('studentReviews')}</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>{t('studentReviews')}</CardTitle></CardHeader>
             <CardContent className="space-y-6">
-              {/* Rating breakdown */}
               <div className="space-y-2">
                 {[5, 4, 3, 2, 1].map((stars) => (
                   <div key={stars} className="flex items-center gap-3">
                     <span className="text-sm w-8">{stars}⭐</span>
-                    <Progress
-                      value={mockTeacher.ratingBreakdown[stars as keyof typeof mockTeacher.ratingBreakdown]}
-                      className="flex-1"
-                    />
+                    <Progress value={mockTeacher.ratingBreakdown[stars as keyof typeof mockTeacher.ratingBreakdown]} className="flex-1" />
                     <span className="text-sm text-text-muted w-12">
                       {mockTeacher.ratingBreakdown[stars as keyof typeof mockTeacher.ratingBreakdown]}%
                     </span>
                   </div>
                 ))}
               </div>
-
               <Separator />
-
-              {/* Review list */}
               <div className="space-y-4">
+                {mockTeacher.reviews.length === 0 && (
+                  <p className="text-text-muted text-sm text-center py-4">Chưa có đánh giá</p>
+                )}
                 {mockTeacher.reviews.map((review) => (
                   <div key={review.id} className="p-4 rounded-xl bg-bg-elevated">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-text-primary">
-                          {review.studentName}
-                        </span>
+                        <span className="font-medium text-text-primary">{review.studentName}</span>
                         <div className="flex">
                           {[...Array(review.rating)].map((_, i) => (
-                            <span key={i} className="text-accent-gold text-sm">
-                              ⭐
-                            </span>
+                            <span key={i} className="text-accent-gold text-sm">⭐</span>
                           ))}
                         </div>
                       </div>
@@ -361,81 +523,46 @@ export default function TeacherDetailPage() {
                   </div>
                 ))}
               </div>
-
-              <Button variant="outline" className="w-full">
-                {t('viewAllReviews')}
-              </Button>
+              <Button variant="outline" className="w-full">{t('viewAllReviews')}</Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Sidebar - 1/3 */}
+        {/* ── Sidebar (1/3) ── */}
         <div className="space-y-6">
-          {/* Booking card */}
           <Card variant="glow" className="sticky top-20">
-            <CardHeader>
-              <CardTitle>{t('bookClass')}</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>{t('bookClass')}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
+
               {/* Price */}
               <div className="text-center p-4 rounded-xl bg-bg-elevated">
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-3xl font-bold text-accent-gem">
-                    {sessionPriceGems}
-                  </p>
+                  <p className="text-3xl font-bold text-accent-gem">{sessionPriceGems}</p>
                   <GemImage size={28} />
                 </div>
                 <p className="text-text-muted">/ 25 {t('minutes')}</p>
               </div>
 
-              {/* Date selection */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  {t('selectDate')}
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {mockTeacher.availability.slice(0, 6).map((day) => (
-                    <button
-                      key={day.day}
-                      onClick={() => {
-                        setSelectedDate(day.day);
-                        setSelectedTime(null);
-                      }}
-                      className={`p-2 rounded-lg text-sm font-medium transition-all ${
-                        selectedDate === day.day
-                          ? 'bg-accent-primary text-white'
-                          : 'bg-bg-elevated text-text-secondary hover:bg-bg-surface'
-                      }`}
-                    >
-                      {day.day}
-                    </button>
-                  ))}
+              {/* Selected slot summary */}
+              {selectedDate && selectedTime ? (
+                <div className="p-3 rounded-xl bg-success/10 border border-success/30 space-y-1">
+                  <p className="text-xs text-text-muted">{t('selectedSlot')}</p>
+                  <p className="font-semibold text-text-primary">{selectedDateLabel}</p>
+                  <p className="text-accent-primary font-medium">{selectedTime} – {(() => {
+                    const [h, m] = selectedTime.split(':').map(Number);
+                    const end = h * 60 + m + 25;
+                    return `${Math.floor(end / 60).toString().padStart(2, '0')}:${(end % 60).toString().padStart(2, '0')}`;
+                  })()}</p>
+                  <button
+                    onClick={() => { setSelectedDate(null); setSelectedTime(null); setGemsApplied(0); }}
+                    className="text-xs text-text-muted hover:text-text-primary underline"
+                  >
+                    {t('changeSlot')}
+                  </button>
                 </div>
-              </div>
-
-              {/* Time selection */}
-              {selectedDate && (
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">
-                    {t('selectTime')}
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {mockTeacher.availability
-                      .find((d) => d.day === selectedDate)
-                      ?.slots.map((time) => (
-                        <button
-                          key={time}
-                          onClick={() => setSelectedTime(time)}
-                          className={`p-2 rounded-lg text-sm font-medium transition-all ${
-                            selectedTime === time
-                              ? 'bg-accent-primary text-white'
-                              : 'bg-bg-elevated text-text-secondary hover:bg-bg-surface'
-                          }`}
-                        >
-                          {time}
-                        </button>
-                      ))}
-                  </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-bg-elevated border border-dashed border-border-default text-center">
+                  <p className="text-sm text-text-muted">{t('selectSlotHint')}</p>
                 </div>
               )}
 
@@ -444,9 +571,7 @@ export default function TeacherDetailPage() {
               {/* Gem discount */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-text-secondary">
-                    {t('applyGems')}
-                  </label>
+                  <label className="text-sm font-medium text-text-secondary">{t('applyGems')}</label>
                   <GemBadge count={userGems} size="sm" />
                 </div>
                 <div className="flex items-center gap-3">
@@ -457,6 +582,7 @@ export default function TeacherDetailPage() {
                     value={gemsApplied}
                     onChange={(e) => setGemsApplied(Number(e.target.value))}
                     className="flex-1"
+                    disabled={maxGemsForDiscount === 0}
                   />
                   <span className="text-sm font-medium text-accent-gem w-20 text-right inline-flex items-center gap-1 justify-end">
                     -{gemsApplied} <GemImage size={14} className="inline-block align-middle" />
@@ -487,14 +613,9 @@ export default function TeacherDetailPage() {
               </div>
 
               {/* Book button */}
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={handleBook}
-                disabled={!selectedDate || !selectedTime}
-              >
+              <Button className="w-full" size="lg" onClick={handleBook} disabled={!selectedDate || !selectedTime}>
                 {selectedDate && selectedTime
-                  ? t('bookAt', { date: selectedDate, time: selectedTime })
+                  ? t('confirmBook')
                   : t('selectDateAndTime')}
               </Button>
 
@@ -510,19 +631,20 @@ export default function TeacherDetailPage() {
   );
 }
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
 function TeacherDetailSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-6 w-32" />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Skeleton className="h-64" />
+          <Skeleton className="h-48" />
+          <Skeleton className="h-72" />
           <Skeleton className="h-48" />
           <Skeleton className="h-64" />
         </div>
-        <div>
-          <Skeleton className="h-96" />
-        </div>
+        <div><Skeleton className="h-96" /></div>
       </div>
     </div>
   );

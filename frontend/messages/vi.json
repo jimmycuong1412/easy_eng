@@ -157,7 +157,12 @@
     "selectDateAndTime": "Chọn ngày và giờ",
     "messageTeacher": "Nhắn tin cho giáo viên",
     "minutes": "phút",
-    "maxDiscount": "Giảm tối đa {pct}%"
+    "maxDiscount": "Giảm tối đa {pct}%",
+    "selectSchedule": "Chọn lịch học",
+    "selectedSlot": "Khung giờ đã chọn",
+    "changeSlot": "Đổi khung giờ",
+    "selectSlotHint": "Chọn một khung giờ từ lịch bên trên",
+    "confirmBook": "Xác nhận đặt lịch"
   },
   "bookings": {
     "title": "Lớp học của tôi",
