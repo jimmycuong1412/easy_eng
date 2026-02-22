@@ -5,9 +5,9 @@
  */
 
 export const COMETCHAT_CONFIG = {
-  appId: process.env.NEXT_PUBLIC_COMETCHAT_APP_ID!,
-  region: process.env.NEXT_PUBLIC_COMETCHAT_REGION!,
-  authKey: process.env.NEXT_PUBLIC_COMETCHAT_AUTH_KEY!,
+  appId: process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '',
+  region: process.env.NEXT_PUBLIC_COMETCHAT_REGION || 'us',
+  // authKey intentionally omitted — server-only. Use auth tokens from /api/cometchat/auth-token.
 } as const;
 
 export const CALL_SETTINGS = {
@@ -43,6 +43,4 @@ if (!COMETCHAT_CONFIG.region) {
   throw new Error('NEXT_PUBLIC_COMETCHAT_REGION is not defined');
 }
 
-if (!COMETCHAT_CONFIG.authKey) {
-  throw new Error('NEXT_PUBLIC_COMETCHAT_AUTH_KEY is not defined');
-}
+// authKey is server-only — validated in /api/cometchat/auth-token/route.ts at runtime.

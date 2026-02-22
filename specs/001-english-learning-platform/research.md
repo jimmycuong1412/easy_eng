@@ -1,350 +1,227 @@
-# Research: Supabase MCP Integration
+# Research: Security Hardening
 
-**Feature**: Integrate with Supabase MCP
-**Date**: 2026-01-31
+**Phase**: 0 — Pre-design research
+**Date**: 2026-02-22
 **Branch**: `001-english-learning-platform`
+**Feeds into**: plan.md Phases 1–4
 
-## Executive Summary
+All NEEDS CLARIFICATION items from Technical Context resolved below.
 
-Integrating with Supabase MCP (Model Context Protocol) enables AI assistants (like Claude Code, Cursor, Windsurf) to directly interact with the Supabase database through natural language commands. This integration provides AI-assisted database management, querying, and schema development capabilities without modifying the application codebase itself.
+---
 
-## Decision: Integration Approach
+## Decision 1: Rate Limiting for Next.js API Routes
 
-**Chosen**: **Hybrid Approach** - Use hosted Supabase MCP server for development + Document custom MCP server pattern for future application-specific tools
+**Decision**: In-process `LRUCache` (from `lru-cache` v10 npm package) keyed by user ID or IP.
 
-**Rationale**:
-- Hosted server provides immediate value with zero code changes
-- Development teams get instant AI-assisted database management
-- Custom server pattern documented for future business logic exposure
-- Maintains security by keeping production databases isolated
+**Rationale**: Project runs on Vercel serverless. No persistent memory across cold starts, but per-warm-instance accuracy is sufficient for MVP abuse prevention. `lru-cache` is TTL-aware, lightweight (~10KB), zero dependencies. The backend already uses `express-rate-limit` for its own routes — this adds equivalent coverage to Next.js routes.
+
+**Limits chosen**:
+| Route | Key | Max | Window |
+|-------|-----|-----|--------|
+| `gem-purchase` | user ID | 5 | 60s |
+| `gem-purchase-complete` | IP | 10 | 60s |
+| `gems-rules` POST/PUT/DELETE | user ID | 30 | 60s |
+| `cometchat/auth-token` | user ID | 20 | 60s |
 
 **Alternatives Considered**:
+- **Upstash Redis** — accurate across instances, but external dependency + latency. Overkill for current scale.
+- **Supabase rate-limit table** — already in `supabase/functions/_shared/rate-limit.ts` for Edge Functions; not applicable to Next.js routes.
+- **Vercel KV** — proprietary, vendor lock-in, adds cost.
 
-1. **Hosted MCP Server Only**
-   - ✅ Zero development effort
-   - ✅ Immediate availability
-   - ❌ Generic database operations only
-   - ❌ No application-specific business logic
+---
 
-2. **Custom MCP Server Only**
-   - ✅ Tailored to application needs
-   - ✅ Exposes specific business logic
-   - ❌ Significant development effort
-   - ❌ Maintenance burden
-   - ❌ Delays immediate value
+## Decision 2: CSRF Adapter for Next.js Route Handlers
 
-3. **Hybrid Approach** (SELECTED)
-   - ✅ Immediate value from hosted server
-   - ✅ Documented path for future customization
-   - ✅ Balanced effort vs. benefit
-   - ❌ Requires understanding both approaches
+**Decision**: Add `withCsrfProtection(handler)` HOF to existing `csrf.tsx` that wraps `(req: NextRequest) => Promise<NextResponse>`.
 
-## Technology Stack Research
+**Rationale**: The existing `csrfMiddleware` uses Express `(req, res)` signature — incompatible with Next.js Route Handlers. A thin adapter avoids duplicating the already-correct constant-time token verification logic.
 
-### MCP (Model Context Protocol)
-
-**What it is**: An open protocol standardizing how AI assistants communicate with external data sources and tools.
-
-**Key Components**:
-- **MCP Server**: Exposes tools and resources via standardized protocol
-- **MCP Client**: AI assistant that consumes MCP servers (e.g., Claude Code)
-- **Transport Layer**: Communication channel (HTTP/SSE for hosted servers)
-
-**Protocol Features**:
-- Tool/function definitions with JSON schemas
-- Resource exposure (database tables, files, etc.)
-- Real-time updates via Server-Sent Events
-- OAuth 2.1 authentication for hosted servers
-
-### Supabase MCP Server
-
-**Repository**: https://github.com/supabase-community/supabase-mcp
-**Hosted Service**: https://mcp.supabase.com/
-
-**Capabilities**:
-1. **Database Operations**
-   - Query tables with natural language (converted to SQL)
-   - View table schemas and relationships
-   - Execute raw SQL commands
-   - Generate TypeScript types from schema
-
-2. **Schema Management**
-   - Create/modify tables and columns
-   - Apply migrations
-   - Manage database branches
-
-3. **Storage Operations**
-   - Configure and manage storage buckets
-   - File upload/download operations
-
-4. **Development Tools**
-   - Retrieve project credentials and URLs
-   - View logs and debug information
-   - Manage Edge Functions
-
-**Authentication**: OAuth 2.1 with dynamic client registration (no manual token creation needed)
-
-**Security Features**:
-- Project scoping (limit to specific Supabase projects)
-- Read-only mode option
-- Manual tool approval in AI clients
-- Database branching support for safe testing
-
-## Current Codebase Integration Points
-
-### Existing Supabase Usage
-
-**Backend** (`backend/src/lib/supabase.ts`):
+**Implementation** (addition to `csrf.tsx`):
 ```typescript
-// Admin client with service role key
-import { createClient } from '@supabase/supabase-js'
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+export function withCsrfProtection<T extends NextRequest>(
+  handler: (req: T) => Promise<NextResponse>
+): (req: T) => Promise<NextResponse> {
+  return async (req: T) => {
+    const headerToken = req.headers.get(CSRF_HEADER_NAME);
+    const cookieToken = req.cookies.get(CSRF_COOKIE_NAME)?.value ?? null;
+    if (!verifyCsrfToken(headerToken, cookieToken)) {
+      return NextResponse.json(
+        { error: 'CSRF token validation failed' },
+        { status: 403 }
+      );
+    }
+    return handler(req);
+  };
+}
 ```
 
-**Frontend** (`frontend/src/lib/supabase/client.ts`):
+**Routes requiring CSRF wrapping**:
+- `POST /api/payments/gem-purchase`
+- `POST /api/payments/gem-purchase-complete`
+- `POST /api/admin/gems-rules`
+- `PUT /api/admin/gems-rules/[id]`
+- `DELETE /api/admin/gems-rules/[id]`
+- `POST /api/cometchat/auth-token`
+
+**Alternatives Considered**:
+- Re-use existing Express `csrfMiddleware` by wrapping `NextRequest` — too hacky.
+- External `csrf-csrf` library — adds dependency; we already have correct implementation.
+
+---
+
+## Decision 3: Git History Purge Tool
+
+**Decision**: `git filter-repo` (official Git-recommended replacement for `git filter-branch`).
+
+**Exact command sequence**:
+```bash
+pip install git-filter-repo
+git filter-repo --path .env --path frontend/.env.local --invert-paths
+git reflog expire --expire=now --all && git gc --prune=now
+git push origin --force --all  # coordinate with all team members
+```
+
+**Critical**: Purging history does NOT invalidate already-compromised keys. All credentials must be rotated:
+
+| Credential | Where to rotate |
+|------------|----------------|
+| Supabase anon key | Dashboard → Settings → API → Regenerate |
+| Supabase service role key | Same as above |
+| CometChat auth key + API key | CometChat Dashboard → API Credentials |
+| JWT secret | Generate new 64-char random string |
+| VNPay / MoMo / ZaloPay keys | Each gateway's merchant portal |
+| Stripe key | Stripe Dashboard → Developers → API keys |
+
+**Alternatives Considered**: BFG Repo Cleaner (Java dep, less maintained), GitHub secret scanning (detects but doesn't remove).
+
+---
+
+## Decision 4: Remove NEXT_PUBLIC_COMETCHAT_AUTH_KEY
+
+**Decision**: Rename `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` → `COMETCHAT_AUTH_KEY` (no prefix). Install `server-only` npm package to enforce server boundary at build time.
+
+**Rationale**: `NEXT_PUBLIC_` variables are inlined into client JS at build time — visible in any browser's network tab or source view. The auth key is only needed server-side in `/api/cometchat/auth-token/route.ts`. The client SDK only needs `appId` + `region` (both already `NEXT_PUBLIC_`).
+
+**Change to `cometchat/config.ts`**:
 ```typescript
-// Browser client with SSR support
-import { createBrowserClient } from '@supabase/ssr'
-const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// Remove authKey — not needed client-side
+export const COMETCHAT_CONFIG = {
+  appId: process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '',
+  region: process.env.NEXT_PUBLIC_COMETCHAT_REGION || 'us',
+} as const;
 ```
 
-**Database Schema**: Migrations in `supabase/migrations/`
-- 001_users.sql
-- 002_profiles.sql
-- 003_rls_policies.sql
-- 004_classes.sql
-- 005_bookings.sql
-- 006_gem_transactions.sql
-- etc.
-
-**Key Entities**: Users, Profiles, Classes, Bookings, GemTransactions, StudentCharacters, MarketplaceItems
-
-### Integration Points for MCP
-
-**For Hosted MCP Server**:
-- Project Reference ID (from Supabase dashboard)
-- Organization OAuth credentials
-- Optional: specific project scoping
-
-**For Custom MCP Server** (Future):
-- Wrap existing backend services (`backend/src/services/`)
-- Expose business logic as MCP tools
-- Use existing Supabase clients as foundation
-
-## Best Practices Research
-
-### Security Best Practices
-
-**From Supabase MCP Documentation**:
-1. ⚠️ NEVER connect to production databases
-2. Use development/staging projects only
-3. Enable read-only mode when possible
-4. Keep manual tool approval enabled
-5. Use database branching for schema changes
-6. Scope server to specific projects
-
-**Additional Recommendations**:
-- Create dedicated "MCP Development" Supabase project
-- Clone production schema to dev project
-- Use synthetic test data (not real user data)
-- Set up database branching workflow
-- Document which AI team members have MCP access
-
-### Development Workflow Best Practices
-
-**Recommended Workflow**:
-1. Developer works in local environment
-2. Uses MCP to query/explore dev database
-3. AI assistant helps write migrations
-4. Test migrations on database branch
-5. Apply migrations to dev project
-6. Review and apply to staging/production manually
-
-**Integration with Existing Tools**:
-- Continue using Supabase CLI for migrations
-- Use MCP for exploration and rapid prototyping
-- Keep production deployments manual/CI-based
-- Document all MCP-generated schema changes
-
-### Performance Considerations
-
-**MCP Server Performance**:
-- Hosted server handles rate limiting
-- Natural language queries cached
-- Database connections pooled
-- SSE keeps connection alive for real-time updates
-
-**Impact on Application**:
-- Zero impact (MCP doesn't change application code)
-- Database queries go through same Supabase API
-- No additional latency for end users
-
-## Implementation Recommendations
-
-### Phase 1: Hosted MCP Server Setup (IMMEDIATE VALUE)
-
-**What to Build**: Configuration documentation and team onboarding
-
-**Steps**:
-1. Identify Supabase project reference ID
-2. Create MCP configuration guide
-3. Document OAuth setup process
-4. Establish security guidelines
-5. Train development team
-
-**Deliverables**:
-- `docs/supabase-mcp-setup.md` - Setup guide
-- `docs/supabase-mcp-security.md` - Security policies
-- `.claude/mcp-servers.json` - Example MCP configuration
-- Team training session
-
-**Time Estimate**: 1-2 days (documentation + training)
-
-### Phase 2: Custom MCP Server Pattern (FUTURE ENHANCEMENT)
-
-**What to Build**: Custom MCP server exposing application-specific business logic
-
-**Potential Tools to Expose**:
-- `book_class_with_gems(student_id, class_id, gems_to_use)`
-- `award_character_xp(student_id, xp_amount, reason)`
-- `create_class_schedule(teacher_id, schedule_params)`
-- `generate_analytics_report(report_type, date_range)`
-
-**Architecture**:
-```
-MCP Server (Node.js/TypeScript)
-├── MCP Protocol Handler
-├── Tool Definitions
-├── Backend Service Wrappers
-│   ├── BookingService
-│   ├── GemService
-│   ├── CharacterService
-│   └── AnalyticsService
-└── Supabase Client (existing)
+**Change to `auth-token/route.ts`**:
+```typescript
+const API_KEY = process.env.COMETCHAT_API_KEY || '';
+const AUTH_KEY = process.env.COMETCHAT_AUTH_KEY || ''; // was NEXT_PUBLIC_
 ```
 
-**Complexity**: Medium-High (2-4 weeks development)
+Client-side SDK login already uses the token obtained from the API route — not the raw auth key. Zero functional change.
 
-**Benefits**:
-- AI can execute complex business operations
-- Validates business rules automatically
-- Exposes application domain model
-- Enables AI-assisted testing and debugging
+**New file**: `frontend/src/lib/server-only-secrets.ts`
+```typescript
+import 'server-only'; // Build error if imported in client component
+export const COMETCHAT_AUTH_KEY = process.env.COMETCHAT_AUTH_KEY ?? '';
+export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+```
 
-**Risks**:
-- Maintenance overhead
-- Security surface expansion
-- Requires careful permission design
+---
 
-## Monitoring and Metrics
+## Decision 5: Supabase RLS — JWT Claims
 
-**For Hosted MCP Server**:
-- Track which team members use MCP
-- Monitor database query patterns
-- Review MCP-generated migrations
-- Audit schema changes
+**Decision**: Add Postgres trigger on `profiles.role` changes that writes to `auth.users.raw_app_meta_data`. Migrate 5 most-called admin RLS policies from subquery to `auth.jwt() ->> 'user_role'`.
 
-**For Custom MCP Server** (Future):
-- Request/response logging
-- Tool execution metrics
-- Error rates and types
-- Authentication audit trail
+**Performance**: Subquery RLS = extra DB round-trip per row evaluated (~150ms). JWT claim = already decoded in request (~5ms). Measurable win for admin list queries.
 
-## Documentation Requirements
+**Caveat**: JWT claims baked at login time. Role change takes effect on user's next login/token refresh. Acceptable for admin role changes (rare).
 
-### User-Facing Documentation
+**Must use `raw_app_meta_data`** (not `raw_user_meta_data`) — the latter is user-editable and allows self-promotion.
 
-1. **Setup Guide** (`docs/supabase-mcp-setup.md`)
-   - How to configure MCP in Claude Code/Cursor/Windsurf
-   - Authentication walkthrough
-   - Project scoping instructions
-   - Troubleshooting common issues
+**Trigger pattern**:
+```sql
+CREATE OR REPLACE FUNCTION public.sync_role_to_jwt_claims()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  UPDATE auth.users
+  SET raw_app_meta_data = jsonb_set(
+    COALESCE(raw_app_meta_data, '{}'::jsonb),
+    '{user_role}', to_jsonb(NEW.role::text)
+  )
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$;
+```
 
-2. **Security Policy** (`docs/supabase-mcp-security.md`)
-   - Approved use cases
-   - Prohibited operations
-   - Access control guidelines
-   - Incident response procedures
+---
 
-3. **Usage Examples** (`docs/supabase-mcp-examples.md`)
-   - Common queries and commands
-   - Schema exploration workflows
-   - Migration generation examples
-   - Type generation workflows
+## Decision 6: Webhook Idempotency
 
-### Developer Documentation
+**Decision**: New `public.processed_webhooks` table with composite primary key `(webhook_source, external_transaction_id)`. Check before processing; insert on success.
 
-1. **Architecture Decision Record** (ADR)
-   - Why MCP integration chosen
-   - Trade-offs evaluated
-   - Future customization path
+**Rationale**: The `gem_purchases` table already has `idempotency_key` column but it's unused in webhook handlers. A dedicated table covers all 4 payment gateways and all webhook types (not just gem purchases).
 
-2. **Custom MCP Server Design** (if Phase 2)
-   - Tool definitions and schemas
-   - Service integration patterns
-   - Testing strategies
-   - Deployment process
+**SQL**:
+```sql
+CREATE TABLE public.processed_webhooks (
+  webhook_source          VARCHAR(50)  NOT NULL,
+  external_transaction_id VARCHAR(255) NOT NULL,
+  PRIMARY KEY (webhook_source, external_transaction_id),
+  booking_id     UUID         REFERENCES public.bookings(id),
+  status         VARCHAR(50)  NOT NULL,
+  created_at     TIMESTAMPTZ  DEFAULT NOW()
+);
+```
 
-## Dependencies and Prerequisites
+**Handler pattern**:
+```typescript
+const { data: existing } = await supabase
+  .from('processed_webhooks')
+  .select('status')
+  .eq('webhook_source', 'vnpay')
+  .eq('external_transaction_id', transactionId)
+  .maybeSingle();
 
-### External Dependencies
-- Supabase project (existing)
-- Supabase organization account with OAuth support
-- AI assistant with MCP support (Claude Code, Cursor, Windsurf)
+if (existing) return res.json({ success: true }); // idempotent — already processed
+// ... then insert after processing
+```
 
-### Internal Prerequisites
-- Existing Supabase schema and migrations
-- Development/staging Supabase project
-- Team members with Supabase organization access
+---
 
-### Optional Enhancements
-- Database branching setup in Supabase
-- CI/CD integration for migration review
-- Custom MCP server infrastructure (Phase 2)
+## Decision 7: Timing-Safe Secret Comparison
 
-## Risk Assessment
+**Decision**: Use Node.js built-in `crypto.timingSafeEqual` wrapped in a utility function added to `src/lib/sanitization.ts`.
 
-**Security Risks**:
-- ⚠️ HIGH: Accidental production database connection
-  - Mitigation: Enforce development-only policy, use project scoping
-- ⚠️ MEDIUM: Over-permissioned AI queries
-  - Mitigation: Enable manual tool approval, use read-only mode
-- ⚠️ LOW: OAuth token compromise
-  - Mitigation: Regular token rotation, audit logging
+```typescript
+import { timingSafeEqual } from 'crypto';
 
-**Operational Risks**:
-- ⚠️ LOW: Team confusion about when to use MCP vs. traditional tools
-  - Mitigation: Clear usage guidelines, training
-- ⚠️ LOW: MCP-generated migrations not reviewed
-  - Mitigation: Mandatory code review for all schema changes
+export function compareSecretsTimingSafe(provided: string, expected: string): boolean {
+  try {
+    const a = Buffer.from(provided, 'utf8');
+    const b = Buffer.from(expected, 'utf8');
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+```
 
-**Technical Risks**:
-- ⚠️ LOW: Hosted MCP server downtime
-  - Mitigation: Not critical path, traditional tools still work
-- ⚠️ MEDIUM: Custom MCP server maintenance (Phase 2)
-  - Mitigation: Thorough planning, cost-benefit analysis
+Applied in `gem-purchase-complete/route.ts` to replace `secret !== expectedSecret`. Also add guard: throw if `process.env.INTERNAL_API_SECRET` is undefined (empty default removed).
 
-## Success Criteria
+---
 
-**Phase 1 (Hosted MCP Server)**:
-- ✅ All developers can authenticate to Supabase MCP
-- ✅ Documentation covers setup and security policies
-- ✅ Team demonstrates successful schema exploration via MCP
-- ✅ At least one migration generated via MCP and successfully applied
-- ✅ Zero production database incidents
+## Decision 8: HSTS Header
 
-**Phase 2 (Custom MCP Server)** (Future):
-- ✅ Custom server exposes 5+ application-specific tools
-- ✅ Authentication and authorization working
-- ✅ Comprehensive test coverage
-- ✅ Deployed to staging environment
-- ✅ Developer adoption and positive feedback
+**Decision**: `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` added to `next.config.mjs`, gated by `isDev` check.
 
-## References
+**Addition to headers array**:
+```javascript
+{
+  key: 'Strict-Transport-Security',
+  value: isDev ? 'max-age=0' : 'max-age=31536000; includeSubDomains; preload',
+},
+```
 
-- [Supabase MCP Documentation](https://supabase.com/docs/guides/getting-started/mcp)
-- [Supabase MCP Server GitHub](https://github.com/supabase-community/supabase-mcp)
-- [Model Context Protocol Specification](https://spec.modelcontextprotocol.io/)
-- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
-- [Supabase MCP Features](https://supabase.com/features/mcp-server)
-- [Self-Hosting MCP Access](https://supabase.com/docs/guides/self-hosting/enable-mcp)
+The `preload` flag enables submission to the browser HSTS preload list — browsers will enforce HTTPS before even making a request. The 1-year `max-age` is the minimum for preload list inclusion.

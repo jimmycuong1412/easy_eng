@@ -7,20 +7,23 @@
 
 import { CometChat } from '@cometchat-pro/chat';
 import type { CometChatConfig, CometChatUser, CometChatError } from '@/types/cometchat.types';
+import { env } from '@/lib/env';
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
 const COMETCHAT_CONFIG: CometChatConfig = {
-  appId: process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '',
-  region: process.env.NEXT_PUBLIC_COMETCHAT_REGION || 'us',
-  authKey: process.env.NEXT_PUBLIC_COMETCHAT_AUTH_KEY || '',
+  appId: env.NEXT_PUBLIC_COMETCHAT_APP_ID,
+  region: env.NEXT_PUBLIC_COMETCHAT_REGION,
+  // authKey is server-only — not available in client bundles.
+  // User creation is handled server-side in /api/cometchat/auth-token.
+  authKey: '',
 };
 
 // Validate configuration
-if (!COMETCHAT_CONFIG.appId || !COMETCHAT_CONFIG.authKey) {
-  console.error('CometChat configuration is missing. Please check environment variables.');
+if (!COMETCHAT_CONFIG.appId) {
+  console.warn('CometChat configuration is missing. Video calling features will be unavailable.');
 }
 
 // ============================================================================
@@ -35,7 +38,7 @@ let isInitialized = false;
  */
 export async function initCometChat(): Promise<boolean> {
   if (isInitialized) {
-    console.log('CometChat already initialized');
+    // CometChat already initialized
     return true;
   }
 
@@ -48,7 +51,7 @@ export async function initCometChat(): Promise<boolean> {
 
     await CometChat.init(COMETCHAT_CONFIG.appId, appSetting);
     isInitialized = true;
-    console.log('CometChat initialized successfully');
+    // CometChat initialized successfully
     return true;
   } catch (error) {
     console.error('CometChat initialization failed:', error);
@@ -88,12 +91,12 @@ export async function createCometChatUser(
     }
 
     await CometChat.createUser(user, COMETCHAT_CONFIG.authKey);
-    console.log('CometChat user created:', uid);
+    // CometChat user created
     return true;
   } catch (error: any) {
     // User might already exist
     if (error?.code === 'ERR_UID_ALREADY_EXISTS') {
-      console.log('CometChat user already exists:', uid);
+      // CometChat user already exists
       return true;
     }
     console.error('Failed to create CometChat user:', error);
@@ -117,7 +120,7 @@ export async function updateCometChatUser(
     if (metadata) user.setMetadata(metadata);
 
     await CometChat.updateUser(user, COMETCHAT_CONFIG.authKey);
-    console.log('CometChat user updated:', uid);
+    // CometChat user updated
     return true;
   } catch (error) {
     console.error('Failed to update CometChat user:', error);
@@ -131,7 +134,7 @@ export async function updateCometChatUser(
 export async function loginToCometChat(uid: string): Promise<CometChatUser | null> {
   try {
     const user = await CometChat.login(uid, COMETCHAT_CONFIG.authKey);
-    console.log('Logged in to CometChat:', uid);
+    // Logged in to CometChat
 
     return {
       uid: user.getUid(),
@@ -151,7 +154,7 @@ export async function loginToCometChat(uid: string): Promise<CometChatUser | nul
 export async function logoutFromCometChat(): Promise<boolean> {
   try {
     await CometChat.logout();
-    console.log('Logged out from CometChat');
+    // Logged out from CometChat
     return true;
   } catch (error) {
     console.error('CometChat logout failed:', error);
@@ -205,12 +208,12 @@ export async function createClassGroup(
     if (metadata) group.setMetadata(metadata);
 
     await CometChat.createGroup(group);
-    console.log('CometChat group created:', groupId);
+    // CometChat group created
     return true;
   } catch (error: any) {
     // Group might already exist
     if (error?.code === 'ERR_GUID_ALREADY_EXISTS') {
-      console.log('CometChat group already exists:', groupId);
+      // CometChat group already exists
       return true;
     }
     console.error('Failed to create CometChat group:', error);
@@ -228,7 +231,7 @@ export async function joinClassGroup(
 ): Promise<boolean> {
   try {
     await CometChat.joinGroup(groupId, groupType, password);
-    console.log('Joined CometChat group:', groupId);
+    // Joined CometChat group
     return true;
   } catch (error) {
     console.error('Failed to join CometChat group:', error);
@@ -242,7 +245,7 @@ export async function joinClassGroup(
 export async function leaveClassGroup(groupId: string): Promise<boolean> {
   try {
     await CometChat.leaveGroup(groupId);
-    console.log('Left CometChat group:', groupId);
+    // Left CometChat group
     return true;
   } catch (error) {
     console.error('Failed to leave CometChat group:', error);
@@ -256,7 +259,7 @@ export async function leaveClassGroup(groupId: string): Promise<boolean> {
 export async function deleteClassGroup(groupId: string): Promise<boolean> {
   try {
     await CometChat.deleteGroup(groupId);
-    console.log('Deleted CometChat group:', groupId);
+    // Deleted CometChat group
     return true;
   } catch (error) {
     console.error('Failed to delete CometChat group:', error);
@@ -300,7 +303,7 @@ export async function startVideoCall(
     );
 
     const outgoingCall = await CometChat.initiateCall(call);
-    console.log('Video call initiated:', outgoingCall.getSessionId());
+    // Video call initiated
     return outgoingCall;
   } catch (error) {
     console.error('Failed to start video call:', error);
@@ -314,7 +317,7 @@ export async function startVideoCall(
 export async function acceptCall(sessionId: string): Promise<any> {
   try {
     const call = await CometChat.acceptCall(sessionId);
-    console.log('Call accepted:', sessionId);
+    // Call accepted
     return call;
   } catch (error) {
     console.error('Failed to accept call:', error);
@@ -331,7 +334,7 @@ export async function rejectCall(
 ): Promise<any> {
   try {
     const call = await CometChat.rejectCall(sessionId, status);
-    console.log('Call rejected:', sessionId);
+    // Call rejected
     return call;
   } catch (error) {
     console.error('Failed to reject call:', error);
@@ -345,7 +348,7 @@ export async function rejectCall(
 export async function endCall(sessionId: string): Promise<boolean> {
   try {
     await CometChat.endCall(sessionId);
-    console.log('Call ended:', sessionId);
+    // Call ended
     return true;
   } catch (error) {
     console.error('Failed to end call:', error);
@@ -372,7 +375,7 @@ export async function sendGroupMessage(
     );
 
     await CometChat.sendMessage(textMessage);
-    console.log('Group message sent');
+    // Group message sent
     return true;
   } catch (error) {
     console.error('Failed to send group message:', error);

@@ -37,7 +37,7 @@ export async function initCometChat(): Promise<void> {
       await CometChat.init(COMETCHAT_CONFIG.appId, appSetting);
 
       isInitialized = true;
-      console.log('[CometChat] SDK initialized successfully');
+      // CometChat SDK initialized successfully
     } catch (error) {
       console.error('[CometChat] Initialization failed:', error);
       initializationPromise = null;
@@ -62,7 +62,7 @@ export async function loginCometChatUser(
     // Check if user is already logged in
     const loggedInUser = await CometChat.getLoggedinUser();
     if (loggedInUser?.getUid() === userId) {
-      console.log('[CometChat] User already logged in:', userId);
+      // CometChat user already logged in
       return loggedInUser;
     }
 
@@ -71,16 +71,14 @@ export async function loginCometChatUser(
       await CometChat.logout();
     }
 
-    // Login with auth key (for demo/testing)
-    if (authToken) {
-      const user = await CometChat.login(userId, authToken);
-      console.log('[CometChat] User logged in with token:', userId);
-      return user;
+    if (!authToken) {
+      throw new Error('[CometChat] authToken is required. Obtain it from /api/cometchat/auth-token.');
     }
 
-    // Login with auth key
-    const user = await CometChat.login(userId, COMETCHAT_CONFIG.authKey);
-    console.log('[CometChat] User logged in:', userId);
+    // Login with server-generated auth token (secure — auth key never sent to client)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const user = await (CometChat as any).login(authToken);
+    // CometChat user logged in with token
     return user;
   } catch (error) {
     console.error('[CometChat] Login failed:', error);
@@ -94,7 +92,7 @@ export async function loginCometChatUser(
 export async function logoutCometChatUser(): Promise<void> {
   try {
     await CometChat.logout();
-    console.log('[CometChat] User logged out');
+    // CometChat user logged out
   } catch (error) {
     console.error('[CometChat] Logout failed:', error);
     throw error;

@@ -7,11 +7,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { withCsrfRouteProtection } from '@/lib/csrf';
 
 const COMETCHAT_API_URL = 'https://{{COMETCHAT_APP_ID}}.api-{{COMETCHAT_REGION}}.cometchat.io/v3';
-const APP_ID = process.env.NEXT_PUBLIC_COMETCHAT_APP_ID!;
-const REGION = process.env.NEXT_PUBLIC_COMETCHAT_REGION!;
-const API_KEY = process.env.COMETCHAT_API_KEY!;
+const APP_ID = process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '';
+const REGION = process.env.NEXT_PUBLIC_COMETCHAT_REGION || 'us';
+// COMETCHAT_API_KEY is the admin API key (no NEXT_PUBLIC_ prefix — server only)
+const API_KEY = process.env.COMETCHAT_API_KEY || '';
 
 interface CometChatUserResponse {
   data: {
@@ -21,7 +23,37 @@ interface CometChatUserResponse {
   };
 }
 
-export async function POST(request: NextRequest) {
+/**
+ * Ensure a user exists in CometChat by their Supabase profile ID.
+ * Uses the admin API key — does not require the user to be authenticated.
+ */
+async function ensureCometChatUser(
+  apiUrl: string,
+  userId: string,
+  userName: string
+): Promise<void> {
+  const response = await fetch(`${apiUrl}/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apiKey': API_KEY,
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({ uid: userId, name: userName }),
+  });
+
+  // 400 with ERR_UID_ALREADY_EXISTS means user exists — that's fine
+  if (!response.ok && response.status !== 400) {
+    const errorData = await response.json().catch(() => ({}));
+    // Only throw for non-"already exists" errors
+    const code = (errorData as any)?.data?.code || '';
+    if (code !== 'ERR_UID_ALREADY_EXISTS') {
+      throw new Error(`Failed to create CometChat user ${userId}: ${JSON.stringify(errorData)}`);
+    }
+  }
+}
+
+async function handlePost(request: NextRequest): Promise<NextResponse> {
   try {
     // Verify user is authenticated with Supabase
     const supabase = await createClient();
@@ -51,26 +83,29 @@ export async function POST(request: NextRequest) {
       .replace('{{COMETCHAT_APP_ID}}', APP_ID)
       .replace('{{COMETCHAT_REGION}}', REGION);
 
-    // Create or update user in CometChat
-    const createUserResponse = await fetch(`${apiUrl}/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apiKey': API_KEY,
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        uid: user.id,
-        name: userName,
-      }),
-    });
-
-    if (!createUserResponse.ok && createUserResponse.status !== 400) {
-      // 400 might mean user already exists, which is fine
-      const errorData = await createUserResponse.json();
-      console.error('[CometChat API] Create user failed:', errorData);
-      throw new Error('Failed to create CometChat user');
+    // Optionally pre-register a remote peer (e.g. teacher) so calls can be made to them
+    let targetUserId: string | null = null;
+    try {
+      const body = await request.json();
+      targetUserId = body?.targetUserId || null;
+    } catch {
+      // No body or invalid JSON — that's fine
     }
+
+    if (targetUserId && targetUserId !== user.id) {
+      // Fetch target user's profile to get their name
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', targetUserId)
+        .single();
+
+      const targetName = targetProfile?.full_name || 'User';
+      await ensureCometChatUser(apiUrl, targetUserId, targetName);
+    }
+
+    // Create or update the calling user in CometChat
+    await ensureCometChatUser(apiUrl, user.id, userName);
 
     // Generate auth token for the user
     const authTokenResponse = await fetch(`${apiUrl}/users/${user.id}/auth_tokens`, {
@@ -103,3 +138,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withCsrfRouteProtection(handlePost);

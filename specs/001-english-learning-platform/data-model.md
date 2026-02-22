@@ -1,317 +1,206 @@
-# Data Model: Supabase MCP Integration
+# Data Model: Security Hardening
 
-**Feature**: Supabase MCP Integration
-**Date**: 2026-01-31
+**Feature**: Security Hardening
+**Date**: 2026-02-22
 **Branch**: `001-english-learning-platform`
 
 ## Overview
 
-This feature is **configuration and documentation-focused** rather than data model changes. The Supabase MCP integration does not introduce new database entities or modify existing schema. Instead, it provides AI-assisted access to the existing data model.
+This feature introduces two new database entities and modifies how existing RLS policies authenticate admin users. All other tables remain unchanged.
 
-## Existing Data Model (No Changes Required)
+---
 
-The integration works with the **existing database schema** defined in `supabase/migrations/`:
+## New Entity 1: `processed_webhooks`
 
-### Core Entities (Unchanged)
+**Purpose**: Idempotency table for payment gateway webhooks. Prevents double gem credits when gateways retry delivery.
 
-**Users** (`auth.users`)
-- Managed by Supabase Auth
-- Fields: id, email, encrypted_password, email_confirmed_at, etc.
-
-**Profiles** (`public.profiles`)
-- Links to auth.users
-- Fields: id, role (student/teacher/admin), display_name, avatar_url, timezone, created_at, updated_at
-- Relationships: One-to-one with auth.users
-
-**Classes** (`public.classes`)
-- Fields: id, teacher_id, title, description, scheduled_at, duration_minutes, capacity, price, status
-- Relationships: Many-to-one with Profiles (teacher)
-
-**Bookings** (`public.bookings`)
-- Fields: id, student_id, class_id, gems_used, discount_amount, final_price, status, created_at
-- Relationships: Many-to-one with Profiles (student), Many-to-one with Classes
-
-**Gem Transactions** (`public.gem_transactions`)
-- Fields: id, student_id, amount, transaction_type, reason, related_booking_id, created_at
-- Relationships: Many-to-one with Profiles (student)
-
-**Student Characters** (`public.student_characters`)
-- Fields: id, student_id, career_path, total_xp, gold_balance, current_level, daily_streak, weekly_streak
-- Relationships: One-to-one with Profiles (student)
-
-**Marketplace Items** (`public.marketplace_items`)
-- Fields: id, name, category, price_gold, career_compatibility, sprite_url
-
-**Student Inventory** (`public.student_inventory`)
-- Fields: id, student_id, item_id, purchased_at, is_equipped
-- Relationships: Many-to-one with Student Characters, Many-to-one with Marketplace Items
-
-## MCP Configuration Entities (New)
-
-While the database schema remains unchanged, the following configuration artifacts are introduced:
-
-### MCP Server Configuration
-
-**File**: `.claude/mcp-servers.json` (or IDE-specific config)
-
-**Structure**:
-```json
-{
-  "mcpServers": {
-    "supabase-dev": {
-      "url": "https://mcp.supabase.com/mcp?project_ref=<PROJECT_REF>",
-      "transport": "sse",
-      "oauth": {
-        "enabled": true,
-        "provider": "supabase"
-      }
-    }
-  }
-}
+**SQL**:
+```sql
+CREATE TABLE public.processed_webhooks (
+  webhook_source          VARCHAR(50)  NOT NULL,
+  external_transaction_id VARCHAR(255) NOT NULL,
+  PRIMARY KEY (webhook_source, external_transaction_id),
+  booking_id     UUID         REFERENCES public.bookings(id),
+  status         VARCHAR(50)  NOT NULL,
+  created_at     TIMESTAMPTZ  DEFAULT NOW()
+);
 ```
 
 **Fields**:
-- `url`: Supabase MCP server endpoint with project reference
-- `transport`: Communication protocol (SSE - Server-Sent Events)
-- `oauth`: Authentication configuration
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `webhook_source` | VARCHAR(50) | NOT NULL, PK | Gateway name: `'vnpay'`, `'momo'`, `'zalopay'`, `'stripe'` |
+| `external_transaction_id` | VARCHAR(255) | NOT NULL, PK | Transaction ID from payment gateway |
+| `booking_id` | UUID | FK → bookings.id, nullable | Associated booking (null for non-booking events) |
+| `status` | VARCHAR(50) | NOT NULL | Processing result: `'completed'`, `'failed'`, `'refunded'` |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | When the webhook was processed |
 
-### MCP Access Control (Conceptual)
+**Validation Rules**:
+- `webhook_source` MUST be one of: `'vnpay'`, `'momo'`, `'zalopay'`, `'stripe'`
+- `external_transaction_id` MUST be non-empty
+- Duplicate `(webhook_source, external_transaction_id)` pair → handler returns `{ success: true }` early (idempotent)
 
-**Entity**: Team Member Access
-- **team_member_id**: Developer's Supabase org user ID
-- **project_access**: Array of project refs they can access via MCP
-- **permissions**: read_only | read_write
-- **granted_at**: Timestamp of access grant
-- **granted_by**: Admin who granted access
+**RLS Policies**:
+- No direct user access — only accessible via service role (backend webhook handlers)
+- No SELECT/INSERT/UPDATE/DELETE policies needed for authenticated users
 
-Note: This is managed in Supabase organization settings, not in application database.
+**Migration file**: `supabase/migrations/057_processed_webhooks.sql`
 
-## Data Flow Diagrams
+---
 
-### Current Architecture (Without MCP)
+## New Entity 2: JWT Claims Trigger (Postgres Function)
 
-```
-┌─────────────────┐
-│  Developer      │
-│  (VS Code)      │
-└────────┬────────┘
-         │
-         │ Supabase SDK
-         ▼
-┌─────────────────┐
-│  Supabase API   │
-│  (REST/GraphQL) │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  PostgreSQL DB  │
-│  (Production)   │
-└─────────────────┘
-```
+**Purpose**: Keeps `auth.users.raw_app_meta_data.user_role` in sync with `profiles.role`. Enables fast JWT-based role checks in RLS policies (eliminates subquery round-trips).
 
-### With MCP Integration (Recommended)
+**SQL**:
+```sql
+CREATE OR REPLACE FUNCTION public.sync_role_to_jwt_claims()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  UPDATE auth.users
+  SET raw_app_meta_data = jsonb_set(
+    COALESCE(raw_app_meta_data, '{}'::jsonb),
+    '{user_role}', to_jsonb(NEW.role::text)
+  )
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$;
 
-```
-┌─────────────────┐
-│  Developer      │
-│  (Claude Code)  │
-└────────┬────────┘
-         │
-         │ MCP Protocol
-         ▼
-┌─────────────────┐
-│ Supabase MCP    │
-│ Server (Hosted) │
-└────────┬────────┘
-         │
-         │ OAuth 2.1
-         ▼
-┌─────────────────┐
-│  Supabase API   │
-│  (Development)  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  PostgreSQL DB  │
-│  (Dev Project)  │
-└─────────────────┘
+CREATE TRIGGER trg_sync_role_to_jwt
+AFTER INSERT OR UPDATE OF role ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.sync_role_to_jwt_claims();
 ```
 
-### Future: Custom MCP Server (Phase 2)
+**Trigger Entity**:
+| Property | Value |
+|----------|-------|
+| Name | `trg_sync_role_to_jwt` |
+| Table | `public.profiles` |
+| When | AFTER INSERT OR UPDATE OF role |
+| For Each | ROW |
+| Function | `public.sync_role_to_jwt_claims()` |
+| Security | SECURITY DEFINER (runs as table owner) |
 
-```
-┌─────────────────┐
-│  Developer      │
-│  (Claude Code)  │
-└────────┬────────┘
-         │
-         │ MCP Protocol
-         ▼
-┌─────────────────┐
-│  Custom MCP     │
-│  Server         │
-│  (Node.js)      │
-└────────┬────────┘
-         │
-         │ Internal API
-         ▼
-┌─────────────────┐
-│  Backend        │
-│  Services       │
-└────────┬────────┘
-         │
-         │ Supabase SDK
-         ▼
-┌─────────────────┐
-│  Supabase API   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  PostgreSQL DB  │
-└─────────────────┘
+**JWT Claim Written**:
+- Path: `auth.users.raw_app_meta_data.user_role`
+- Value: profiles.role string (`'student'`, `'teacher'`, `'admin'`)
+- Note: `raw_app_meta_data` is server-controlled — users cannot self-modify (unlike `raw_user_meta_data`)
+
+**Caveat**: JWT claims baked at login time. Role changes take effect on user's next login or token refresh. Acceptable for admin role changes (rare operations).
+
+**Migration file**: `supabase/migrations/056_jwt_claims_trigger.sql`
+
+---
+
+## Modified Entity: RLS Policies (5 admin policies)
+
+**Purpose**: Replace subquery pattern with JWT claim pattern for 5 most-called admin RLS policies.
+
+**Before** (subquery — slow):
+```sql
+(SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
 ```
 
-## Entity Relationships (Unchanged)
-
-```
-auth.users (1) ──────── (1) public.profiles
-                               │
-                               ├── role: student ──── (1) student_characters
-                               │                            │
-                               │                            ├── (N) progression_transactions
-                               │                            └── (N) student_inventory
-                               │                                      │
-                               │                                      └── (N) marketplace_items
-                               │
-                               ├── role: student ──── (N) bookings ──── (1) classes
-                               │                      │
-                               │                      └── related to ─── (N) gem_transactions
-                               │
-                               └── role: teacher ──── (N) classes
+**After** (JWT claim — fast):
+```sql
+auth.jwt() ->> 'user_role' = 'admin'
 ```
 
-This diagram remains valid with or without MCP integration.
+**Policies to update**:
+| Table | Policy Name | Operation |
+|-------|-------------|-----------|
+| `public.profiles` | `admin_read_all_profiles` | SELECT |
+| `public.classes` | `admin_manage_all_classes` | ALL |
+| `public.bookings` | `admin_read_all_bookings` | SELECT |
+| `public.gem_transactions` | `admin_read_all_transactions` | SELECT |
+| `public.gem_purchases` | `admin_read_all_purchases` | SELECT |
 
-## Validation Rules (Unchanged)
+**Migration file**: `supabase/migrations/058_rls_jwt_claims.sql`
 
-The MCP integration respects all existing validation rules:
+---
 
-**Profiles**:
-- `role` MUST be one of: 'student', 'teacher', 'admin'
-- `timezone` MUST be valid IANA timezone string
+## Non-Database Security Changes
 
-**Classes**:
-- `capacity` MUST be > 0
-- `price` MUST be >= $5.00 USD (minimum booking price)
-- `scheduled_at` MUST be in the future
+These changes have no database entities but are part of the security hardening:
 
-**Bookings**:
-- `gems_used` MUST be <= student's gem balance
-- `discount_amount` MUST be <= 50% of class price
-- `final_price` = class.price - discount_amount
+### Rate Limiting (In-Process LRU Cache)
 
-**Gem Transactions**:
-- Student's gem balance MUST NOT go negative
-- `amount` MUST be > 0
+**Package**: `lru-cache` v10 (npm)
+**Location**: `frontend/src/lib/rate-limit.ts` (new file)
 
-**Student Characters**:
-- `current_level` = floor(total_xp / 500) + 1
-- `career_path` MUST be one of: 'doctor', 'engineer', 'warrior', 'business', 'artist', 'scientist'
+```typescript
+type RateLimitEntry = { count: number; resetAt: number };
+// LRUCache<key: string, value: RateLimitEntry>
+```
+
+**Limits**:
+| Route | Key | Max | Window |
+|-------|-----|-----|--------|
+| `POST /api/payments/gem-purchase` | user ID | 5 | 60s |
+| `POST /api/payments/gem-purchase-complete` | IP | 10 | 60s |
+| `POST /api/admin/gems-rules` | user ID | 30 | 60s |
+| `PUT /api/admin/gems-rules/[id]` | user ID | 30 | 60s |
+| `DELETE /api/admin/gems-rules/[id]` | user ID | 30 | 60s |
+| `POST /api/cometchat/auth-token` | user ID | 20 | 60s |
+
+### CSRF Adapter
+
+**Location**: Addition to `frontend/src/lib/csrf.tsx` (existing file)
+
+```typescript
+export function withCsrfProtection<T extends NextRequest>(
+  handler: (req: T) => Promise<NextResponse>
+): (req: T) => Promise<NextResponse>
+```
+
+**Routes receiving CSRF wrapping**: All 6 state-changing Next.js API routes listed above.
+
+### Environment Variable Change
+
+**Rename**: `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` → `COMETCHAT_AUTH_KEY`
+
+**Files affected**:
+- `frontend/src/lib/cometchat/config.ts`: Remove `authKey` from client config object
+- `frontend/src/app/api/cometchat/auth-token/route.ts`: Read from `process.env.COMETCHAT_AUTH_KEY`
+- `frontend/src/lib/server-only-secrets.ts` (new file): Export server-only secrets with `import 'server-only'` guard
+
+### Security Headers
+
+**Location**: `frontend/next.config.mjs`
+
+**Addition**:
+```javascript
+{ key: 'Strict-Transport-Security', value: isDev ? 'max-age=0' : 'max-age=31536000; includeSubDomains; preload' }
+```
+
+### Timing-Safe Secret Comparison
+
+**Location**: Addition to `frontend/src/lib/sanitization.ts`
+
+```typescript
+export function compareSecretsTimingSafe(provided: string, expected: string): boolean
+```
+
+**Applied in**: `frontend/src/app/api/payments/gem-purchase-complete/route.ts`
+
+---
 
 ## State Transitions (Unchanged)
 
-**Booking States**: pending → confirmed → attended | cancelled
-**Class States**: scheduled → live → completed | cancelled
+Existing state machines are not affected by security hardening:
+- **Booking States**: `pending → confirmed → attended | cancelled`
+- **Class States**: `scheduled → live → completed | cancelled`
+- **Webhook Status**: `pending → completed | failed | refunded` (new, in `processed_webhooks`)
 
-MCP integration does not alter these state machines but can help query and visualize state transitions.
+---
 
-## Indexes and Performance (Unchanged)
+## Migration Sequence
 
-Existing indexes continue to serve application and MCP queries:
-- `idx_profiles_role` on profiles(role)
-- `idx_classes_teacher_id` on classes(teacher_id)
-- `idx_bookings_student_id` on bookings(student_id)
-- `idx_bookings_class_id` on bookings(class_id)
-- `idx_gem_transactions_student_id` on gem_transactions(student_id)
+```
+056_jwt_claims_trigger.sql      ← Trigger + function (no deps)
+057_processed_webhooks.sql      ← New table (refs bookings)
+058_rls_jwt_claims.sql          ← Policy updates (requires trigger to exist)
+```
 
-MCP server uses same Supabase API, benefiting from these indexes.
-
-## Security Model (Row Level Security)
-
-**Existing RLS Policies** (in `supabase/migrations/003_rls_policies.sql`):
-
-**Profiles**:
-- Users can read their own profile
-- Users can update their own profile
-- Admins can read all profiles
-
-**Classes**:
-- Everyone can read published classes
-- Teachers can create/update own classes
-- Admins can manage all classes
-
-**Bookings**:
-- Students can read own bookings
-- Teachers can read bookings for their classes
-- Students can create bookings (with validation)
-
-**Gem Transactions**:
-- Students can read own transactions
-- System can create transactions (via service role)
-
-**MCP Access Considerations**:
-- MCP uses service role key (bypasses RLS)
-- Security relies on OAuth + project scoping
-- Manual tool approval required
-- Development database only (isolated from production)
-
-## Migration Strategy
-
-**No database migrations required** for MCP integration.
-
-**Configuration migrations**:
-1. Create `.claude/mcp-servers.json` with Supabase MCP server config
-2. Document in `docs/supabase-mcp-setup.md`
-3. Update `.gitignore` to exclude sensitive MCP configs
-4. Create template config files with placeholder values
-
-**Team migration**:
-1. Train developers on MCP usage
-2. Establish security policies
-3. Set up development Supabase projects
-4. Grant OAuth access to team members
-
-## Future Considerations (Phase 2: Custom MCP Server)
-
-If implementing a custom MCP server, consider exposing:
-
-**Virtual Entities** (not stored, computed on-demand):
-- `StudentProgress`: Aggregated XP, level, achievements
-- `TeacherSchedule`: Combined view of classes and bookings
-- `PlatformAnalytics`: Aggregated metrics and KPIs
-
-**Computed Fields**:
-- `available_gems`: Current gem balance
-- `next_level_xp`: XP needed for next level
-- `class_availability`: Calculated seats remaining
-
-**Transactional Operations**:
-- `book_class_with_gems`: Atomic booking + gem deduction
-- `award_xp_and_gold`: Atomic character progression update
-- `process_refund`: Atomic money + gems return
-
-These would be exposed as MCP tools rather than database tables.
-
-## Summary
-
-The Supabase MCP integration is a **non-invasive enhancement** that:
-- ✅ Requires ZERO database schema changes
-- ✅ Preserves all existing validation rules
-- ✅ Respects Row Level Security policies (via proper configuration)
-- ✅ Adds AI-assisted database exploration capabilities
-- ✅ Documents path for future custom MCP server
-
-The existing data model remains the single source of truth, with MCP providing an additional access layer for development workflows.
+Run in order. All are non-destructive (no data loss, no column drops).
