@@ -14,7 +14,6 @@ import { createClient } from '@/lib/supabase/client';
 import { getDashboardData, getTeachers, getStudentProgress } from '@/lib/queries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { XPProgressBar } from '@/components/features/XPProgressBar';
 import { PixelAvatar } from '@/components/features/PixelAvatar';
 
@@ -35,7 +34,7 @@ const itemVariants = {
 };
 
 export default function StudentDashboardPage() {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile } = useAuth();
   const { balance: gemBalance } = useGemsBalance();
   const t = useTranslations('dashboard');
 
@@ -73,7 +72,7 @@ export default function StudentDashboardPage() {
       getDashboardData(user.id).catch(() => ({ upcomingClasses: [], recentActivity: [], gemsBalance: 0 })),
       getTeachers({ limit: 3 }).catch(() => []),
       getStudentProgress(user.id).catch(() => null),
-      createClient().from('attendance_streaks').select('current_streak').eq('student_id', user.id).maybeSingle().then(r => r.data).catch(() => null),
+      createClient().from('attendance_streaks').select('current_streak').eq('student_id', user.id).maybeSingle().then(r => r.data, () => null),
     ]).then(([dashboard, teachers, progress, streak]) => {
       // Map upcoming classes from bookings
       const mapped = (dashboard.upcomingClasses || [])
@@ -451,31 +450,5 @@ function StatCard({
         </div>
       </div>
     </Card>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <Skeleton className="h-8 w-64 mb-2" />
-        <Skeleton className="h-4 w-48" />
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="h-20" />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-80" />
-        </div>
-        <div className="space-y-6">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-48" />
-        </div>
-      </div>
-    </div>
   );
 }

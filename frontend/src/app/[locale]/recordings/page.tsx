@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -9,14 +10,13 @@ import {
   Download,
   Calendar,
   Clock,
-  User,
   Search,
   Filter,
-  ChevronRight,
   PlayCircle,
+  Loader2,
 } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -28,85 +28,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAuth } from '@/hooks/useAuth';
+import { getUserRecordings } from '@/lib/queries';
 
-// Mock recordings data
-const mockRecordings = [
-  {
-    id: 'rec-1',
-    classId: 'class-1',
-    topic: 'Business English: Meeting Skills',
-    teacher: {
-      name: 'Nguyễn Minh Anh',
-      avatar: '/avatars/teacher1.png',
-    },
-    recordedAt: '2026-01-23T09:00:00+07:00',
-    duration: 25,
-    thumbnail: '/thumbnails/rec1.png',
-    expiresAt: '2026-02-22T09:00:00+07:00',
-    watched: true,
-    watchedProgress: 100,
-  },
-  {
-    id: 'rec-2',
-    classId: 'class-2',
-    topic: 'IELTS Speaking Part 2: Describe a Person',
-    teacher: {
-      name: 'Trần Văn Nam',
-      avatar: '/avatars/teacher2.png',
-    },
-    recordedAt: '2026-01-20T14:00:00+07:00',
-    duration: 25,
-    thumbnail: '/thumbnails/rec2.png',
-    expiresAt: '2026-02-19T14:00:00+07:00',
-    watched: true,
-    watchedProgress: 60,
-  },
-  {
-    id: 'rec-3',
-    classId: 'class-3',
-    topic: 'Conversational English: Travel Topics',
-    teacher: {
-      name: 'Nguyễn Minh Anh',
-      avatar: '/avatars/teacher1.png',
-    },
-    recordedAt: '2026-01-18T10:00:00+07:00',
-    duration: 25,
-    thumbnail: '/thumbnails/rec3.png',
-    expiresAt: '2026-02-17T10:00:00+07:00',
-    watched: false,
-    watchedProgress: 0,
-  },
-  {
-    id: 'rec-4',
-    classId: 'class-4',
-    topic: 'Pronunciation: Difficult Sounds for Vietnamese Speakers',
-    teacher: {
-      name: 'Lê Thị Hoa',
-      avatar: '/avatars/teacher3.png',
-    },
-    recordedAt: '2026-01-15T16:00:00+07:00',
-    duration: 25,
-    thumbnail: '/thumbnails/rec4.png',
-    expiresAt: '2026-02-14T16:00:00+07:00',
-    watched: true,
-    watchedProgress: 100,
-  },
-  {
-    id: 'rec-5',
-    classId: 'class-5',
-    topic: 'Grammar Focus: Past Perfect Tense',
-    teacher: {
-      name: 'Trần Văn Nam',
-      avatar: '/avatars/teacher2.png',
-    },
-    recordedAt: '2026-01-12T09:00:00+07:00',
-    duration: 25,
-    thumbnail: '/thumbnails/rec5.png',
-    expiresAt: '2026-02-11T09:00:00+07:00',
-    watched: false,
-    watchedProgress: 0,
-  },
-];
+interface RecordingItem {
+  id: string;
+  classId: string;
+  topic: string;
+  teacher: {
+    name: string;
+    avatar: string;
+  };
+  recordedAt: string;
+  duration: number;
+  thumbnail: string;
+  expiresAt: string;
+  watched: boolean;
+  watchedProgress: number;
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -122,17 +61,62 @@ const itemVariants = {
 };
 
 export default function RecordingsPage() {
+  const { user } = useAuth();
+  const [recordings, setRecordings] = useState<RecordingItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filterTeacher, setFilterTeacher] = React.useState('all');
 
-  const filteredRecordings = mockRecordings.filter((recording) => {
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchRecordings = async () => {
+      try {
+        setLoading(true);
+        const data = await getUserRecordings(user.id) as Record<string, unknown>[] | null;
+
+        const mapped: RecordingItem[] = (data || []).map((r) => {
+          const cls = r.classes as Record<string, unknown> | null;
+          const recordedAt = (r.scheduled_start_time as string) || '';
+          const expiresDate = new Date(recordedAt);
+          expiresDate.setDate(expiresDate.getDate() + 30);
+
+          return {
+            id: r.id as string,
+            classId: (r.class_id as string) || '',
+            topic: (cls?.title as string) || 'Untitled Recording',
+            teacher: {
+              name: 'Teacher',
+              avatar: '',
+            },
+            recordedAt,
+            duration: (r.duration_minutes as number) || 25,
+            thumbnail: '',
+            expiresAt: expiresDate.toISOString(),
+            watched: false,
+            watchedProgress: 0,
+          };
+        });
+
+        setRecordings(mapped);
+      } catch (err) {
+        console.error('Error fetching recordings:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecordings();
+  }, [user?.id]);
+
+  const filteredRecordings = recordings.filter((recording) => {
     const matchesSearch = recording.topic.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTeacher =
       filterTeacher === 'all' || recording.teacher.name === filterTeacher;
     return matchesSearch && matchesTeacher;
   });
 
-  const uniqueTeachers = [...new Set(mockRecordings.map((r) => r.teacher.name))];
+  const uniqueTeachers = Array.from(new Set(recordings.map((r) => r.teacher.name)));
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -150,6 +134,14 @@ export default function RecordingsPage() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] py-8">
@@ -176,7 +168,7 @@ export default function RecordingsPage() {
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <Video className="w-8 h-8 text-[#3B82F6] mx-auto mb-2" />
-              <p className="text-2xl font-bold text-white">{mockRecordings.length}</p>
+              <p className="text-2xl font-bold text-white">{recordings.length}</p>
               <p className="text-sm text-slate-400">Tổng bản ghi</p>
             </CardContent>
           </Card>
@@ -184,7 +176,7 @@ export default function RecordingsPage() {
             <CardContent className="p-4 text-center">
               <PlayCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
               <p className="text-2xl font-bold text-white">
-                {mockRecordings.filter((r) => r.watchedProgress === 100).length}
+                {recordings.filter((r) => r.watchedProgress === 100).length}
               </p>
               <p className="text-sm text-slate-400">Đã xem xong</p>
             </CardContent>
@@ -193,7 +185,7 @@ export default function RecordingsPage() {
             <CardContent className="p-4 text-center">
               <Clock className="w-8 h-8 text-amber-400 mx-auto mb-2" />
               <p className="text-2xl font-bold text-white">
-                {mockRecordings.filter((r) => !r.watched).length}
+                {recordings.filter((r) => !r.watched).length}
               </p>
               <p className="text-sm text-slate-400">Chưa xem</p>
             </CardContent>
@@ -202,7 +194,7 @@ export default function RecordingsPage() {
             <CardContent className="p-4 text-center">
               <Calendar className="w-8 h-8 text-purple-400 mx-auto mb-2" />
               <p className="text-2xl font-bold text-white">
-                {mockRecordings.reduce((acc, r) => acc + r.duration, 0)}
+                {recordings.reduce((acc, r) => acc + r.duration, 0)}
               </p>
               <p className="text-sm text-slate-400">Tổng phút</p>
             </CardContent>

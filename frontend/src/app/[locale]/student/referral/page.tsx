@@ -1,27 +1,27 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Gift,
   Copy,
   Check,
   Users,
-  Cookie,
-  ChevronRight,
+  Gem,
   Share2,
   Facebook,
   MessageCircle,
-  QrCode,
+  Loader2,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/useAuth';
+import { getUserReferralData } from '@/lib/queries';
+import { GemImage } from '@/components/common/GemImage';
 
 // Animation variants
 const containerVariants = {
@@ -37,65 +37,34 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock referral data
-const mockReferralData = {
-  referralCode: 'LEARN2024ABC',
-  referralLink: 'https://easyeng.vn/ref/LEARN2024ABC',
-  totalReferrals: 5,
-  pendingReferrals: 2,
-  successfulReferrals: 3,
-  totalCookiesEarned: 150,
-  currentTier: 'silver',
-  nextTierProgress: 60,
-  referralHistory: [
-    {
-      id: '1',
-      userName: 'Trần Văn A',
-      userAvatar: undefined, // Will use fallback with user initials
-      referredAt: '2026-01-20T10:00:00+07:00',
-      status: 'completed',
-      cookiesEarned: 50,
-    },
-    {
-      id: '2',
-      userName: 'Nguyễn Thị B',
-      userAvatar: undefined, // Will use fallback with user initials
-      referredAt: '2026-01-18T14:00:00+07:00',
-      status: 'completed',
-      cookiesEarned: 50,
-    },
-    {
-      id: '3',
-      userName: 'Lê Hoàng C',
-      userAvatar: undefined, // Will use fallback with user initials
-      referredAt: '2026-01-15T09:00:00+07:00',
-      status: 'completed',
-      cookiesEarned: 50,
-    },
-    {
-      id: '4',
-      userName: 'Phạm Minh D',
-      userAvatar: undefined, // Will use fallback with user initials
-      referredAt: '2026-01-22T16:00:00+07:00',
-      status: 'pending',
-      cookiesEarned: 0,
-    },
-    {
-      id: '5',
-      userName: 'Võ Hải E',
-      userAvatar: undefined, // Will use fallback with user initials
-      referredAt: '2026-01-21T11:00:00+07:00',
-      status: 'pending',
-      cookiesEarned: 0,
-    },
-  ],
-  tiers: [
-    { name: 'Bronze', minReferrals: 0, bonus: 0 },
-    { name: 'Silver', minReferrals: 3, bonus: 10 },
-    { name: 'Gold', minReferrals: 10, bonus: 25 },
-    { name: 'Platinum', minReferrals: 25, bonus: 50 },
-  ],
-};
+interface ReferralHistoryItem {
+  id: string;
+  userName: string;
+  userAvatar: string | undefined;
+  referredAt: string;
+  status: string;
+  gemsEarned: number;
+}
+
+interface ReferralData {
+  referralCode: string;
+  referralLink: string;
+  totalReferrals: number;
+  pendingReferrals: number;
+  successfulReferrals: number;
+  totalGemsEarned: number;
+  currentTier: string;
+  nextTierProgress: number;
+  referralHistory: ReferralHistoryItem[];
+  tiers: { name: string; minReferrals: number; bonus: number }[];
+}
+
+const defaultTiers = [
+  { name: 'Bronze', minReferrals: 0, bonus: 0 },
+  { name: 'Silver', minReferrals: 3, bonus: 10 },
+  { name: 'Gold', minReferrals: 10, bonus: 25 },
+  { name: 'Platinum', minReferrals: 25, bonus: 50 },
+];
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -107,7 +76,93 @@ function formatDate(dateString: string): string {
 }
 
 export default function ReferralPage() {
+  const { user } = useAuth();
   const [copied, setCopied] = React.useState(false);
+  const [loading, setLoading] = useState(false);
+  const [referralData, setReferralData] = useState<ReferralData>({
+    referralCode: '',
+    referralLink: '',
+    totalReferrals: 0,
+    pendingReferrals: 0,
+    successfulReferrals: 0,
+    totalGemsEarned: 0,
+    currentTier: 'bronze',
+    nextTierProgress: 0,
+    referralHistory: [],
+    tiers: defaultTiers,
+  });
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchReferralData = async () => {
+      try {
+        setLoading(true);
+        const data = await getUserReferralData(user.id) as Record<string, unknown> | null;
+
+        if (data) {
+          const referrals = (data.referrals as Record<string, unknown>[]) || [];
+          const code = (data.code as string) || '';
+
+          const successfulReferrals = referrals.filter(
+            (r) => r.referred_completed_first_class === true
+          ).length;
+          const pendingReferrals = referrals.filter(
+            (r) => r.referred_completed_first_class !== true
+          ).length;
+          const totalGemsEarned = referrals.reduce(
+            (sum, r) => sum + ((r.gems_awarded_to_referrer as number) || 0),
+            0
+          );
+
+          // Determine tier
+          let currentTier = 'bronze';
+          for (const tier of [...defaultTiers].reverse()) {
+            if (successfulReferrals >= tier.minReferrals) {
+              currentTier = tier.name.toLowerCase();
+              break;
+            }
+          }
+
+          const history: ReferralHistoryItem[] = referrals.map((r) => ({
+            id: r.id as string,
+            userName: (r.referred_id as string) || 'User',
+            userAvatar: undefined,
+            referredAt: r.created_at as string,
+            status: r.referred_completed_first_class ? 'completed' : 'pending',
+            gemsEarned: (r.gems_awarded_to_referrer as number) || 0,
+          }));
+
+          setReferralData({
+            referralCode: code,
+            referralLink: `https://easyeng.vn/ref/${code}`,
+            totalReferrals: referrals.length,
+            pendingReferrals,
+            successfulReferrals,
+            totalGemsEarned,
+            currentTier,
+            nextTierProgress: 0,
+            referralHistory: history,
+            tiers: defaultTiers,
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching referral data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReferralData();
+  }, [user?.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+      </div>
+    );
+  }
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -116,13 +171,13 @@ export default function ReferralPage() {
   };
 
   const shareToFacebook = () => {
-    const url = encodeURIComponent(mockReferralData.referralLink);
+    const url = encodeURIComponent(referralData.referralLink);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
   };
 
   const shareToZalo = () => {
-    const url = encodeURIComponent(mockReferralData.referralLink);
-    const title = encodeURIComponent('Học tiếng Anh cùng tôi trên EasyEng - Nhận 50 Cookies miễn phí!');
+    const url = encodeURIComponent(referralData.referralLink);
+    const title = encodeURIComponent('Học tiếng Anh cùng tôi trên EasyEng - Nhận 50 Gems miễn phí!');
     window.open(`https://zalo.me/share?u=${url}&t=${title}`, '_blank');
   };
 
@@ -140,7 +195,7 @@ export default function ReferralPage() {
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Giới thiệu bạn bè 🎁</h1>
           <p className="text-slate-400 max-w-md mx-auto">
-            Mời bạn bè học cùng và nhận <span className="text-amber-400 font-semibold">50 Cookies</span> khi họ hoàn thành lớp học đầu tiên!
+            Mời bạn bè học cùng và nhận <span className="text-amber-400 font-semibold">50 Gems</span> khi họ hoàn thành lớp học đầu tiên!
           </p>
         </motion.div>
 
@@ -155,7 +210,7 @@ export default function ReferralPage() {
             <Card className="bg-white/5 border-white/10">
               <CardContent className="p-4 text-center">
                 <Users className="w-6 h-6 text-[#3B82F6] mx-auto mb-2" />
-                <p className="text-2xl font-bold text-white">{mockReferralData.totalReferrals}</p>
+                <p className="text-2xl font-bold text-white">{referralData.totalReferrals}</p>
                 <p className="text-xs text-slate-400">Đã giới thiệu</p>
               </CardContent>
             </Card>
@@ -164,7 +219,7 @@ export default function ReferralPage() {
             <Card className="bg-white/5 border-white/10">
               <CardContent className="p-4 text-center">
                 <Check className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-emerald-400">{mockReferralData.successfulReferrals}</p>
+                <p className="text-2xl font-bold text-emerald-400">{referralData.successfulReferrals}</p>
                 <p className="text-xs text-slate-400">Hoàn thành</p>
               </CardContent>
             </Card>
@@ -172,9 +227,9 @@ export default function ReferralPage() {
           <motion.div variants={itemVariants}>
             <Card className="bg-white/5 border-white/10">
               <CardContent className="p-4 text-center">
-                <Cookie className="w-6 h-6 text-amber-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-amber-400">{mockReferralData.totalCookiesEarned}</p>
-                <p className="text-xs text-slate-400">Cookies kiếm được</p>
+                <Gem className="w-6 h-6 text-amber-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-amber-400">{referralData.totalGemsEarned}</p>
+                <p className="text-xs text-slate-400">Gems kiếm được</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -182,7 +237,7 @@ export default function ReferralPage() {
             <Card className="bg-white/5 border-white/10">
               <CardContent className="p-4 text-center">
                 <Gift className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-purple-400">{mockReferralData.pendingReferrals}</p>
+                <p className="text-2xl font-bold text-purple-400">{referralData.pendingReferrals}</p>
                 <p className="text-xs text-slate-400">Đang chờ</p>
               </CardContent>
             </Card>
@@ -208,13 +263,13 @@ export default function ReferralPage() {
                 <div className="flex-1">
                   <p className="text-xs text-slate-400 mb-1">Mã giới thiệu</p>
                   <p className="text-xl font-mono font-bold text-[#3B82F6]">
-                    {mockReferralData.referralCode}
+                    {referralData.referralCode}
                   </p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard(mockReferralData.referralCode)}
+                  onClick={() => copyToClipboard(referralData.referralCode)}
                   className="border-[#3B82F6]/30 text-[#3B82F6] hover:bg-[#3B82F6]/10"
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -225,12 +280,12 @@ export default function ReferralPage() {
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-slate-400 mb-1">Link giới thiệu</p>
-                  <p className="text-sm text-white truncate">{mockReferralData.referralLink}</p>
+                  <p className="text-sm text-white truncate">{referralData.referralLink}</p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard(mockReferralData.referralLink)}
+                  onClick={() => copyToClipboard(referralData.referralLink)}
                   className="border-[#3B82F6]/30 text-[#3B82F6] hover:bg-[#3B82F6]/10"
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -294,7 +349,7 @@ export default function ReferralPage() {
                   </div>
                   <h4 className="font-semibold text-white mb-2">Nhận thưởng</h4>
                   <p className="text-sm text-slate-400">
-                    Nhận 50 🍪 khi họ hoàn thành lớp học đầu tiên
+                    Nhận 50 <GemImage size={14} className="inline-block align-middle" /> khi họ hoàn thành lớp học đầu tiên
                   </p>
                 </div>
               </div>
@@ -313,28 +368,28 @@ export default function ReferralPage() {
               <CardTitle className="text-white flex items-center justify-between">
                 <span>Cấp độ giới thiệu</span>
                 <Badge className="bg-slate-500/20 text-slate-300 border-0 capitalize">
-                  {mockReferralData.currentTier}
+                  {referralData.currentTier}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4 mb-4">
-                {mockReferralData.tiers.map((tier, index) => (
+                {referralData.tiers.map((tier, index) => (
                   <React.Fragment key={tier.name}>
                     <div
                       className={`text-center ${
-                        mockReferralData.currentTier === tier.name.toLowerCase()
+                        referralData.currentTier === tier.name.toLowerCase()
                           ? 'text-[#3B82F6]'
-                          : mockReferralData.successfulReferrals >= tier.minReferrals
+                          : referralData.successfulReferrals >= tier.minReferrals
                             ? 'text-emerald-400'
                             : 'text-slate-500'
                       }`}
                     >
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-1 text-sm font-bold ${
-                          mockReferralData.currentTier === tier.name.toLowerCase()
+                          referralData.currentTier === tier.name.toLowerCase()
                             ? 'bg-[#3B82F6]/20 ring-2 ring-[#3B82F6]'
-                            : mockReferralData.successfulReferrals >= tier.minReferrals
+                            : referralData.successfulReferrals >= tier.minReferrals
                               ? 'bg-emerald-500/20'
                               : 'bg-slate-700/50'
                         }`}
@@ -346,16 +401,16 @@ export default function ReferralPage() {
                         <p className="text-[10px] text-amber-400">+{tier.bonus}%</p>
                       )}
                     </div>
-                    {index < mockReferralData.tiers.length - 1 && (
+                    {index < referralData.tiers.length - 1 && (
                       <div className="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-[#3B82F6] transition-all"
                           style={{
                             width:
-                              mockReferralData.successfulReferrals >= mockReferralData.tiers[index + 1].minReferrals
+                              referralData.successfulReferrals >= referralData.tiers[index + 1].minReferrals
                                 ? '100%'
-                                : mockReferralData.successfulReferrals > tier.minReferrals
-                                  ? `${((mockReferralData.successfulReferrals - tier.minReferrals) / (mockReferralData.tiers[index + 1].minReferrals - tier.minReferrals)) * 100}%`
+                                : referralData.successfulReferrals > tier.minReferrals
+                                  ? `${((referralData.successfulReferrals - tier.minReferrals) / (referralData.tiers[index + 1].minReferrals - tier.minReferrals)) * 100}%`
                                   : '0%',
                           }}
                         />
@@ -367,7 +422,7 @@ export default function ReferralPage() {
               <p className="text-sm text-slate-400 text-center">
                 Giới thiệu thêm{' '}
                 <span className="text-[#3B82F6] font-semibold">
-                  {10 - mockReferralData.successfulReferrals} người
+                  {10 - referralData.successfulReferrals} người
                 </span>{' '}
                 để đạt cấp Gold và nhận thưởng +25% mỗi lần giới thiệu!
               </p>
@@ -387,7 +442,7 @@ export default function ReferralPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockReferralData.referralHistory.map((referral) => (
+                {referralData.referralHistory.map((referral) => (
                   <div
                     key={referral.id}
                     className="flex items-center gap-4 p-3 bg-white/5 rounded-lg"
@@ -408,7 +463,7 @@ export default function ReferralPage() {
                           <Badge className="bg-emerald-500/20 text-emerald-400 border-0 mb-1">
                             Hoàn thành
                           </Badge>
-                          <p className="text-xs text-amber-400">+{referral.cookiesEarned} 🍪</p>
+                          <p className="text-xs text-amber-400">+{referral.gemsEarned} <GemImage size={14} className="inline-block align-middle" /></p>
                         </>
                       ) : (
                         <Badge className="bg-amber-500/20 text-amber-400 border-0">

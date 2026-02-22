@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -8,19 +9,18 @@ import {
   Clock,
   Video,
   Star,
-  Cookie,
   ChevronRight,
-  Filter,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GemImage } from '@/components/common/GemImage';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/hooks/useAuth';
+import { getUserBookings } from '@/lib/queries';
 
 // Animation variants
 const containerVariants = {
@@ -36,88 +36,30 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock bookings data - includes real bookings from database
-const mockBookings = {
-  upcoming: [
-    {
-      id: '1',
-      classId: '1',
-      topic: 'Business English Conversation', // Real booking from database
-      teacherName: 'Teacher', // Real teacher (ID: 7a46e4e2-782c-471a-ba1b-cea449e75028)
-      teacherAvatar: undefined, // Will use fallback with initials
-      scheduledAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day from now
-      duration: 60,
-      status: 'confirmed',
-      originalPrice: 200000, // From teacher_profiles.hourly_rate
-      cookiesUsed: 0,
-      finalPrice: 200000,
-      canJoin: false,
-    },
-    {
-      id: '2',
-      classId: '2',
-      topic: 'IELTS Speaking Practice', // Real booking from database
-      teacherName: 'Teacher',
-      teacherAvatar: undefined,
-      scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
-      duration: 60,
-      status: 'confirmed',
-      originalPrice: 200000,
-      cookiesUsed: 0,
-      finalPrice: 200000,
-      canJoin: false,
-    },
-  ],
-  past: [
-    {
-      id: '3',
-      classId: '3',
-      topic: 'IELTS Speaking Practice', // Real completed booking from database
-      teacherName: 'Teacher',
-      teacherAvatar: undefined,
-      scheduledAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-      duration: 60,
-      status: 'attended',
-      originalPrice: 200000,
-      cookiesUsed: 0,
-      finalPrice: 200000,
-      rating: 5,
-      cookiesEarned: 10,
-    },
-    {
-      id: '4',
-      classId: '4',
-      topic: 'Conversational English', // Real completed booking from database
-      teacherName: 'Teacher',
-      teacherAvatar: undefined,
-      scheduledAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-      duration: 60,
-      status: 'attended',
-      originalPrice: 200000,
-      cookiesUsed: 0,
-      finalPrice: 200000,
-      rating: 5,
-      cookiesEarned: 10,
-    },
-  ],
-  cancelled: [
-    {
-      id: '6',
-      classId: '6',
-      topic: 'Conversation Practice',
-      teacherName: 'Nguyễn Minh Anh',
-      teacherAvatar: '/avatars/teacher1.png',
-      scheduledAt: '2026-01-16T11:00:00+07:00',
-      duration: 25,
-      status: 'cancelled',
-      originalPrice: 125000,
-      cookiesUsed: 0,
-      finalPrice: 125000,
-      refundAmount: 125000,
-      cookiesRefunded: 0,
-    },
-  ],
-};
+interface BookingItem {
+  id: string;
+  classId: string;
+  topic: string;
+  teacherName: string;
+  teacherAvatar: string | undefined;
+  scheduledAt: string;
+  duration: number;
+  status: string;
+  originalPrice: number;
+  gemsUsed: number;
+  finalPrice: number;
+  canJoin?: boolean;
+  rating?: number;
+  gemsEarned?: number;
+  refundAmount?: number;
+  gemsRefunded?: number;
+}
+
+interface BookingsData {
+  upcoming: BookingItem[];
+  past: BookingItem[];
+  cancelled: BookingItem[];
+}
 
 function formatVND(amount: number): string {
   return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
@@ -156,6 +98,77 @@ function getStatusBadge(status: string) {
 }
 
 export default function MyBookingsPage() {
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState<BookingsData>({ upcoming: [], past: [], cancelled: [] });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchBookings = async () => {
+      try {
+        setLoading(true);
+        const data = await getUserBookings(user.id);
+        const allBookings = (data || []) as Record<string, unknown>[];
+
+        const mapBooking = (b: Record<string, unknown>): BookingItem => {
+          const cls = b.classes as Record<string, unknown> | null;
+          const teacher = cls?.profiles as Record<string, unknown> | null;
+          const startTime = (cls?.start_time as string) || '';
+          const now = new Date();
+          const classTime = new Date(startTime);
+          const diffMs = classTime.getTime() - now.getTime();
+          const canJoin = diffMs > 0 && diffMs < 5 * 60 * 1000; // within 5 min
+
+          return {
+            id: b.id as string,
+            classId: b.class_id as string,
+            topic: (cls?.title as string) || 'Untitled',
+            teacherName: (teacher?.full_name as string) || 'Teacher',
+            teacherAvatar: (teacher?.avatar_url as string) || undefined,
+            scheduledAt: startTime,
+            duration: (cls?.duration_minutes as number) || 25,
+            status: b.status as string,
+            originalPrice: (b.original_price as number) || 0,
+            gemsUsed: (b.gems_used as number) || 0,
+            finalPrice: (b.final_price as number) || 0,
+            canJoin,
+            rating: undefined,
+            gemsEarned: 0,
+            refundAmount: 0,
+            gemsRefunded: 0,
+          };
+        };
+
+        const upcoming = allBookings
+          .filter((b) => ['confirmed', 'pending'].includes(b.status as string))
+          .map(mapBooking);
+        const past = allBookings
+          .filter((b) => ['completed', 'attended'].includes(b.status as string))
+          .map(mapBooking);
+        const cancelled = allBookings
+          .filter((b) => (b.status as string) === 'cancelled')
+          .map(mapBooking);
+
+        setBookings({ upcoming, past, cancelled });
+      } catch (err) {
+        console.error('Error fetching bookings:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, [user?.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
       <div className="max-w-5xl mx-auto px-4 py-8">
@@ -178,14 +191,14 @@ export default function MyBookingsPage() {
         >
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-white">{mockBookings.upcoming.length}</p>
+              <p className="text-3xl font-bold text-white">{bookings.upcoming.length}</p>
               <p className="text-sm text-slate-400">Sắp tới</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-emerald-400">
-                {mockBookings.past.filter((b) => b.status === 'attended').length}
+                {bookings.past.filter((b) => b.status === 'attended').length}
               </p>
               <p className="text-sm text-slate-400">Đã hoàn thành</p>
             </CardContent>
@@ -193,17 +206,17 @@ export default function MyBookingsPage() {
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-amber-400">
-                {mockBookings.past.reduce((sum, b) => sum + (b.cookiesEarned || 0), 0)} 🍪
+                <span className="inline-flex items-center gap-1">{bookings.past.reduce((sum, b) => sum + (b.gemsEarned || 0), 0)} <GemImage size={24} /></span>
               </p>
-              <p className="text-sm text-slate-400">Cookies kiếm được</p>
+              <p className="text-sm text-slate-400">Gems kiếm được</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-purple-400">
-                {[...mockBookings.upcoming, ...mockBookings.past].reduce((sum, b) => sum + b.cookiesUsed, 0)} 🍪
+                <span className="inline-flex items-center gap-1">{[...bookings.upcoming, ...bookings.past].reduce((sum, b) => sum + b.gemsUsed, 0)} <GemImage size={24} /></span>
               </p>
-              <p className="text-sm text-slate-400">Cookies đã dùng</p>
+              <p className="text-sm text-slate-400">Gems đã dùng</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -212,13 +225,13 @@ export default function MyBookingsPage() {
         <Tabs defaultValue="upcoming" className="space-y-6">
           <TabsList className="bg-white/5 border border-white/10">
             <TabsTrigger value="upcoming" className="data-[state=active]:bg-[#3B82F6]">
-              Sắp tới ({mockBookings.upcoming.length})
+              Sắp tới ({bookings.upcoming.length})
             </TabsTrigger>
             <TabsTrigger value="past" className="data-[state=active]:bg-[#3B82F6]">
-              Đã hoàn thành ({mockBookings.past.length})
+              Đã hoàn thành ({bookings.past.length})
             </TabsTrigger>
             <TabsTrigger value="cancelled" className="data-[state=active]:bg-[#3B82F6]">
-              Đã hủy ({mockBookings.cancelled.length})
+              Đã hủy ({bookings.cancelled.length})
             </TabsTrigger>
           </TabsList>
 
@@ -230,8 +243,8 @@ export default function MyBookingsPage() {
               animate="visible"
               className="space-y-4"
             >
-              {mockBookings.upcoming.length > 0 ? (
-                mockBookings.upcoming.map((booking) => (
+              {bookings.upcoming.length > 0 ? (
+                bookings.upcoming.map((booking) => (
                   <motion.div key={booking.id} variants={itemVariants}>
                     <Card className="bg-white/5 border-white/10 hover:border-[#3B82F6]/50 transition-colors">
                       <CardContent className="p-5">
@@ -270,9 +283,9 @@ export default function MyBookingsPage() {
                               <p className="text-lg font-bold text-white">
                                 {formatVND(booking.finalPrice)}
                               </p>
-                              {booking.cookiesUsed > 0 && (
+                              {booking.gemsUsed > 0 && (
                                 <p className="text-xs text-amber-400">
-                                  -{booking.cookiesUsed} 🍪 đã dùng
+                                  -{booking.gemsUsed} <GemImage size={14} className="inline-block align-middle" /> đã dùng
                                 </p>
                               )}
                             </div>
@@ -326,7 +339,7 @@ export default function MyBookingsPage() {
               animate="visible"
               className="space-y-4"
             >
-              {mockBookings.past.map((booking) => (
+              {bookings.past.map((booking) => (
                 <motion.div key={booking.id} variants={itemVariants}>
                   <Card className="bg-white/5 border-white/10">
                     <CardContent className="p-5">
@@ -357,9 +370,9 @@ export default function MyBookingsPage() {
                             <p className="text-lg font-bold text-white">
                               {formatVND(booking.finalPrice)}
                             </p>
-                            {booking.cookiesEarned && (
+                            {booking.gemsEarned && (
                               <p className="text-xs text-amber-400">
-                                +{booking.cookiesEarned} 🍪 kiếm được
+                                +{booking.gemsEarned} <GemImage size={14} className="inline-block align-middle" /> kiếm được
                               </p>
                             )}
                           </div>
@@ -372,7 +385,7 @@ export default function MyBookingsPage() {
                                 <Star
                                   key={i}
                                   className={`w-4 h-4 ${
-                                    i < booking.rating
+                                    i < (booking.rating ?? 0)
                                       ? 'text-amber-400 fill-amber-400'
                                       : 'text-slate-600'
                                   }`}
@@ -405,7 +418,7 @@ export default function MyBookingsPage() {
               animate="visible"
               className="space-y-4"
             >
-              {mockBookings.cancelled.map((booking) => (
+              {bookings.cancelled.map((booking) => (
                 <motion.div key={booking.id} variants={itemVariants}>
                   <Card className="bg-white/5 border-white/10 opacity-75">
                     <CardContent className="p-5">
@@ -432,14 +445,14 @@ export default function MyBookingsPage() {
                         </div>
 
                         <div className="flex items-center gap-4 md:gap-6">
-                          {booking.refundAmount > 0 && (
+                          {(booking.refundAmount ?? 0) > 0 && (
                             <div className="text-right">
                               <p className="text-sm text-emerald-400">
-                                Hoàn tiền: {formatVND(booking.refundAmount)}
+                                Hoàn tiền: {formatVND(booking.refundAmount ?? 0)}
                               </p>
-                              {booking.cookiesRefunded > 0 && (
+                              {(booking.gemsRefunded ?? 0) > 0 && (
                                 <p className="text-xs text-amber-400">
-                                  +{booking.cookiesRefunded} 🍪 hoàn lại
+                                  +{booking.gemsRefunded ?? 0} <GemImage size={14} className="inline-block align-middle" /> hoàn lại
                                 </p>
                               )}
                             </div>
