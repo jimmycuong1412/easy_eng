@@ -1,0 +1,379 @@
+/**
+ * Shared Supabase data-fetching queries.
+ *
+ * Server-side: call from Server Components / Route Handlers
+ * Client-side: call from Client Components via useEffect or useSWR
+ */
+
+import { getSupabaseClient } from '@/lib/supabase/client';
+import type {
+  Profile,
+} from '@/types/database';
+
+function supabase() {
+  return getSupabaseClient();
+}
+
+// ============================================================================
+// Classes
+// ============================================================================
+
+export async function getClasses(filters?: {
+  level?: string;
+  status?: string;
+  teacherId?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  let query = supabase()
+    .from('classes')
+    .select('*, profiles!classes_teacher_id_profiles_fkey(full_name, avatar_url, bio)')
+    .eq('is_active', true)
+    .order('start_time', { ascending: true });
+
+  if (filters?.level) query = query.eq('level', filters.level);
+  if (filters?.status) query = query.eq('status', filters.status);
+  if (filters?.teacherId) query = query.eq('teacher_id', filters.teacherId);
+  if (filters?.limit) query = query.limit(filters.limit);
+  if (filters?.offset) query = query.range(filters.offset, filters.offset + (filters.limit || 20) - 1);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function getClassById(classId: string) {
+  const { data, error } = await supabase()
+    .from('classes')
+    .select('*, profiles!classes_teacher_id_profiles_fkey(id, full_name, avatar_url, bio, role)')
+    .eq('id', classId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ============================================================================
+// Bookings
+// ============================================================================
+
+export async function getUserBookings(userId: string, status?: string) {
+  let query = supabase()
+    .from('bookings')
+    .select('*, classes(id, title, start_time, end_time, duration_minutes, level, profiles!classes_teacher_id_profiles_fkey(full_name, avatar_url))')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (status) query = query.eq('status', status);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function getBookingById(bookingId: string) {
+  const { data, error } = await supabase()
+    .from('bookings')
+    .select('*, classes(*, profiles!classes_teacher_id_profiles_fkey(full_name, avatar_url))')
+    .eq('id', bookingId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ============================================================================
+// Teachers
+// ============================================================================
+
+export async function getTeachers(filters?: { limit?: number; offset?: number }) {
+  let query = supabase()
+    .from('profiles')
+    .select('id, full_name, avatar_url, bio, role, is_active')
+    .eq('role', 'teacher')
+    .eq('is_active', true)
+    .order('full_name', { ascending: true });
+
+  if (filters?.limit) query = query.limit(filters.limit);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function getTeacherById(teacherId: string) {
+  const db = supabase();
+
+  // Three separate queries — reviews and availability reference auth.users,
+  // not profiles, so PostgREST cannot join them directly from profiles.
+  const [profileResult, classesResult, reviewsResult, availabilityResult] = await Promise.all([
+    db.from('profiles')
+      .select('id, full_name, avatar_url, bio, average_rating, total_reviews, role, created_at')
+      .eq('id', teacherId)
+      .eq('role', 'teacher')
+      .single(),
+    db.from('classes')
+      .select('id, title, level, price, start_time, status, current_enrollments, max_students')
+      .eq('teacher_id', teacherId)
+      .eq('status', 'scheduled'),
+    db.from('reviews')
+      .select('id, rating, comment, is_anonymous, created_at, student_id')
+      .eq('teacher_id', teacherId)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    db.from('teacher_availability')
+      .select('day_of_week, start_time, end_time, is_active')
+      .eq('teacher_id', teacherId)
+      .eq('is_active', true),
+  ]);
+
+  if (profileResult.error) throw profileResult.error;
+
+  // Fetch student names for non-anonymous reviews
+  const reviews = reviewsResult.data ?? [];
+  const studentIds = Array.from(new Set(
+    reviews.filter((r) => !r.is_anonymous).map((r) => r.student_id)
+  ));
+  let studentNames: Record<string, string> = {};
+  if (studentIds.length > 0) {
+    const { data: students } = await db
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', studentIds);
+    if (students) {
+      studentNames = Object.fromEntries(students.map((s) => [s.id, s.full_name ?? 'Student']));
+    }
+  }
+
+  return {
+    ...profileResult.data,
+    classes: classesResult.data ?? [],
+    reviews: reviews.map((r) => ({
+      ...r,
+      profiles: r.is_anonymous ? null : { full_name: studentNames[r.student_id] ?? 'Student', avatar_url: null },
+    })),
+    teacher_availability: availabilityResult.data ?? [],
+  };
+}
+
+// ============================================================================
+// Notifications
+// ============================================================================
+
+export async function getUserNotifications(userId: string, limit = 50) {
+  const { data, error } = await supabase()
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+}
+
+export async function markNotificationRead(notificationId: string) {
+  const { error } = await supabase()
+    .from('notifications')
+    .update({ read: true, read_at: new Date().toISOString() })
+    .eq('id', notificationId);
+  if (error) throw error;
+}
+
+// ============================================================================
+// Quizzes
+// ============================================================================
+
+export async function getQuizzes(filters?: { classId?: string; teacherId?: string }) {
+  let query = supabase()
+    .from('quizzes')
+    .select('*, quiz_questions(count)')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (filters?.classId) query = query.eq('class_id', filters.classId);
+  if (filters?.teacherId) query = query.eq('teacher_id', filters.teacherId);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function getQuizById(quizId: string) {
+  const { data, error } = await supabase()
+    .from('quizzes')
+    .select('*, quiz_questions(*)')
+    .eq('id', quizId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getUserQuizAttempts(userId: string, quizId?: string) {
+  let query = supabase()
+    .from('quiz_attempts')
+    .select('*, quizzes(title, difficulty, passing_score)')
+    .eq('student_id', userId)
+    .order('started_at', { ascending: false });
+
+  if (quizId) query = query.eq('quiz_id', quizId);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+// ============================================================================
+// Leaderboard & Progress
+// ============================================================================
+
+export async function getLeaderboard(limit = 50) {
+  const { data, error } = await supabase()
+    .from('student_careers')
+    .select('*, profiles!student_careers_student_id_profiles_fkey(full_name, avatar_url), career_paths(name, slug, primary_color)')
+    .eq('is_active', true)
+    .order('total_xp_earned', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+}
+
+export async function getStudentProgress(studentId: string) {
+  const { data, error } = await supabase()
+    .from('student_careers')
+    .select('*, career_paths(*)')
+    .eq('student_id', studentId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+// ============================================================================
+// Recordings
+// ============================================================================
+
+export async function getUserRecordings(userId: string) {
+  const { data, error } = await supabase()
+    .from('class_sessions')
+    .select('*, classes(title, level)')
+    .not('recording_url', 'is', null)
+    .or(`teacher_id.eq.${userId},session_participants.user_id.eq.${userId}`)
+    .order('scheduled_start_time', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+// ============================================================================
+// Referrals
+// ============================================================================
+
+export async function getUserReferralData(userId: string) {
+  const { data, error } = await supabase()
+    .from('referral_codes')
+    .select('*, referrals!referrals_referrer_id_fkey(id, referred_id, referred_completed_first_class, gems_awarded_to_referrer, created_at)')
+    .eq('student_id', userId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ============================================================================
+// Teacher Schedule
+// ============================================================================
+
+export async function getTeacherSchedule(teacherId: string) {
+  const { data: availability, error: availError } = await supabase()
+    .from('teacher_availability')
+    .select('*')
+    .eq('teacher_id', teacherId)
+    .eq('is_active', true);
+
+  const { data: sessions, error: sessError } = await supabase()
+    .from('class_sessions')
+    .select('*, classes(title, level, max_students, current_enrollments)')
+    .eq('teacher_id', teacherId)
+    .gte('scheduled_start_time', new Date().toISOString())
+    .order('scheduled_start_time', { ascending: true });
+
+  if (availError) throw availError;
+  if (sessError) throw sessError;
+
+  return { availability: availability || [], sessions: sessions || [] };
+}
+
+// ============================================================================
+// Dashboard Widgets
+// ============================================================================
+
+export async function getDashboardData(userId: string) {
+  const [upcomingClasses, recentActivity, gemsBalance] = await Promise.all([
+    supabase()
+      .from('bookings')
+      .select('*, classes(id, title, start_time, end_time, level, teacher_id)')
+      .eq('user_id', userId)
+      .in('status', ['confirmed', 'pending'])
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase()
+      .from('gem_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabase().rpc('get_gems_balance', { p_user_id: userId }),
+  ]);
+
+  return {
+    upcomingClasses: upcomingClasses.data || [],
+    recentActivity: recentActivity.data || [],
+    gemsBalance: (gemsBalance.data as number) || 0,
+  };
+}
+
+// ============================================================================
+// User Profile
+// ============================================================================
+
+export async function getUserProfile(userId: string) {
+  const { data, error } = await supabase()
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateUserProfile(userId: string, updates: Partial<Profile>) {
+  const { data, error } = await supabase()
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ============================================================================
+// Learning Path
+// ============================================================================
+
+export async function getCareerPaths() {
+  const { data, error } = await supabase()
+    .from('career_paths')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function getStudentCareer(studentId: string) {
+  const { data, error } = await supabase()
+    .from('student_careers')
+    .select('*, career_paths(*), character_sprites(*)')
+    .eq('student_id', studentId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
