@@ -77,7 +77,7 @@ export default function TeacherDetailPage() {
             if (!acc[dayName]) acc[dayName] = [];
             const startTime = (a.start_time as string)?.slice(0, 5) || '09:00';
             const endTime = (a.end_time as string)?.slice(0, 5) || '17:00';
-            // Generate 25-minute slots
+            // Generate 25-min class slots with 5-min break between each (30-min intervals)
             const [startH, startM] = startTime.split(':').map(Number);
             const [endH, endM] = endTime.split(':').map(Number);
             let totalMins = startH * 60 + startM;
@@ -86,7 +86,7 @@ export default function TeacherDetailPage() {
               const h = Math.floor(totalMins / 60);
               const m = totalMins % 60;
               acc[dayName].push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
-              totalMins += 25;
+              totalMins += 30; // 25 min class + 5 min break
             }
             return acc;
           }, {});
