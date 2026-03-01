@@ -236,7 +236,7 @@ export default function TeacherSchedulePage() {
               <Settings className="w-4 h-4 mr-2" />
               Cài đặt khung giờ
             </Button>
-            <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90">
+            <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90" onClick={() => setShowAvailabilityDialog(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Thêm khung giờ
             </Button>

@@ -1,46 +1,53 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { useTranslations } from 'next-intl';
+
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useGemsBalance } from '@/hooks/useGemsBalance';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CookieBadge } from '@/components/features/CookieBadge';
+import { GemBadge } from '@/components/features/CookieBadge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { GemImage } from '@/components/common/GemImage';
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   href: string;
   icon: string;
 }
 
 const studentNav: NavItem[] = [
-  { label: 'Trang chủ', href: '/dashboard', icon: '🏠' },
-  { label: 'Tìm giáo viên', href: '/dashboard/teachers', icon: '👨‍🏫' },
-  { label: 'Lịch học', href: '/student/bookings', icon: '📅' },
-  { label: 'Avatar', href: '/onboarding/career-avatar', icon: '🎮' },
-  { label: 'Tiến trình', href: '/student/progress', icon: '🎯' },
-  { label: 'Bản ghi', href: '/recordings', icon: '📹' },
+  { labelKey: 'home', href: '/dashboard', icon: '🏠' },
+  { labelKey: 'findTeachers', href: '/dashboard/teachers', icon: '👨‍🏫' },
+  { labelKey: 'schedule', href: '/student/bookings', icon: '📅' },
+  { labelKey: 'buyGems', href: '/student/gems/buy', icon: '💎' },
+  { labelKey: 'gemHistory', href: '/student/gems/history', icon: '📊' },
+  { labelKey: 'avatar', href: '/onboarding/career-avatar', icon: '🎮' },
+  { labelKey: 'progress', href: '/student/progress', icon: '🎯' },
+  { labelKey: 'recordings', href: '/recordings', icon: '📹' },
 ];
 
 const teacherNav: NavItem[] = [
-  { label: 'Trang chủ', href: '/teacher/dashboard', icon: '🏠' },
-  { label: 'Lịch dạy', href: '/teacher/schedule', icon: '📅' },
-  { label: 'Tạo Quiz', href: '/teacher/quiz/create', icon: '📝' },
-  { label: 'Thông báo', href: '/notifications', icon: '🔔' },
-  { label: 'Phân tích', href: '/admin/analytics', icon: '📊' },
+  { labelKey: 'home', href: '/dashboard', icon: '🏠' },
+  { labelKey: 'teachingSchedule', href: '/teacher/schedule', icon: '📅' },
+  { labelKey: 'createQuiz', href: '/teacher/quiz/create', icon: '📝' },
+  { labelKey: 'notifications', href: '/notifications', icon: '🔔' },
+  { labelKey: 'analytics', href: '/admin/analytics', icon: '📊' },
 ];
 
 const parentNav: NavItem[] = [
-  { label: 'Trang chủ', href: '/dashboard', icon: '🏠' },
-  { label: 'Lịch học', href: '/student/bookings', icon: '📅' },
-  { label: 'Tiến trình', href: '/student/progress', icon: '📊' },
-  { label: 'Bản ghi', href: '/recordings', icon: '📹' },
-  { label: 'Thông báo', href: '/notifications', icon: '🔔' },
+  { labelKey: 'home', href: '/dashboard', icon: '🏠' },
+  { labelKey: 'schedule', href: '/student/bookings', icon: '📅' },
+  { labelKey: 'progress', href: '/student/progress', icon: '📊' },
+  { labelKey: 'recordings', href: '/recordings', icon: '📹' },
+  { labelKey: 'notifications', href: '/notifications', icon: '🔔' },
 ];
 
 export default function DashboardLayout({
@@ -49,13 +56,23 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user, profile, isLoading, signOut } = useAuth();
+  const { user: _user, profile, isLoading, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const [cookieCount] = React.useState(150); // TODO: Fetch from API
+  const { balance: gemCount } = useGemsBalance();
+  const tNav = useTranslations('dashboard.nav');
+  const tCommon = useTranslations('common');
 
-  // Select nav based on role
+  // Show back button on child pages (not the dashboard root)
+  const isDashboardChild = React.useMemo(() => {
+    // pathname includes locale, e.g. /en/dashboard/teachers
+    const segments = pathname.split('/').filter(Boolean);
+    // segments: ['en', 'dashboard', 'teachers', ...] or ['en', 'dashboard']
+    return segments.length > 2 && segments[1] === 'dashboard';
+  }, [pathname]);
+
+  // Select nav based on role — return empty while loading to avoid flashing wrong nav
   const navItems = React.useMemo(() => {
-    if (!profile) return studentNav;
+    if (isLoading || !profile) return [];
     switch (profile.role) {
       case 'teacher':
         return teacherNav;
@@ -64,9 +81,9 @@ export default function DashboardLayout({
       default:
         return studentNav;
     }
-  }, [profile]);
+  }, [profile, isLoading]);
 
-  const getInitials = (name: string | null) => {
+  const getInitials = (name: string | null | undefined) => {
     if (!name) return '?';
     return name
       .split(' ')
@@ -104,7 +121,7 @@ export default function DashboardLayout({
           {/* Logo */}
           <div className="p-4 border-b border-border-default">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl">🍪</span>
+              <GemImage size={28} alt="Gem" />
               <span className="text-xl font-bold text-gradient">EasyEng</span>
             </Link>
           </div>
@@ -136,10 +153,10 @@ export default function DashboardLayout({
               </div>
             )}
 
-            {/* Cookie balance (for students) */}
+            {/* Gem balance (for students) */}
             {profile?.role === 'student' && (
               <div className="mt-3">
-                <CookieBadge count={cookieCount} size="sm" />
+                <GemBadge count={gemCount} size="sm" />
               </div>
             )}
           </div>
@@ -162,7 +179,7 @@ export default function DashboardLayout({
                   )}
                 >
                   <span className="text-xl">{item.icon}</span>
-                  <span>{item.label}</span>
+                  <span>{tNav(item.labelKey)}</span>
                 </Link>
               );
             })}
@@ -175,7 +192,7 @@ export default function DashboardLayout({
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-all"
             >
               <span className="text-xl">⚙️</span>
-              <span>Cài đặt</span>
+              <span>{tCommon('settings')}</span>
             </Link>
             <button
               onClick={async () => {
@@ -188,7 +205,7 @@ export default function DashboardLayout({
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-all"
             >
               <span className="text-xl">🚪</span>
-              <span>Đăng xuất</span>
+              <span>{tCommon('logout')}</span>
             </button>
           </div>
         </div>
@@ -199,20 +216,33 @@ export default function DashboardLayout({
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-bg-primary/80 backdrop-blur-lg border-b border-border-default">
           <div className="flex items-center justify-between px-4 h-16">
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-bg-surface transition-colors"
-            >
-              <span className="text-2xl">☰</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-lg hover:bg-bg-surface transition-colors"
+              >
+                <span className="text-2xl">☰</span>
+              </button>
+
+              {/* Back to dashboard button on child pages */}
+              {isDashboardChild && (
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-bg-surface transition-colors"
+                >
+                  <span>←</span>
+                  <span className="hidden sm:inline">{tNav('home')}</span>
+                </Link>
+              )}
+            </div>
 
             {/* Search (placeholder) */}
             <div className="hidden md:flex items-center flex-1 max-w-md mx-4">
               <div className="relative w-full">
                 <input
                   type="text"
-                  placeholder="Tìm kiếm giáo viên, bài học..."
+                  placeholder={tCommon('searchPlaceholder')}
                   className="w-full h-10 pl-10 pr-4 rounded-lg bg-bg-surface border border-border-default text-text-primary placeholder:text-text-muted focus:border-border-focus focus:ring-1 focus:ring-border-focus transition-all"
                 />
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
@@ -223,16 +253,19 @@ export default function DashboardLayout({
 
             {/* Right side */}
             <div className="flex items-center gap-3">
+              {/* Language switcher */}
+              <LanguageSwitcher />
+
               {/* Notifications */}
               <Button variant="ghost" size="icon" className="relative">
                 <span className="text-xl">🔔</span>
                 <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
               </Button>
 
-              {/* Cookie badge on mobile */}
+              {/* Gem badge on mobile */}
               {profile?.role === 'student' && (
                 <div className="lg:hidden">
-                  <CookieBadge count={cookieCount} size="sm" />
+                  <GemBadge count={gemCount} size="sm" />
                 </div>
               )}
             </div>

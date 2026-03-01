@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { motion } from 'framer-motion';
 import {
   Calendar,
@@ -17,6 +17,10 @@ import {
   Bell,
 } from 'lucide-react';
 
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { getTeacherSchedule } from '@/lib/queries';
+import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,79 +41,127 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock data - will be replaced with real data from Supabase
-const todayClasses = [
-  {
-    id: '1',
-    studentName: 'Nguyễn Văn An',
-    studentAvatar: '/avatars/student1.png',
-    time: '09:00',
-    duration: 25,
-    topic: 'Business English - Meetings',
-    status: 'upcoming',
-  },
-  {
-    id: '2',
-    studentName: 'Trần Thị Bình',
-    studentAvatar: '/avatars/student2.png',
-    time: '10:30',
-    duration: 25,
-    topic: 'IELTS Speaking Part 2',
-    status: 'in-progress',
-  },
-  {
-    id: '3',
-    studentName: 'Lê Hoàng Cường',
-    studentAvatar: '/avatars/student3.png',
-    time: '14:00',
-    duration: 25,
-    topic: 'Conversation Practice',
-    status: 'upcoming',
-  },
-  {
-    id: '4',
-    studentName: 'Phạm Minh Đức',
-    studentAvatar: '/avatars/student4.png',
-    time: '15:30',
-    duration: 25,
-    topic: 'Grammar Review',
-    status: 'upcoming',
-  },
-];
+type ClassItem = {
+  id: string;
+  studentName: string;
+  studentAvatar: string | undefined;
+  time: string;
+  duration: number;
+  topic: string;
+  status: string;
+};
 
-const recentReviews = [
-  {
-    id: '1',
-    studentName: 'Hoàng Thị Lan',
-    rating: 5,
-    comment: 'Cô giáo rất nhiệt tình và dễ hiểu. Cảm ơn cô!',
-    date: '2 giờ trước',
-  },
-  {
-    id: '2',
-    studentName: 'Võ Minh Quân',
-    rating: 5,
-    comment: 'Bài học rất hữu ích, tôi đã cải thiện được nhiều.',
-    date: '5 giờ trước',
-  },
-  {
-    id: '3',
-    studentName: 'Đặng Thu Hà',
-    rating: 4,
-    comment: 'Giờ học thú vị, sẽ tiếp tục học với thầy.',
-    date: '1 ngày trước',
-  },
-];
-
-const weeklyStats = {
-  classesCompleted: 28,
-  classesTarget: 35,
-  hoursTeaching: 11.7,
-  newStudents: 5,
-  repeatRate: 78,
+type ReviewItem = {
+  id: string;
+  studentName: string;
+  rating: number;
+  comment: string;
+  date: string;
 };
 
 export default function TeacherDashboardPage() {
+  const { user, profile } = useAuth();
+  const router = useRouter();
+  const [todayClasses, setTodayClasses] = React.useState<ClassItem[]>([]);
+  const [recentReviews, setRecentReviews] = React.useState<ReviewItem[]>([]);
+  const [weeklyStats, setWeeklyStats] = React.useState({
+    classesCompleted: 0,
+    classesTarget: 35,
+    hoursTeaching: 0,
+    newStudents: 0,
+    repeatRate: 0,
+  });
+  const [stats, setStats] = React.useState({ earnings: '0', students: 0, avgRating: 0, totalReviews: 0 });
+
+
+  React.useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createClient();
+
+    Promise.all([
+      // Today's sessions
+      getTeacherSchedule(user.id).catch(() => ({ availability: [], sessions: [] })),
+      // Recent reviews
+      supabase
+        .from('reviews')
+        .select('*, profiles!reviews_student_id_fkey(full_name, avatar_url)')
+        .eq('teacher_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3)
+        .then(({ data }) => data || []),
+      // Teacher profile stats
+      supabase
+        .from('profiles')
+        .select('average_rating, total_reviews')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => data),
+      // Weekly completed classes count
+      supabase
+        .from('class_sessions')
+        .select('id, duration_minutes')
+        .eq('teacher_id', user.id)
+        .eq('status', 'ended')
+        .gte('actual_start_time', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .then(({ data }) => data || []),
+    ]).then(([schedule, reviews, profileStats, weeklySessions]) => {
+      // Map today's sessions
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const todaySessions = (schedule.sessions || [])
+        .filter((s: Record<string, unknown>) => (s.scheduled_start_time as string)?.startsWith(todayStr))
+        .map((s: Record<string, unknown>) => {
+          const cls = s.classes as Record<string, unknown> | undefined;
+          const startTime = new Date(s.scheduled_start_time as string);
+          const sessionStatus = s.status === 'live' ? 'in-progress' : 'upcoming';
+          return {
+            id: s.id as string,
+            studentName: (cls?.title as string) || 'Class',
+            studentAvatar: undefined,
+            time: startTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
+            duration: (cls?.duration_minutes as number) || 25,
+            topic: (cls?.title as string) || 'English Class',
+            status: sessionStatus,
+          };
+        });
+      setTodayClasses(todaySessions);
+
+      // Map reviews
+      const mappedReviews = (reviews || []).map((r: Record<string, unknown>) => {
+        const student = r.profiles as Record<string, unknown> | undefined;
+        const createdAt = new Date(r.created_at as string);
+        const diffHours = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60));
+        const dateStr = diffHours < 24 ? `${diffHours} giờ trước` : `${Math.floor(diffHours / 24)} ngày trước`;
+        return {
+          id: r.id as string,
+          studentName: (student?.full_name as string) || 'Student',
+          rating: (r.rating as number) || 5,
+          comment: (r.comment as string) || '',
+          date: dateStr,
+        };
+      });
+      setRecentReviews(mappedReviews);
+
+      // Stats
+      const totalHours = weeklySessions.reduce((sum: number, s: Record<string, unknown>) =>
+        sum + ((s.duration_minutes as number) || 0), 0) / 60;
+      setWeeklyStats({
+        classesCompleted: weeklySessions.length,
+        classesTarget: 35,
+        hoursTeaching: Math.round(totalHours * 10) / 10,
+        newStudents: 0,
+        repeatRate: 0,
+      });
+
+      setStats({
+        earnings: '0',
+        students: 0,
+        avgRating: (profileStats?.average_rating as number) || 0,
+        totalReviews: (profileStats?.total_reviews as number) || 0,
+      });
+    });
+  }, [user?.id]);
+
   const currentHour = new Date().getHours();
   const greeting =
     currentHour < 12
@@ -129,7 +181,7 @@ export default function TeacherDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <motion.div variants={itemVariants}>
           <h1 className="text-2xl md:text-3xl font-bold text-white">
-            {greeting}, Teacher! 👋
+            {greeting}, {profile?.full_name?.split(' ').pop() || 'Teacher'}! 👋
           </h1>
           <p className="text-slate-400 mt-1">
             Bạn có {todayClasses.length} lớp học hôm nay
@@ -141,7 +193,7 @@ export default function TeacherDashboardPage() {
             Thông báo
             <Badge className="ml-2 bg-red-500 text-white text-xs">3</Badge>
           </Button>
-          <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90">
+          <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90" onClick={() => router.push('/teacher/schedule')}>
             <Plus className="w-4 h-4 mr-2" />
             Tạo lớp học
           </Button>
@@ -172,8 +224,8 @@ export default function TeacherDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-400 text-sm">Thu nhập tuần</p>
-                  <p className="text-2xl font-bold text-white mt-1">2.8M</p>
-                  <p className="text-xs text-emerald-400">+12% vs tuần trước</p>
+                  <p className="text-2xl font-bold text-white mt-1">{stats.earnings}</p>
+                  <p className="text-xs text-emerald-400">tuần này</p>
                 </div>
                 <div className="p-3 bg-emerald-500/20 rounded-xl">
                   <DollarSign className="w-6 h-6 text-emerald-400" />
@@ -189,8 +241,8 @@ export default function TeacherDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-400 text-sm">Học viên</p>
-                  <p className="text-2xl font-bold text-white mt-1">42</p>
-                  <p className="text-xs text-amber-400">+5 tuần này</p>
+                  <p className="text-2xl font-bold text-white mt-1">{stats.students}</p>
+                  <p className="text-xs text-amber-400">học viên</p>
                 </div>
                 <div className="p-3 bg-amber-500/20 rounded-xl">
                   <Users className="w-6 h-6 text-amber-400" />
@@ -206,8 +258,8 @@ export default function TeacherDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-400 text-sm">Đánh giá TB</p>
-                  <p className="text-2xl font-bold text-white mt-1">4.9</p>
-                  <p className="text-xs text-purple-400">128 đánh giá</p>
+                  <p className="text-2xl font-bold text-white mt-1">{stats.avgRating || '—'}</p>
+                  <p className="text-xs text-purple-400">{stats.totalReviews} đánh giá</p>
                 </div>
                 <div className="p-3 bg-purple-500/20 rounded-xl">
                   <Star className="w-6 h-6 text-purple-400" />
