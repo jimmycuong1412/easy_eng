@@ -85,7 +85,11 @@
       "notifications": "Notifications",
       "analytics": "Analytics",
       "buyGems": "Buy Gems",
-      "gemHistory": "Gem History"
+      "gemHistory": "Gem History",
+      "adminDashboard": "Admin Dashboard",
+      "gemRules": "Gem Rules",
+      "reconciliation": "Reconciliation",
+      "monitoring": "Monitoring"
     },
     "welcome": "Hello, {name}!",
     "welcomeSubtitle": "Continue your English learning journey",

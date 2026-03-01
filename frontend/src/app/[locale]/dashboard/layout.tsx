@@ -42,6 +42,15 @@ const teacherNav: NavItem[] = [
   { labelKey: 'analytics', href: '/admin/analytics', icon: '📊' },
 ];
 
+const adminNav: NavItem[] = [
+  { labelKey: 'adminDashboard', href: '/dashboard/admin', icon: '🛡️' },
+  { labelKey: 'analytics', href: '/admin/analytics', icon: '📊' },
+  { labelKey: 'gemRules', href: '/admin/gems-rules', icon: '💎' },
+  { labelKey: 'reconciliation', href: '/admin/reconciliation', icon: '⚖️' },
+  { labelKey: 'monitoring', href: '/admin/monitoring/rollbacks', icon: '🔍' },
+  { labelKey: 'notifications', href: '/notifications', icon: '🔔' },
+];
+
 const parentNav: NavItem[] = [
   { labelKey: 'home', href: '/dashboard', icon: '🏠' },
   { labelKey: 'schedule', href: '/student/bookings', icon: '📅' },
@@ -74,6 +83,8 @@ export default function DashboardLayout({
   const navItems = React.useMemo(() => {
     if (isLoading || !profile) return [];
     switch (profile.role) {
+      case 'admin':
+        return adminNav;
       case 'teacher':
         return teacherNav;
       case 'parent':

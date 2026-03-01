@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import {
@@ -9,10 +9,9 @@ import {
   DollarSign,
   TrendingUp,
   BookOpen,
-  Cookie,
+  Gem,
   Activity,
   ArrowUpRight,
-  ArrowDownRight,
   BarChart3,
   PieChart,
   UserPlus,
@@ -24,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import { formatNumber } from '@/lib/utils';
+import { GemImage } from '@/components/common/GemImage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,7 @@ import { Progress } from '@/components/ui/progress';
 import {
   getPlatformStats,
   getRevenueStats,
-  getCookieStats,
+  getGemStats,
   getBookingStats,
   getTopTeachers,
   getRecentActivities,
@@ -39,7 +39,7 @@ import {
 import type {
   PlatformStats,
   RevenueStats,
-  CookieStats,
+  GemStats,
   BookingStats,
   TopTeacher,
   RecentActivity,
@@ -79,7 +79,7 @@ const defaultRevenueStats: RevenueStats = {
   averageBookingValue: 0,
 };
 
-const defaultCookieStats: CookieStats = {
+const defaultGemStats: GemStats = {
   totalCirculating: 0,
   issuedThisMonth: 0,
   redeemedThisMonth: 0,
@@ -107,7 +107,7 @@ function formatVND(amount: number): string {
 export default function AdminDashboardPage() {
   const [platformStats, setPlatformStats] = useState<PlatformStats>(defaultPlatformStats);
   const [revenueStats, setRevenueStats] = useState<RevenueStats>(defaultRevenueStats);
-  const [cookieStats, setCookieStats] = useState<CookieStats>(defaultCookieStats);
+  const [gemStats, setGemStats] = useState<GemStats>(defaultGemStats);
   const [bookingStats, setBookingStats] = useState<BookingStats>(defaultBookingStats);
   const [topTeachers, setTopTeachers] = useState<TopTeacher[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
@@ -124,11 +124,11 @@ export default function AdminDashboardPage() {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const [platform, revenue, cookies, bookings, teachers, activities] =
+        const [platform, revenue, gems, bookings, teachers, activities] =
           await Promise.all([
             getPlatformStats(),
             getRevenueStats(),
-            getCookieStats(),
+            getGemStats(),
             getBookingStats(),
             getTopTeachers(),
             getRecentActivities(),
@@ -136,7 +136,7 @@ export default function AdminDashboardPage() {
 
         setPlatformStats(platform);
         setRevenueStats(revenue);
-        setCookieStats(cookies);
+        setGemStats(gems);
         setBookingStats(bookings);
         setTopTeachers(teachers);
         setRecentActivities(activities);
@@ -241,7 +241,7 @@ export default function AdminDashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-amber-500/20 rounded-lg">
-                  <Cookie className="w-5 h-5 text-amber-400" />
+                  <Gem className="w-5 h-5 text-amber-400" />
                 </div>
                 <Badge className="bg-amber-500/20 text-amber-400 border-0">
                   <Activity className="w-3 h-3 mr-1" />
@@ -249,9 +249,9 @@ export default function AdminDashboardPage() {
                 </Badge>
               </div>
               <p className="text-2xl font-bold text-white">
-                {formatNumber(cookieStats.totalCirculating)}
+                {formatNumber(gemStats.totalCirculating)}
               </p>
-              <p className="text-sm text-slate-400">Cookies lưu hành</p>
+              <p className="text-sm text-slate-400">Gems lưu hành</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -351,11 +351,11 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {isLoading ? (
-                <div className="text-center py-8 text-slate-400">جاري التحميل...</div>
+                <div className="text-center py-8 text-slate-400">Đang tải...</div>
               ) : error ? (
                 <div className="text-center py-8 text-red-400">{error}</div>
               ) : recentActivities.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">لا توجد أنشطة بعد</div>
+                <div className="text-center py-8 text-slate-400">Chưa có hoạt động nào</div>
               ) : (
                 recentActivities.map((activity, index) => {
                   const IconComponent = getActivityIcon(activity.type);
@@ -382,20 +382,20 @@ export default function AdminDashboardPage() {
           </Card>
         </motion.div>
 
-        {/* Cookie Analytics */}
+        {/* Gem Analytics */}
         <motion.div variants={itemVariants}>
           <Card className="bg-white/5 border-white/10 h-full">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <Cookie className="w-5 h-5 text-amber-400" />
-                Cookie Analytics
+                <Gem className="w-5 h-5 text-amber-400" />
+                Gem Analytics
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Phát hành tháng này</span>
-                  <span className="text-emerald-400">+{formatNumber(cookieStats.issuedThisMonth)}</span>
+                  <span className="text-emerald-400">+{formatNumber(gemStats.issuedThisMonth)}</span>
                 </div>
                 <Progress value={65} className="h-2 bg-white/10" />
               </div>
@@ -403,21 +403,21 @@ export default function AdminDashboardPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Đã sử dụng</span>
-                  <span className="text-amber-400">-{formatNumber(cookieStats.redeemedThisMonth)}</span>
+                  <span className="text-amber-400">-{formatNumber(gemStats.redeemedThisMonth)}</span>
                 </div>
                 <Progress value={45} className="h-2 bg-white/10" />
               </div>
 
               <div className="p-3 bg-white/5 rounded-xl">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">TB cookies/booking</span>
-                  <span className="text-xl font-bold text-white">{cookieStats.averageRedemption}</span>
+                  <span className="text-slate-400">TB gems/booking</span>
+                  <span className="text-xl font-bold text-white">{gemStats.averageRedemption}</span>
                 </div>
               </div>
 
               <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
                 <p className="text-sm text-amber-400 text-center">
-                  🍪 Net flow: +{formatNumber(cookieStats.issuedThisMonth - cookieStats.redeemedThisMonth)}
+                  <GemImage size={14} className="inline-block align-middle mr-1" /> Net flow: +{formatNumber(gemStats.issuedThisMonth - gemStats.redeemedThisMonth)}
                 </p>
               </div>
             </CardContent>

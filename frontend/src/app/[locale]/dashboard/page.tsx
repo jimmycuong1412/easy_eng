@@ -5,6 +5,7 @@ import { Link } from '@/i18n/routing';
 import { motion } from 'framer-motion';
 
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 
 import { formatNumber } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,6 +38,14 @@ export default function StudentDashboardPage() {
   const { user, profile } = useAuth();
   const { balance: gemBalance } = useGemsBalance();
   const t = useTranslations('dashboard');
+  const router = useRouter();
+
+  // Redirect admin and teacher to their respective dashboards
+  React.useEffect(() => {
+    if (!profile) return;
+    if (profile.role === 'admin') router.replace('/dashboard/admin');
+    else if (profile.role === 'teacher') router.replace('/dashboard/teacher');
+  }, [profile, router]);
 
   const [upcomingClasses, setUpcomingClasses] = React.useState<Array<{
     id: string;

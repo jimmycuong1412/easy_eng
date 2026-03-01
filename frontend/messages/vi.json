@@ -85,7 +85,11 @@
       "notifications": "Thông báo",
       "analytics": "Phân tích",
       "buyGems": "Nạp Gems",
-      "gemHistory": "Lịch sử Gems"
+      "gemHistory": "Lịch sử Gems",
+      "adminDashboard": "Bảng điều khiển",
+      "gemRules": "Luật Gems",
+      "reconciliation": "Đối soát",
+      "monitoring": "Giám sát"
     },
     "welcome": "Xin chào, {name}!",
     "welcomeSubtitle": "Tiếp tục hành trình học tiếng Anh của bạn",
