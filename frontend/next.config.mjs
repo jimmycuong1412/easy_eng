@@ -10,7 +10,7 @@ const nextConfig = {
     optimizePackageImports: ['framer-motion', '@supabase/supabase-js', 'lucide-react'],
   },
 
-  // Image optimization
+  // Image optimization (T220)
   images: {
     remotePatterns: [
       {
@@ -28,6 +28,37 @@ const nextConfig = {
       },
     ],
     formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  },
+
+  // Compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
+  // Code splitting and bundle optimization (T222, T223)
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Bundle analyzer for development
+      if (process.env.ANALYZE === 'true') {
+        const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+        config.plugins.push(
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            reportFilename: '../analyze/client.html',
+            openAnalyzer: false,
+          })
+        );
+      }
+
+      // Use Next.js default chunk splitting (custom splitChunks causes chunk ID instability)
+    }
+    return config;
   },
 
   // Strict mode for development
@@ -39,8 +70,9 @@ const nextConfig = {
   // Enable source maps in production for debugging
   productionBrowserSourceMaps: false,
 
-  // Headers for security
+  // Enhanced security headers (T239) and CDN caching (T224)
   async headers() {
+    const isDev = process.env.NODE_ENV === 'development';
     return [
       {
         source: '/:path*',
@@ -63,7 +95,53 @@ const nextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              `script-src 'self' 'unsafe-inline' https://cdn.cometchat.com${isDev ? " 'unsafe-eval'" : ''}`,
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.cometchat.com https://*.cometchat.io wss://*.cometchat.io https://plausible.io",
+              "media-src 'self' https: blob:",
+              "frame-src 'self' https://*.cometchat.com",
+              "worker-src 'self' blob:",
+            ].join('; '),
+          },
+        ],
+      },
+      // Static asset caching for CDN (T224)
+      {
+        source: '/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/image/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800',
           },
         ],
       },
