@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { GemImage } from '@/components/common/GemImage';
 
 export default function AuthLayout({
   children,
@@ -13,7 +14,7 @@ export default function AuthLayout({
           href="/"
           className="inline-flex items-center gap-2 text-xl font-bold text-gradient hover:opacity-80 transition-opacity"
         >
-          <span className="text-2xl">🍪</span>
+          <GemImage size={28} alt="Gem" />
           EasyEng
         </Link>
       </header>

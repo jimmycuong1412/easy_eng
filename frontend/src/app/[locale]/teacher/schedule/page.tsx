@@ -27,6 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
+import { useLocale, useTranslations } from 'next-intl';
 import { getTeacherSchedule } from '@/lib/queries';
 import AvailabilityCalendar from '@/components/teacher/AvailabilityCalendar';
 
@@ -56,17 +57,22 @@ const timeSlots = (() => {
 
 export default function TeacherSchedulePage() {
   const { user, isLoading: authLoading } = useAuth();
+  const t = useTranslations('teacherSchedule');
+  const locale = useLocale();
+
   const [schedule, setSchedule] = useState<ScheduleData>({});
   const [loading, setLoading] = useState(true);
   const [currentWeekStart, setCurrentWeekStart] = React.useState(() => {
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-    return new Date(now.setDate(diff));
+    const d = new Date(now);
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
   });
   const [selectedSlot, setSelectedSlot] = React.useState<ScheduleSlot | null>(null);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = React.useState(false);
-  const [_availableSlots, _setAvailableSlots] = React.useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!user?.id) return;
@@ -80,7 +86,6 @@ export default function TeacherSchedulePage() {
 
         const scheduleMap: ScheduleData = {};
 
-        // Map sessions to schedule slots
         sessions.forEach((session) => {
           const startTime = new Date(session.scheduled_start_time as string);
           const dateKey = startTime.toISOString().split('T')[0];
@@ -99,17 +104,15 @@ export default function TeacherSchedulePage() {
             time: timeStr,
             duration: (cls?.duration_minutes as number) || 25,
             status,
-            student: null, // Session data does not include student info directly
+            student: null,
             topic: (cls?.title as string) || null,
           });
         });
 
-        // Map availability to available slots
         availability.forEach((avail) => {
           const dayOfWeek = avail.day_of_week as number;
           const startTimeStr = avail.start_time as string;
 
-          // Generate dates for this availability within visible range
           const weekStart = new Date(currentWeekStart);
           for (let i = 0; i < 7; i++) {
             const date = new Date(weekStart);
@@ -117,7 +120,6 @@ export default function TeacherSchedulePage() {
             if (date.getDay() === dayOfWeek) {
               const dateKey = date.toISOString().split('T')[0];
               if (!scheduleMap[dateKey]) scheduleMap[dateKey] = [];
-              // Only add if no session at this time
               const existingTimes = scheduleMap[dateKey].map(s => s.time);
               if (!existingTimes.includes(startTimeStr.slice(0, 5))) {
                 scheduleMap[dateKey].push({
@@ -145,7 +147,7 @@ export default function TeacherSchedulePage() {
   }, [user?.id, currentWeekStart]);
 
   const getWeekDays = (startDate: Date) => {
-    const days = [];
+    const days: Date[] = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
@@ -156,16 +158,17 @@ export default function TeacherSchedulePage() {
 
   const weekDays = getWeekDays(currentWeekStart);
 
-  const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0];
-  };
+  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+  // Day abbreviations from translations (index 0=Sun…6=Sat)
+  const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
   const formatDisplayDate = (date: Date) => {
-    return date.toLocaleDateString('vi-VN', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'numeric',
-    });
+    const dayKey = DAY_KEYS[date.getDay()];
+    const dayLabel = t(`days.${dayKey}`);
+    const dayNum = date.getDate();
+    const month = date.getMonth() + 1;
+    return `${dayLabel} ${dayNum}/${month}`;
   };
 
   const goToPreviousWeek = () => {
@@ -201,21 +204,33 @@ export default function TeacherSchedulePage() {
     }
   };
 
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return formatDate(date) === formatDate(today);
+  const isToday = (date: Date) => formatDate(date) === formatDate(new Date());
+
+  const weekRangeLabel = () => {
+    const fmt = (d: Date) =>
+      d.toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US', {
+        day: 'numeric',
+        month: 'long',
+      });
+    const fmtEnd = (d: Date) =>
+      d.toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    return `${fmt(weekDays[0])} – ${fmtEnd(weekDays[6])}`;
   };
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] py-8">
+    <div className="py-6">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <motion.div
@@ -224,8 +239,8 @@ export default function TeacherSchedulePage() {
           className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
         >
           <div>
-            <h1 className="text-2xl font-bold text-white mb-1">Lịch dạy</h1>
-            <p className="text-slate-400">Quản lý lịch trình và thời gian dạy của bạn</p>
+            <h1 className="text-2xl font-bold text-white mb-1">{t('title')}</h1>
+            <p className="text-slate-400">{t('subtitle')}</p>
           </div>
           <div className="flex gap-3">
             <Button
@@ -234,11 +249,11 @@ export default function TeacherSchedulePage() {
               onClick={() => setShowAvailabilityDialog(true)}
             >
               <Settings className="w-4 h-4 mr-2" />
-              Cài đặt khung giờ
+              {t('settingsBtn')}
             </Button>
             <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90" onClick={() => setShowAvailabilityDialog(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Thêm khung giờ
+              {t('addSlotBtn')}
             </Button>
           </div>
         </motion.div>
@@ -260,16 +275,12 @@ export default function TeacherSchedulePage() {
                   className="text-slate-400 hover:text-white"
                 >
                   <ChevronLeft className="w-5 h-5" />
-                  Tuần trước
+                  {t('prevWeek')}
                 </Button>
 
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-[#3B82F6]" />
-                  <span className="text-white font-semibold">
-                    {weekDays[0].toLocaleDateString('vi-VN', { day: 'numeric', month: 'long' })}
-                    {' - '}
-                    {weekDays[6].toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </span>
+                  <span className="text-white font-semibold">{weekRangeLabel()}</span>
                 </div>
 
                 <Button
@@ -278,7 +289,7 @@ export default function TeacherSchedulePage() {
                   onClick={goToNextWeek}
                   className="text-slate-400 hover:text-white"
                 >
-                  Tuần sau
+                  {t('nextWeek')}
                   <ChevronRight className="w-5 h-5" />
                 </Button>
               </div>
@@ -286,7 +297,7 @@ export default function TeacherSchedulePage() {
           </Card>
         </motion.div>
 
-        {/* Schedule Grid */}
+        {/* Schedule Grid — all 7 days (Mon–Sun) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -294,25 +305,21 @@ export default function TeacherSchedulePage() {
         >
           <Card className="bg-white/5 border-white/10 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px]">
+              <table className="w-full min-w-[900px]">
                 <thead>
                   <tr className="border-b border-white/10">
-                    <th className="p-3 text-left text-slate-400 font-medium w-20">Giờ</th>
+                    <th className="p-3 text-left text-slate-400 font-medium w-20">{t('timeCol')}</th>
                     {weekDays.map((day) => (
                       <th
                         key={day.toISOString()}
-                        className={`p-3 text-center font-medium ${
-                          isToday(day) ? 'bg-[#3B82F6]/10' : ''
-                        }`}
+                        className={`p-3 text-center font-medium ${isToday(day) ? 'bg-[#3B82F6]/10' : ''}`}
                       >
-                        <span
-                          className={isToday(day) ? 'text-[#3B82F6]' : 'text-slate-400'}
-                        >
+                        <span className={isToday(day) ? 'text-[#3B82F6]' : 'text-slate-400'}>
                           {formatDisplayDate(day)}
                         </span>
                         {isToday(day) && (
                           <Badge className="ml-2 bg-[#3B82F6] text-white border-0 text-xs">
-                            Hôm nay
+                            {t('today')}
                           </Badge>
                         )}
                       </th>
@@ -333,18 +340,12 @@ export default function TeacherSchedulePage() {
                             {slot ? (
                               <button
                                 onClick={() => setSelectedSlot(slot)}
-                                className={`w-full p-2 rounded-lg border text-left transition-all hover:scale-[1.02] ${getStatusColor(
-                                  slot.status
-                                )}`}
+                                className={`w-full p-2 rounded-lg border text-left transition-all hover:scale-[1.02] ${getStatusColor(slot.status)}`}
                               >
                                 {slot.student ? (
                                   <div>
-                                    <p className="text-xs font-medium truncate">
-                                      {slot.topic}
-                                    </p>
-                                    <p className="text-xs opacity-70 truncate">
-                                      {slot.student.name}
-                                    </p>
+                                    <p className="text-xs font-medium truncate">{slot.topic}</p>
+                                    <p className="text-xs opacity-70 truncate">{slot.student.name}</p>
                                   </div>
                                 ) : (
                                   <div className="flex items-center justify-center h-8">
@@ -375,19 +376,19 @@ export default function TeacherSchedulePage() {
         >
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-[#3B82F6]/20 border border-[#3B82F6]/50" />
-            <span className="text-sm text-slate-400">Sắp tới</span>
+            <span className="text-sm text-slate-400">{t('legend.upcoming')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-amber-500/20 border border-amber-500/50" />
-            <span className="text-sm text-slate-400">Đã đặt</span>
+            <span className="text-sm text-slate-400">{t('legend.booked')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-emerald-500/20 border border-emerald-500/50" />
-            <span className="text-sm text-slate-400">Hoàn thành</span>
+            <span className="text-sm text-slate-400">{t('legend.completed')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-white/5 border border-dashed border-white/20" />
-            <span className="text-sm text-slate-400">Còn trống</span>
+            <span className="text-sm text-slate-400">{t('legend.available')}</span>
           </div>
         </motion.div>
 
@@ -395,9 +396,7 @@ export default function TeacherSchedulePage() {
         <Dialog open={!!selectedSlot} onOpenChange={() => setSelectedSlot(null)}>
           <DialogContent className="bg-[#0A1628] border-white/10">
             <DialogHeader>
-              <DialogTitle className="text-white">
-                Chi tiết buổi học
-              </DialogTitle>
+              <DialogTitle className="text-white">{t('slotDetail.title')}</DialogTitle>
             </DialogHeader>
             {selectedSlot && (
               <div className="space-y-4">
@@ -410,9 +409,7 @@ export default function TeacherSchedulePage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-white">
-                          {selectedSlot.student.name}
-                        </p>
+                        <p className="font-semibold text-white">{selectedSlot.student.name}</p>
                         <Badge className="bg-[#3B82F6]/20 text-[#3B82F6] border-0">
                           {selectedSlot.student.level}
                         </Badge>
@@ -420,38 +417,36 @@ export default function TeacherSchedulePage() {
                     </div>
 
                     <div className="p-3 bg-white/5 rounded-lg">
-                      <p className="text-slate-400 text-sm mb-1">Chủ đề</p>
+                      <p className="text-slate-400 text-sm mb-1">{t('slotDetail.topic')}</p>
                       <p className="text-white font-medium">{selectedSlot.topic}</p>
                     </div>
 
                     <div className="flex gap-4">
                       <div className="flex-1 p-3 bg-white/5 rounded-lg">
-                        <p className="text-slate-400 text-sm mb-1">Thời gian</p>
+                        <p className="text-slate-400 text-sm mb-1">{t('slotDetail.time')}</p>
                         <p className="text-white font-medium">{selectedSlot.time}</p>
                       </div>
                       <div className="flex-1 p-3 bg-white/5 rounded-lg">
-                        <p className="text-slate-400 text-sm mb-1">Thời lượng</p>
-                        <p className="text-white font-medium">{selectedSlot.duration} phút</p>
+                        <p className="text-slate-400 text-sm mb-1">{t('slotDetail.duration')}</p>
+                        <p className="text-white font-medium">{selectedSlot.duration} {t('slotDetail.minutes')}</p>
                       </div>
                     </div>
 
                     {selectedSlot.status === 'upcoming' && (
                       <Button className="w-full bg-emerald-500 hover:bg-emerald-500/90">
                         <Video className="w-4 h-4 mr-2" />
-                        Vào lớp
+                        {t('slotDetail.joinClass')}
                       </Button>
                     )}
                   </>
                 ) : (
                   <div className="text-center py-6">
                     <Clock className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-                    <p className="text-white font-medium mb-1">Khung giờ trống</p>
-                    <p className="text-sm text-slate-400 mb-4">
-                      Học viên có thể đặt lịch học vào khung giờ này
-                    </p>
+                    <p className="text-white font-medium mb-1">{t('slotDetail.emptySlot')}</p>
+                    <p className="text-sm text-slate-400 mb-4">{t('slotDetail.emptySlotDesc')}</p>
                     <Button variant="outline" className="border-red-500/50 text-red-400">
                       <X className="w-4 h-4 mr-2" />
-                      Xóa khung giờ
+                      {t('slotDetail.deleteSlot')}
                     </Button>
                   </div>
                 )}
@@ -464,21 +459,17 @@ export default function TeacherSchedulePage() {
         <Dialog open={showAvailabilityDialog} onOpenChange={setShowAvailabilityDialog}>
           <DialogContent className="bg-[#0A1628] border-white/10 max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-white">
-                Cài đặt khung giờ dạy
-              </DialogTitle>
+              <DialogTitle className="text-white">{t('availSettings.title')}</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-slate-400 -mt-2 mb-2">
-              Bật/tắt từng khung giờ 30 phút. Học viên chỉ thấy các slot đang bật.
-            </p>
-            <AvailabilityCalendar />
+            <p className="text-sm text-slate-400 -mt-2 mb-2">{t('availSettings.subtitle')}</p>
+            <AvailabilityCalendar locale={locale} />
             <DialogFooter className="mt-4">
               <Button
                 variant="outline"
                 className="border-white/20 text-white"
                 onClick={() => setShowAvailabilityDialog(false)}
               >
-                Đóng
+                {t('availSettings.close')}
               </Button>
             </DialogFooter>
           </DialogContent>

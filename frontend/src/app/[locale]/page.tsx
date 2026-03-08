@@ -1,9 +1,10 @@
 'use client';
 
+import * as React from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/routing';
-import { LanguageSwitcher } from '@/components/common';
+import { LanguageSwitcher, GemImage } from '@/components/common';
 
 export default function HomePage() {
   const t = useTranslations('home');
@@ -28,11 +29,11 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Cookie Animation */}
+        {/* Gem Animation */}
         <div className="relative w-32 h-32 mb-8 animate-float">
-          <div className="absolute inset-0 rounded-full bg-accent-cookie/20 blur-xl" />
-          <div className="relative w-full h-full rounded-full bg-gradient-to-br from-accent-cookie to-amber-600 flex items-center justify-center text-6xl shadow-lg glow-cookie">
-            🍪
+          <div className="absolute inset-0 rounded-full bg-accent-gem/20 blur-xl" />
+          <div className="relative w-full h-full rounded-full bg-gradient-to-br from-accent-gem to-amber-600 flex items-center justify-center shadow-lg glow-gem">
+            <GemImage size={80} alt="Gem" />
           </div>
         </div>
 
@@ -60,9 +61,9 @@ export default function HomePage() {
             description={t('features.gamification.description')}
           />
           <FeatureCard
-            icon="🍪"
-            title={t('features.cookies.title')}
-            description={t('features.cookies.description')}
+            icon={<GemImage size={40} />}
+            title={t('features.gems.title')}
+            description={t('features.gems.description')}
           />
           <FeatureCard
             icon="📹"
@@ -85,13 +86,13 @@ function FeatureCard({
   title,
   description,
 }: {
-  icon: string;
+  icon: string | React.ReactNode;
   title: string;
   description: string;
 }) {
   return (
     <div className="card p-6 text-center hover:scale-105 transition-transform duration-300">
-      <div className="text-4xl mb-3">{icon}</div>
+      <div className="text-4xl mb-3 flex justify-center">{icon}</div>
       <h3 className="text-lg font-semibold text-text-primary mb-2">{title}</h3>
       <p className="text-text-secondary text-sm">{description}</p>
     </div>

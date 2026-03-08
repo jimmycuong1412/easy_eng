@@ -9,18 +9,23 @@
  * Task: T118 [P] Create ClassRoom component
  */
 
-import React, { useEffect, useState, useRef } from 'react';
-import { CometChatUI } from '@cometchat-pro/chat';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { ClassRoomProps } from '@/types/cometchat.types';
-import CallControls from './CallControls';
+import { CallControls } from './CallControls';
 import ParticipantList from './ParticipantList';
 import InCallChat from './InCallChat';
 import { Loader2, AlertCircle, Video, VideoOff } from 'lucide-react';
-import { useCometChat } from '@/hooks/useCometChat';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  getGroupMembers,
+  joinClassGroup,
+  leaveClassGroup,
+  endCall as endCometChatCall,
+} from '@/lib/cometchat';
 
 export default function ClassRoom({
   sessionId,
-  classId,
+  classId: _classId,
   groupId,
   userRole,
   onLeave,
@@ -38,16 +43,12 @@ export default function ClassRoom({
   // Refs
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
 
-  // Custom hook for CometChat integration
-  const {
-    isConnected,
-    currentGroup,
-    joinGroup,
-    leaveGroup,
-    startCall,
-    endCall,
-  } = useCometChat();
+  // Auth hook for current user
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? '';
 
   // ============================================================================
   // Initialization
@@ -59,6 +60,7 @@ export default function ClassRoom({
     return () => {
       cleanup();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
 
   const initializeClassroom = async () => {
@@ -67,10 +69,13 @@ export default function ClassRoom({
       setError(null);
 
       // Join the CometChat group
-      const joined = await joinGroup(groupId);
+      const joined = await joinClassGroup(groupId);
       if (!joined) {
         throw new Error('Failed to join classroom');
       }
+
+      // Start local media
+      await startLocalMedia();
 
       // Fetch current participants
       await loadParticipants();
@@ -86,13 +91,42 @@ export default function ClassRoom({
 
   const cleanup = async () => {
     try {
-      // Stop any ongoing media
       stopLocalMedia();
-
-      // Leave the group
-      await leaveGroup(groupId);
+      stopScreenShare();
+      await leaveClassGroup(groupId);
     } catch (err) {
       console.error('Cleanup error:', err);
+    }
+  };
+
+  // ============================================================================
+  // Local Media Management
+  // ============================================================================
+
+  const startLocalMedia = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      localStreamRef.current = stream;
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Failed to access media devices:', err);
+      // Continue without media — user can still participate in chat
+    }
+  };
+
+  const stopLocalMedia = () => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+    }
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
     }
   };
 
@@ -102,9 +136,7 @@ export default function ClassRoom({
 
   const loadParticipants = async () => {
     try {
-      // This would be implemented using CometChat API
-      // For now, using placeholder
-      const members = await CometChatService.getGroupMembers(groupId);
+      const members = await getGroupMembers(groupId);
       setParticipants(members);
     } catch (err) {
       console.error('Failed to load participants:', err);
@@ -115,51 +147,76 @@ export default function ClassRoom({
   // Media Controls
   // ============================================================================
 
-  const handleToggleAudio = () => {
-    setIsAudioMuted(!isAudioMuted);
-    // TODO: Implement actual audio mute/unmute with CometChat
-    console.log('Toggle audio:', !isAudioMuted);
-  };
+  const handleToggleAudio = useCallback(async () => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
 
-  const handleToggleVideo = () => {
-    setIsVideoOff(!isVideoOff);
-    // TODO: Implement actual video on/off with CometChat
-    console.log('Toggle video:', !isVideoOff);
-  };
-
-  const handleToggleScreenShare = () => {
-    if (userRole !== 'teacher') {
-      alert('Only teachers can share screen');
-      return;
+    const audioTrack = stream.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = isAudioMuted; // Toggle: if muted, enable; if unmuted, disable
+      setIsAudioMuted(!isAudioMuted);
     }
+  }, [isAudioMuted]);
 
-    setIsScreenSharing(!isScreenSharing);
-    // TODO: Implement screen sharing with CometChat
-    console.log('Toggle screen share:', !isScreenSharing);
+  const handleToggleVideo = useCallback(async () => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
+
+    const videoTrack = stream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.enabled = isVideoOff; // Toggle: if off, enable; if on, disable
+      setIsVideoOff(!isVideoOff);
+    }
+  }, [isVideoOff]);
+
+  const handleToggleScreenShare = useCallback(async () => {
+    if (userRole !== 'teacher') return;
+
+    if (isScreenSharing) {
+      stopScreenShare();
+    } else {
+      await startScreenShareStream();
+    }
+  }, [userRole, isScreenSharing]);
+
+  const startScreenShareStream = async () => {
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+
+      screenStreamRef.current = screenStream;
+      setIsScreenSharing(true);
+
+      // Listen for the user stopping screen share via browser UI
+      screenStream.getVideoTracks()[0].addEventListener('ended', () => {
+        stopScreenShare();
+      });
+    } catch (err) {
+      // User cancelled the screen share picker — not an error
+      if ((err as DOMException).name !== 'AbortError') {
+        console.error('Screen share failed:', err);
+      }
+    }
+  };
+
+  const stopScreenShare = () => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((track) => track.stop());
+      screenStreamRef.current = null;
+    }
+    setIsScreenSharing(false);
   };
 
   const handleLeaveCall = async () => {
     try {
-      // End the call
-      await endCall(sessionId);
-
-      // Clean up
+      await endCometChatCall(sessionId);
       await cleanup();
-
-      // Notify parent
       onLeave?.();
     } catch (err) {
       console.error('Error leaving call:', err);
-      // Force leave anyway
       onLeave?.();
-    }
-  };
-
-  const stopLocalMedia = () => {
-    // Stop all media tracks
-    if (localVideoRef.current && localVideoRef.current.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
     }
   };
 
@@ -225,7 +282,7 @@ export default function ClassRoom({
             <span className="mr-2 h-2 w-2 rounded-full bg-green-500"></span>
             Live
           </span>
-          <span className="mx-2">•</span>
+          <span className="mx-2">&bull;</span>
           <span>{participants.length} participants</span>
         </div>
       </div>
@@ -239,9 +296,7 @@ export default function ClassRoom({
             ref={videoContainerRef}
             className="relative flex-1 bg-black"
           >
-            {/* CometChat Video UI will be injected here */}
             <div id="cometchat-video-container" className="h-full w-full">
-              {/* Placeholder for CometChat UI */}
               <div className="flex h-full items-center justify-center text-gray-400">
                 <div className="text-center">
                   {isVideoOff ? (
@@ -273,14 +328,13 @@ export default function ClassRoom({
           {/* Call Controls */}
           <div className="border-t border-gray-800 bg-gray-950 px-6 py-4">
             <CallControls
-              isAudioMuted={isAudioMuted}
-              isVideoOff={isVideoOff}
+              micEnabled={!isAudioMuted}
+              cameraEnabled={!isVideoOff}
               isScreenSharing={isScreenSharing}
-              onToggleAudio={handleToggleAudio}
-              onToggleVideo={handleToggleVideo}
+              onToggleMic={handleToggleAudio}
+              onToggleCamera={handleToggleVideo}
               onToggleScreenShare={userRole === 'teacher' ? handleToggleScreenShare : undefined}
-              onLeaveCall={handleLeaveCall}
-              userRole={userRole}
+              onEndCall={handleLeaveCall}
             />
           </div>
         </div>
@@ -292,8 +346,8 @@ export default function ClassRoom({
             <h3 className="mb-4 text-sm font-semibold text-gray-400">PARTICIPANTS</h3>
             <ParticipantList
               participants={participants}
-              teacherId={userRole === 'teacher' ? 'current-user-id' : ''}
-              currentUserId="current-user-id"
+              teacherId={userRole === 'teacher' ? currentUserId : ''}
+              currentUserId={currentUserId}
             />
           </div>
 
@@ -301,7 +355,7 @@ export default function ClassRoom({
           <div className="h-96">
             <InCallChat
               groupId={groupId}
-              currentUserId="current-user-id"
+              currentUserId={currentUserId}
               isMinimized={isChatMinimized}
               onToggleMinimize={handleToggleChat}
             />
@@ -311,11 +365,3 @@ export default function ClassRoom({
     </div>
   );
 }
-
-// Placeholder for CometChat Service (will be imported from lib)
-const CometChatService = {
-  getGroupMembers: async (groupId: string) => {
-    // Placeholder implementation
-    return [];
-  },
-};

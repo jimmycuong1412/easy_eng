@@ -34,12 +34,18 @@ interface GemRuleEditorProps {
 
 const ACTIVITY_TYPES = [
   { value: 'lesson_completion', label: 'Lesson Completion', description: 'Awarded when a student completes a lesson' },
+  { value: 'class_completion', label: 'Class Completion', description: 'Awarded when a student completes a class' },
   { value: 'attendance_streak', label: 'Attendance Streak', description: 'Bonus for consecutive class attendance' },
+  { value: 'streak_bonus_7', label: 'Streak Bonus (7 days)', description: 'Bonus for 7-day attendance streak' },
+  { value: 'streak_bonus_30', label: 'Streak Bonus (30 days)', description: 'Bonus for 30-day attendance streak' },
   { value: 'referral', label: 'Referral', description: 'Earned when referring new students' },
+  { value: 'referral_bonus', label: 'Referral Bonus', description: 'Bonus paid out on successful referral' },
   { value: 'profile_completion', label: 'Profile Completion', description: 'One-time reward for completing profile' },
   { value: 'first_review', label: 'First Review', description: 'Reward for leaving first class review' },
+  { value: 'first_booking_bonus', label: 'First Booking Bonus', description: 'One-time bonus for first class booking' },
   { value: 'daily_login', label: 'Daily Login', description: 'Daily login bonus' },
   { value: 'quiz_completion', label: 'Quiz Completion', description: 'Awarded for completing quizzes' },
+  { value: 'homework_submission', label: 'Homework Submission', description: 'Awarded for submitting homework' },
   { value: 'manual_award', label: 'Manual Award', description: 'Admin-initiated awards' },
 ];
 

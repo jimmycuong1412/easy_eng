@@ -6,7 +6,6 @@ import Link from 'next/link';
 import {
   FileText,
   Download,
-  ExternalLink,
   BookOpen,
   Video,
   Image as ImageIcon,
@@ -21,114 +20,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getClassById } from '@/lib/queries';
+import { createClient } from '@/lib/supabase/client';
 
-// Mock materials data
-const mockClassData = {
-  id: 'class-1',
-  topic: 'Business English: Meeting Skills',
-  completedAt: '2026-01-23T09:30:00+07:00',
-  teacher: 'Nguyễn Minh Anh',
-};
+interface MaterialItem {
+  id: number | string;
+  name: string;
+  type: string;
+  size: string;
+  url: string;
+  completed: boolean;
+}
 
-const mockMaterials = {
-  beforeClass: [
-    {
-      id: 1,
-      name: 'Vocabulary List - Meeting Terms',
-      type: 'pdf',
-      size: '234 KB',
-      url: '#',
-      completed: true,
-    },
-    {
-      id: 2,
-      name: 'Pre-class Reading: Effective Meetings',
-      type: 'doc',
-      size: '156 KB',
-      url: '#',
-      completed: true,
-    },
-  ],
-  duringClass: [
-    {
-      id: 3,
-      name: 'Lesson Slides - Meeting Skills',
-      type: 'slides',
-      size: '1.2 MB',
-      url: '#',
-      completed: true,
-    },
-    {
-      id: 4,
-      name: 'Role-play Scenarios',
-      type: 'pdf',
-      size: '89 KB',
-      url: '#',
-      completed: true,
-    },
-    {
-      id: 5,
-      name: 'Audio: Sample Meeting Dialogue',
-      type: 'audio',
-      size: '3.4 MB',
-      url: '#',
-      completed: true,
-    },
-  ],
-  afterClass: [
-    {
-      id: 6,
-      name: 'Homework: Write Meeting Agenda',
-      type: 'doc',
-      size: '45 KB',
-      url: '#',
-      completed: false,
-    },
-    {
-      id: 7,
-      name: 'Practice Exercises',
-      type: 'pdf',
-      size: '178 KB',
-      url: '#',
-      completed: false,
-    },
-    {
-      id: 8,
-      name: 'Supplementary Video: TED Talk',
-      type: 'video',
-      size: 'External',
-      url: '#',
-      completed: false,
-    },
-  ],
-};
-
-const mockNotes = [
-  {
-    id: 1,
-    time: '09:05',
-    content: 'Key phrase: "Let\'s get started" - formal opening',
-    highlight: true,
-  },
-  {
-    id: 2,
-    time: '09:12',
-    content: 'Remember: Use "I\'d like to suggest..." instead of "I think we should..."',
-    highlight: false,
-  },
-  {
-    id: 3,
-    time: '09:20',
-    content: 'Action items should always have a deadline and assigned person',
-    highlight: true,
-  },
-  {
-    id: 4,
-    time: '09:25',
-    content: 'Closing phrase: "Thank you all for your time"',
-    highlight: false,
-  },
-];
+interface NoteItem {
+  id: number | string;
+  time: string;
+  content: string;
+  highlight: boolean;
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -144,6 +53,63 @@ const itemVariants = {
 };
 
 export default function ClassMaterialsPage({ params }: { params: { classId: string } }) {
+  const [classData, setClassData] = React.useState({
+    id: '',
+    topic: '',
+    completedAt: '',
+    teacher: '',
+  });
+  const [materials, setMaterials] = React.useState<{
+    beforeClass: MaterialItem[];
+    duringClass: MaterialItem[];
+    afterClass: MaterialItem[];
+  }>({ beforeClass: [], duringClass: [], afterClass: [] });
+  const [notes] = React.useState<NoteItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const data = await getClassById(params.classId) as Record<string, unknown>;
+        const teacher = data.profiles as Record<string, unknown> | null;
+
+        setClassData({
+          id: (data.id as string) || '',
+          topic: (data.title as string) || 'Class',
+          completedAt: (data.end_time as string) || '',
+          teacher: (teacher?.full_name as string) || 'Teacher',
+        });
+
+        // Fetch materials from storage if materials_url exists
+        const materialsUrl = data.materials_url as string | null;
+        if (materialsUrl) {
+          const supabase = createClient();
+          const { data: files } = await supabase.storage
+            .from('class-materials')
+            .list(params.classId);
+
+          if (files && files.length > 0) {
+            const mapped: MaterialItem[] = files.map((f, idx) => ({
+              id: idx,
+              name: f.name,
+              type: f.name.split('.').pop() || 'file',
+              size: `${Math.round((f.metadata?.size || 0) / 1024)} KB`,
+              url: `class-materials/${params.classId}/${f.name}`,
+              completed: false,
+            }));
+            setMaterials({ beforeClass: mapped, duringClass: [], afterClass: [] });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching class materials:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [params.classId]);
   const getFileIcon = (type: string) => {
     switch (type) {
       case 'pdf':
@@ -163,9 +129,17 @@ export default function ClassMaterialsPage({ params }: { params: { classId: stri
     }
   };
 
-  const renderMaterialsList = (materials: typeof mockMaterials.beforeClass) => (
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const renderMaterialsList = (materialsList: MaterialItem[]) => (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-3">
-      {materials.map((material) => (
+      {materialsList.map((material) => (
         <motion.div key={material.id} variants={itemVariants}>
           <Card className="bg-white/5 border-white/10 hover:border-[#3B82F6]/50 transition-colors">
             <CardContent className="p-4">
@@ -219,10 +193,10 @@ export default function ClassMaterialsPage({ params }: { params: { classId: stri
 
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white mb-2">{mockClassData.topic}</h1>
+              <h1 className="text-2xl font-bold text-white mb-2">{classData.topic}</h1>
               <p className="text-slate-400">
-                Giáo viên: {mockClassData.teacher} • 
-                Hoàn thành: {new Date(mockClassData.completedAt).toLocaleDateString('vi-VN')}
+                Giáo viên: {classData.teacher} • 
+                Hoàn thành: {new Date(classData.completedAt).toLocaleDateString('vi-VN')}
               </p>
             </div>
             <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
@@ -257,7 +231,7 @@ export default function ClassMaterialsPage({ params }: { params: { classId: stri
                 <Badge className="bg-amber-500/20 text-amber-400 border-0">Trước lớp</Badge>
                 Tài liệu chuẩn bị
               </h3>
-              {renderMaterialsList(mockMaterials.beforeClass)}
+              {renderMaterialsList(materials.beforeClass)}
             </motion.div>
 
             {/* During Class */}
@@ -270,7 +244,7 @@ export default function ClassMaterialsPage({ params }: { params: { classId: stri
                 <Badge className="bg-[#3B82F6]/20 text-[#3B82F6] border-0">Trong lớp</Badge>
                 Tài liệu bài học
               </h3>
-              {renderMaterialsList(mockMaterials.duringClass)}
+              {renderMaterialsList(materials.duringClass)}
             </motion.div>
 
             {/* After Class */}
@@ -283,7 +257,7 @@ export default function ClassMaterialsPage({ params }: { params: { classId: stri
                 <Badge className="bg-emerald-500/20 text-emerald-400 border-0">Sau lớp</Badge>
                 Bài tập về nhà
               </h3>
-              {renderMaterialsList(mockMaterials.afterClass)}
+              {renderMaterialsList(materials.afterClass)}
             </motion.div>
           </TabsContent>
 
@@ -306,7 +280,7 @@ export default function ClassMaterialsPage({ params }: { params: { classId: stri
                   animate="visible"
                   className="space-y-4"
                 >
-                  {mockNotes.map((note) => (
+                  {notes.map((note) => (
                     <motion.div
                       key={note.id}
                       variants={itemVariants}

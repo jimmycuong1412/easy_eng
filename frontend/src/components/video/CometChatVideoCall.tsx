@@ -49,16 +49,19 @@ export function CometChatVideoCall({
 
   const [callDuration, setCallDuration] = useState(0);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [hasAttemptedCall, setHasAttemptedCall] = useState(false);
+  // Use a ref so the "attempted" flag survives React StrictMode double-invoke remounts
+  const hasAttemptedCallRef = useRef(false);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Start call if not incoming — only attempt once to avoid infinite retry loop
+  // Start call if not incoming — only attempt once to avoid double-call from StrictMode remount
   useEffect(() => {
-    if (!isIncoming && !isCallActive && !isConnecting && !hasAttemptedCall && remoteUserId) {
-      setHasAttemptedCall(true);
-      startCall(remoteUserId, 'video');
+    if (!isIncoming && !isCallActive && !isConnecting && !hasAttemptedCallRef.current && remoteUserId) {
+      hasAttemptedCallRef.current = true;
+      startCall(remoteUserId, 'video').catch(() => {
+        // Error is already set in hook state — reset flag so UI can show it
+      });
     }
-  }, [isIncoming, isCallActive, isConnecting, hasAttemptedCall, remoteUserId, startCall]);
+  }, [isIncoming, isCallActive, isConnecting, remoteUserId, startCall]);
 
   // Handle incoming call — use prop if provided, otherwise fall back to hook state
   const resolvedIncomingCall = incomingCall ?? hookIncomingCall;

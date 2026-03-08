@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { XPProgressBar } from '@/components/features/XPProgressBar';
 import { PixelAvatar } from '@/components/features/PixelAvatar';
+import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
 
 // Animation variants
 const containerVariants = {
@@ -176,6 +177,11 @@ export default function StudentDashboardPage() {
         <p className="text-text-secondary mt-1">
           {t('welcomeSubtitle')}
         </p>
+      </motion.div>
+
+      {/* Active class reconnect banner */}
+      <motion.div variants={itemVariants}>
+        <ActiveClassBanner userId={user?.id} role="student" />
       </motion.div>
 
       {/* Stats cards */}

@@ -17,9 +17,16 @@ export const gemRuleSchema = z.object({
     'daily_login',
     'quiz_completion',
     'manual_award',
+    // Additional types used in DB
+    'class_completion',
+    'first_booking_bonus',
+    'homework_submission',
+    'referral_bonus',
+    'streak_bonus_7',
+    'streak_bonus_30',
   ]),
   gem_reward: z.number().int().min(1).max(1000, 'Gem reward cannot exceed 1000'),
-  conditions: z.record(z.any()).optional(),
+  conditions: z.record(z.string(), z.any()).optional(),
   is_active: z.boolean().default(true),
   rate_limit: z.object({
     max_per_day: z.number().int().min(0).optional(),
@@ -41,7 +48,7 @@ export function validateGemRule(rule: unknown): { valid: boolean; errors?: strin
     if (error instanceof z.ZodError) {
       return {
         valid: false,
-        errors: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        errors: error.issues.map((e) => `${e.path.join('.')}: ${e.message}`),
       };
     }
     return { valid: false, errors: ['Unknown validation error'] };
@@ -56,7 +63,7 @@ export const GEM_CONSTRAINTS = {
   MAX_REWARD: 1000,
   MAX_DAILY_EARNINGS: 500,
   MAX_BALANCE: 10000,
-  CONVERSION_RATE: 0.5, // 1 gem = $0.50
+  CONVERSION_RATE: 0.01, // 100 gems = $1.00 (1 gem = $0.01)
   MAX_DISCOUNT_PERCENT: 50,
   MIN_CLASS_PRICE: 5.0,
 } as const;

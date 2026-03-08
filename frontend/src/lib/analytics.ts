@@ -33,10 +33,10 @@ export class PlausibleAnalytics {
    * Track page view
    */
   pageview(url?: string) {
-    if (!this.isEnabled() || !(window as any).plausible) return;
+    if (!this.isEnabled() || !window.plausible) return;
 
     try {
-      (window as any).plausible('pageview', { props: { url: url || window.location.pathname } });
+      window.plausible('pageview', { props: { url: url || window.location.pathname } });
     } catch (error) {
       console.error('[Analytics] Plausible pageview error:', error);
     }
@@ -45,11 +45,11 @@ export class PlausibleAnalytics {
   /**
    * Track custom event
    */
-  event(eventName: string, props?: Record<string, any>) {
-    if (!this.isEnabled() || !(window as any).plausible) return;
+  event(eventName: string, props?: Record<string, unknown>) {
+    if (!this.isEnabled() || !window.plausible) return;
 
     try {
-      (window as any).plausible(eventName, { props });
+      window.plausible(eventName, { props });
     } catch (error) {
       console.error('[Analytics] Plausible event error:', error);
     }
@@ -59,10 +59,10 @@ export class PlausibleAnalytics {
    * Track outbound link click
    */
   outbound(url: string) {
-    if (!this.isEnabled() || !(window as any).plausible) return;
+    if (!this.isEnabled() || !window.plausible) return;
 
     try {
-      (window as any).plausible('Outbound Link: Click', { props: { url } });
+      window.plausible('Outbound Link: Click', { props: { url } });
     } catch (error) {
       console.error('[Analytics] Plausible outbound error:', error);
     }
@@ -91,10 +91,10 @@ export class GoogleAnalytics {
    * Track page view
    */
   pageview(url?: string) {
-    if (!this.isEnabled() || !(window as any).gtag) return;
+    if (!this.isEnabled() || !window.gtag) return;
 
     try {
-      (window as any).gtag('config', this.measurementId, {
+      window.gtag('config', this.measurementId, {
         page_path: url || window.location.pathname,
       });
     } catch (error) {
@@ -105,11 +105,11 @@ export class GoogleAnalytics {
   /**
    * Track custom event
    */
-  event(eventName: string, params?: Record<string, any>) {
-    if (!this.isEnabled() || !(window as any).gtag) return;
+  event(eventName: string, params?: Record<string, unknown>) {
+    if (!this.isEnabled() || !window.gtag) return;
 
     try {
-      (window as any).gtag('event', eventName, params);
+      window.gtag('event', eventName, params);
     } catch (error) {
       console.error('[Analytics] GA event error:', error);
     }
@@ -118,11 +118,11 @@ export class GoogleAnalytics {
   /**
    * Set user properties
    */
-  setUserProperties(properties: Record<string, any>) {
-    if (!this.isEnabled() || !(window as any).gtag) return;
+  setUserProperties(properties: Record<string, unknown>) {
+    if (!this.isEnabled() || !window.gtag) return;
 
     try {
-      (window as any).gtag('set', 'user_properties', properties);
+      window.gtag('set', 'user_properties', properties);
     } catch (error) {
       console.error('[Analytics] GA user properties error:', error);
     }
@@ -163,7 +163,7 @@ class Analytics {
   /**
    * Track custom event
    */
-  event(eventName: string, params?: Record<string, any>) {
+  event(eventName: string, params?: Record<string, unknown>) {
     if (this.plausible.isEnabled()) {
       this.plausible.event(eventName, params);
     } else if (this.ga.isEnabled()) {
@@ -185,7 +185,7 @@ class Analytics {
   /**
    * Set user properties (Google Analytics only)
    */
-  setUserProperties(properties: Record<string, any>) {
+  setUserProperties(properties: Record<string, unknown>) {
     if (this.ga.isEnabled()) {
       this.ga.setUserProperties(properties);
     }

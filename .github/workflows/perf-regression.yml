@@ -1,0 +1,46 @@
+name: Performance Regression Detection
+
+on:
+  pull_request:
+    branches: [main, 001-english-learning-platform]
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM
+
+jobs:
+  performance-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run performance tests
+        working-directory: ./tests/performance
+        run: |
+          export API_BASE_URL="https://staging.easy-eng.com"
+          export SCENARIO="smoke"
+          k6 run booking-load.test.js --out json=results.json
+
+      - name: Analyze results
+        run: |
+          echo "## Performance Test Results" >> $GITHUB_STEP_SUMMARY
+          jq -r '.metrics | to_entries[] | "\(.key): \(.value.values.p95)"' tests/performance/results.json >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: tests/performance/results.json

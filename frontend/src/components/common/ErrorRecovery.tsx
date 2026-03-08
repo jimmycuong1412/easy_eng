@@ -120,7 +120,7 @@ export function ServerErrorRecovery({
  * For 404 errors, missing resources
  */
 export function DataNotFoundRecovery({
-  message = 'The content you're looking for doesn't exist or has been removed.',
+  message = "The content you're looking for doesn't exist or has been removed.",
   onRetry,
   onCancel,
 }: ErrorRecoveryProps) {

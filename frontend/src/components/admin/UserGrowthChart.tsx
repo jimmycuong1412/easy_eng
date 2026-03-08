@@ -50,6 +50,7 @@ export default function UserGrowthChart({
 
   useEffect(() => {
     fetchUserGrowth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, interval]);
 
   const fetchUserGrowth = async () => {
@@ -129,27 +130,27 @@ export default function UserGrowthChart({
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Users</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Total Users</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">
                 {userCounts?.total || 0}
               </p>
             </div>
-            <Users className="h-8 w-8 text-gray-400" />
+            <Users className="h-8 w-8 text-text-muted" />
           </div>
         </div>
 
         {roles.map((role) => (
           <div
             key={role}
-            className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+            className="rounded-lg border border-border-default bg-bg-surface p-4"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{role}s</p>
-                <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+                <p className="text-sm text-text-muted capitalize">{role}s</p>
+                <p className="mt-1 text-2xl font-semibold text-text-primary">
                   {userCounts?.[role as keyof Omit<UserCounts, 'total'>] || 0}
                 </p>
                 {growthRates && growthRates[role] !== undefined && (
@@ -176,8 +177,8 @@ export default function UserGrowthChart({
       </div>
 
       {/* Chart */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h3 className="mb-4 text-lg font-semibold text-text-primary">
           User Growth Over Time
         </h3>
 
@@ -190,10 +191,10 @@ export default function UserGrowthChart({
             return (
               <div key={role}>
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
+                  <span className="text-sm font-medium capitalize text-text-secondary">
                     {role}s
                   </span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-text-muted">
                     {roleData.reduce((sum, d) => sum + d.new_users, 0)} new users
                   </span>
                 </div>
@@ -201,7 +202,7 @@ export default function UserGrowthChart({
                 <div className="space-y-1">
                   {roleData.slice(0, 10).map((record, index) => (
                     <div key={index} className="flex items-center gap-2">
-                      <span className="w-20 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="w-20 text-xs text-text-muted">
                         {new Date(record.date).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -228,7 +229,7 @@ export default function UserGrowthChart({
 
         {userGrowth.length === 0 && (
           <div className="py-8 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">No data available for the selected period</p>
+            <p className="text-sm text-text-muted">No data available for the selected period</p>
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
 /**
- * CSRF Protection Utilities (T237)
+ * CSRF Protection Utilities — Client-side (T237)
  *
  * Implements double-submit cookie pattern:
  * - Server sets an HttpOnly cookie with the CSRF token
@@ -11,32 +12,33 @@
  * This is more secure than sessionStorage because:
  * - The canonical token is in an HttpOnly cookie (not readable by XSS)
  * - An attacker cannot forge both the cookie and header from a different origin
+ *
+ * Server-only utilities (verifyCsrfToken, withCsrfRouteProtection, …) live
+ * in `csrf.server.ts` and must be imported from there in API routes and
+ * middleware.
  */
 
 import { useEffect, useState } from 'react';
 
-const CSRF_COOKIE_NAME = 'csrf_token';
+// Re-export server-safe functions so existing imports from '@/lib/csrf' that
+// only use these functions continue to work (e.g., in API routes that are
+// bundled separately by Next.js and are never included in client chunks).
+export {
+  verifyCsrfToken,
+  withCsrfRouteProtection,
+  csrfMiddleware,
+  edgeFunctionCsrfMiddleware,
+  setCsrfCookies,
+  generateToken,
+  constantTimeEqual,
+} from './csrf.server';
+
 const CSRF_READABLE_COOKIE = 'csrf_token_readable';
 const CSRF_HEADER_NAME = 'X-CSRF-Token';
-const TOKEN_MAX_AGE = 3600; // 1 hour in seconds
 
-/**
- * Generate a cryptographically secure random token
- */
-function generateToken(): string {
-  const array = new Uint8Array(32);
-  if (typeof window !== 'undefined' && window.crypto) {
-    window.crypto.getRandomValues(array);
-  } else if (typeof globalThis !== 'undefined' && (globalThis as any).crypto) {
-    (globalThis as any).crypto.getRandomValues(array);
-  } else {
-    // Fallback — should not happen in modern browsers/runtimes
-    for (let i = 0; i < array.length; i++) {
-      array[i] = Math.floor(Math.random() * 256);
-    }
-  }
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
+// ---------------------------------------------------------------------------
+// Client-side helpers
+// ---------------------------------------------------------------------------
 
 /**
  * Read the CSRF token from the readable cookie (client-side).
@@ -86,29 +88,6 @@ export function addCsrfHeader(headers: HeadersInit = {}): HeadersInit {
   const headersObj = new Headers(headers);
   headersObj.set(CSRF_HEADER_NAME, token);
   return Object.fromEntries(headersObj.entries());
-}
-
-/**
- * Verify CSRF token: compare header token against cookie token
- */
-export function verifyCsrfToken(
-  headerToken: string | null,
-  cookieToken: string | null
-): boolean {
-  if (!headerToken || !cookieToken) return false;
-  return constantTimeEqual(headerToken, cookieToken);
-}
-
-/**
- * Constant-time string comparison to prevent timing attacks
- */
-function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return result === 0;
 }
 
 /**
@@ -221,100 +200,4 @@ export class CsrfProtectedApiClient {
   async delete<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
-}
-
-/**
- * Higher-order function that wraps a Next.js Route Handler with CSRF validation.
- * Reads X-CSRF-Token header and csrf_token cookie, rejects mismatches with 403.
- *
- * Usage:
- *   async function handler(req: NextRequest) { ... }
- *   export const POST = withCsrfRouteProtection(handler);
- */
-export function withCsrfRouteProtection<Req extends { headers: { get(name: string): string | null }; cookies: { get(name: string): { value: string } | undefined } }, Res>(
-  handler: (req: Req) => Promise<Res>
-): (req: Req) => Promise<Res | Response> {
-  return async (req: Req): Promise<Res | Response> => {
-    const headerToken = req.headers.get(CSRF_HEADER_NAME);
-    const cookieToken = req.cookies.get(CSRF_COOKIE_NAME)?.value ?? null;
-    if (!verifyCsrfToken(headerToken, cookieToken)) {
-      return new Response(
-        JSON.stringify({ error: 'CSRF token validation failed' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-    return handler(req);
-  };
-}
-
-/**
- * Middleware for Next.js API routes — validates CSRF on state-changing requests.
- * Compares X-CSRF-Token header against the HttpOnly csrf_token cookie.
- */
-export function csrfMiddleware(handler: (req: any, res: any) => Promise<any>) {
-  return async (req: any, res: any) => {
-    const stateMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
-    if (stateMethods.includes(req.method)) {
-      const headerToken = req.headers[CSRF_HEADER_NAME.toLowerCase()];
-      const cookieToken = req.cookies[CSRF_COOKIE_NAME];
-      if (!verifyCsrfToken(headerToken, cookieToken)) {
-        return res.status(403).json({
-          error: 'CSRF token validation failed',
-          message: 'Invalid or missing CSRF token',
-        });
-      }
-    }
-    return handler(req, res);
-  };
-}
-
-/**
- * Supabase Edge Function CSRF middleware
- */
-export async function edgeFunctionCsrfMiddleware(req: Request): Promise<Response | null> {
-  const stateMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
-  if (stateMethods.includes(req.method)) {
-    const headerToken = req.headers.get(CSRF_HEADER_NAME);
-    const cookies = req.headers.get('cookie') || '';
-    const tokenMatch = cookies.match(new RegExp(`${CSRF_COOKIE_NAME}=([^;]+)`));
-    const cookieToken = tokenMatch ? tokenMatch[1] : null;
-    if (!verifyCsrfToken(headerToken, cookieToken)) {
-      return new Response(
-        JSON.stringify({ error: 'CSRF token validation failed' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-  }
-  return null;
-}
-
-/**
- * Helper: set CSRF cookies on a response (use in middleware or API routes).
- * Sets both the HttpOnly token cookie and a readable mirror cookie.
- */
-export function setCsrfCookies(
-  response: { cookies: { set: (name: string, value: string, options: any) => void } }
-): string {
-  const token = generateToken();
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  // HttpOnly cookie — the source of truth, not accessible to JS
-  response.cookies.set(CSRF_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: TOKEN_MAX_AGE,
-  });
-
-  // Readable cookie — JS reads this to put in the header
-  response.cookies.set(CSRF_READABLE_COOKIE, token, {
-    httpOnly: false,
-    secure: isProduction,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: TOKEN_MAX_AGE,
-  });
-
-  return token;
 }

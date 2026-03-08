@@ -4,13 +4,20 @@
  * InCallChat Component
  *
  * In-class chat interface for participants
+ * Uses CometChat SDK for real-time messaging
+ *
  * Task: T121 [P] Create InCallChat component
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { CometChat } from '@cometchat-pro/chat';
 import type { InCallChatProps } from '@/types/cometchat.types';
 import { Send, MessageCircle, Minimize2, Maximize2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import {
+  sendGroupMessage,
+  fetchGroupMessages,
+} from '@/lib/cometchat';
 
 interface ChatMessage {
   id: string;
@@ -22,6 +29,8 @@ interface ChatMessage {
   };
   sentAt: number;
 }
+
+const LISTENER_ID = 'in_call_chat_listener';
 
 export default function InCallChat({
   groupId,
@@ -35,63 +44,99 @@ export default function InCallChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ============================================================================
-  // Effects
+  // Message Loading & Real-time Listener
   // ============================================================================
 
+  const mapCometChatMessage = useCallback((msg: any): ChatMessage | null => {
+    // Only handle text messages
+    if (msg.getCategory?.() !== 'message' || msg.getType?.() !== 'text') {
+      return null;
+    }
+    const sender = msg.getSender?.();
+    return {
+      id: msg.getId?.()?.toString() || `msg-${Date.now()}`,
+      text: msg.getText?.() || msg.data?.text || '',
+      sender: {
+        uid: sender?.getUid?.() || '',
+        name: sender?.getName?.() || 'Unknown',
+        avatar: sender?.getAvatar?.(),
+      },
+      sentAt: (msg.getSentAt?.() || Math.floor(Date.now() / 1000)) * 1000,
+    };
+  }, []);
+
+  const loadMessages = useCallback(async () => {
+    try {
+      const rawMessages = await fetchGroupMessages(groupId, 50);
+      const mapped = rawMessages
+        .map(mapCometChatMessage)
+        .filter((m): m is ChatMessage => m !== null);
+      setMessages(mapped);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    }
+  }, [groupId, mapCometChatMessage]);
+
   useEffect(() => {
-    // Load previous messages
     loadMessages();
 
     // Set up real-time message listener
-    // TODO: Implement CometChat message listener
-  }, [groupId]);
+    CometChat.addMessageListener(
+      LISTENER_ID,
+      new CometChat.MessageListener({
+        onTextMessageReceived: (msg: CometChat.TextMessage) => {
+          // Only add messages for this group
+          if (msg.getReceiverType() === CometChat.RECEIVER_TYPE.GROUP &&
+              msg.getReceiverId() === groupId) {
+            const mapped = mapCometChatMessage(msg);
+            if (mapped) {
+              setMessages((prev) => [...prev, mapped]);
+            }
+          }
+        },
+      })
+    );
+
+    return () => {
+      CometChat.removeMessageListener(LISTENER_ID);
+    };
+  }, [groupId, loadMessages, mapCometChatMessage]);
 
   useEffect(() => {
-    // Scroll to bottom when new messages arrive
     scrollToBottom();
   }, [messages]);
 
   // ============================================================================
-  // Message Management
+  // Send Message
   // ============================================================================
 
-  const loadMessages = async () => {
-    try {
-      // TODO: Fetch messages from CometChat
-      // const msgs = await CometChatService.fetchMessages(groupId);
-      // setMessages(msgs);
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-    }
-  };
-
-  const sendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!newMessage.trim() || isSending) return;
+
+    const messageText = newMessage.trim();
+    setNewMessage('');
 
     try {
       setIsSending(true);
 
-      // TODO: Send message via CometChat
-      // await CometChatService.sendMessage(groupId, newMessage);
-
-      // Optimistically add message to list
+      // Optimistically add message
       const tempMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
-        text: newMessage,
-        sender: {
-          uid: currentUserId,
-          name: 'You',
-        },
+        text: messageText,
+        sender: { uid: currentUserId, name: 'You' },
         sentAt: Date.now(),
       };
-
       setMessages((prev) => [...prev, tempMessage]);
-      setNewMessage('');
+
+      // Send via CometChat
+      const sent = await sendGroupMessage(groupId, messageText);
+      if (!sent) {
+        // Remove optimistic message on failure
+        setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
-      alert('Failed to send message. Please try again.');
     } finally {
       setIsSending(false);
     }
@@ -139,10 +184,7 @@ export default function InCallChat({
           )}
         </div>
         {onToggleMinimize && (
-          <button
-            onClick={onToggleMinimize}
-            className="text-gray-400 hover:text-white"
-          >
+          <button onClick={onToggleMinimize} className="text-gray-400 hover:text-white">
             <Minimize2 className="h-4 w-4" />
           </button>
         )}
@@ -161,7 +203,6 @@ export default function InCallChat({
         ) : (
           messages.map((message) => {
             const isOwnMessage = message.sender.uid === currentUserId;
-
             return (
               <div
                 key={message.id}
@@ -196,7 +237,7 @@ export default function InCallChat({
       </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="border-t border-gray-800 p-4">
+      <form onSubmit={handleSendMessage} className="border-t border-gray-800 p-4">
         <div className="flex space-x-2">
           <input
             type="text"

@@ -91,7 +91,7 @@ serve(async (req) => {
       const { data: transactions, error: txError } = await supabaseClient
         .from('gem_transactions')
         .select('amount, created_at')
-        .eq('student_id', student.id)
+        .eq('user_id', student.id)
         .order('created_at', { ascending: false });
 
       if (txError) {

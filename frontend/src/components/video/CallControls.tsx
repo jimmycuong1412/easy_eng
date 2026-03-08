@@ -6,10 +6,10 @@ interface CallControlsProps {
   micEnabled: boolean;
   cameraEnabled: boolean;
   isScreenSharing: boolean;
-  onToggleMic: () => Promise<void>;
-  onToggleCamera: () => Promise<void>;
-  onToggleScreenShare: () => Promise<void>;
-  onEndCall: () => Promise<void>;
+  onToggleMic: () => void | Promise<void>;
+  onToggleCamera: () => void | Promise<void>;
+  onToggleScreenShare?: () => void | Promise<void>;
+  onEndCall: () => void | Promise<void>;
   isConnecting?: boolean;
 }
 
@@ -23,7 +23,7 @@ export function CallControls({
   onEndCall,
   isConnecting = false,
 }: CallControlsProps) {
-  const handleButtonClick = async (action: () => Promise<void>) => {
+  const handleButtonClick = async (action: () => void | Promise<void>) => {
     try {
       await action();
     } catch (error) {
@@ -99,7 +99,7 @@ export function CallControls({
 
       {/* Screen Share Toggle */}
       <button
-        onClick={() => handleButtonClick(onToggleScreenShare)}
+        onClick={() => onToggleScreenShare && handleButtonClick(onToggleScreenShare)}
         disabled={isConnecting}
         className={controlButtonClass(isScreenSharing)}
         title={isScreenSharing ? 'Stop Sharing' : 'Share Screen'}

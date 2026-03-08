@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Copy, Check, Share2, Gift, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { GemImage } from '@/components/common/GemImage';
 
 interface ReferralData {
   referral_code: string;
@@ -26,6 +27,7 @@ export default function ReferralLink() {
 
   useEffect(() => {
     fetchReferralCode();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchReferralCode = async () => {
@@ -146,7 +148,7 @@ export default function ReferralLink() {
           </div>
           <div className="rounded-lg bg-green-500/10 p-4 text-center">
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {referralData.stats.total_gems_earned} 💎
+              {referralData.stats.total_gems_earned} <GemImage size={14} className="inline-block align-middle" />
             </div>
             <div className="text-sm text-muted-foreground">Gems Earned</div>
           </div>

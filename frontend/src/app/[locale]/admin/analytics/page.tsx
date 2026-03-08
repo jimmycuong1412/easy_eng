@@ -9,6 +9,7 @@
  */
 
 import React, { useState } from 'react';
+import { GemImage } from '@/components/common/GemImage';
 import { useAnalyticsFilters } from '@/hooks/useAnalyticsFilters';
 import DateRangePicker from '@/components/admin/DateRangePicker';
 import UserGrowthChart from '@/components/admin/UserGrowthChart';
@@ -26,24 +27,24 @@ export default function AdminAnalyticsPage() {
     setRefreshKey((prev) => prev + 1);
   };
 
-  const tabs = [
+  const tabs: { id: 'users' | 'bookings' | 'gems' | 'revenue'; label: string; icon: React.ReactNode }[] = [
     { id: 'users', label: 'User Growth', icon: '👥' },
     { id: 'bookings', label: 'Bookings', icon: '📅' },
-    { id: 'gems', label: 'Gem Circulation', icon: '💎' },
+    { id: 'gems', label: 'Gem Circulation', icon: <GemImage size={16} /> },
     { id: 'revenue', label: 'Revenue', icon: '💰' },
-  ] as const;
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-3xl font-bold text-text-primary">
                 Platform Analytics
               </h1>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              <p className="mt-2 text-sm text-text-secondary">
                 Comprehensive insights and metrics for platform performance
               </p>
             </div>
@@ -68,21 +69,21 @@ export default function AdminAnalyticsPage() {
           </div>
 
           <div className="lg:col-span-3">
-            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+            <div className="rounded-lg border border-border-default bg-bg-surface p-4">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart3 className="h-5 w-5 text-gray-500" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">View Options</h3>
+                <h3 className="font-semibold text-text-primary">View Options</h3>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <label className="block text-xs text-text-muted mb-1">
                     Interval
                   </label>
                   <select
                     value={filters.interval}
                     onChange={(e) => setInterval(e.target.value as any)}
-                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    className="rounded-md border border-border-default bg-bg-elevated px-3 py-1.5 text-sm text-text-primary"
                   >
                     <option value="day">Daily</option>
                     <option value="week">Weekly</option>
@@ -91,10 +92,10 @@ export default function AdminAnalyticsPage() {
                 </div>
 
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <label className="block text-xs text-text-muted mb-1">
                     Selected Period
                   </label>
-                  <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                  <div className="rounded-md border border-border-default bg-bg-elevated px-3 py-1.5 text-sm text-text-secondary">
                     {new Date(filters.startDate).toLocaleDateString()} -{' '}
                     {new Date(filters.endDate).toLocaleDateString()}
                   </div>
@@ -106,7 +107,7 @@ export default function AdminAnalyticsPage() {
 
         {/* Tabs */}
         <div className="mb-6">
-          <div className="border-b border-gray-200 dark:border-gray-700">
+          <div className="border-b border-border-default">
             <nav className="-mb-px flex space-x-8">
               {tabs.map((tab) => (
                 <button
@@ -114,8 +115,8 @@ export default function AdminAnalyticsPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 border-b-2 px-1 py-4 text-sm font-medium ${
                     activeTab === tab.id
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      ? 'border-accent-primary text-accent-primary'
+                      : 'border-transparent text-text-muted hover:border-border-default hover:text-text-secondary'
                   }`}
                 >
                   <span className="text-lg">{tab.icon}</span>
@@ -161,7 +162,7 @@ export default function AdminAnalyticsPage() {
               </h4>
               <p className="mt-1 text-sm text-blue-800 dark:text-blue-200">
                 Analytics data is computed in real-time from database views. All financial figures
-                are in USD. Gem values are estimated at $0.50 per Gem. Teacher earnings reflect the
+                are in USD. Gem values are estimated at $0.01 per Gem (100 Gems = $1). Teacher earnings reflect the
                 70/30 revenue split. Gateway fees are estimated based on payment processor rates.
               </p>
             </div>

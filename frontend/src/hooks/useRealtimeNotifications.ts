@@ -58,7 +58,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+  const [_channel, setChannel] = useState<RealtimeChannel | null>(null);
 
   /**
    * Fetch initial notifications
@@ -130,7 +130,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
               filter: `user_id=eq.${targetUserId}`,
             },
             (payload) => {
-              console.log('New notification:', payload.new);
+              // New notification received
               const newNotification = payload.new as Notification;
 
               setNotifications(prev => [newNotification, ...prev]);
@@ -157,7 +157,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
               filter: `user_id=eq.${targetUserId}`,
             },
             (payload) => {
-              console.log('Notification updated:', payload.new);
+              // Notification updated
               const updatedNotification = payload.new as Notification;
 
               setNotifications(prev =>
@@ -179,7 +179,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
               filter: `user_id=eq.${targetUserId}`,
             },
             (payload) => {
-              console.log('Notification deleted:', payload.old);
+              // Notification deleted
               const deletedId = (payload.old as Notification).id;
 
               setNotifications(prev => prev.filter(n => n.id !== deletedId));

@@ -4,8 +4,10 @@
  * Main dashboard for administrators showing platform analytics
  */
 
+import * as React from 'react';
 import { Metadata } from 'next';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { GemImage } from '@/components/common/GemImage';
 import { UserAnalyticsWidget } from '@/components/dashboard/UserAnalyticsWidget';
 import { BookingAnalyticsWidget } from '@/components/dashboard/BookingAnalyticsWidget';
 import { GemAnalyticsWidget } from '@/components/dashboard/GemAnalyticsWidget';
@@ -21,10 +23,10 @@ export default function AdminDashboardPage() {
     <ProtectedRoute requiredRoles={['admin']}>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold text-text-primary">
             Admin Dashboard
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-text-secondary">
             Platform analytics and system management
           </p>
         </div>
@@ -47,7 +49,7 @@ export default function AdminDashboardPage() {
             title="Gems Rules"
             description="Configure gem system"
             href="/admin/gems-rules"
-            icon="💎"
+            icon={<GemImage size={32} />}
           />
           <AdminActionCard
             title="Analytics"
@@ -71,18 +73,18 @@ interface AdminActionCardProps {
   title: string;
   description: string;
   href: string;
-  icon: string;
+  icon: string | React.ReactNode;
 }
 
 function AdminActionCard({ title, description, href, icon }: AdminActionCardProps) {
   return (
     <a
       href={href}
-      className="block rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+      className="block rounded-lg border border-border-default bg-bg-surface p-6 shadow-sm transition-all hover:border-accent-primary hover:shadow-md"
     >
-      <div className="mb-2 text-3xl">{icon}</div>
-      <h3 className="mb-1 font-semibold text-gray-900 dark:text-white">{title}</h3>
-      <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+      <div className="mb-2 text-3xl flex">{icon}</div>
+      <h3 className="mb-1 font-semibold text-text-primary">{title}</h3>
+      <p className="text-sm text-text-secondary">{description}</p>
     </a>
   );
 }

@@ -1,32 +1,56 @@
 'use client';
 
-import Link from 'next/link';
+import React from 'react';
+import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Home } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Global navigation button shown on pages that don't have their own back button.
+ * - Hidden on: home, auth pages, dashboard (has its own nav), settings (has own back link)
+ * - Hidden on: student/teacher/admin pages (their layouts have BackToDashboard)
+ * - Shown on: standalone pages like /notifications, /recordings, /quiz, /leaderboard,
+ *   /book, /booking/*, /class/*, /learning-path, /onboarding/*
+ */
 export function GlobalHomeButton() {
-    const pathname = usePathname();
+  const pathname = usePathname();
+  const t = useTranslations('dashboard.nav');
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
 
-    // Hide button on homepage (root or locale root)
-    const isHomePage = pathname === '/' || /^\/[a-z]{2}$/.test(pathname);
+  // Strip locale prefix for route matching
+  const segments = pathname.split('/').filter(Boolean);
+  const hasLocale = segments.length > 0 && /^[a-z]{2}$/.test(segments[0]);
+  const pathWithoutLocale = hasLocale
+    ? '/' + segments.slice(1).join('/')
+    : pathname;
 
-    if (isHomePage) {
-        return null;
-    }
+  // Hide on home page
+  if (pathWithoutLocale === '/' || pathWithoutLocale === '') return null;
 
-    return (
-        <div className="fixed top-4 left-4 z-50">
-            <Button
-                variant="secondary"
-                size="icon"
-                className="rounded-full shadow-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 backdrop-blur-md"
-                asChild
-            >
-                <Link href="/" aria-label="Back to Home">
-                    <Home className="w-5 h-5" />
-                </Link>
-            </Button>
-        </div>
-    );
+  // Hide on pages that already have their own back/nav button
+  const sectionsWithOwnNav = ['/auth', '/dashboard', '/settings', '/student', '/teacher', '/admin'];
+  const hasOwnNav = sectionsWithOwnNav.some(
+    (s) => pathWithoutLocale === s || pathWithoutLocale.startsWith(s + '/')
+  );
+  if (hasOwnNav) return null;
+
+  return (
+    <div className="fixed top-4 left-4 z-50">
+      <Button
+        variant="secondary"
+        size="sm"
+        className="rounded-full shadow-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 backdrop-blur-md gap-1.5"
+        asChild
+      >
+        <Link href="/dashboard">
+          <ChevronLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">{t('home')}</span>
+        </Link>
+      </Button>
+    </div>
+  );
 }

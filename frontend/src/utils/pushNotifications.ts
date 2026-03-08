@@ -49,7 +49,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       scope: '/',
     });
 
-    console.log('Service Worker registered:', registration);
+    // Service Worker registered successfully
 
     // Wait for service worker to be ready
     await navigator.serviceWorker.ready;
@@ -73,7 +73,7 @@ export async function unregisterServiceWorker(): Promise<boolean> {
     const registration = await navigator.serviceWorker.getRegistration();
     if (registration) {
       const success = await registration.unregister();
-      console.log('Service Worker unregistered:', success);
+      // Service Worker unregistered
       return success;
     }
     return false;
@@ -123,7 +123,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 
   try {
     const permission = await Notification.requestPermission();
-    console.log('Notification permission:', permission);
+    // Notification permission result received
     return permission;
   } catch (error) {
     console.error('Failed to request notification permission:', error);
@@ -200,12 +200,12 @@ export async function subscribeToPushNotifications(): Promise<SubscriptionResult
 
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey,
+        applicationServerKey: applicationServerKey as BufferSource,
       });
 
-      console.log('Push subscription created:', subscription);
+      // Push subscription created
     } else {
-      console.log('Already subscribed to push:', subscription);
+      // Already subscribed to push
     }
 
     // Convert subscription to storable format
@@ -250,7 +250,7 @@ export async function unsubscribeFromPushNotifications(): Promise<boolean> {
     }
 
     const success = await subscription.unsubscribe();
-    console.log('Push unsubscription:', success);
+    // Push unsubscription completed
     return success;
   } catch (error) {
     console.error('Push unsubscription failed:', error);
@@ -325,9 +325,8 @@ export async function sendTestNotification(title: string, body: string): Promise
       body,
       icon: '/icon-192x192.png',
       badge: '/badge-72x72.png',
-      vibrate: [200, 100, 200],
       tag: 'test-notification',
-    });
+    } as NotificationOptions);
 
     return true;
   } catch (error) {

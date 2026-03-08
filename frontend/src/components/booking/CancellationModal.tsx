@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface CancellationModalProps {
   booking: {
@@ -24,13 +25,14 @@ interface CancellationModalProps {
 }
 
 export default function CancellationModal({
-  booking,
+  booking: _booking,
   refundPercentage,
   gemsRefund,
   cashRefund,
   onConfirm,
   onClose,
 }: CancellationModalProps) {
+  const t = useTranslations('cancellation');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -47,7 +49,7 @@ export default function CancellationModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Cancel Booking</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t('title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-6 w-6" />
           </button>
@@ -56,27 +58,27 @@ export default function CancellationModal({
         <div className="mb-6 rounded-lg bg-yellow-50 border border-yellow-200 p-4">
           <div className="flex items-center gap-2 text-yellow-800">
             <AlertTriangle className="h-5 w-5" />
-            <span className="font-medium">Cancellation Policy</span>
+            <span className="font-medium">{t('policyTitle')}</span>
           </div>
           <p className="mt-2 text-sm text-yellow-700">
-            You will receive a {refundPercentage}% refund:
+            {t('refundInfo', { pct: refundPercentage })}
           </p>
           <ul className="mt-2 space-y-1 text-sm text-yellow-700">
-            {gemsRefund > 0 && <li>• {gemsRefund} Gems refunded</li>}
-            {cashRefund > 0 && <li>• ${cashRefund.toFixed(2)} cash refunded</li>}
+            {gemsRefund > 0 && <li>• {t('gemsRefund', { n: gemsRefund })}</li>}
+            {cashRefund > 0 && <li>• {t('cashRefund', { amount: cashRefund.toFixed(2) })}</li>}
           </ul>
         </div>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Reason for cancellation (optional)
+            {t('reasonLabel')}
           </label>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             rows={3}
-            placeholder="Let us know why you're cancelling..."
+            placeholder={t('reasonPlaceholder')}
           />
         </div>
 
@@ -86,14 +88,14 @@ export default function CancellationModal({
             disabled={loading}
             className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
-            Keep Booking
+            {t('keepBooking')}
           </button>
           <button
             onClick={handleConfirm}
             disabled={loading}
             className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
           >
-            {loading ? 'Cancelling...' : 'Confirm Cancellation'}
+            {loading ? t('cancelling') : t('confirmCancel')}
           </button>
         </div>
       </div>

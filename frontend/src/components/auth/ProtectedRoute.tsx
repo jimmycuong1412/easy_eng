@@ -7,8 +7,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { usePathname } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
+import { createClient } from '@/lib/supabase/client';
 import type { UserRole, UserProfile } from '@/utils/roleCheck';
 import { canAccessRoute, getDashboardPath } from '@/utils/roleCheck';
 
@@ -27,12 +28,13 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [_user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     checkAuthorization();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   async function checkAuthorization() {
@@ -153,12 +155,13 @@ export function withProtectedRoute<P extends object>(
 export function useRequireRole(requiredRoles: UserRole[]) {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     checkRole();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function checkRole() {

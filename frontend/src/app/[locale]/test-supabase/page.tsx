@@ -25,7 +25,7 @@ export default function SupabaseTestPage() {
 
       // 2. Test auth endpoint
       const supabase = getSupabaseClient();
-      const { data: session } = await supabase.auth.getSession();
+      const { data: _session } = await supabase.auth.getSession();
       setTestResults((prev) => ({
         ...prev,
         authCheck: true,

@@ -1,0 +1,65 @@
+URL: http://localhost:3000/en/dashboard/teachers
+Title: EasyEng - Learn English with Fun
+
+BODY TEXT:
+Skip to main content
+🍪
+EasyEng
+SU
+
+Student User
+
+Student
+
+🍪
+0
+🏠
+Home
+👨‍🏫
+Find Teachers
+📅
+Schedule
+🎮
+Avatar
+🎯
+Progress
+📹
+Recordings
+⚙️
+Settings
+🚪
+Log out
+←
+Home
+🔍
+🔔
+Find Teachers
+
+0 matching teachers
+
+🔍
+All
+Conversation
+Business English
+IELTS
+TOEIC
+Kids English
+Academic Writing
+Pronunciation
+Price:
+All
+Under 100k
+100k - 200k
+200k - 300k
+Over 300k
+Sort by:
+Most popular
+Highest rated
+Lowest price
+Highest price
+Online only
+
+No matching teachers found
+
+Clear filters
+🐛

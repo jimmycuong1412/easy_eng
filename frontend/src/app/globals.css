@@ -14,7 +14,8 @@
   --accent-primary: #3b82f6;
   --accent-secondary: #06b6d4;
   --accent-gold: #ffd700;
-  --accent-cookie: #f97316;
+  --accent-gem: #f97316;
+  --accent-cookie: #f97316; /* legacy alias for accent-gem */
 
   /* Semantic Colors */
   --color-success: #10b981;
@@ -145,8 +146,12 @@
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
   }
 
-  .glow-cookie {
+  .glow-gem {
     box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+  }
+
+  .glow-cookie {
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.4); /* legacy alias */
   }
 
   /* Hide scrollbar but keep functionality */
@@ -237,10 +242,16 @@
     image-rendering: crisp-edges;
   }
 
-  /* Cookie counter badge */
+  /* Gem counter badge */
+  .gem-badge {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-full;
+    @apply bg-accent-gem/20 text-accent-gem font-medium text-sm;
+  }
+
+  /* Cookie counter badge (legacy alias) */
   .cookie-badge {
     @apply inline-flex items-center gap-1 px-2 py-1 rounded-full;
-    @apply bg-accent-cookie/20 text-accent-cookie font-medium text-sm;
+    @apply bg-accent-gem/20 text-accent-gem font-medium text-sm;
   }
 
   /* XP progress bar */

@@ -20,6 +20,7 @@ export default function BookingTrendsChart({ startDate, endDate }: any) {
 
   useEffect(() => {
     fetchBookingAnalytics();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
   const fetchBookingAnalytics = async () => {
@@ -105,8 +106,8 @@ export default function BookingTrendsChart({ startDate, endDate }: any) {
       </div>
 
       {/* Booking Trends Chart */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h3 className="mb-4 text-lg font-semibold text-text-primary">
           Daily Booking Trends
         </h3>
 
@@ -119,7 +120,7 @@ export default function BookingTrendsChart({ startDate, endDate }: any) {
 
             return (
               <div key={index} className="flex items-center gap-2">
-                <span className="w-24 text-xs text-gray-500 dark:text-gray-400">
+                <span className="w-24 text-xs text-text-muted">
                   {new Date(day.date).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -140,7 +141,7 @@ export default function BookingTrendsChart({ startDate, endDate }: any) {
                     </span>
                   </div>
                 </div>
-                <span className="w-16 text-right text-xs text-gray-600 dark:text-gray-400">
+                <span className="w-16 text-right text-xs text-text-secondary">
                   ${day.total_revenue?.toFixed(0) || 0}
                 </span>
               </div>
@@ -150,8 +151,8 @@ export default function BookingTrendsChart({ startDate, endDate }: any) {
       </div>
 
       {/* Top Classes */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h3 className="mb-4 text-lg font-semibold text-text-primary">
           Top Performing Classes
         </h3>
 
@@ -159,19 +160,19 @@ export default function BookingTrendsChart({ startDate, endDate }: any) {
           {data?.class_performance?.slice(0, 10).map((cls: any, index: number) => (
             <div
               key={index}
-              className="flex items-center justify-between border-b border-gray-100 pb-2 dark:border-gray-700"
+              className="flex items-center justify-between border-b border-border-default pb-2"
             >
               <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white">{cls.title}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="font-medium text-text-primary">{cls.title}</p>
+                <p className="text-sm text-text-muted">
                   {cls.topic} • {cls.level} • {cls.teacher_name}
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-gray-900 dark:text-white">
+                <p className="font-semibold text-text-primary">
                   ${cls.total_revenue?.toFixed(0) || 0}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-text-muted">
                   {cls.total_bookings} bookings • {cls.fill_rate_pct?.toFixed(0) || 0}% full
                 </p>
               </div>
@@ -192,13 +193,13 @@ function StatCard({ icon, label, value, subtitle, trend, color }: any) {
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <div className="rounded-lg border border-border-default bg-bg-surface p-4">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-          <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
+          <p className="text-sm text-text-muted">{label}</p>
+          <p className="mt-1 text-2xl font-semibold text-text-primary">{value}</p>
           {subtitle && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
+            <p className="mt-1 text-xs text-text-muted">{subtitle}</p>
           )}
           {trend !== undefined && (
             <p className={`mt-1 text-sm ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>

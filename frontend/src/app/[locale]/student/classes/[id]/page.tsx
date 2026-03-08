@@ -1,10 +1,9 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { Calendar, Clock, User, Users, Gem, ArrowLeft, BookOpen } from 'lucide-react';
+import { Calendar, Clock, Users, Gem, ArrowLeft, BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { GemDiscountSlider } from '@/components/booking/GemDiscountSlider';
-import { BookingSummary } from '@/components/booking/BookingSummary';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Class Details | Easy English',
@@ -31,35 +30,43 @@ interface ClassDetailPageProps {
 export default async function ClassDetailPage({ params }: ClassDetailPageProps) {
   const { id } = params;
 
-  // TODO: Fetch class details from API
-  // const classData = await fetch(`/api/classes/${id}`).then(res => res.json());
+  const supabase = await createClient();
+  const { data: rawClass, error } = await supabase
+    .from('classes')
+    .select('*, profiles!classes_teacher_id_profiles_fkey(id, full_name, avatar_url, bio, role)')
+    .eq('id', id)
+    .single();
 
-  // Mock data for now
+  const cls = rawClass as Record<string, unknown> | null;
+  const teacher = cls?.profiles as Record<string, unknown> | null;
+
   const classData = {
     id,
-    title: 'English Conversation Practice',
-    description:
-      'Improve your English speaking skills through engaging conversations. This class focuses on real-world scenarios, pronunciation, and building confidence in speaking English naturally.',
-    long_description:
-      'In this interactive class, you will practice speaking English in various real-life situations. We will cover topics such as introducing yourself, making phone calls, ordering at restaurants, and discussing current events. You will receive personalized feedback on pronunciation, grammar, and vocabulary usage.',
+    title: (cls?.title as string) || 'Class',
+    description: (cls?.description as string) || '',
+    long_description: (cls?.description as string) || '',
     teacher: {
-      id: 'teacher-1',
-      name: 'Teacher Sarah',
-      avatar: '/images/teachers/sarah.jpg',
-      bio: '10+ years teaching experience, TESOL certified',
-      rating: 4.9,
-      total_classes: 1250,
+      id: (teacher?.id as string) || '',
+      name: (teacher?.full_name as string) || 'Teacher',
+      avatar: (teacher?.avatar_url as string) || '',
+      bio: (teacher?.bio as string) || '',
+      rating: 0,
+      total_classes: 0,
     },
-    level: 'Beginner',
-    duration: 25,
-    price: 20,
-    capacity: 5,
-    enrolled: 3,
-    scheduled_at: new Date(Date.now() + 2 * 60 * 60 * 1000),
-    image_url: '/images/conversation.jpg',
-    topics: ['Daily Conversations', 'Pronunciation', 'Vocabulary Building', 'Confidence'],
-    requirements: ['Basic English knowledge', 'Microphone and webcam', 'Quiet environment'],
+    level: (cls?.level as string) || 'Beginner',
+    duration: (cls?.duration_minutes as number) || 25,
+    price: (cls?.price as number) || 0,
+    capacity: (cls?.max_students as number) || 5,
+    enrolled: (cls?.current_enrollments as number) || 0,
+    scheduled_at: new Date((cls?.start_time as string) || Date.now()),
+    image_url: '',
+    topics: ((cls?.tags as string[]) || []),
+    requirements: [] as string[],
   };
+
+  if (error) {
+    console.error('Error fetching class:', error);
+  }
 
   const availableSpots = classData.capacity - classData.enrolled;
   const isAvailable = availableSpots > 0;
@@ -233,7 +240,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
                   </span>
                 </div>
                 <p className="text-xs text-gray-400">
-                  Save up to 50% by using your Gems (1 Gem = $0.50 off)
+                  Save up to 50% by using your Gems (100 Gems = $1.00 off)
                 </p>
               </div>
 

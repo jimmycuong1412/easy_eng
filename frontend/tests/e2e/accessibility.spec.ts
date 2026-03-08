@@ -18,8 +18,13 @@ const pagesToTest = [
   { url: '/auth/register', name: 'Registration Page' },
   { url: '/student/dashboard', name: 'Student Dashboard', requiresAuth: true },
   { url: '/teacher/dashboard', name: 'Teacher Dashboard', requiresAuth: true, role: 'teacher' },
+  { url: '/parent/dashboard', name: 'Parent Dashboard', requiresAuth: true, role: 'parent' },
   { url: '/admin/dashboard', name: 'Admin Dashboard', requiresAuth: true, role: 'admin' },
   { url: '/student/classes', name: 'Class Catalog' },
+  { url: '/teacher/classes', name: 'Teacher Classes', requiresAuth: true, role: 'teacher' },
+  { url: '/teacher/activities', name: 'Activity List', requiresAuth: true, role: 'teacher' },
+  { url: '/student/gems/shop', name: 'Gem Shop', requiresAuth: true },
+  { url: '/student/gems/history', name: 'Gem History', requiresAuth: true },
 ];
 
 test.describe('WCAG 2.1 Level AA Compliance', () => {
@@ -148,6 +153,42 @@ test.describe('WCAG 2.1 Level AA Compliance', () => {
     );
 
     expect(ariaViolations).toHaveLength(0);
+  });
+
+  test('Focus indicators are visible', async ({ page }) => {
+    await page.goto('/');
+
+    // Tab to first focusable element
+    await page.keyboard.press('Tab');
+
+    // Check if focus indicator is visible
+    const hasFocusIndicator = await page.evaluate(() => {
+      const active = document.activeElement;
+      if (!active) return false;
+
+      const styles = window.getComputedStyle(active);
+      const outline = styles.outline;
+      const boxShadow = styles.boxShadow;
+
+      return outline !== 'none' || boxShadow !== 'none';
+    });
+
+    expect(hasFocusIndicator).toBe(true);
+  });
+
+  test('Skip to main content link exists', async ({ page }) => {
+    await page.goto('/');
+
+    const skipLink = await page.locator('a[href="#main"], a[href="#main-content"]').first();
+    expect(await skipLink.count()).toBeGreaterThan(0);
+  });
+
+  test('Live regions for dynamic content', async ({ page }) => {
+    await page.goto('/student/gems/shop');
+
+    // Check for live regions for announcements
+    const liveRegions = await page.locator('[aria-live], [role="alert"], [role="status"]').count();
+    expect(liveRegions).toBeGreaterThan(0);
   });
 });
 

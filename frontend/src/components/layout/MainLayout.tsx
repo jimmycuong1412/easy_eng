@@ -1,6 +1,6 @@
 /**
  * Main Layout Component
- * 
+ *
  * Base layout with header, navigation, and footer
  */
 
@@ -9,6 +9,7 @@
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 
 import RoleBasedNav from './RoleBasedNav';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,7 +22,9 @@ const authRoutes = ['/auth/login', '/auth/register', '/auth/reset-password'];
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const pathname = usePathname();
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  const t = useTranslations('layout');
+  const isAuthenticated = !!user;
 
   // Check if current route is an auth route
   const isAuthRoute = authRoutes.some((route) => pathname?.includes(route));
@@ -70,16 +73,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
         >
           <div className="container mx-auto px-4 py-6">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-text-subtle">
-              <p>© 2024 Easy English. All rights reserved.</p>
+              <p>{t('footerCopyright', { year: new Date().getFullYear() })}</p>
               <div className="flex gap-6">
                 <a href="/terms" className="hover:text-text-primary transition-colors">
-                  Terms
+                  {t('footerTerms')}
                 </a>
                 <a href="/privacy" className="hover:text-text-primary transition-colors">
-                  Privacy
+                  {t('footerPrivacy')}
                 </a>
                 <a href="/help" className="hover:text-text-primary transition-colors">
-                  Help
+                  {t('footerHelp')}
                 </a>
               </div>
             </div>

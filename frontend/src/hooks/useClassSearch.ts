@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import type { ClassFilters } from '@/components/booking/ClassFilters';
 
 export interface Class {
@@ -24,6 +25,7 @@ interface UseClassSearchOptions {
  * Class Search Hook
  *
  * Provides class filtering and search functionality:
+ * - Fetches classes from Supabase with teacher profile joins
  * - Client-side filtering by level, duration, price
  * - Text search across title, description, teacher name
  * - Sorts by relevance and date
@@ -40,77 +42,55 @@ export function useClassSearch(options: UseClassSearchOptions = {}) {
     priceRange: options.initialFilters?.priceRange || { min: 0, max: 100 },
   });
 
-  // Fetch classes from API
+  // Fetch classes from Supabase
   useEffect(() => {
     async function fetchClasses() {
       try {
         setIsLoading(true);
-        // TODO: Replace with actual API call
-        // const response = await fetch('/api/classes');
-        // const data = await response.json();
-        // setClasses(data.classes);
+        const supabase = createClient();
 
-        // Mock data for now
-        const mockClasses: Class[] = [
-          {
-            id: '1',
-            title: 'English Conversation Practice',
-            description: 'Improve your speaking skills with daily conversations',
-            teacher_id: 'teacher-1',
-            teacher_name: 'Teacher Sarah',
-            level: 'beginner',
-            duration: 25,
-            price: 20,
-            capacity: 5,
-            enrolled: 3,
-            scheduled_at: new Date(Date.now() + 2 * 60 * 60 * 1000),
-            image_url: '/images/conversation.jpg',
-          },
-          {
-            id: '2',
-            title: 'Business English',
-            description: 'Professional communication for the workplace',
-            teacher_id: 'teacher-2',
-            teacher_name: 'Teacher Mike',
-            level: 'intermediate',
-            duration: 50,
-            price: 35,
-            capacity: 4,
-            enrolled: 2,
-            scheduled_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
-            image_url: '/images/business.jpg',
-          },
-          {
-            id: '3',
-            title: 'Advanced Grammar',
-            description: 'Master complex grammar structures',
-            teacher_id: 'teacher-1',
-            teacher_name: 'Teacher Sarah',
-            level: 'advanced',
-            duration: 50,
-            price: 40,
-            capacity: 3,
-            enrolled: 1,
-            scheduled_at: new Date(Date.now() + 48 * 60 * 60 * 1000),
-            image_url: '/images/grammar.jpg',
-          },
-          {
-            id: '4',
-            title: 'IELTS Preparation',
-            description: 'Prepare for the IELTS exam with expert guidance',
-            teacher_id: 'teacher-3',
-            teacher_name: 'Teacher Emma',
-            level: 'intermediate',
-            duration: 75,
-            price: 50,
-            capacity: 6,
-            enrolled: 4,
-            scheduled_at: new Date(Date.now() + 72 * 60 * 60 * 1000),
-            image_url: '/images/ielts.jpg',
-          },
-        ];
+        const { data, error: fetchError } = await supabase
+          .from('classes')
+          .select(`
+            id,
+            title,
+            description,
+            teacher_id,
+            level,
+            price,
+            duration_minutes,
+            max_students,
+            current_enrollments,
+            start_time,
+            materials_url,
+            profiles!classes_teacher_id_profiles_fkey ( full_name, avatar_url )
+          `)
+          .eq('is_active', true)
+          .in('status', ['scheduled', 'draft'])
+          .gte('start_time', new Date().toISOString())
+          .order('start_time', { ascending: true });
 
-        setClasses(mockClasses);
+        if (fetchError) throw fetchError;
+
+        const mapped: Class[] = (data || []).map((row) => {
+          const teacherProfile = row.profiles as unknown as { full_name: string | null; avatar_url: string | null } | null;
+          return {
+            id: row.id,
+            title: row.title,
+            description: row.description || '',
+            teacher_id: row.teacher_id,
+            teacher_name: teacherProfile?.full_name || 'Unknown Teacher',
+            level: row.level as Class['level'],
+            duration: row.duration_minutes,
+            price: row.price,
+            capacity: row.max_students,
+            enrolled: row.current_enrollments,
+            scheduled_at: new Date(row.start_time),
+            image_url: teacherProfile?.avatar_url || undefined,
+          };
+        });
+
+        setClasses(mapped);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to fetch classes'));

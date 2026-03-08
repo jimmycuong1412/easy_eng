@@ -6,20 +6,36 @@ import { Globe } from 'lucide-react';
 
 import { locales, localeNames, type Locale } from '@/i18n/config';
 import { Button } from '@/components/ui/button';
+import { updateUserPreferences } from '@/app/[locale]/settings/preferences/actions';
 
+const localeFlags: Record<Locale, string> = {
+  vi: '🇻🇳',
+  en: '🇺🇸',
+};
+
+/**
+ * Simple toggle button — switches between the two available locales.
+ * When the user is authenticated, also persists the choice to their profile.
+ */
 export function LanguageSwitcher() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
 
-  const switchLocale = (newLocale: Locale) => {
-    // Remove the current locale prefix from pathname
+  const switchLocale = async (newLocale: Locale) => {
+    // Persist to DB silently (best-effort, don't block navigation)
+    updateUserPreferences({
+      locale: newLocale,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh',
+    }).catch(() => {
+      // Ignore errors — user may not be authenticated (public pages)
+    });
+
+    // Navigate to the new locale prefix
     const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/';
-    // Navigate to the new locale
     router.push(`/${newLocale}${pathWithoutLocale}`);
   };
 
-  // Get the other locale (for simple toggle)
   const otherLocale = locales.find((l) => l !== locale) as Locale;
 
   return (
@@ -28,19 +44,31 @@ export function LanguageSwitcher() {
       size="sm"
       onClick={() => switchLocale(otherLocale)}
       className="flex items-center gap-2 text-slate-400 hover:text-white"
+      title={`Switch to ${localeNames[otherLocale]}`}
     >
       <Globe className="w-4 h-4" />
-      <span>{localeNames[otherLocale]}</span>
+      <span className="hidden sm:inline">{localeNames[otherLocale]}</span>
+      <span className="sm:hidden">{localeFlags[otherLocale]}</span>
     </Button>
   );
 }
 
+/**
+ * Dropdown selector — shows all available locales.
+ * When the user is authenticated, also persists the choice to their profile.
+ */
 export function LanguageDropdown() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
 
-  const switchLocale = (newLocale: Locale) => {
+  const switchLocale = async (newLocale: Locale) => {
+    // Persist to DB silently (best-effort)
+    updateUserPreferences({
+      locale: newLocale,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh',
+    }).catch(() => {});
+
     const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/';
     router.push(`/${newLocale}${pathWithoutLocale}`);
   };
@@ -52,10 +80,11 @@ export function LanguageDropdown() {
         value={locale}
         onChange={(e) => switchLocale(e.target.value as Locale)}
         className="bg-transparent text-slate-300 text-sm border border-white/10 rounded-lg px-2 py-1 focus:outline-none focus:border-[#3B82F6]"
+        aria-label="Select language"
       >
         {locales.map((loc) => (
           <option key={loc} value={loc} className="bg-[#1E3A5F]">
-            {localeNames[loc]}
+            {localeFlags[loc]} {localeNames[loc]}
           </option>
         ))}
       </select>

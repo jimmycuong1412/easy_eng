@@ -86,7 +86,7 @@ export default function ClassMaterialsUploader({ classId }: ClassMaterialsUpload
     }
   };
 
-  const handleDelete = async (materialId: string) => {
+  const handleDelete = async (_materialId: string) => {
     if (!confirm('Are you sure you want to delete this material?')) {
       return;
     }

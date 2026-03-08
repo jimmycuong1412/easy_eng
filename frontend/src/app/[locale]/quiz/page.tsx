@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -8,15 +9,14 @@ import {
   Clock,
   Trophy,
   Star,
-  Filter,
   Search,
-  ChevronRight,
   Zap,
   CheckCircle,
-  Lock,
   Play,
+  Loader2,
 } from 'lucide-react';
 
+import { GemImage } from '@/components/common/GemImage';
 import { formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getQuizzes } from '@/lib/queries';
+import { useTranslations } from 'next-intl';
 
 // Animation variants
 const containerVariants = {
@@ -39,120 +41,152 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock quizzes data
-const mockQuizzes = {
-  recommended: [
-    {
-      id: 'quiz-1',
-      title: 'Business Email Writing',
-      description: 'Master professional email communication',
-      category: 'Business English',
-      difficulty: 'medium',
-      questions: 10,
-      timeLimit: 10,
-      xpReward: 50,
-      cookiesReward: 5,
-      completedCount: 1250,
-      avgScore: 78,
-      isNew: true,
-    },
-    {
-      id: 'quiz-2',
-      title: 'Meeting Vocabulary',
-      description: 'Essential words for business meetings',
-      category: 'Business English',
-      difficulty: 'easy',
-      questions: 15,
-      timeLimit: 12,
-      xpReward: 60,
-      cookiesReward: 6,
-      completedCount: 980,
-      avgScore: 82,
-    },
-    {
-      id: 'quiz-3',
-      title: 'IELTS Speaking Part 1',
-      description: 'Practice common Part 1 topics',
-      category: 'IELTS',
-      difficulty: 'medium',
-      questions: 12,
-      timeLimit: 15,
-      xpReward: 70,
-      cookiesReward: 7,
-      completedCount: 2100,
-      avgScore: 75,
-    },
-  ],
-  byCategory: {
-    'Business English': [
-      { id: 'quiz-1', title: 'Business Email Writing', difficulty: 'medium', questions: 10, completed: false },
-      { id: 'quiz-2', title: 'Meeting Vocabulary', difficulty: 'easy', questions: 15, completed: true, score: 85 },
-      { id: 'quiz-4', title: 'Negotiation Skills', difficulty: 'hard', questions: 20, completed: false },
-      { id: 'quiz-5', title: 'Presentation Language', difficulty: 'medium', questions: 12, completed: true, score: 72 },
-    ],
-    'IELTS': [
-      { id: 'quiz-3', title: 'Speaking Part 1', difficulty: 'medium', questions: 12, completed: false },
-      { id: 'quiz-6', title: 'Speaking Part 2', difficulty: 'hard', questions: 10, completed: false },
-      { id: 'quiz-7', title: 'Listening Section 1', difficulty: 'easy', questions: 10, completed: true, score: 90 },
-      { id: 'quiz-8', title: 'Reading Passage Types', difficulty: 'medium', questions: 15, completed: false },
-    ],
-    'Grammar': [
-      { id: 'quiz-9', title: 'Conditionals', difficulty: 'medium', questions: 15, completed: true, score: 80 },
-      { id: 'quiz-10', title: 'Tenses Review', difficulty: 'easy', questions: 20, completed: true, score: 95 },
-      { id: 'quiz-11', title: 'Passive Voice', difficulty: 'medium', questions: 12, completed: false },
-      { id: 'quiz-12', title: 'Reported Speech', difficulty: 'hard', questions: 15, completed: false },
-    ],
-    'Vocabulary': [
-      { id: 'quiz-13', title: 'Academic Words', difficulty: 'hard', questions: 25, completed: false },
-      { id: 'quiz-14', title: 'Phrasal Verbs', difficulty: 'medium', questions: 20, completed: false },
-      { id: 'quiz-15', title: 'Idioms & Expressions', difficulty: 'hard', questions: 15, completed: false },
-    ],
-  },
-  completed: [
-    { id: 'quiz-2', title: 'Meeting Vocabulary', category: 'Business English', score: 85, completedAt: '2026-01-20', xpEarned: 60 },
-    { id: 'quiz-5', title: 'Presentation Language', category: 'Business English', score: 72, completedAt: '2026-01-18', xpEarned: 50 },
-    { id: 'quiz-7', title: 'Listening Section 1', category: 'IELTS', score: 90, completedAt: '2026-01-15', xpEarned: 70 },
-    { id: 'quiz-9', title: 'Conditionals', category: 'Grammar', score: 80, completedAt: '2026-01-12', xpEarned: 55 },
-    { id: 'quiz-10', title: 'Tenses Review', category: 'Grammar', score: 95, completedAt: '2026-01-10', xpEarned: 65 },
-  ],
-};
+interface RecommendedQuiz {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  questions: number;
+  timeLimit: number;
+  xpReward: number;
+  gemsReward: number;
+  completedCount: number;
+  avgScore: number;
+  isNew?: boolean;
+}
 
-// Stats
-const stats = {
-  totalCompleted: 5,
-  totalQuizzes: 15,
-  averageScore: 84,
-  totalXPEarned: 300,
-  currentStreak: 3,
-};
+interface CategoryQuiz {
+  id: string;
+  title: string;
+  difficulty: string;
+  questions: number;
+  completed: boolean;
+  score?: number;
+}
 
-function getDifficultyBadge(difficulty: string) {
+interface CompletedQuiz {
+  id: string;
+  title: string;
+  category: string;
+  score: number;
+  completedAt: string;
+  xpEarned: number;
+}
+
+interface QuizzesData {
+  recommended: RecommendedQuiz[];
+  byCategory: Record<string, CategoryQuiz[]>;
+  completed: CompletedQuiz[];
+}
+
+interface QuizStats {
+  totalCompleted: number;
+  totalQuizzes: number;
+  averageScore: number;
+  totalXPEarned: number;
+  currentStreak: number;
+}
+
+function DifficultyBadge({ difficulty, t }: { difficulty: string; t: (k: string) => string }) {
   switch (difficulty) {
     case 'easy':
-      return <Badge className="bg-emerald-500/20 text-emerald-400 border-0">Dễ</Badge>;
+      return <Badge className="bg-emerald-500/20 text-emerald-400 border-0">{t('difficulty.easy')}</Badge>;
     case 'medium':
-      return <Badge className="bg-amber-500/20 text-amber-400 border-0">Trung bình</Badge>;
+      return <Badge className="bg-amber-500/20 text-amber-400 border-0">{t('difficulty.medium')}</Badge>;
     case 'hard':
-      return <Badge className="bg-red-500/20 text-red-400 border-0">Khó</Badge>;
+      return <Badge className="bg-red-500/20 text-red-400 border-0">{t('difficulty.hard')}</Badge>;
     default:
       return null;
   }
 }
 
 export default function QuizListPage() {
+  const t = useTranslations('quizList');
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [quizzes, setQuizzes] = useState<QuizzesData>({ recommended: [], byCategory: {}, completed: [] });
+  const [stats, setStats] = useState<QuizStats>({ totalCompleted: 0, totalQuizzes: 0, averageScore: 0, totalXPEarned: 0, currentStreak: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        setLoading(true);
+        const data = await getQuizzes() as Record<string, unknown>[] | null;
+        const allQuizzes = data || [];
+
+        // Map to recommended format
+        const recommended: RecommendedQuiz[] = allQuizzes.slice(0, 6).map((q) => {
+          const questionCount = q.quiz_questions as { count: number }[] | null;
+          const numQuestions = questionCount?.[0]?.count || 0;
+          return {
+            id: q.id as string,
+            title: (q.title as string) || 'Untitled Quiz',
+            description: (q.description as string) || '',
+            category: (q.category as string) || 'General',
+            difficulty: (q.difficulty as string) || 'medium',
+            questions: numQuestions,
+            timeLimit: (q.time_limit_minutes as number) || 10,
+            xpReward: (q.xp_reward as number) || 50,
+            gemsReward: (q.gems_reward as number) || 5,
+            completedCount: 0,
+            avgScore: 0,
+            isNew: false,
+          };
+        });
+
+        // Group by category
+        const byCategory: Record<string, CategoryQuiz[]> = {};
+        allQuizzes.forEach((q) => {
+          const category = (q.category as string) || 'General';
+          if (!byCategory[category]) byCategory[category] = [];
+          const questionCount = q.quiz_questions as { count: number }[] | null;
+          byCategory[category].push({
+            id: q.id as string,
+            title: (q.title as string) || 'Untitled',
+            difficulty: (q.difficulty as string) || 'medium',
+            questions: questionCount?.[0]?.count || 0,
+            completed: false,
+          });
+        });
+
+        setQuizzes({ recommended, byCategory, completed: [] });
+        setStats({
+          totalCompleted: 0,
+          totalQuizzes: allQuizzes.length,
+          averageScore: 0,
+          totalXPEarned: 0,
+          currentStreak: 0,
+        });
+      } catch (err) {
+        console.error('Error fetching quizzes:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuizzes();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="py-6">
+      <div className="max-w-5xl mx-auto px-4">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-white mb-2">Bài kiểm tra 📝</h1>
-          <p className="text-slate-400">Ôn tập kiến thức và kiếm XP với các bài quiz</p>
+          <h1 className="text-3xl font-bold text-white mb-2">{t('title')}</h1>
+          <p className="text-slate-400">{t('subtitle')}</p>
         </motion.div>
 
         {/* Stats */}
@@ -168,33 +202,33 @@ export default function QuizListPage() {
               <p className="text-xl font-bold text-white">
                 {stats.totalCompleted}/{stats.totalQuizzes}
               </p>
-              <p className="text-xs text-slate-400">Hoàn thành</p>
+              <p className="text-xs text-slate-400">{t('stats.completed')}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <Trophy className="w-5 h-5 text-amber-400 mx-auto mb-2" />
               <p className="text-xl font-bold text-white">{stats.averageScore}%</p>
-              <p className="text-xs text-slate-400">Điểm TB</p>
+              <p className="text-xs text-slate-400">{t('stats.avgScore')}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <Zap className="w-5 h-5 text-emerald-400 mx-auto mb-2" />
               <p className="text-xl font-bold text-emerald-400">{stats.totalXPEarned}</p>
-              <p className="text-xs text-slate-400">XP kiếm được</p>
+              <p className="text-xs text-slate-400">{t('stats.xpEarned')}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <Star className="w-5 h-5 text-purple-400 mx-auto mb-2" />
               <p className="text-xl font-bold text-white">{stats.currentStreak}</p>
-              <p className="text-xs text-slate-400">Ngày streak</p>
+              <p className="text-xs text-slate-400">{t('stats.streak')}</p>
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-[#3B82F6]/20 to-purple-500/20 border-[#3B82F6]/30 md:col-span-1 col-span-2">
             <CardContent className="p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">Tiến độ</p>
+              <p className="text-xs text-slate-400 mb-1">{t('stats.progress')}</p>
               <Progress value={(stats.totalCompleted / stats.totalQuizzes) * 100} className="h-2 bg-white/10 mb-2" />
               <p className="text-sm text-white">{Math.round((stats.totalCompleted / stats.totalQuizzes) * 100)}%</p>
             </CardContent>
@@ -211,7 +245,7 @@ export default function QuizListPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
-              placeholder="Tìm kiếm bài quiz..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
@@ -223,13 +257,13 @@ export default function QuizListPage() {
         <Tabs defaultValue="recommended" className="space-y-6">
           <TabsList className="bg-white/5 border border-white/10">
             <TabsTrigger value="recommended" className="data-[state=active]:bg-[#3B82F6]">
-              Đề xuất
+              {t('tabs.recommended')}
             </TabsTrigger>
             <TabsTrigger value="categories" className="data-[state=active]:bg-[#3B82F6]">
-              Theo chủ đề
+              {t('tabs.categories')}
             </TabsTrigger>
             <TabsTrigger value="completed" className="data-[state=active]:bg-[#3B82F6]">
-              Đã làm
+              {t('tabs.completed')}
             </TabsTrigger>
           </TabsList>
 
@@ -241,7 +275,7 @@ export default function QuizListPage() {
               animate="visible"
               className="space-y-4"
             >
-              {mockQuizzes.recommended.map((quiz) => (
+              {quizzes.recommended.map((quiz) => (
                 <motion.div key={quiz.id} variants={itemVariants}>
                   <Card className="bg-white/5 border-white/10 hover:border-[#3B82F6]/50 transition-colors">
                     <CardContent className="p-5">
@@ -251,7 +285,7 @@ export default function QuizListPage() {
                             <h3 className="font-semibold text-white">{quiz.title}</h3>
                             {quiz.isNew && (
                               <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-xs">
-                                Mới
+                                {t('new')}
                               </Badge>
                             )}
                           </div>
@@ -260,14 +294,14 @@ export default function QuizListPage() {
                             <Badge variant="outline" className="border-slate-600 text-slate-400">
                               {quiz.category}
                             </Badge>
-                            {getDifficultyBadge(quiz.difficulty)}
+                            {<DifficultyBadge difficulty={quiz.difficulty} t={t} />}
                             <span className="text-slate-500 flex items-center gap-1">
                               <BookOpen className="w-4 h-4" />
-                              {quiz.questions} câu
+                              {t('questions', { count: quiz.questions })}
                             </span>
                             <span className="text-slate-500 flex items-center gap-1">
                               <Clock className="w-4 h-4" />
-                              {quiz.timeLimit} phút
+                              {quiz.timeLimit} {t('minutes')}
                             </span>
                           </div>
                         </div>
@@ -275,7 +309,7 @@ export default function QuizListPage() {
                         <div className="flex items-center gap-4">
                           <div className="text-center hidden md:block">
                             <p className="text-lg font-bold text-white">{quiz.avgScore}%</p>
-                            <p className="text-xs text-slate-500">Điểm TB</p>
+                            <p className="text-xs text-slate-500">{t('avgScore')}</p>
                           </div>
                           <div className="text-right">
                             <div className="flex items-center gap-2 mb-1">
@@ -283,17 +317,17 @@ export default function QuizListPage() {
                                 +{quiz.xpReward} XP
                               </Badge>
                               <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
-                                +{quiz.cookiesReward} 🍪
+                                +{quiz.gemsReward} <GemImage size={14} className="inline-block align-middle" />
                               </Badge>
                             </div>
                             <p className="text-xs text-slate-500">
-                              {formatNumber(quiz.completedCount)} lượt làm
+                              {formatNumber(quiz.completedCount)} {t('attempts')}
                             </p>
                           </div>
                           <Button asChild className="bg-[#3B82F6] hover:bg-[#3B82F6]/90">
                             <Link href={`/quiz/${quiz.id}`}>
                               <Play className="w-4 h-4 mr-2" />
-                              Làm bài
+                              {t('startBtn')}
                             </Link>
                           </Button>
                         </div>
@@ -313,7 +347,7 @@ export default function QuizListPage() {
               animate="visible"
               className="space-y-6"
             >
-              {Object.entries(mockQuizzes.byCategory).map(([category, quizzes]) => (
+              {Object.entries(quizzes.byCategory).map(([category, quizzes]) => (
                 <motion.div key={category} variants={itemVariants}>
                   <Card className="bg-white/5 border-white/10">
                     <CardHeader>
@@ -340,12 +374,12 @@ export default function QuizListPage() {
                             {quiz.completed ? (
                               <CheckCircle className="w-5 h-5 text-emerald-400" />
                             ) : (
-                              getDifficultyBadge(quiz.difficulty)
+                              <DifficultyBadge difficulty={quiz.difficulty} t={t} />
                             )}
                           </div>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500">{quiz.questions} câu hỏi</span>
-                            {quiz.completed && quiz.score && (
+                            <span className="text-slate-500">{t('questions', { count: quiz.questions })}</span>
+                            {quiz.completed && 'score' in quiz && quiz.score && (
                               <span className="text-emerald-400 font-semibold">{quiz.score}%</span>
                             )}
                           </div>
@@ -366,7 +400,7 @@ export default function QuizListPage() {
               animate="visible"
               className="space-y-3"
             >
-              {mockQuizzes.completed.map((quiz) => (
+              {quizzes.completed.map((quiz) => (
                 <motion.div key={quiz.id} variants={itemVariants}>
                   <Card className="bg-white/5 border-white/10">
                     <CardContent className="p-4 flex items-center gap-4">
@@ -381,13 +415,13 @@ export default function QuizListPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-lg font-bold text-white">{quiz.score}%</p>
-                        <p className="text-xs text-slate-500">Điểm</p>
+                        <p className="text-xs text-slate-500">{t('score')}</p>
                       </div>
                       <Badge className="bg-amber-500/20 text-amber-400 border-0">
                         +{quiz.xpEarned} XP
                       </Badge>
                       <Button variant="outline" size="sm" asChild className="border-white/20 text-white">
-                        <Link href={`/quiz/${quiz.id}`}>Làm lại</Link>
+                        <Link href={`/quiz/${quiz.id}`}>{t('retryBtn')}</Link>
                       </Button>
                     </CardContent>
                   </Card>

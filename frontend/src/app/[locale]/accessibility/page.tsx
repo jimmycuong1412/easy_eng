@@ -175,7 +175,7 @@ export default function AccessibilityTestPage() {
               instructions.
             </p>
 
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-4" action="#">
               {/* Text Input */}
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-text-primary mb-1">

@@ -20,7 +20,8 @@ const config: Config = {
         'accent-primary': '#3B82F6',
         'accent-secondary': '#06B6D4',
         'accent-gold': '#FFD700',
-        'accent-cookie': '#F97316',
+        'accent-gem': '#F97316',
+        'accent-cookie': '#F97316', // legacy alias
 
         // Semantic colors
         success: '#10B981',

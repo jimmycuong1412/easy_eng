@@ -21,14 +21,14 @@ interface FailureDetails {
     final_price: number;
     class: {
       title: string;
-      scheduled_at: string;
+      start_time: string;
       teacher: {
-        display_name: string;
+        full_name: string;
       };
     };
   };
   payment?: {
-    transaction_id: string;
+    payment_provider_id: string;
     payment_method: string;
     metadata: {
       failure_reason?: string;
@@ -43,7 +43,7 @@ export default function PaymentFailedPage() {
   const reason = searchParams.get('reason');
 
   const [details, setDetails] = useState<FailureDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   const supabase = createClient();
 
@@ -54,6 +54,7 @@ export default function PaymentFailedPage() {
     }
 
     loadFailureDetails();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
   const loadFailureDetails = async () => {
@@ -66,9 +67,9 @@ export default function PaymentFailedPage() {
           final_price,
           class:classes (
             title,
-            scheduled_at,
-            teacher:profiles!teacher_id (
-              display_name
+            start_time,
+            teacher:profiles!classes_teacher_id_profiles_fkey (
+              full_name
             )
           )
         `
@@ -81,12 +82,12 @@ export default function PaymentFailedPage() {
       // Try to get failed payment details
       const { data: payment } = await supabase
         .from('payments')
-        .select('transaction_id, payment_method, metadata')
+        .select('payment_provider_id, payment_method, metadata')
         .eq('booking_id', bookingId)
         .eq('status', 'failed')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       setDetails({
         booking: booking as any,
@@ -158,13 +159,13 @@ export default function PaymentFailedPage() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Teacher</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {details.booking.class.teacher.display_name}
+                {(details.booking.class.teacher as any).full_name || 'Teacher'}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Scheduled</p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {new Date(details.booking.class.scheduled_at).toLocaleString()}
+                {new Date((details.booking.class as any).start_time).toLocaleString()}
               </p>
             </div>
             <div className="border-t border-gray-200 pt-3 dark:border-gray-700">

@@ -1,10 +1,13 @@
+'use client';
+
 /**
  * Teacher Layout
- * 
+ *
  * Layout wrapper for all teacher routes with role enforcement
  */
 
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { BackToDashboard } from '@/components/common';
 
 export default function TeacherLayout({
   children,
@@ -13,8 +16,11 @@ export default function TeacherLayout({
 }) {
   return (
     <ProtectedRoute requiredRoles={['teacher', 'admin']}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {children}
+      <div className="min-h-screen bg-bg-primary">
+        <div className="w-full px-4 py-6">
+          <BackToDashboard />
+          {children}
+        </div>
       </div>
     </ProtectedRoute>
   );

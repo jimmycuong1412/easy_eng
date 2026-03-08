@@ -107,8 +107,14 @@ export function useVideoCall(): UseVideoCallReturn {
           CometChat.RECEIVER_TYPE.USER
         );
 
-        const initiatedCall = await CometChat.initiateCall(call);
-        const sessionId = initiatedCall.getSessionId();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const initiatedCall: any = await CometChat.initiateCall(call);
+        // CometChat SDK may return the session ID via getSessionId() or a plain data property
+        const sessionId: string =
+          typeof initiatedCall?.getSessionId === 'function'
+            ? initiatedCall.getSessionId()
+            : (initiatedCall?.data?.sessionid ?? initiatedCall?.sessionid ?? String(Date.now()));
+
         setCallSession({
           id: sessionId,
           callId: sessionId,
@@ -125,7 +131,12 @@ export function useVideoCall(): UseVideoCallReturn {
           timestamp: new Date(),
         });
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to start call');
+        // CometChat SDK throws plain objects, not Error instances — unwrap gracefully
+        const message =
+          err instanceof Error
+            ? err.message
+            : (err as any)?.message ?? (err as any)?.details ?? 'Failed to start call';
+        const error = new Error(message);
         setError(error);
         logger.logError('useVideoCall startCall', error);
         throw error;
@@ -162,7 +173,8 @@ export function useVideoCall(): UseVideoCallReturn {
         timestamp: new Date(),
       });
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to accept call');
+      const message = err instanceof Error ? err.message : (err as any)?.message ?? 'Failed to accept call';
+      const error = new Error(message);
       setError(error);
       logger.logError('useVideoCall acceptCall', error);
       throw error;
@@ -186,7 +198,8 @@ export function useVideoCall(): UseVideoCallReturn {
       setCallSession(null);
       setIncomingCall(null);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to reject call');
+      const message = err instanceof Error ? err.message : (err as any)?.message ?? 'Failed to reject call';
+      const error = new Error(message);
       setError(error);
       logger.logError('useVideoCall rejectCall', error);
       throw error;

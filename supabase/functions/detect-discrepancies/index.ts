@@ -73,12 +73,12 @@ serve(async (req) => {
 
     const discrepancies: Discrepancy[] = [];
 
-    // 1. Check for bookings without payments (where price_paid > 0)
+    // 1. Check for bookings without payments (where final_price > 0)
     const { data: bookingsWithoutPayments } = await supabaseClient
       .from('bookings')
-      .select('id, price_paid, created_at')
-      .gt('price_paid', 0)
-      .is('status', 'confirmed')
+      .select('id, final_price, created_at')
+      .gt('final_price', 0)
+      .eq('status', 'confirmed')
       .then(async (result) => {
         if (!result.data) return { data: [] };
 
@@ -144,24 +144,24 @@ serve(async (req) => {
     // 3. Check for negative Gem balances
     const { data: negativeBalances } = await supabaseClient
       .from('gem_transactions')
-      .select('student_id')
+      .select('user_id, amount')
       .then(async (result) => {
         if (!result.data) return { data: [] };
 
         const balances: Record<string, number> = {};
         result.data.forEach((tx: any) => {
-          balances[tx.student_id] = (balances[tx.student_id] || 0) + tx.amount;
+          balances[tx.user_id] = (balances[tx.user_id] || 0) + tx.amount;
         });
 
         const negative = [];
-        for (const [studentId, balance] of Object.entries(balances)) {
+        for (const [userId, balance] of Object.entries(balances)) {
           if (balance < 0) {
-            negative.push({ student_id: studentId, balance });
+            negative.push({ user_id: userId, balance });
             discrepancies.push({
               type: 'negative_gem_balance',
               severity: 'critical',
               entity_type: 'student',
-              entity_id: studentId,
+              entity_id: userId,
               description: 'Student has negative Gem balance',
               expected_value: 'Balance >= 0',
               actual_value: balance,
@@ -172,29 +172,29 @@ serve(async (req) => {
         return { data: negative };
       });
 
-    // 4. Check for Gem balances exceeding cap (1000)
+    // 4. Check for Gem balances exceeding cap (10000)
     const { data: exceededCaps } = await supabaseClient
       .from('gem_transactions')
-      .select('student_id')
+      .select('user_id, amount')
       .then(async (result) => {
         if (!result.data) return { data: [] };
 
         const balances: Record<string, number> = {};
         result.data.forEach((tx: any) => {
-          balances[tx.student_id] = (balances[tx.student_id] || 0) + tx.amount;
+          balances[tx.user_id] = (balances[tx.user_id] || 0) + tx.amount;
         });
 
         const exceeded = [];
-        for (const [studentId, balance] of Object.entries(balances)) {
-          if (balance > 1000) {
-            exceeded.push({ student_id: studentId, balance });
+        for (const [userId, balance] of Object.entries(balances)) {
+          if (balance > 10000) {
+            exceeded.push({ user_id: userId, balance });
             discrepancies.push({
               type: 'gem_cap_exceeded',
               severity: 'warning',
               entity_type: 'student',
-              entity_id: studentId,
+              entity_id: userId,
               description: 'Student Gem balance exceeds cap of 1000',
-              expected_value: 'Balance <= 1000',
+              expected_value: 'Balance <= 10000',
               actual_value: balance,
               detected_at: new Date().toISOString(),
             });
@@ -206,7 +206,7 @@ serve(async (req) => {
     // 5. Check for classes with bookings exceeding capacity
     const { data: overcapacityClasses } = await supabaseClient
       .from('classes')
-      .select('id, max_capacity')
+      .select('id, max_students')
       .then(async (result) => {
         if (!result.data) return { data: [] };
 
@@ -218,15 +218,15 @@ serve(async (req) => {
             .eq('class_id', cls.id)
             .in('status', ['confirmed', 'completed']);
 
-          if (count && count > cls.max_capacity) {
-            overcapacity.push({ class_id: cls.id, capacity: cls.max_capacity, bookings: count });
+          if (count && count > cls.max_students) {
+            overcapacity.push({ class_id: cls.id, capacity: cls.max_students, bookings: count });
             discrepancies.push({
               type: 'class_overcapacity',
               severity: 'critical',
               entity_type: 'class',
               entity_id: cls.id,
               description: 'Class has more confirmed bookings than capacity',
-              expected_value: `Bookings <= ${cls.max_capacity}`,
+              expected_value: `Bookings <= ${cls.max_students}`,
               actual_value: count,
               detected_at: new Date().toISOString(),
             });
@@ -238,7 +238,7 @@ serve(async (req) => {
     // 6. Check for duplicate Gem transactions
     const { data: duplicateTransactions } = await supabaseClient
       .from('gem_transactions')
-      .select('student_id, amount, activity_type, created_at')
+      .select('user_id, amount, transaction_type, created_at')
       .then((result) => {
         if (!result.data) return { data: [] };
 
@@ -246,9 +246,9 @@ serve(async (req) => {
         const duplicates = [];
 
         for (const tx of result.data) {
-          // Key based on student, amount, activity, and timestamp (within 1 second)
+          // Key based on user, amount, type, and timestamp (within 1 second)
           const timestamp = Math.floor(new Date(tx.created_at).getTime() / 1000);
-          const key = `${tx.student_id}_${tx.amount}_${tx.activity_type}_${timestamp}`;
+          const key = `${tx.user_id}_${tx.amount}_${tx.transaction_type}_${timestamp}`;
 
           if (seen.has(key)) {
             duplicates.push(tx);
@@ -256,10 +256,10 @@ serve(async (req) => {
               type: 'duplicate_gem_transaction',
               severity: 'warning',
               entity_type: 'gem_transaction',
-              entity_id: tx.student_id,
+              entity_id: tx.user_id,
               description: 'Potential duplicate Gem transaction detected',
               expected_value: 'Unique transactions',
-              actual_value: `Duplicate: ${tx.amount} Gems for ${tx.activity_type}`,
+              actual_value: `Duplicate: ${tx.amount} Gems for ${tx.transaction_type}`,
               detected_at: new Date().toISOString(),
             });
           } else {

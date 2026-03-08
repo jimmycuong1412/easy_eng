@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     template: '%s | EasyEng',
   },
   description:
-    'Modern English learning platform with gamification, career avatars, and live video classes. Book teachers, earn cookies, and level up your language skills!',
+    'Modern English learning platform with gamification, career avatars, and live video classes. Book teachers, earn gems, and level up your language skills!',
   keywords: [
     'learn english',
     'english learning',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     'gamification',
     'vietnam education',
     'english for vietnamese',
-    'cookie rewards',
+    'gem rewards',
   ],
   authors: [{ name: 'EasyEng Team' }],
   creator: 'EasyEng',
@@ -128,14 +128,8 @@ export default async function LocaleLayout({
       className={`${inter.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen bg-bg-primary font-sans antialiased">
+      <body className="min-h-screen bg-bg-primary font-sans antialiased" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
-          {/* Analytics */}
-          <Analytics />
-
-          {/* Offline/Online Indicator */}
-          <OfflineIndicator />
-
           {/* Skip to main content link for accessibility */}
           <a
             href="#main-content"
@@ -144,11 +138,14 @@ export default async function LocaleLayout({
             Skip to main content
           </a>
 
-          {/* Main content area */}
-          <main id="main-content" className="relative">
-            {children}
-          </main>
+          {/* Analytics */}
+          <Analytics />
 
+          {/* Offline/Online Indicator */}
+          <OfflineIndicator />
+
+          {/* Main content area */}
+          {children}
 
           {/* Global Home Button */}
           <GlobalHomeButton />

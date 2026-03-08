@@ -33,15 +33,15 @@ jobs:
           PORT: 3000
 
       - name: Wait for server
-        run: npx wait-on http://localhost:3000 --timeout 60000
+        run: npx wait-on http://localhost:3000/en --timeout 60000
 
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v10
         with:
           urls: |
-            http://localhost:3000
-            http://localhost:3000/student/dashboard
-            http://localhost:3000/student/classes
+            http://localhost:3000/en
+            http://localhost:3000/en/dashboard
+            http://localhost:3000/en/classes
           uploadArtifacts: true
           temporaryPublicStorage: true
           runs: 3

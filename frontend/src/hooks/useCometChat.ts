@@ -51,7 +51,7 @@ export function useCometChat(): UseCometChatReturn {
     initialize();
   }, []);
 
-  const login = useCallback(async (userId: string, authToken?: string) => {
+  const login = useCallback(async (userId: string, authToken?: string, targetUserId?: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -64,6 +64,8 @@ export function useCometChat(): UseCometChatReturn {
           headers: {
             'Content-Type': 'application/json',
           },
+          // Pass targetUserId so the backend pre-registers the remote peer (e.g. teacher)
+          body: JSON.stringify({ targetUserId: targetUserId || null }),
         });
 
         if (!response.ok) {

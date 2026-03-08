@@ -2,11 +2,11 @@
 
 export function StudentRosterWidget() {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-      <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
+    <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+      <h2 className="mb-4 text-xl font-semibold text-text-primary">
         👨‍🎓 Student Roster
       </h2>
-      <div className="text-gray-600 dark:text-gray-400">
+      <div className="text-text-secondary">
         <p>Your enrolled students will appear here.</p>
         <p className="mt-2 text-sm">No students enrolled yet.</p>
       </div>

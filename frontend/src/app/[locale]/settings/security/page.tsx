@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,32 +36,33 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock sessions data
-const activeSessions = [
-  {
-    id: '1',
-    device: 'Chrome on Windows',
-    location: 'Hồ Chí Minh, Việt Nam',
-    lastActive: 'Đang hoạt động',
-    isCurrent: true,
-  },
-  {
-    id: '2',
-    device: 'Safari on iPhone',
-    location: 'Hồ Chí Minh, Việt Nam',
-    lastActive: '2 giờ trước',
-    isCurrent: false,
-  },
-  {
-    id: '3',
-    device: 'Firefox on MacOS',
-    location: 'Hà Nội, Việt Nam',
-    lastActive: '3 ngày trước',
-    isCurrent: false,
-  },
-];
+// Current session - detected from browser
+function getCurrentSession(activeNowLabel: string) {
+  if (typeof window === 'undefined') return [];
+  const ua = navigator.userAgent;
+  let browser = 'Browser';
+  let os = 'Unknown';
+  if (ua.includes('Chrome')) browser = 'Chrome';
+  else if (ua.includes('Firefox')) browser = 'Firefox';
+  else if (ua.includes('Safari')) browser = 'Safari';
+  if (ua.includes('Windows')) os = 'Windows';
+  else if (ua.includes('Mac')) os = 'MacOS';
+  else if (ua.includes('Linux')) os = 'Linux';
+  else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+  else if (ua.includes('Android')) os = 'Android';
+  return [
+    {
+      id: 'current',
+      device: `${browser} on ${os}`,
+      location: '',
+      lastActive: activeNowLabel,
+      isCurrent: true,
+    },
+  ];
+}
 
 export default function SecuritySettingsPage() {
+  const t = useTranslations('security');
   const [isChangingPassword, setIsChangingPassword] = React.useState(false);
   const [passwordSaved, setPasswordSaved] = React.useState(false);
   const [showPasswords, setShowPasswords] = React.useState({
@@ -116,10 +118,10 @@ export default function SecuritySettingsPage() {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Key className="w-5 h-5 text-[#3B82F6]" />
-              Đổi mật khẩu
+              {t('changePassword')}
             </CardTitle>
             <CardDescription className="text-slate-400">
-              Sử dụng mật khẩu mạnh với ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.
+              {t('changePasswordDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -127,7 +129,7 @@ export default function SecuritySettingsPage() {
               {/* Current Password */}
               <div className="space-y-2">
                 <Label htmlFor="current" className="text-slate-300">
-                  Mật khẩu hiện tại
+                  {t('currentPassword')}
                 </Label>
                 <div className="relative">
                   <Input
@@ -137,7 +139,7 @@ export default function SecuritySettingsPage() {
                     value={passwords.current}
                     onChange={handlePasswordChange}
                     className="pr-10 bg-white/5 border-white/10 text-white focus:border-[#3B82F6]"
-                    placeholder="Nhập mật khẩu hiện tại"
+                    placeholder={t('currentPasswordPlaceholder')}
                   />
                   <button
                     type="button"
@@ -156,7 +158,7 @@ export default function SecuritySettingsPage() {
               {/* New Password */}
               <div className="space-y-2">
                 <Label htmlFor="new" className="text-slate-300">
-                  Mật khẩu mới
+                  {t('newPassword')}
                 </Label>
                 <div className="relative">
                   <Input
@@ -166,7 +168,7 @@ export default function SecuritySettingsPage() {
                     value={passwords.new}
                     onChange={handlePasswordChange}
                     className="pr-10 bg-white/5 border-white/10 text-white focus:border-[#3B82F6]"
-                    placeholder="Nhập mật khẩu mới"
+                    placeholder={t('newPasswordPlaceholder')}
                   />
                   <button
                     type="button"
@@ -185,7 +187,7 @@ export default function SecuritySettingsPage() {
               {/* Confirm Password */}
               <div className="space-y-2">
                 <Label htmlFor="confirm" className="text-slate-300">
-                  Xác nhận mật khẩu mới
+                  {t('confirmNewPassword')}
                 </Label>
                 <div className="relative">
                   <Input
@@ -195,7 +197,7 @@ export default function SecuritySettingsPage() {
                     value={passwords.confirm}
                     onChange={handlePasswordChange}
                     className="pr-10 bg-white/5 border-white/10 text-white focus:border-[#3B82F6]"
-                    placeholder="Nhập lại mật khẩu mới"
+                    placeholder={t('confirmPasswordPlaceholder')}
                   />
                   <button
                     type="button"
@@ -220,10 +222,10 @@ export default function SecuritySettingsPage() {
                   {isChangingPassword ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Đang cập nhật...
+                      {t('updating')}
                     </>
                   ) : (
-                    'Cập nhật mật khẩu'
+                    t('updatePassword')
                   )}
                 </Button>
                 {passwordSaved && (
@@ -233,7 +235,7 @@ export default function SecuritySettingsPage() {
                     className="flex items-center gap-2 text-emerald-400"
                   >
                     <Check className="w-4 h-4" />
-                    <span className="text-sm">Đã cập nhật</span>
+                    <span className="text-sm">{t('updated')}</span>
                   </motion.div>
                 )}
               </div>
@@ -248,10 +250,10 @@ export default function SecuritySettingsPage() {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Smartphone className="w-5 h-5 text-emerald-400" />
-              Xác thực hai yếu tố (2FA)
+              {t('twoFactor')}
             </CardTitle>
             <CardDescription className="text-slate-400">
-              Thêm một lớp bảo mật bổ sung cho tài khoản của bạn.
+              {t('twoFactorDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -261,12 +263,12 @@ export default function SecuritySettingsPage() {
                   <Shield className="w-6 h-6 text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-white font-medium">Xác thực hai yếu tố</p>
-                  <p className="text-sm text-slate-400">Chưa kích hoạt</p>
+                  <p className="text-white font-medium">{t('twoFactorStatus')}</p>
+                  <p className="text-sm text-slate-400">{t('notActivated')}</p>
                 </div>
               </div>
               <Button className="bg-emerald-500 hover:bg-emerald-500/90">
-                Kích hoạt
+                {t('activate')}
               </Button>
             </div>
           </CardContent>
@@ -279,14 +281,14 @@ export default function SecuritySettingsPage() {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Monitor className="w-5 h-5 text-purple-400" />
-              Phiên đăng nhập
+              {t('activeSessions')}
             </CardTitle>
             <CardDescription className="text-slate-400">
-              Quản lý các thiết bị đang đăng nhập vào tài khoản của bạn.
+              {t('activeSessionsDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {activeSessions.map((session) => (
+            {getCurrentSession(t('activeNow')).map((session) => (
               <div
                 key={session.id}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-xl"
@@ -300,7 +302,7 @@ export default function SecuritySettingsPage() {
                       <p className="text-white font-medium">{session.device}</p>
                       {session.isCurrent && (
                         <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
-                          Thiết bị này
+                          {t('thisDevice')}
                         </Badge>
                       )}
                     </div>
@@ -316,7 +318,7 @@ export default function SecuritySettingsPage() {
                     className="border-red-500/30 text-red-400 hover:bg-red-500/10"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
-                    Đăng xuất
+                    {t('signOut')}
                   </Button>
                 )}
               </div>
@@ -327,7 +329,7 @@ export default function SecuritySettingsPage() {
               className="w-full mt-4 border-red-500/30 text-red-400 hover:bg-red-500/10"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Đăng xuất tất cả thiết bị khác
+              {t('signOutAll')}
             </Button>
           </CardContent>
         </Card>
@@ -339,13 +341,11 @@ export default function SecuritySettingsPage() {
           <CardHeader>
             <CardTitle className="text-amber-400 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5" />
-              Cảnh báo bảo mật
+              {t('securityAlerts')}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-slate-400 text-sm">
-              Không có cảnh báo bảo mật nào. Tài khoản của bạn an toàn! 🎉
-            </p>
+            <p className="text-slate-400 text-sm">{t('noAlerts')}</p>
           </CardContent>
         </Card>
       </motion.div>

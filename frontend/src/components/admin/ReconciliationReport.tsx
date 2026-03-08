@@ -42,6 +42,7 @@ export default function ReconciliationReport() {
 
   useEffect(() => {
     runReconciliation();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const runReconciliation = async () => {
@@ -156,10 +157,10 @@ export default function ReconciliationReport() {
               <AlertTriangle className="h-8 w-8 text-yellow-600" />
             )}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-2xl font-bold text-text-primary">
                 {totalIssues === 0 ? 'All Systems Healthy' : `${totalIssues} Issues Detected`}
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-text-secondary">
                 Last scanned: {new Date(gemSummary.reconciliation_date || Date.now()).toLocaleString()}
               </p>
             </div>
@@ -168,11 +169,11 @@ export default function ReconciliationReport() {
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
               <p className="text-3xl font-bold text-red-600">{discSummary.critical || 0}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Critical</p>
+              <p className="text-sm text-text-secondary">Critical</p>
             </div>
             <div>
               <p className="text-3xl font-bold text-yellow-600">{discSummary.warnings || 0}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Warnings</p>
+              <p className="text-sm text-text-secondary">Warnings</p>
             </div>
           </div>
         </div>
@@ -180,42 +181,42 @@ export default function ReconciliationReport() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-purple-100 p-2 dark:bg-purple-900/30">
               <Gem className="h-6 w-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Gems</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Total Gems</p>
+              <p className="text-2xl font-bold text-text-primary">
                 {gemSummary.total_gems_in_circulation?.toLocaleString() || 0}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
               <Users className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Students with Gems</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Students with Gems</p>
+              <p className="text-2xl font-bold text-text-primary">
                 {gemSummary.students_with_transactions || 0}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-green-100 p-2 dark:bg-green-900/30">
               <DollarSign className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Avg Balance</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Avg Balance</p>
+              <p className="text-2xl font-bold text-text-primary">
                 {Math.round(gemSummary.avg_balance || 0)} Gems
               </p>
             </div>
@@ -224,14 +225,14 @@ export default function ReconciliationReport() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="border-b border-border-default">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('gems')}
             className={`border-b-2 px-1 py-4 text-sm font-medium ${
               activeTab === 'gems'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400'
+                : 'border-transparent text-text-muted hover:border-border-default hover:text-text-secondary'
             }`}
           >
             Gem Reconciliation
@@ -241,7 +242,7 @@ export default function ReconciliationReport() {
             className={`border-b-2 px-1 py-4 text-sm font-medium ${
               activeTab === 'discrepancies'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400'
+                : 'border-transparent text-text-muted hover:border-border-default hover:text-text-secondary'
             }`}
           >
             Discrepancies ({discSummary.total_discrepancies || 0})
@@ -252,13 +253,13 @@ export default function ReconciliationReport() {
       {/* Tab Content */}
       {activeTab === 'gems' && (
         <div className="space-y-4">
-          <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-            <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Issues Breakdown</h3>
+          <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+            <h3 className="mb-4 font-semibold text-text-primary">Issues Breakdown</h3>
 
             <div className="space-y-3">
               {Object.entries(gemSummary.issues || {}).map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between">
-                  <span className="text-sm capitalize text-gray-700 dark:text-gray-300">
+                  <span className="text-sm capitalize text-text-secondary">
                     {key.replace(/_/g, ' ')}
                   </span>
                   <span
@@ -276,8 +277,8 @@ export default function ReconciliationReport() {
           </div>
 
           {gemReconciliation?.discrepancies?.length > 0 && (
-            <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
+            <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+              <h3 className="mb-4 font-semibold text-text-primary">
                 Student Discrepancies
               </h3>
 
@@ -285,13 +286,13 @@ export default function ReconciliationReport() {
                 {gemReconciliation.discrepancies.slice(0, 10).map((student: any, index: number) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between border-b border-gray-100 pb-2 dark:border-gray-700"
+                    className="flex items-center justify-between border-b border-border-default pb-2"
                   >
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p className="font-medium text-text-primary">
                         {student.student_name}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-text-muted">
                         {student.student_email}
                       </p>
                     </div>
@@ -299,7 +300,7 @@ export default function ReconciliationReport() {
                       <p className="font-semibold text-red-600">
                         Balance: {student.calculated_balance}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-text-muted">
                         {student.transaction_count} transactions
                       </p>
                     </div>
@@ -334,7 +335,7 @@ export default function ReconciliationReport() {
                     {severityIcon(disc.severity)}
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-gray-900 dark:text-white">
+                        <h4 className="font-semibold text-text-primary">
                           {disc.description}
                         </h4>
                         <span className="rounded-full bg-white/50 px-2 py-1 text-xs font-medium uppercase dark:bg-black/20">
@@ -343,19 +344,19 @@ export default function ReconciliationReport() {
                       </div>
                       <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <p className="text-gray-600 dark:text-gray-400">Expected:</p>
-                          <p className="font-medium text-gray-900 dark:text-white">
+                          <p className="text-text-secondary">Expected:</p>
+                          <p className="font-medium text-text-primary">
                             {disc.expected_value}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-600 dark:text-gray-400">Actual:</p>
-                          <p className="font-medium text-gray-900 dark:text-white">
+                          <p className="text-text-secondary">Actual:</p>
+                          <p className="font-medium text-text-primary">
                             {disc.actual_value}
                           </p>
                         </div>
                       </div>
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      <p className="mt-2 text-xs text-text-muted">
                         {disc.entity_type} ID: {disc.entity_id} • Type: {disc.type}
                       </p>
                     </div>

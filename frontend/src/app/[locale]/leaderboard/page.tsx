@@ -6,18 +6,13 @@ import {
   Trophy,
   Medal,
   Crown,
-  Star,
-  TrendingUp,
   Filter,
   ChevronDown,
-  Users,
-  Zap,
-  BookOpen,
-  Flame,
 } from 'lucide-react';
 
 import { formatNumber } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslations } from 'next-intl';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -29,40 +24,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-// Mock leaderboard data
-const mockLeaderboardData = {
-  weekly: [
-    { rank: 1, userId: '1', name: 'Trần Minh Anh', avatar: '', level: 25, xp: 1250, streak: 14, classes: 8, careerAvatar: 'Business Pro' },
-    { rank: 2, userId: '2', name: 'Nguyễn Hải Đăng', avatar: '', level: 22, xp: 1180, streak: 10, classes: 7, careerAvatar: 'Academic Achiever' },
-    { rank: 3, userId: '3', name: 'Lê Thu Hương', avatar: '', level: 20, xp: 1050, streak: 12, classes: 6, careerAvatar: 'Global Citizen' },
-    { rank: 4, userId: '4', name: 'Phạm Quốc Bảo', avatar: '', level: 18, xp: 980, streak: 7, classes: 6, careerAvatar: 'Tech Innovator' },
-    { rank: 5, userId: 'current', name: 'Bạn', avatar: '', level: 15, xp: 850, streak: 7, classes: 5, careerAvatar: 'Business Pro', isCurrentUser: true },
-    { rank: 6, userId: '6', name: 'Võ Ngọc Lan', avatar: '', level: 14, xp: 780, streak: 5, classes: 4, careerAvatar: 'Healthcare Hero' },
-    { rank: 7, userId: '7', name: 'Hoàng Minh Tuấn', avatar: '', level: 13, xp: 720, streak: 3, classes: 4, careerAvatar: 'Legal Expert' },
-    { rank: 8, userId: '8', name: 'Đỗ Thị Mai', avatar: '', level: 12, xp: 680, streak: 6, classes: 3, careerAvatar: 'Wanderlust' },
-    { rank: 9, userId: '9', name: 'Bùi Văn Nam', avatar: '', level: 11, xp: 620, streak: 2, classes: 3, careerAvatar: 'Corporate Leader' },
-    { rank: 10, userId: '10', name: 'Trương Hồng Nhung', avatar: '', level: 10, xp: 580, streak: 4, classes: 3, careerAvatar: 'Academic Achiever' },
-  ],
-  monthly: [
-    { rank: 1, userId: '2', name: 'Nguyễn Hải Đăng', avatar: '', level: 22, xp: 4520, streak: 28, classes: 32, careerAvatar: 'Academic Achiever' },
-    { rank: 2, userId: '1', name: 'Trần Minh Anh', avatar: '', level: 25, xp: 4380, streak: 25, classes: 30, careerAvatar: 'Business Pro' },
-    { rank: 3, userId: '4', name: 'Phạm Quốc Bảo', avatar: '', level: 18, xp: 3950, streak: 21, classes: 28, careerAvatar: 'Tech Innovator' },
-    { rank: 4, userId: '3', name: 'Lê Thu Hương', avatar: '', level: 20, xp: 3780, streak: 18, classes: 25, careerAvatar: 'Global Citizen' },
-    { rank: 5, userId: '6', name: 'Võ Ngọc Lan', avatar: '', level: 14, xp: 3450, streak: 16, classes: 22, careerAvatar: 'Healthcare Hero' },
-    { rank: 6, userId: 'current', name: 'Bạn', avatar: '', level: 15, xp: 3200, streak: 14, classes: 20, careerAvatar: 'Business Pro', isCurrentUser: true },
-    { rank: 7, userId: '7', name: 'Hoàng Minh Tuấn', avatar: '', level: 13, xp: 2980, streak: 12, classes: 18, careerAvatar: 'Legal Expert' },
-    { rank: 8, userId: '9', name: 'Bùi Văn Nam', avatar: '', level: 11, xp: 2750, streak: 10, classes: 16, careerAvatar: 'Corporate Leader' },
-    { rank: 9, userId: '8', name: 'Đỗ Thị Mai', avatar: '', level: 12, xp: 2580, streak: 8, classes: 15, careerAvatar: 'Wanderlust' },
-    { rank: 10, userId: '10', name: 'Trương Hồng Nhung', avatar: '', level: 10, xp: 2420, streak: 7, classes: 14, careerAvatar: 'Academic Achiever' },
-  ],
-  allTime: [
-    { rank: 1, userId: '1', name: 'Trần Minh Anh', avatar: '', level: 75, xp: 45200, streak: 120, classes: 280, careerAvatar: 'Business Pro' },
-    { rank: 2, userId: '11', name: 'Lý Văn Long', avatar: '', level: 68, xp: 42100, streak: 90, classes: 250, careerAvatar: 'Academic Achiever' },
-    { rank: 3, userId: '12', name: 'Nguyễn Thị Hoa', avatar: '', level: 62, xp: 38500, streak: 85, classes: 230, careerAvatar: 'Global Citizen' },
-    { rank: 4, userId: '2', name: 'Nguyễn Hải Đăng', avatar: '', level: 55, xp: 35200, streak: 75, classes: 210, careerAvatar: 'Academic Achiever' },
-    { rank: 5, userId: '13', name: 'Trần Quang Minh', avatar: '', level: 50, xp: 32000, streak: 60, classes: 195, careerAvatar: 'Tech Innovator' },
-    { rank: 42, userId: 'current', name: 'Bạn', avatar: '', level: 15, xp: 4750, streak: 7, classes: 23, careerAvatar: 'Business Pro', isCurrentUser: true },
-  ],
+import { useAuth } from '@/hooks/useAuth';
+import { getLeaderboard } from '@/lib/queries';
+
+type LeaderboardEntry = {
+  rank: number;
+  userId: string;
+  name: string;
+  avatar: string;
+  level: number;
+  xp: number;
+  streak: number;
+  classes: number;
+  careerAvatar: string;
+  isCurrentUser?: boolean;
 };
 
 const careerAvatarColors: Record<string, string> = {
@@ -106,125 +81,156 @@ function getRankBadge(rank: number) {
 }
 
 export default function LeaderboardPage() {
+  const { user } = useAuth();
+  const t = useTranslations('leaderboard');
   const [filter, setFilter] = React.useState<'all' | string>('all');
+  const [leaderboardData, setLeaderboardData] = React.useState<LeaderboardEntry[]>([]);
+
+  React.useEffect(() => {
+    getLeaderboard(50)
+      .then((data) => {
+        const mapped: LeaderboardEntry[] = (data || []).map((entry: Record<string, unknown>, index: number) => {
+          const profile = entry.profiles as Record<string, unknown> | undefined;
+          const career = entry.career_paths as Record<string, unknown> | undefined;
+          return {
+            rank: index + 1,
+            userId: (entry.student_id as string) || '',
+            name: (profile?.full_name as string) || 'Student',
+            avatar: (profile?.avatar_url as string) || '',
+            level: (entry.current_level as number) || 1,
+            xp: (entry.total_xp_earned as number) || 0,
+            streak: 0,
+            classes: 0,
+            careerAvatar: (career?.name as string) || 'Student',
+            isCurrentUser: (entry.student_id as string) === user?.id,
+          };
+        });
+        setLeaderboardData(mapped);
+      })
+      .catch(console.error);
+  }, [user?.id]);
+
+  // Use data for all tabs (same data, different label context)
+  const mockLeaderboardData = {
+    weekly: leaderboardData,
+    monthly: leaderboardData,
+    allTime: leaderboardData.slice(0, 10),
+  };
+
   const currentUserWeeklyRank = mockLeaderboardData.weekly.find((u) => u.isCurrentUser);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 mb-4">
-            <Trophy className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Bảng xếp hạng 🏆</h1>
-          <p className="text-slate-400">
-            Cạnh tranh và leo hạng cùng những học viên khác!
-          </p>
-        </motion.div>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-8"
+      >
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 mb-4">
+          <Trophy className="w-10 h-10 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold text-white mb-2">{t('title')}</h1>
+        <p className="text-slate-400">{t('subtitle')}</p>
+      </motion.div>
 
-        {/* Current User Stats */}
-        {currentUserWeeklyRank && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="bg-gradient-to-r from-[#3B82F6]/20 to-purple-500/20 border-[#3B82F6]/30 mb-6">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <Avatar className="h-16 w-16 border-2 border-[#3B82F6]">
-                        <AvatarImage src={currentUserWeeklyRank.avatar} />
-                        <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6] text-xl">
-                          B
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#3B82F6] flex items-center justify-center text-xs font-bold text-white">
-                        {currentUserWeeklyRank.level}
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white">Xếp hạng của bạn</h3>
-                      <p className="text-slate-400">
-                        <span className="text-[#3B82F6] font-semibold">#{currentUserWeeklyRank.rank}</span> trong tuần này
-                      </p>
+      {/* Current User Stats */}
+      {currentUserWeeklyRank && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="bg-gradient-to-r from-[#3B82F6]/20 to-purple-500/20 border-[#3B82F6]/30 mb-6">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Avatar className="h-16 w-16 border-2 border-[#3B82F6]">
+                      <AvatarImage src={currentUserWeeklyRank.avatar} />
+                      <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6] text-xl">
+                        B
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#3B82F6] flex items-center justify-center text-xs font-bold text-white">
+                      {currentUserWeeklyRank.level}
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-xl font-bold text-amber-400">{formatNumber(currentUserWeeklyRank.xp)}</p>
-                      <p className="text-xs text-slate-400">XP tuần</p>
-                    </div>
-                    <div>
-                      <p className="text-xl font-bold text-orange-400">{currentUserWeeklyRank.streak}</p>
-                      <p className="text-xs text-slate-400">Streak</p>
-                    </div>
-                    <div>
-                      <p className="text-xl font-bold text-emerald-400">{currentUserWeeklyRank.classes}</p>
-                      <p className="text-xs text-slate-400">Lớp học</p>
-                    </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{t('yourRank')}</h3>
+                    <p className="text-slate-400">
+                      <span className="text-[#3B82F6] font-semibold">#{currentUserWeeklyRank.rank}</span> {t('thisWeek')}
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-xl font-bold text-amber-400">{formatNumber(currentUserWeeklyRank.xp)}</p>
+                    <p className="text-xs text-slate-400">{t('weeklyXP')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-orange-400">{currentUserWeeklyRank.streak}</p>
+                    <p className="text-xs text-slate-400">{t('streak')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-emerald-400">{currentUserWeeklyRank.classes}</p>
+                    <p className="text-xs text-slate-400">{t('classes')}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
-        {/* Tabs */}
-        <Tabs defaultValue="weekly" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList className="bg-white/5 border border-white/10">
-              <TabsTrigger value="weekly" className="data-[state=active]:bg-[#3B82F6]">
-                Tuần
-              </TabsTrigger>
-              <TabsTrigger value="monthly" className="data-[state=active]:bg-[#3B82F6]">
-                Tháng
-              </TabsTrigger>
-              <TabsTrigger value="allTime" className="data-[state=active]:bg-[#3B82F6]">
-                Mọi thời đại
-              </TabsTrigger>
-            </TabsList>
+      {/* Tabs */}
+      <Tabs defaultValue="weekly" className="space-y-6">
+        <div className="flex items-center justify-between">
+          <TabsList className="bg-white/5 border border-white/10">
+            <TabsTrigger value="weekly" className="data-[state=active]:bg-[#3B82F6]">
+              {t('tabWeekly')}
+            </TabsTrigger>
+            <TabsTrigger value="monthly" className="data-[state=active]:bg-[#3B82F6]">
+              {t('tabMonthly')}
+            </TabsTrigger>
+            <TabsTrigger value="allTime" className="data-[state=active]:bg-[#3B82F6]">
+              {t('tabAllTime')}
+            </TabsTrigger>
+          </TabsList>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="border-white/20 text-white">
-                  <Filter className="w-4 h-4 mr-2" />
-                  {filter === 'all' ? 'Tất cả' : filter}
-                  <ChevronDown className="w-4 h-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-[#1E3A5F] border-white/10">
-                <DropdownMenuItem onClick={() => setFilter('all')}>Tất cả</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilter('Business Pro')}>Business Pro</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilter('Academic Achiever')}>Academic Achiever</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilter('Tech Innovator')}>Tech Innovator</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilter('Global Citizen')}>Global Citizen</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="border-white/20 text-white">
+                <Filter className="w-4 h-4 mr-2" />
+                {filter === 'all' ? t('filterAll') : filter}
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-[#1E3A5F] border-white/10">
+              <DropdownMenuItem onClick={() => setFilter('all')}>{t('filterAll')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilter('Business Pro')}>Business Pro</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilter('Academic Achiever')}>Academic Achiever</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilter('Tech Innovator')}>Tech Innovator</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilter('Global Citizen')}>Global Citizen</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-          {/* Weekly Tab */}
-          <TabsContent value="weekly">
-            <LeaderboardList data={mockLeaderboardData.weekly} />
-          </TabsContent>
+        {/* Weekly Tab */}
+        <TabsContent value="weekly">
+          <LeaderboardList data={mockLeaderboardData.weekly} streakLabel={t('streakUnit')} classLabel={t('classUnit')} />
+        </TabsContent>
 
-          {/* Monthly Tab */}
-          <TabsContent value="monthly">
-            <LeaderboardList data={mockLeaderboardData.monthly} />
-          </TabsContent>
+        {/* Monthly Tab */}
+        <TabsContent value="monthly">
+          <LeaderboardList data={mockLeaderboardData.monthly} streakLabel={t('streakUnit')} classLabel={t('classUnit')} />
+        </TabsContent>
 
-          {/* All Time Tab */}
-          <TabsContent value="allTime">
-            <LeaderboardList data={mockLeaderboardData.allTime} showTopOnly />
-          </TabsContent>
-        </Tabs>
-      </div>
+        {/* All Time Tab */}
+        <TabsContent value="allTime">
+          <LeaderboardList data={mockLeaderboardData.allTime} showTopOnly streakLabel={t('streakUnit')} classLabel={t('classUnit')} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -232,9 +238,13 @@ export default function LeaderboardPage() {
 function LeaderboardList({
   data,
   showTopOnly = false,
+  streakLabel,
+  classLabel,
 }: {
-  data: typeof mockLeaderboardData.weekly;
+  data: LeaderboardEntry[];
   showTopOnly?: boolean;
+  streakLabel: string;
+  classLabel: string;
 }) {
   const topThree = data.filter((u) => u.rank <= 3);
   const restOfList = data.filter((u) => u.rank > 3);
@@ -332,7 +342,7 @@ function LeaderboardList({
               }`}
             >
               {getRankBadge(user.rank)}
-              
+
               <Avatar className="h-12 w-12">
                 <AvatarImage src={user.avatar} />
                 <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6]">
@@ -365,11 +375,11 @@ function LeaderboardList({
               <div className="flex items-center gap-4 text-sm">
                 <div className="text-center hidden md:block">
                   <p className="text-orange-400 font-semibold">{user.streak}</p>
-                  <p className="text-xs text-slate-500">streak</p>
+                  <p className="text-xs text-slate-500">{streakLabel}</p>
                 </div>
                 <div className="text-center hidden md:block">
                   <p className="text-emerald-400 font-semibold">{user.classes}</p>
-                  <p className="text-xs text-slate-500">lớp</p>
+                  <p className="text-xs text-slate-500">{classLabel}</p>
                 </div>
                 <div className="text-right min-w-[80px]">
                   <p className="text-amber-400 font-bold">{formatNumber(user.xp)}</p>
@@ -391,7 +401,7 @@ function LeaderboardList({
                 className="flex items-center gap-4 p-4 bg-[#3B82F6]/10"
               >
                 {getRankBadge(currentUser.rank)}
-                
+
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={currentUser.avatar} />
                   <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6]">B</AvatarFallback>

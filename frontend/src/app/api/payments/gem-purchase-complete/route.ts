@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { withCsrfRouteProtection } from '@/lib/csrf';
+// Note: No CSRF on this route — it is called by the backend webhook/payment processor
+// using an internal secret (x-internal-secret header), not by end users from a browser.
 
 /**
  * POST /api/payments/gem-purchase-complete
@@ -10,7 +11,7 @@ import { withCsrfRouteProtection } from '@/lib/csrf';
  *
  * Also used internally when simulated payment is successful.
  */
-async function handlePost(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest) {
   try {
     // Verify internal secret to prevent abuse
     const secret = request.headers.get('x-internal-secret');
@@ -88,4 +89,3 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export const POST = withCsrfRouteProtection(handlePost);

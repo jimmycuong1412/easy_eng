@@ -18,15 +18,19 @@ import {
 } from 'lucide-react';
 
 import { formatNumber } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { getStudentProgress, getLeaderboard } from '@/lib/queries';
+import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useTranslations } from 'next-intl';
 
 // XP Level configuration
 const XP_PER_LEVEL = 1000;
-const XP_MULTIPLIER = 1.2; // Each level requires 20% more XP
+const XP_MULTIPLIER = 1.2;
 
 function calculateLevel(totalXP: number): { level: number; currentXP: number; xpForNextLevel: number } {
   let level = 1;
@@ -39,90 +43,106 @@ function calculateLevel(totalXP: number): { level: number; currentXP: number; xp
     xpRequired = Math.floor(XP_PER_LEVEL * Math.pow(XP_MULTIPLIER, level - 1));
   }
 
-  return {
-    level,
-    currentXP: xpRemaining,
-    xpForNextLevel: xpRequired,
-  };
+  return { level, currentXP: xpRemaining, xpForNextLevel: xpRequired };
 }
 
-// XP earning activities
-const xpActivities = [
-  { activity: 'Hoàn thành lớp học', xp: 100, icon: BookOpen },
-  { activity: 'Đánh giá giáo viên', xp: 10, icon: Star },
-  { activity: 'Streak hàng ngày', xp: 25, icon: Flame },
-  { activity: 'Hoàn thành bài quiz', xp: 50, icon: Target },
-  { activity: 'Đạt điểm cao quiz (>80%)', xp: 75, icon: Award },
-  { activity: 'Giới thiệu bạn bè', xp: 200, icon: Gift },
+const levelConfigs = [
+  { minLevel: 1, key: 'newbie', color: 'slate' },
+  { minLevel: 5, key: 'student', color: 'green' },
+  { minLevel: 10, key: 'learner', color: 'blue' },
+  { minLevel: 20, key: 'proficient', color: 'purple' },
+  { minLevel: 35, key: 'expert', color: 'amber' },
+  { minLevel: 50, key: 'master', color: 'rose' },
+  { minLevel: 75, key: 'legend', color: 'cyan' },
+  { minLevel: 100, key: 'grandmaster', color: 'gold' },
 ];
 
-// Level badges/titles
-const levelTitles = [
-  { minLevel: 1, title: 'Người mới', color: 'slate' },
-  { minLevel: 5, title: 'Học sinh', color: 'green' },
-  { minLevel: 10, title: 'Học viên', color: 'blue' },
-  { minLevel: 20, title: 'Tinh thông', color: 'purple' },
-  { minLevel: 35, title: 'Chuyên gia', color: 'amber' },
-  { minLevel: 50, title: 'Bậc thầy', color: 'rose' },
-  { minLevel: 75, title: 'Huyền thoại', color: 'cyan' },
-  { minLevel: 100, title: 'Đại sư', color: 'gold' },
-];
-
-function getLevelTitle(level: number): { title: string; color: string } {
-  let result = levelTitles[0];
-  for (const t of levelTitles) {
-    if (level >= t.minLevel) result = t;
+function getLevelConfig(level: number): { key: string; color: string } {
+  let result = levelConfigs[0];
+  for (const c of levelConfigs) {
+    if (level >= c.minLevel) result = c;
   }
   return result;
 }
 
-// Mock user data
-const mockUserProgress = {
-  totalXP: 4750,
-  weeklyXP: 850,
-  monthlyXP: 3200,
-  currentStreak: 7,
-  longestStreak: 14,
-  classesCompleted: 23,
-  quizzesCompleted: 45,
-  averageQuizScore: 82,
-  careerAvatar: 'Business Pro',
-  careerAvatarProgress: 35,
-  recentXPHistory: [
-    { date: '2026-01-22', activity: 'Hoàn thành lớp học', xp: 100, time: '10:30' },
-    { date: '2026-01-22', activity: 'Streak hàng ngày', xp: 25, time: '10:31' },
-    { date: '2026-01-22', activity: 'Đánh giá giáo viên', xp: 10, time: '10:35' },
-    { date: '2026-01-21', activity: 'Hoàn thành bài quiz', xp: 50, time: '15:20' },
-    { date: '2026-01-21', activity: 'Đạt điểm cao quiz (>80%)', xp: 75, time: '15:21' },
-    { date: '2026-01-21', activity: 'Hoàn thành lớp học', xp: 100, time: '14:00' },
-    { date: '2026-01-20', activity: 'Hoàn thành lớp học', xp: 100, time: '09:30' },
-    { date: '2026-01-20', activity: 'Streak hàng ngày', xp: 25, time: '09:31' },
-  ],
-  achievements: [
-    { id: 'first_class', name: 'Lớp đầu tiên', description: 'Hoàn thành lớp học đầu tiên', unlocked: true, xpReward: 50 },
-    { id: 'streak_7', name: 'Kiên trì 7 ngày', description: 'Đạt streak 7 ngày', unlocked: true, xpReward: 100 },
-    { id: 'quiz_master', name: 'Quiz Master', description: 'Hoàn thành 10 bài quiz', unlocked: true, xpReward: 150 },
-    { id: 'classes_10', name: '10 lớp học', description: 'Hoàn thành 10 lớp học', unlocked: true, xpReward: 200 },
-    { id: 'classes_25', name: '25 lớp học', description: 'Hoàn thành 25 lớp học', unlocked: false, xpReward: 300 },
-    { id: 'streak_30', name: 'Kiên trì 30 ngày', description: 'Đạt streak 30 ngày', unlocked: false, xpReward: 500 },
-  ],
-  weeklyLeaderboard: [
-    { rank: 1, name: 'Trần Minh', avatar: '', xp: 1250, isCurrentUser: false },
-    { rank: 2, name: 'Nguyễn Hà', avatar: '', xp: 1100, isCurrentUser: false },
-    { rank: 3, name: 'Lê Hoàng', avatar: '', xp: 980, isCurrentUser: false },
-    { rank: 4, name: 'Bạn', avatar: '', xp: 850, isCurrentUser: true },
-    { rank: 5, name: 'Võ Lan', avatar: '', xp: 720, isCurrentUser: false },
-  ],
+type UserProgress = {
+  totalXP: number;
+  weeklyXP: number;
+  currentStreak: number;
+  classesCompleted: number;
+  averageQuizScore: number;
+  recentXPHistory: Array<{ date: string; activity: string; xp: number; time: string }>;
+  achievements: Array<{ id: string; name: string; description: string; unlocked: boolean; xpReward: number }>;
+  weeklyLeaderboard: Array<{ rank: number; name: string; avatar: string; xp: number; isCurrentUser: boolean }>;
 };
 
 export default function XPProgressPage() {
-  const levelInfo = calculateLevel(mockUserProgress.totalXP);
-  const levelTitle = getLevelTitle(levelInfo.level);
+  const { user } = useAuth();
+  const t = useTranslations('progress');
+  const [userProgress, setUserProgress] = React.useState<UserProgress>({
+    totalXP: 0, weeklyXP: 0, currentStreak: 0, classesCompleted: 0, averageQuizScore: 0,
+    recentXPHistory: [], achievements: [], weeklyLeaderboard: [],
+  });
+
+  const xpActivities = [
+    { key: 'completeClass', xp: 100, icon: BookOpen },
+    { key: 'rateTeacher', xp: 10, icon: Star },
+    { key: 'dailyStreak', xp: 25, icon: Flame },
+    { key: 'completeQuiz', xp: 50, icon: Target },
+    { key: 'highScore', xp: 75, icon: Award },
+    { key: 'referFriend', xp: 200, icon: Gift },
+  ];
+
+  React.useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createClient();
+
+    Promise.all([
+      getStudentProgress(user.id).catch(() => null),
+      supabase.from('xp_transactions').select('*').eq('student_id', user.id)
+        .order('created_at', { ascending: false }).limit(10).then(({ data }) => data || []),
+      supabase.from('attendance_streaks').select('*').eq('student_id', user.id)
+        .single().then(({ data }) => data),
+      getLeaderboard(5).catch(() => []),
+    ]).then(([career, xpHistory, streak, leaderboard]) => {
+      const recentXP = xpHistory.map((x: Record<string, unknown>) => ({
+        date: (x.created_at as string)?.slice(0, 10) || '',
+        activity: (x.activity_description as string) || (x.activity_type as string) || 'Activity',
+        xp: (x.xp_amount as number) || 0,
+        time: new Date(x.created_at as string).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
+      }));
+
+      const weeklyLb = (leaderboard || []).map((entry: Record<string, unknown>, i: number) => {
+        const profile = entry.profiles as Record<string, unknown> | undefined;
+        return {
+          rank: i + 1,
+          name: entry.student_id === user.id ? t('you') : ((profile?.full_name as string) || 'Student'),
+          avatar: (profile?.avatar_url as string) || '',
+          xp: (entry.total_xp_earned as number) || 0,
+          isCurrentUser: entry.student_id === user.id,
+        };
+      });
+
+      setUserProgress({
+        totalXP: career?.total_xp_earned || 0,
+        weeklyXP: xpHistory.reduce((sum: number, x: Record<string, unknown>) => sum + ((x.xp_amount as number) || 0), 0),
+        currentStreak: streak?.current_streak || 0,
+        classesCompleted: 0,
+        averageQuizScore: 0,
+        recentXPHistory: recentXP,
+        achievements: [],
+        weeklyLeaderboard: weeklyLb,
+      });
+    });
+  }, [user?.id, t]);
+
+  const levelInfo = calculateLevel(userProgress.totalXP);
+  const levelConfig = getLevelConfig(levelInfo.level);
   const progressPercent = (levelInfo.currentXP / levelInfo.xpForNextLevel) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="py-8">
+      <div className="max-w-4xl mx-auto px-4">
         {/* Header with Level */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -139,14 +159,14 @@ export default function XPProgressPage() {
               <span className="text-4xl font-bold text-white">{levelInfo.level}</span>
             </div>
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-              <Badge className={`bg-${levelTitle.color}-500/20 text-${levelTitle.color}-400 border-0 px-3`}>
-                {levelTitle.title}
+              <Badge className={`bg-${levelConfig.color}-500/20 text-${levelConfig.color}-400 border-0 px-3`}>
+                {t(`levelTitles.${levelConfig.key}`)}
               </Badge>
             </div>
           </motion.div>
 
           <h1 className="text-2xl font-bold text-white mt-6 mb-2">
-            {formatNumber(mockUserProgress.totalXP)} XP
+            {formatNumber(userProgress.totalXP)} XP
           </h1>
 
           {/* XP Progress Bar */}
@@ -162,7 +182,7 @@ export default function XPProgressPage() {
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-2">
-              Còn {levelInfo.xpForNextLevel - levelInfo.currentXP} XP nữa để lên level
+              {t('xpToNext', { xp: levelInfo.xpForNextLevel - levelInfo.currentXP })}
             </p>
           </div>
         </motion.div>
@@ -177,29 +197,29 @@ export default function XPProgressPage() {
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <Zap className="w-6 h-6 text-amber-400 mx-auto mb-2" />
-              <p className="text-xl font-bold text-white">{mockUserProgress.weeklyXP}</p>
-              <p className="text-xs text-slate-400">XP tuần này</p>
+              <p className="text-xl font-bold text-white">{userProgress.weeklyXP}</p>
+              <p className="text-xs text-slate-400">{t('weeklyXP')}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <Flame className="w-6 h-6 text-orange-400 mx-auto mb-2" />
-              <p className="text-xl font-bold text-white">{mockUserProgress.currentStreak}</p>
-              <p className="text-xs text-slate-400">Streak hiện tại</p>
+              <p className="text-xl font-bold text-white">{userProgress.currentStreak}</p>
+              <p className="text-xs text-slate-400">{t('currentStreak')}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <BookOpen className="w-6 h-6 text-[#3B82F6] mx-auto mb-2" />
-              <p className="text-xl font-bold text-white">{mockUserProgress.classesCompleted}</p>
-              <p className="text-xs text-slate-400">Lớp hoàn thành</p>
+              <p className="text-xl font-bold text-white">{userProgress.classesCompleted}</p>
+              <p className="text-xs text-slate-400">{t('classesCompleted')}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 text-center">
               <Target className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
-              <p className="text-xl font-bold text-white">{mockUserProgress.averageQuizScore}%</p>
-              <p className="text-xs text-slate-400">Điểm quiz TB</p>
+              <p className="text-xl font-bold text-white">{userProgress.averageQuizScore}%</p>
+              <p className="text-xs text-slate-400">{t('avgQuizScore')}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -215,20 +235,20 @@ export default function XPProgressPage() {
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Zap className="w-5 h-5 text-amber-400" />
-                  Cách kiếm XP
+                  {t('howToEarnXP')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {xpActivities.map((activity) => (
                   <div
-                    key={activity.activity}
+                    key={activity.key}
                     className="flex items-center gap-3 p-3 bg-white/5 rounded-lg"
                   >
                     <div className="w-10 h-10 rounded-full bg-[#3B82F6]/20 flex items-center justify-center">
                       <activity.icon className="w-5 h-5 text-[#3B82F6]" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-white">{activity.activity}</p>
+                      <p className="text-sm text-white">{t(`activities.${activity.key}`)}</p>
                     </div>
                     <Badge className="bg-amber-500/20 text-amber-400 border-0">
                       +{activity.xp} XP
@@ -249,11 +269,11 @@ export default function XPProgressPage() {
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Clock className="w-5 h-5 text-slate-400" />
-                  Lịch sử XP gần đây
+                  {t('recentXPHistory')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 max-h-[350px] overflow-y-auto">
-                {mockUserProgress.recentXPHistory.map((item, index) => (
+                {userProgress.recentXPHistory.map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5"
@@ -283,12 +303,12 @@ export default function XPProgressPage() {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-400" />
-                Thành tích
+                {t('achievements')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {mockUserProgress.achievements.map((achievement) => (
+                {userProgress.achievements.map((achievement) => (
                   <div
                     key={achievement.id}
                     className={`p-4 rounded-lg text-center ${
@@ -346,54 +366,50 @@ export default function XPProgressPage() {
               <CardTitle className="text-white flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-emerald-400" />
-                  Bảng xếp hạng tuần
+                  {t('weeklyLeaderboard')}
                 </div>
                 <Button variant="ghost" size="sm" className="text-[#3B82F6]">
-                  Xem tất cả
+                  {t('viewAll')}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {mockUserProgress.weeklyLeaderboard.map((user) => (
+              {userProgress.weeklyLeaderboard.map((entry) => (
                 <div
-                  key={user.rank}
+                  key={entry.rank}
                   className={`flex items-center gap-4 p-3 rounded-lg ${
-                    user.isCurrentUser
+                    entry.isCurrentUser
                       ? 'bg-[#3B82F6]/20 border border-[#3B82F6]/30'
                       : 'bg-white/5'
                   }`}
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      user.rank === 1
+                      entry.rank === 1
                         ? 'bg-amber-500 text-white'
-                        : user.rank === 2
+                        : entry.rank === 2
                           ? 'bg-slate-400 text-white'
-                          : user.rank === 3
+                          : entry.rank === 3
                             ? 'bg-amber-700 text-white'
                             : 'bg-white/10 text-slate-400'
                     }`}
                   >
-                    {user.rank}
+                    {entry.rank}
                   </div>
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.avatar} />
+                    <AvatarImage src={entry.avatar} />
                     <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6]">
-                      {user.name.charAt(0)}
+                      {entry.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p
-                      className={`font-semibold ${
-                        user.isCurrentUser ? 'text-[#3B82F6]' : 'text-white'
-                      }`}
-                    >
-                      {user.name}
+                    <p className={`font-semibold ${entry.isCurrentUser ? 'text-[#3B82F6]' : 'text-white'}`}>
+                      {entry.name}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-white">{formatNumber(user.xp)} XP</p>
+                    <p className="font-bold text-white">{formatNumber(entry.xp)} XP</p>
                   </div>
                 </div>
               ))}

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -9,18 +10,20 @@ import {
   XCircle,
   ChevronRight,
   Trophy,
-  Star,
   Zap,
   BookOpen,
   RefreshCw,
   Home,
   ArrowLeft,
+  Loader2,
 } from 'lucide-react';
 
+import { GemImage } from '@/components/common/GemImage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { getQuizById } from '@/lib/queries';
 
 // Quiz types
 interface QuizQuestion {
@@ -43,140 +46,64 @@ interface QuizData {
   timeLimit: number; // in seconds
   passingScore: number;
   xpReward: number;
-  cookiesReward: number;
+  gemsReward: number;
   questions: QuizQuestion[];
 }
 
-// Mock quiz data
-const mockQuiz: QuizData = {
-  id: 'quiz-1',
-  title: 'Business English: Email Writing',
-  description: 'Test your knowledge of professional email writing',
-  category: 'Business English',
-  totalQuestions: 10,
-  timeLimit: 600, // 10 minutes
-  passingScore: 70,
-  xpReward: 50,
-  cookiesReward: 5,
-  questions: [
-    {
-      id: 'q1',
-      type: 'multiple_choice',
-      question: 'What is the most appropriate greeting for a formal business email?',
-      options: ['Hey there!', 'Dear Mr./Ms. [Last Name],', 'Hi buddy,', 'Yo,'],
-      correctAnswer: 1,
-      explanation: '"Dear Mr./Ms. [Last Name]," is the standard formal greeting in business correspondence.',
-      difficulty: 'easy',
-      points: 10,
-    },
-    {
-      id: 'q2',
-      type: 'multiple_choice',
-      question: 'Which phrase is best for closing a formal email?',
-      options: ['See ya!', 'Best regards,', 'Later!', 'Cheers mate,'],
-      correctAnswer: 1,
-      explanation: '"Best regards," is a professional and appropriate closing for business emails.',
-      difficulty: 'easy',
-      points: 10,
-    },
-    {
-      id: 'q3',
-      type: 'fill_blank',
-      question: 'Complete the sentence: "I am writing to _____ about the upcoming meeting."',
-      options: ['inquire', 'ask you stuff', 'know', 'question'],
-      correctAnswer: 0,
-      explanation: '"Inquire" is the formal verb used when asking for information in business emails.',
-      difficulty: 'medium',
-      points: 15,
-    },
-    {
-      id: 'q4',
-      type: 'true_false',
-      question: 'Using all capital letters in an email is considered shouting and is unprofessional.',
-      options: ['True', 'False'],
-      correctAnswer: 0,
-      explanation: 'Correct! ALL CAPS is considered shouting in written communication and should be avoided.',
-      difficulty: 'easy',
-      points: 10,
-    },
-    {
-      id: 'q5',
-      type: 'multiple_choice',
-      question: 'What does "CC" stand for in email?',
-      options: ['Copy Complete', 'Carbon Copy', 'Confidential Copy', 'Central Communication'],
-      correctAnswer: 1,
-      explanation: 'CC stands for "Carbon Copy," originating from the practice of using carbon paper to make copies.',
-      difficulty: 'medium',
-      points: 15,
-    },
-    {
-      id: 'q6',
-      type: 'multiple_choice',
-      question: 'Which phrase is appropriate for apologizing in a business email?',
-      options: ['My bad!', 'I sincerely apologize for any inconvenience caused.', 'Sorry, not sorry.', 'Oops!'],
-      correctAnswer: 1,
-      explanation: '"I sincerely apologize for any inconvenience caused" is a formal and appropriate apology.',
-      difficulty: 'easy',
-      points: 10,
-    },
-    {
-      id: 'q7',
-      type: 'fill_blank',
-      question: 'Complete: "Please find _____ the requested documents."',
-      options: ['attached', 'stuck', 'glued', 'inside'],
-      correctAnswer: 0,
-      explanation: '"Please find attached" is the standard phrase for referencing email attachments.',
-      difficulty: 'easy',
-      points: 10,
-    },
-    {
-      id: 'q8',
-      type: 'true_false',
-      question: 'It is acceptable to use emojis in formal business emails.',
-      options: ['True', 'False'],
-      correctAnswer: 1,
-      explanation: 'Emojis are generally not appropriate in formal business communication.',
-      difficulty: 'easy',
-      points: 10,
-    },
-    {
-      id: 'q9',
-      type: 'multiple_choice',
-      question: 'What does "FYI" stand for?',
-      options: ['For Your Interest', 'For Your Information', 'Find Your Information', 'First Year Initiative'],
-      correctAnswer: 1,
-      explanation: 'FYI stands for "For Your Information," commonly used when sharing information.',
-      difficulty: 'easy',
-      points: 10,
-    },
-    {
-      id: 'q10',
-      type: 'multiple_choice',
-      question: 'Which is the most professional way to request a meeting?',
-      options: [
-        'Let me know when you are free.',
-        'I would appreciate the opportunity to discuss this matter at your earliest convenience.',
-        'Can we talk?',
-        'Meet me tomorrow.',
-      ],
-      correctAnswer: 1,
-      explanation: 'This phrase is formal, polite, and shows respect for the recipient\'s time.',
-      difficulty: 'hard',
-      points: 20,
-    },
-  ],
-};
-
-type QuizState = 'intro' | 'quiz' | 'result';
+type QuizState = 'loading' | 'intro' | 'quiz' | 'result';
 
 export default function QuizPage({ params }: { params: { quizId: string } }) {
   const router = useRouter();
-  const [quizState, setQuizState] = React.useState<QuizState>('intro');
+  const [quiz, setQuiz] = useState<QuizData | null>(null);
+  const [quizState, setQuizState] = React.useState<QuizState>('loading');
   const [currentQuestion, setCurrentQuestion] = React.useState(0);
   const [selectedAnswer, setSelectedAnswer] = React.useState<number | null>(null);
   const [answers, setAnswers] = React.useState<(number | null)[]>([]);
-  const [timeRemaining, setTimeRemaining] = React.useState(mockQuiz.timeLimit);
+  const [timeRemaining, setTimeRemaining] = React.useState(0);
   const [showExplanation, setShowExplanation] = React.useState(false);
+
+  useEffect(() => {
+    const fetchQuiz = async () => {
+      try {
+        const data = await getQuizById(params.quizId) as Record<string, unknown> | null;
+        if (data) {
+          const rawQuestions = (data.quiz_questions as Record<string, unknown>[]) || [];
+          const questions: QuizQuestion[] = rawQuestions.map((q, idx) => ({
+            id: (q.id as string) || `q${idx}`,
+            type: ((q.question_type as string) || 'multiple_choice') as QuizQuestion['type'],
+            question: (q.question_text as string) || '',
+            options: (q.options as string[]) || [],
+            correctAnswer: parseInt(q.correct_answer as string, 10) ?? 0,
+            explanation: (q.explanation as string) || '',
+            difficulty: ((q.difficulty as string) || 'medium') as QuizQuestion['difficulty'],
+            points: (q.points as number) || 10,
+          }));
+
+          const quizData: QuizData = {
+            id: data.id as string,
+            title: (data.title as string) || 'Quiz',
+            description: (data.description as string) || '',
+            category: (data.category as string) || 'General',
+            totalQuestions: questions.length,
+            timeLimit: ((data.time_limit_minutes as number) || 10) * 60,
+            passingScore: (data.passing_score as number) || 70,
+            xpReward: (data.xp_reward as number) || 50,
+            gemsReward: (data.gems_reward as number) || 5,
+            questions,
+          };
+
+          setQuiz(quizData);
+          setTimeRemaining(quizData.timeLimit);
+          setQuizState('intro');
+        }
+      } catch (err) {
+        console.error('Error fetching quiz:', err);
+        setQuizState('intro');
+      }
+    };
+
+    fetchQuiz();
+  }, [params.quizId]);
 
   // Timer
   React.useEffect(() => {
@@ -203,7 +130,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
 
   const handleStartQuiz = () => {
     setQuizState('quiz');
-    setAnswers(new Array(mockQuiz.questions.length).fill(null));
+    setAnswers(new Array(quiz!.questions.length).fill(null));
   };
 
   const handleSelectAnswer = (answerIndex: number) => {
@@ -224,7 +151,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
     setShowExplanation(false);
     setSelectedAnswer(null);
 
-    if (currentQuestion < mockQuiz.questions.length - 1) {
+    if (currentQuestion < quiz!.questions.length - 1) {
       setCurrentQuestion((prev) => prev + 1);
     } else {
       setQuizState('result');
@@ -236,7 +163,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
     let totalPoints = 0;
     let earnedPoints = 0;
 
-    mockQuiz.questions.forEach((question, index) => {
+    quiz!.questions.forEach((question, index) => {
       totalPoints += question.points;
       if (answers[index] === question.correctAnswer) {
         correctCount++;
@@ -245,13 +172,22 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
     });
 
     const percentage = Math.round((earnedPoints / totalPoints) * 100);
-    const passed = percentage >= mockQuiz.passingScore;
+    const passed = percentage >= quiz!.passingScore;
 
     return { correctCount, totalPoints, earnedPoints, percentage, passed };
   };
 
-  const question = mockQuiz.questions[currentQuestion];
+  const question = quiz?.questions[currentQuestion];
   const isCorrect = selectedAnswer === question?.correctAnswer;
+
+  // Loading Screen
+  if (quizState === 'loading' || !quiz) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+      </div>
+    );
+  }
 
   // Intro Screen
   if (quizState === 'intro') {
@@ -269,11 +205,11 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
               </div>
 
               <Badge className="bg-[#3B82F6]/20 text-[#3B82F6] border-0 mb-4">
-                {mockQuiz.category}
+                {quiz!.category}
               </Badge>
 
-              <h1 className="text-2xl font-bold text-white mb-2">{mockQuiz.title}</h1>
-              <p className="text-slate-400 mb-6">{mockQuiz.description}</p>
+              <h1 className="text-2xl font-bold text-white mb-2">{quiz!.title}</h1>
+              <p className="text-slate-400 mb-6">{quiz!.description}</p>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-white/5 rounded-lg p-4">
@@ -281,26 +217,26 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
                     <BookOpen className="w-4 h-4" />
                     <span className="text-sm">Số câu hỏi</span>
                   </div>
-                  <p className="text-xl font-bold text-white">{mockQuiz.totalQuestions}</p>
+                  <p className="text-xl font-bold text-white">{quiz!.totalQuestions}</p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-4">
                   <div className="flex items-center justify-center gap-2 text-slate-400 mb-1">
                     <Clock className="w-4 h-4" />
                     <span className="text-sm">Thời gian</span>
                   </div>
-                  <p className="text-xl font-bold text-white">{formatTime(mockQuiz.timeLimit)}</p>
+                  <p className="text-xl font-bold text-white">{formatTime(quiz!.timeLimit)}</p>
                 </div>
               </div>
 
               <div className="bg-white/5 rounded-lg p-4 mb-6">
-                <p className="text-sm text-slate-400 mb-2">Phần thưởng khi đạt ≥{mockQuiz.passingScore}%</p>
+                <p className="text-sm text-slate-400 mb-2">Phần thưởng khi đạt ≥{quiz!.passingScore}%</p>
                 <div className="flex items-center justify-center gap-4">
                   <Badge className="bg-amber-500/20 text-amber-400 border-0">
                     <Zap className="w-4 h-4 mr-1" />
-                    +{mockQuiz.xpReward} XP
+                    +{quiz!.xpReward} XP
                   </Badge>
                   <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
-                    +{mockQuiz.cookiesReward} 🍪
+                    +{quiz!.gemsReward} <GemImage size={14} className="inline-block align-middle" />
                   </Badge>
                 </div>
               </div>
@@ -395,7 +331,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-4xl font-bold text-white">{results.percentage}%</span>
                   <span className="text-sm text-slate-400">
-                    {results.correctCount}/{mockQuiz.totalQuestions} câu đúng
+                    {results.correctCount}/{quiz!.totalQuestions} câu đúng
                   </span>
                 </div>
               </div>
@@ -426,10 +362,10 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
                   <div className="flex items-center justify-center gap-4">
                     <Badge className="bg-amber-500/20 text-amber-400 border-0">
                       <Zap className="w-4 h-4 mr-1" />
-                      +{mockQuiz.xpReward} XP
+                      +{quiz!.xpReward} XP
                     </Badge>
                     <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
-                      +{mockQuiz.cookiesReward} 🍪
+                      +{quiz!.gemsReward} <GemImage size={14} className="inline-block align-middle" />
                     </Badge>
                   </div>
                 </motion.div>
@@ -451,7 +387,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
                     setCurrentQuestion(0);
                     setSelectedAnswer(null);
                     setAnswers([]);
-                    setTimeRemaining(mockQuiz.timeLimit);
+                    setTimeRemaining(quiz!.timeLimit);
                     setShowExplanation(false);
                   }}
                 >
@@ -474,10 +410,10 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-sm text-slate-400">
-              Câu hỏi {currentQuestion + 1}/{mockQuiz.totalQuestions}
+              Câu hỏi {currentQuestion + 1}/{quiz!.totalQuestions}
             </p>
             <Progress
-              value={((currentQuestion + 1) / mockQuiz.totalQuestions) * 100}
+              value={((currentQuestion + 1) / quiz!.totalQuestions) * 100}
               className="w-32 h-2 mt-2 bg-white/10"
             />
           </div>
@@ -492,7 +428,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
         </div>
 
         {/* Question Card */}
-        <AnimatePresence mode="wait">
+        {question && <AnimatePresence mode="wait">
           <motion.div
             key={currentQuestion}
             initial={{ opacity: 0, x: 50 }}
@@ -595,7 +531,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
               </CardContent>
             </Card>
           </motion.div>
-        </AnimatePresence>
+        </AnimatePresence>}
 
         {/* Actions */}
         <div className="flex gap-3">
@@ -613,7 +549,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
               className="w-full bg-[#3B82F6] hover:bg-[#3B82F6]/90"
               onClick={handleNextQuestion}
             >
-              {currentQuestion < mockQuiz.questions.length - 1 ? 'Câu tiếp theo' : 'Xem kết quả'}
+              {currentQuestion < quiz!.questions.length - 1 ? 'Câu tiếp theo' : 'Xem kết quả'}
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           )}

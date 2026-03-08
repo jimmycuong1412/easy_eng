@@ -50,9 +50,9 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
 
       // Fetch current balance
       const { data: balanceData, error: balanceError } = await supabase.rpc(
-        'get_student_gem_balance',
+        'get_gems_balance',
         {
-          student_id: user.id,
+          p_user_id: user.id,
         }
       );
 
@@ -69,7 +69,7 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
             event: 'INSERT',
             schema: 'public',
             table: 'gem_transactions',
-            filter: `student_id=eq.${user.id}`,
+            filter: `user_id=eq.${user.id}`,
           },
           async (payload) => {
             const newTransaction = payload.new;
@@ -78,9 +78,9 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
             if (newTransaction.amount > 0) {
               // Fetch updated balance
               const { data: newBalanceData } = await supabase.rpc(
-                'get_student_gem_balance',
+                'get_gems_balance',
                 {
-                  student_id: user.id,
+                  p_user_id: user.id,
                 }
               );
 
@@ -103,13 +103,11 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
                 onGemEarned(notification);
               }
 
-              console.log('Gem notification:', notification);
+              // Gem notification received
             }
           }
         )
-        .subscribe((status) => {
-          console.log('Gem notifications subscription status:', status);
-        });
+        .subscribe();
     };
 
     setupRealtimeListener();
@@ -120,6 +118,7 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
         supabase.removeChannel(channel);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, onGemEarned]);
 
   const clearNotification = (id: string) => {

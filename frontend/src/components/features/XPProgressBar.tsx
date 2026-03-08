@@ -42,6 +42,7 @@ export function XPProgressBar({
       }, 2000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [level, prevLevel]);
 
   const sizeClasses = {

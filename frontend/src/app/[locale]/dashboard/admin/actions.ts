@@ -21,7 +21,7 @@ export interface RevenueStats {
   averageBookingValue: number;
 }
 
-export interface CookieStats {
+export interface GemStats {
   totalCirculating: number;
   issuedThisMonth: number;
   redeemedThisMonth: number;
@@ -63,7 +63,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     // Get user counts by role
     const { data: users, error: usersError } = await supabase
       .from('profiles')
-      .select('role', { count: 'exact' })
+      .select('role')
       .in('role', ['student', 'teacher', 'parent']);
 
     if (usersError) throw usersError;
@@ -108,12 +108,12 @@ export async function getRevenueStats(): Promise<RevenueStats> {
     // Get total bookings for revenue calculation
     const { data: bookings, error: bookingsError } = await supabase
       .from('bookings')
-      .select('price')
-      .eq('status', 'completed');
+      .select('final_price')
+      .eq('payment_status', 'paid');
 
     if (bookingsError) throw bookingsError;
 
-    const totalRevenue = bookings?.reduce((sum, b) => sum + (b.price || 0), 0) || 0;
+    const totalRevenue = bookings?.reduce((sum, b) => sum + (b.final_price || 0), 0) ?? 0;
 
     // Get this month's bookings
     const now = new Date();
@@ -121,23 +121,42 @@ export async function getRevenueStats(): Promise<RevenueStats> {
 
     const { data: monthlyBookings, error: monthlyError } = await supabase
       .from('bookings')
-      .select('price')
-      .eq('status', 'completed')
+      .select('final_price')
+      .eq('payment_status', 'paid')
       .gte('created_at', monthStart.toISOString());
 
     if (monthlyError) throw monthlyError;
 
-    const monthlyRevenue = monthlyBookings?.reduce((sum, b) => sum + (b.price || 0), 0) || 0;
+    const monthlyRevenue = monthlyBookings?.reduce((sum, b) => sum + (b.final_price || 0), 0) ?? 0;
 
     // Calculate average booking value
     const totalBookingsCount = bookings?.length || 0;
     const averageBookingValue = totalBookingsCount > 0 ? totalRevenue / totalBookingsCount : 0;
 
+    // Calculate revenue growth (compare this month vs last month)
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+    const { data: lastMonthBookings } = await supabase
+      .from('bookings')
+      .select('final_price')
+      .eq('payment_status', 'paid')
+      .gte('created_at', lastMonthStart.toISOString())
+      .lte('created_at', lastMonthEnd.toISOString());
+    const lastMonthRevenue = lastMonthBookings?.reduce((sum, b) => sum + (b.final_price || 0), 0) ?? 0;
+    const revenueGrowth = lastMonthRevenue > 0 ? ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0;
+
+    // Get pending payouts
+    const { data: pendingPayoutData } = await supabase
+      .from('payout_requests')
+      .select('amount')
+      .in('status', ['pending', 'reviewing', 'approved']);
+    const pendingPayouts = pendingPayoutData?.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) ?? 0;
+
     return {
       totalRevenue,
-      revenueGrowth: 23.5, // Mock for now
+      revenueGrowth: Math.round(revenueGrowth * 10) / 10,
       monthlyRevenue,
-      pendingPayouts: 12500000, // Mock for now
+      pendingPayouts,
       averageBookingValue,
     };
   } catch (error) {
@@ -147,39 +166,36 @@ export async function getRevenueStats(): Promise<RevenueStats> {
 }
 
 /**
- * Get cookie statistics from Supabase
+ * Get gem statistics from Supabase
  */
-export async function getCookieStats(): Promise<CookieStats> {
+export async function getGemStats(): Promise<GemStats> {
   try {
     const supabase = await createClient();
 
-    // Get total cookies in circulation
-    const { data: balances, error: balancesError } = await supabase
-      .from('cookie_balances')
-      .select('balance');
-
-    if (balancesError) throw balancesError;
-
-    const totalCirculating = balances?.reduce((sum, b) => sum + (b.balance || 0), 0) || 0;
-
-    // Get this month's issued and redeemed cookies
+    // Get total gems in circulation (sum of positive balances from gem_transactions)
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const { data: transactions, error: transError } = await supabase
-      .from('cookie_transactions')
-      .select('amount, type')
+      .from('gem_transactions')
+      .select('amount, transaction_type')
       .gte('created_at', monthStart.toISOString());
 
     if (transError) throw transError;
 
     const issuedThisMonth = transactions
-      ?.filter(t => t.type === 'earn')
-      .reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+      ?.filter(t => t.transaction_type === 'earn' || (t.amount > 0))
+      .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0) || 0;
 
     const redeemedThisMonth = transactions
-      ?.filter(t => t.type === 'spend')
-      .reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+      ?.filter(t => t.transaction_type === 'spend' || (t.amount < 0))
+      .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0) || 0;
+
+    // Get total circulating gems
+    const { data: allTransactions } = await supabase
+      .from('gem_transactions')
+      .select('amount');
+    const totalCirculating = allTransactions?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
 
     const averageRedemption = redeemedThisMonth > 0
       ? Math.round(redeemedThisMonth / (transactions?.length || 1))
@@ -192,10 +208,15 @@ export async function getCookieStats(): Promise<CookieStats> {
       averageRedemption,
     };
   } catch (error) {
-    console.error('Error fetching cookie stats:', error);
+    console.error('Error fetching gem stats:', error);
     throw error;
   }
 }
+
+/** @deprecated Use getGemStats instead */
+export const getCookieStats = getGemStats;
+/** @deprecated Use GemStats instead */
+export type CookieStats = GemStats;
 
 /**
  * Get booking statistics from Supabase
@@ -207,7 +228,7 @@ export async function getBookingStats(): Promise<BookingStats> {
     // Get total bookings
     const { data: allBookings, error: bookingsError } = await supabase
       .from('bookings')
-      .select('status');
+      .select('payment_status');
 
     if (bookingsError) throw bookingsError;
 
@@ -220,7 +241,7 @@ export async function getBookingStats(): Promise<BookingStats> {
     const { data: completedBookings, error: completedError } = await supabase
       .from('bookings')
       .select('id')
-      .eq('status', 'completed')
+      .eq('payment_status', 'paid')
       .gte('created_at', monthStart.toISOString());
 
     if (completedError) throw completedError;
@@ -250,26 +271,15 @@ export async function getTopTeachers(limit: number = 5): Promise<TopTeacher[]> {
   try {
     const supabase = await createClient();
 
-    // Get teachers with their revenue (sum of completed bookings)
+    // Get teachers via classes joined with bookings
     const { data: bookings, error: bookingsError } = await supabase
       .from('bookings')
-      .select('teacher_id, price, id')
-      .eq('status', 'completed');
+      .select('final_price, class_id, classes!inner(teacher_id)')
+      .eq('payment_status', 'paid');
 
     if (bookingsError) throw bookingsError;
 
     // Get teacher profiles
-    const { data: teachers, error: teachersError } = await supabase
-      .from('teacher_profiles')
-      .select('id, user_id, avg_rating')
-      .limit(limit);
-
-    if (teachersError && teachersError.code !== 'PGRST116') {
-      // PGRST116 means table doesn't exist, which is fine for demo
-      throw teachersError;
-    }
-
-    // Get teacher names from profiles
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, full_name, avatar_url')
@@ -281,12 +291,13 @@ export async function getTopTeachers(limit: number = 5): Promise<TopTeacher[]> {
     const teacherStats = new Map<string, { revenue: number; bookings: number }>();
 
     bookings?.forEach(booking => {
-      const teacherId = booking.teacher_id;
+      const teacherId = (booking.classes as any)?.teacher_id;
+      if (!teacherId) return;
       if (!teacherStats.has(teacherId)) {
         teacherStats.set(teacherId, { revenue: 0, bookings: 0 });
       }
       const stats = teacherStats.get(teacherId)!;
-      stats.revenue += booking.price || 0;
+      stats.revenue += booking.final_price || 0;
       stats.bookings += 1;
     });
 
@@ -299,7 +310,7 @@ export async function getTopTeachers(limit: number = 5): Promise<TopTeacher[]> {
           name: teacher?.full_name || 'Unknown',
           revenue: stats.revenue,
           bookings: stats.bookings,
-          rating: 4.8, // Default rating, would come from teacher_profiles
+          rating: 4.8,
           avatar_url: teacher?.avatar_url || undefined,
         };
       })
@@ -320,36 +331,38 @@ export async function getRecentActivities(limit: number = 5): Promise<RecentActi
   try {
     const supabase = await createClient();
 
-    // For now, return mock data
-    // In production, you would have an activity log table
-    const activities: RecentActivity[] = [
-      {
-        id: '1',
-        type: 'user_signup',
-        message: 'Người dùng mới đã đăng ký',
-        time: '2 phút trước',
-        icon: 'UserPlus',
-        color: 'text-emerald-400',
-      },
-      {
-        id: '2',
-        type: 'booking',
-        message: 'Lớp học mới đã được đặt',
-        time: '5 phút trước',
-        icon: 'Calendar',
-        color: 'text-[#3B82F6]',
-      },
-      {
-        id: '3',
-        type: 'payment',
-        message: 'Thanh toán mới được xử lý',
-        time: '12 phút trước',
-        icon: 'DollarSign',
-        color: 'text-amber-400',
-      },
-    ];
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('id, type, title, message, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-    return activities;
+    if (error) throw error;
+
+    const typeMap: Record<string, { activityType: RecentActivity['type']; icon: string; color: string }> = {
+      booking_confirmed: { activityType: 'booking', icon: 'Calendar', color: 'text-[#3B82F6]' },
+      booking_cancelled: { activityType: 'booking', icon: 'Calendar', color: 'text-red-400' },
+      payment_received: { activityType: 'payment', icon: 'DollarSign', color: 'text-amber-400' },
+      gems_earned: { activityType: 'payment', icon: 'DollarSign', color: 'text-emerald-400' },
+      level_up: { activityType: 'user_signup', icon: 'UserPlus', color: 'text-purple-400' },
+    };
+
+    return (data || []).map((n) => {
+      const mapped = typeMap[n.type] || { activityType: 'report' as const, icon: 'Bell', color: 'text-slate-400' };
+      const createdAt = new Date(n.created_at);
+      const diffMs = Date.now() - createdAt.getTime();
+      const diffMin = Math.floor(diffMs / 60000);
+      const time = diffMin < 60 ? `${diffMin} phút trước` : `${Math.floor(diffMin / 60)} giờ trước`;
+
+      return {
+        id: n.id,
+        type: mapped.activityType,
+        message: n.message || n.title,
+        time,
+        icon: mapped.icon,
+        color: mapped.color,
+      };
+    });
   } catch (error) {
     console.error('Error fetching recent activities:', error);
     return [];

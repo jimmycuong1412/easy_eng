@@ -24,6 +24,7 @@ export function ClassCatalog({ onSelectClass }: ClassCatalogProps) {
 
   useEffect(() => {
     fetchClasses();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelFilter, availableOnly]);
 
   const fetchClasses = async () => {

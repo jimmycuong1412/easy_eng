@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { GemImage } from '@/components/common/GemImage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -179,7 +180,7 @@ export default function GemsRulesPage() {
               <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{Math.round(stats.averageReward)} 💎</div>
+              <div className="text-2xl font-bold flex items-center gap-1">{Math.round(stats.averageReward)} <GemImage size={20} /></div>
             </CardContent>
           </Card>
         </div>
@@ -246,7 +247,7 @@ export default function GemsRulesPage() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Reward:</span>{' '}
-                        <span className="font-medium">{rule.gem_reward} 💎</span>
+                        <span className="font-medium inline-flex items-center gap-1">{rule.gem_reward} <GemImage size={14} /></span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Rate Limit:</span>{' '}

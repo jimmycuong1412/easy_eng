@@ -20,6 +20,7 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
 
   useEffect(() => {
     fetchGemAnalytics();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
   const fetchGemAnalytics = async () => {
@@ -77,11 +78,11 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total in Circulation</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Total in Circulation</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">
                 {summary.total_in_circulation?.toLocaleString() || 0}
               </p>
             </div>
@@ -91,15 +92,15 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Minted (Period)</p>
+              <p className="text-sm text-text-muted">Minted (Period)</p>
               <p className="mt-1 text-2xl font-semibold text-green-600">
                 +{summary.total_minted?.toLocaleString() || 0}
               </p>
               {summary.minting_growth !== undefined && (
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-text-muted">
                   {summary.minting_growth >= 0 ? '+' : ''}
                   {summary.minting_growth.toFixed(1)}% vs prev period
                 </p>
@@ -109,10 +110,10 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Burned (Period)</p>
+              <p className="text-sm text-text-muted">Burned (Period)</p>
               <p className="mt-1 text-2xl font-semibold text-red-600">
                 -{summary.total_burned?.toLocaleString() || 0}
               </p>
@@ -121,11 +122,11 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Avg Balance</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Avg Balance</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">
                 {summary.avg_balance?.toFixed(0) || 0}
               </p>
             </div>
@@ -135,8 +136,8 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
       </div>
 
       {/* Balance Distribution */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h3 className="mb-4 text-lg font-semibold text-text-primary">
           Student Balance Distribution
         </h3>
 
@@ -154,12 +155,12 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
             return (
               <div key={item.level}>
                 <div className="mb-1 flex items-center justify-between text-sm">
-                  <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
-                  <span className="text-gray-600 dark:text-gray-400">
+                  <span className="text-text-secondary">{item.label}</span>
+                  <span className="text-text-secondary">
                     {count} ({percentage.toFixed(1)}%)
                   </span>
                 </div>
-                <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+                <div className="h-2 w-full rounded-full bg-bg-elevated">
                   <div
                     className={`h-2 rounded-full ${item.color}`}
                     style={{ width: `${(count / total) * 100}%` }}
@@ -172,8 +173,8 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
       </div>
 
       {/* Circulation by Activity */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h3 className="mb-4 text-lg font-semibold text-text-primary">
           Circulation by Activity Type
         </h3>
 
@@ -181,13 +182,13 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
           {data?.circulation_by_activity?.map((activity: any, index: number) => (
             <div
               key={index}
-              className="flex items-center justify-between border-b border-gray-100 pb-2 dark:border-gray-700"
+              className="flex items-center justify-between border-b border-border-default pb-2"
             >
               <div>
-                <p className="font-medium capitalize text-gray-900 dark:text-white">
+                <p className="font-medium capitalize text-text-primary">
                   {activity.activity_type.replace(/_/g, ' ')}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-text-muted">
                   {activity.total_transactions} transactions
                 </p>
               </div>
@@ -205,8 +206,8 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
       </div>
 
       {/* Top Balances */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h3 className="mb-4 text-lg font-semibold text-text-primary">
           Top Student Balances
         </h3>
 
@@ -214,17 +215,17 @@ export default function GemCirculationChart({ startDate, endDate }: any) {
           {data?.top_balances?.slice(0, 10).map((student: any, index: number) => (
             <div
               key={index}
-              className="flex items-center justify-between border-b border-gray-100 pb-2 dark:border-gray-700"
+              className="flex items-center justify-between border-b border-border-default pb-2"
             >
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">{student.full_name}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="font-medium text-text-primary">{student.full_name}</p>
+                <p className="text-sm text-text-muted">
                   {student.total_transactions} transactions
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Gem className="h-4 w-4 text-purple-500" />
-                <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="font-semibold text-text-primary">
                   {student.current_balance.toLocaleString()}
                 </span>
               </div>

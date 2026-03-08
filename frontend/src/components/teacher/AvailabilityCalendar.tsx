@@ -11,6 +11,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 
 interface AvailabilityRow {
   day_of_week: number;
@@ -23,7 +24,11 @@ interface SlotState {
   [key: string]: boolean;
 }
 
-const DAY_NAMES = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+interface AvailabilityCalendarProps {
+  locale?: string;
+}
+
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const ORDERED_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun display order
 
 /** Expand an availability range into 30-min slot start times */
@@ -42,7 +47,8 @@ function expandSlots(startTime: string, endTime: string): string[] {
   return slots;
 }
 
-export default function AvailabilityCalendar() {
+export default function AvailabilityCalendar({ locale: _locale }: AvailabilityCalendarProps) {
+  const t = useTranslations('teacherSchedule');
   const supabase = createClient();
   const [availability, setAvailability] = useState<AvailabilityRow[]>([]);
   const [slotState, setSlotState] = useState<SlotState>({});
@@ -78,7 +84,7 @@ export default function AvailabilityCalendar() {
       const state: SlotState = {};
       rows.forEach((row) => {
         expandSlots(row.start_time, row.end_time).forEach((slot) => {
-          state[`${row.day_of_week}:${slot}`] = true; // default enabled
+          state[`${row.day_of_week}:${slot}`] = true;
         });
       });
       (overridesResult.data ?? []).forEach((o) => {
@@ -108,10 +114,9 @@ export default function AvailabilityCalendar() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Upsert all slots that exist in state
       const rows = Object.entries(slotState).map(([key, isEnabled]) => {
         const day = parseInt(key.split(':')[0]);
-        const hm = key.slice(key.indexOf(':') + 1); // "HH:MM"
+        const hm = key.slice(key.indexOf(':') + 1);
         return {
           teacher_id: user.id,
           day_of_week: day,
@@ -158,7 +163,7 @@ export default function AvailabilityCalendar() {
 
       {availability.length === 0 ? (
         <p className="text-sm text-slate-400 text-center py-8">
-          Chưa có khung giờ. Thêm availability range trước.
+          {t('availSettings.noSlots')}
         </p>
       ) : (
         ORDERED_DAYS.map((dayIndex) => {
@@ -170,12 +175,13 @@ export default function AvailabilityCalendar() {
 
           const enabledCount = allSlots.filter((s) => slotState[`${dayIndex}:${s}`] !== false).length;
           const allOn = enabledCount === allSlots.length;
+          const dayName = t(`days.${DAY_KEYS[dayIndex]}`);
 
           return (
             <div key={dayIndex} className="rounded-lg border border-white/10 bg-white/5 p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <span className="font-semibold text-white">{DAY_NAMES[dayIndex]}</span>
+                  <span className="font-semibold text-white">{dayName}</span>
                   <span className="ml-2 text-xs text-slate-400">
                     {enabledCount}/{allSlots.length} slot
                   </span>
@@ -192,7 +198,7 @@ export default function AvailabilityCalendar() {
                   }}
                   className="text-xs text-slate-400 hover:text-white underline"
                 >
-                  {allOn ? 'Tắt tất cả' : 'Bật tất cả'}
+                  {allOn ? t('availSettings.disableAll') : t('availSettings.enableAll')}
                 </button>
               </div>
 
@@ -226,11 +232,11 @@ export default function AvailabilityCalendar() {
         className="w-full bg-[#3B82F6] hover:bg-[#3B82F6]/90"
       >
         {saving ? (
-          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang lưu...</>
+          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('availSettings.saving')}</>
         ) : saved ? (
-          '✓ Đã lưu'
+          t('availSettings.saved')
         ) : (
-          <><Save className="mr-2 h-4 w-4" />Lưu cài đặt slot</>
+          <><Save className="mr-2 h-4 w-4" />{t('availSettings.saveBtn')}</>
         )}
       </Button>
     </div>

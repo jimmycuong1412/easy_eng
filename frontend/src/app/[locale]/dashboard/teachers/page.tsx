@@ -1,10 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { motion } from 'framer-motion';
 
+import { useTranslations } from 'next-intl';
+
 import { cn, formatNumber } from '@/lib/utils';
+import { env } from '@/lib/env';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,9 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PixelAvatar } from '@/components/features/PixelAvatar';
 
-// Filter options
+// Specialization keys (not translated - these are English category names)
 const specializations = [
-  'Tất cả',
+  'all',
   'Conversation',
   'Business English',
   'IELTS',
@@ -25,121 +28,34 @@ const specializations = [
 ];
 
 const priceRanges = [
-  { label: 'Tất cả', min: 0, max: Infinity },
-  { label: 'Dưới 100k', min: 0, max: 100000 },
-  { label: '100k - 200k', min: 100000, max: 200000 },
-  { label: '200k - 300k', min: 200000, max: 300000 },
-  { label: 'Trên 300k', min: 300000, max: Infinity },
+  { labelKey: 'priceAll', min: 0, max: Infinity },
+  { labelKey: 'priceUnder100k', min: 0, max: 100000 },
+  { labelKey: 'price100to200k', min: 100000, max: 200000 },
+  { labelKey: 'price200to300k', min: 200000, max: 300000 },
+  { labelKey: 'priceOver300k', min: 300000, max: Infinity },
 ];
 
 const sortOptions = [
-  { label: 'Phổ biến nhất', value: 'popular' },
-  { label: 'Đánh giá cao', value: 'rating' },
-  { label: 'Giá thấp nhất', value: 'price_asc' },
-  { label: 'Giá cao nhất', value: 'price_desc' },
+  { labelKey: 'sortPopular', value: 'popular' },
+  { labelKey: 'sortRating', value: 'rating' },
+  { labelKey: 'sortPriceAsc', value: 'price_asc' },
+  { labelKey: 'sortPriceDesc', value: 'price_desc' },
 ];
 
-// Mock data - includes real teacher from database
-const mockTeachers = [
-  {
-    id: '7a46e4e2-782c-471a-ba1b-cea449e75028', // Real teacher ID from Supabase
-    name: 'Teacher', // Real teacher name from database
-    avatar: undefined, // Will use fallback with user initials
-    bio: 'Experienced English teacher with 5 years of teaching experience. Specialized in conversational English and IELTS preparation.',
-    specializations: ['IELTS', 'Conversational', 'Business English'], // From teacher_profiles.specialties
-    languages: ['English', 'Vietnamese'],
-    hourlyRate: 200000, // From teacher_profiles.hourly_rate
-    rating: 4.85, // From teacher_profiles.avg_rating
-    totalReviews: 42, // From teacher_profiles.total_reviews
-    totalClasses: 150,
-    isOnline: true,
-    isVerified: true, // From teacher_profiles.verified
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    avatar: undefined,
-    bio: 'Native English speaker with 5+ years of teaching experience. Specializing in Business English and interview preparation.',
-    specializations: ['Business English', 'Conversation', 'IELTS'],
-    languages: ['English', 'Vietnamese (Basic)'],
-    hourlyRate: 180000,
-    rating: 4.9,
-    totalReviews: 128,
-    totalClasses: 450,
-    isOnline: true,
-    isVerified: true,
-  },
-  {
-    id: '3',
-    name: 'Michael Chen',
-    avatar: undefined,
-    bio: 'IELTS certified examiner. Helped 200+ students achieve their target scores. Fluent in English and Mandarin.',
-    specializations: ['IELTS', 'TOEIC', 'Academic Writing'],
-    languages: ['English', 'Mandarin', 'Vietnamese'],
-    hourlyRate: 220000,
-    rating: 4.95,
-    totalReviews: 256,
-    totalClasses: 820,
-    isOnline: false,
-    isVerified: true,
-  },
-  {
-    id: '4',
-    name: 'Emily Davis',
-    avatar: undefined,
-    bio: 'Fun and engaging lessons for kids! I make learning English an adventure with games and interactive activities.',
-    specializations: ['Kids English', 'Conversation', 'Pronunciation'],
-    languages: ['English'],
-    hourlyRate: 120000,
-    rating: 5.0,
-    totalReviews: 89,
-    totalClasses: 310,
-    isOnline: true,
-    isVerified: true,
-  },
-  {
-    id: '5',
-    name: 'James Wilson',
-    avatar: undefined,
-    bio: 'TOEIC specialist with proven track record. Average score improvement of 150+ points for my students.',
-    specializations: ['TOEIC', 'Business English', 'Academic Writing'],
-    languages: ['English', 'Japanese'],
-    hourlyRate: 200000,
-    rating: 4.8,
-    totalReviews: 167,
-    totalClasses: 580,
-    isOnline: true,
-    isVerified: true,
-  },
-  {
-    id: '6',
-    name: 'Lisa Park',
-    avatar: undefined,
-    bio: 'Patient and friendly teacher. Perfect for beginners who want to build confidence in speaking English.',
-    specializations: ['Conversation', 'Pronunciation', 'Kids English'],
-    languages: ['English', 'Korean', 'Vietnamese'],
-    hourlyRate: 150000,
-    rating: 4.85,
-    totalReviews: 92,
-    totalClasses: 340,
-    isOnline: false,
-    isVerified: false,
-  },
-  {
-    id: '7',
-    name: 'David Thompson',
-    avatar: undefined,
-    bio: 'British accent specialist. Former BBC journalist. Teaching proper pronunciation and British English idioms.',
-    specializations: ['Pronunciation', 'Business English', 'Conversation'],
-    languages: ['English'],
-    hourlyRate: 250000,
-    rating: 4.92,
-    totalReviews: 78,
-    totalClasses: 290,
-    isOnline: true,
-    isVerified: true,
-  },
-];
+type Teacher = {
+  id: string;
+  name: string;
+  avatar: string | undefined;
+  bio: string;
+  specializations: string[];
+  languages: string[];
+  hourlyRate: number;
+  rating: number;
+  totalReviews: number;
+  totalClasses: number;
+  isOnline: boolean;
+  isVerified: boolean;
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -155,16 +71,58 @@ const itemVariants = {
 };
 
 export default function TeachersPage() {
+  const t = useTranslations('teachers');
+  const [teachers, setTeachers] = React.useState<Teacher[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedSpecialization, setSelectedSpecialization] = React.useState('Tất cả');
+  const [selectedSpecialization, setSelectedSpecialization] = React.useState('all');
   const [selectedPriceRange, setSelectedPriceRange] = React.useState(priceRanges[0]);
   const [selectedSort, setSelectedSort] = React.useState(sortOptions[0]);
   const [showOnlineOnly, setShowOnlineOnly] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
+        const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        const res = await fetch(
+          `${supabaseUrl}/rest/v1/profiles?select=id,full_name,avatar_url,bio,role,is_active&role=eq.teacher&is_active=eq.true&order=full_name.asc`,
+          {
+            headers: {
+              apikey: anonKey,
+              Authorization: `Bearer ${anonKey}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        const data: Record<string, unknown>[] = await res.json();
+        const mapped: Teacher[] = (data || []).map((t) => ({
+          id: t.id as string,
+          name: (t.full_name as string) || 'Teacher',
+          avatar: (t.avatar_url as string) || undefined,
+          bio: (t.bio as string) || '',
+          specializations: ['English'],
+          languages: ['English', 'Vietnamese'],
+          hourlyRate: 200000,
+          rating: 0,
+          totalReviews: 0,
+          totalClasses: 0,
+          isOnline: true,
+          isVerified: true,
+        }));
+        setTeachers(mapped);
+      } catch (err) {
+        console.error('Failed to load teachers:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   // Filter and sort teachers
   const filteredTeachers = React.useMemo(() => {
-    let result = [...mockTeachers];
+    let result = [...teachers];
 
     // Search filter
     if (searchQuery) {
@@ -178,7 +136,7 @@ export default function TeachersPage() {
     }
 
     // Specialization filter
-    if (selectedSpecialization !== 'Tất cả') {
+    if (selectedSpecialization !== 'all') {
       result = result.filter((t) =>
         t.specializations.includes(selectedSpecialization)
       );
@@ -214,17 +172,17 @@ export default function TeachersPage() {
     }
 
     return result;
-  }, [searchQuery, selectedSpecialization, selectedPriceRange, selectedSort, showOnlineOnly]);
+  }, [teachers, searchQuery, selectedSpecialization, selectedPriceRange, selectedSort, showOnlineOnly]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary">
-          Tìm giáo viên
+          {t('title')}
         </h1>
         <p className="text-text-secondary mt-1">
-          {filteredTeachers.length} giáo viên phù hợp
+          {t('matchCount', { count: filteredTeachers.length })}
         </p>
       </div>
 
@@ -235,7 +193,7 @@ export default function TeachersPage() {
           <div className="relative">
             <Input
               type="text"
-              placeholder="Tìm theo tên, chuyên môn..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -260,7 +218,7 @@ export default function TeachersPage() {
                       : 'bg-bg-elevated text-text-secondary hover:bg-bg-surface'
                   )}
                 >
-                  {spec}
+                  {spec === 'all' ? t('all') : spec}
                 </button>
               ))}
             </div>
@@ -270,7 +228,7 @@ export default function TeachersPage() {
           <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-border-default">
             {/* Price range */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-text-muted">Giá:</span>
+              <span className="text-sm text-text-muted">{t('price')}</span>
               <select
                 value={priceRanges.findIndex((p) => p === selectedPriceRange)}
                 onChange={(e) => setSelectedPriceRange(priceRanges[Number(e.target.value)])}
@@ -278,7 +236,7 @@ export default function TeachersPage() {
               >
                 {priceRanges.map((range, i) => (
                   <option key={i} value={i}>
-                    {range.label}
+                    {t(range.labelKey)}
                   </option>
                 ))}
               </select>
@@ -286,7 +244,7 @@ export default function TeachersPage() {
 
             {/* Sort */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-text-muted">Sắp xếp:</span>
+              <span className="text-sm text-text-muted">{t('sortBy')}</span>
               <select
                 value={sortOptions.findIndex((s) => s === selectedSort)}
                 onChange={(e) => setSelectedSort(sortOptions[Number(e.target.value)])}
@@ -294,7 +252,7 @@ export default function TeachersPage() {
               >
                 {sortOptions.map((option, i) => (
                   <option key={i} value={i}>
-                    {option.label}
+                    {t(option.labelKey)}
                   </option>
                 ))}
               </select>
@@ -309,7 +267,7 @@ export default function TeachersPage() {
                 className="w-4 h-4 rounded border-border-default bg-bg-elevated text-accent-primary focus:ring-accent-primary"
               />
               <span className="text-sm text-text-secondary">
-                Chỉ hiện online
+                {t('onlineOnly')}
               </span>
             </label>
           </div>
@@ -339,18 +297,18 @@ export default function TeachersPage() {
       ) : (
         <Card className="p-12 text-center">
           <p className="text-text-muted text-lg mb-4">
-            Không tìm thấy giáo viên phù hợp
+            {t('noResults')}
           </p>
           <Button
             variant="outline"
             onClick={() => {
               setSearchQuery('');
-              setSelectedSpecialization('Tất cả');
+              setSelectedSpecialization('all');
               setSelectedPriceRange(priceRanges[0]);
               setShowOnlineOnly(false);
             }}
           >
-            Xóa bộ lọc
+            {t('clearFilters')}
           </Button>
         </Card>
       )}
@@ -358,7 +316,8 @@ export default function TeachersPage() {
   );
 }
 
-function TeacherCard({ teacher }: { teacher: (typeof mockTeachers)[0] }) {
+function TeacherCard({ teacher }: { teacher: Teacher }) {
+  const t = useTranslations('teachers');
   return (
     <Link href={`/dashboard/teachers/${teacher.id}`}>
       <Card variant="interactive" className="h-full overflow-hidden">
@@ -394,11 +353,11 @@ function TeacherCard({ teacher }: { teacher: (typeof mockTeachers)[0] }) {
                     {teacher.rating}
                   </span>
                   <span className="text-sm text-text-muted">
-                    ({teacher.totalReviews} đánh giá)
+                    ({t('reviews', { count: teacher.totalReviews })})
                   </span>
                 </div>
                 <p className="text-sm text-text-muted mt-1">
-                  {teacher.totalClasses} lớp học
+                  {t('totalClasses', { count: teacher.totalClasses })}
                 </p>
               </div>
             </div>
@@ -431,9 +390,9 @@ function TeacherCard({ teacher }: { teacher: (typeof mockTeachers)[0] }) {
                 <p className="text-lg font-bold text-accent-primary">
                   {formatNumber(teacher.hourlyRate)}đ
                 </p>
-                <p className="text-xs text-text-muted">/ 25 phút</p>
+                <p className="text-xs text-text-muted">{t('perSession')}</p>
               </div>
-              <Button size="sm">Xem chi tiết</Button>
+              <Button size="sm">{t('viewDetails')}</Button>
             </div>
           </div>
         </CardContent>

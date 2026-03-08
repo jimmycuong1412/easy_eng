@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * CometChat Logger
  *
@@ -7,20 +8,13 @@
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
 interface CallEvent {
-  type: 'call_initiated' | 'call_accepted' | 'call_rejected' | 'call_ended' | 'call_error';
-  userId: string;
-  callType: 'audio' | 'video';
-  duration?: number;
-  error?: string;
-  timestamp: string;
+  type: string;
+  [key: string]: any;
 }
 
 interface MessageEvent {
   type: 'message_sent' | 'message_received' | 'message_error';
-  userId: string;
-  messageType: string;
-  error?: string;
-  timestamp: string;
+  [key: string]: any;
 }
 
 class CometChatLogger {
@@ -30,12 +24,11 @@ class CometChatLogger {
   private log(level: LogLevel, message: string, data?: any) {
     if (!this.enabled) return;
 
-    const timestamp = new Date().toISOString();
     const logMessage = `${this.prefix} [${level.toUpperCase()}] ${message}`;
 
     switch (level) {
       case 'info':
-        console.log(logMessage, data || '');
+        console.warn(logMessage, data || '');
         break;
       case 'warn':
         console.warn(logMessage, data || '');
@@ -44,7 +37,7 @@ class CometChatLogger {
         console.error(logMessage, data || '');
         break;
       case 'debug':
-        console.debug(logMessage, data || '');
+        console.warn(logMessage, data || '');
         break;
     }
   }

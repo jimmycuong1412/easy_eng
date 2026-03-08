@@ -6,19 +6,13 @@ import Link from 'next/link';
 import {
   Plus,
   FileText,
-  Image as ImageIcon,
-  Video,
   HelpCircle,
-  Clock,
-  Award,
   Save,
   Eye,
   Trash2,
   GripVertical,
   ChevronLeft,
   CheckCircle,
-  X,
-  Settings,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -85,11 +78,11 @@ export default function QuizCreatorPage() {
   const [timeLimit, setTimeLimit] = React.useState('10');
   const [passingScore, setPassingScore] = React.useState('70');
   const [xpReward, setXpReward] = React.useState('50');
-  const [cookieReward, setCookieReward] = React.useState('5');
+  const [gemReward, setGemReward] = React.useState('5');
   const [questions, setQuestions] = React.useState<Question[]>([]);
   const [showAddQuestion, setShowAddQuestion] = React.useState(false);
-  const [editingQuestion, setEditingQuestion] = React.useState<Question | null>(null);
-  const [showPreview, setShowPreview] = React.useState(false);
+  const [_editingQuestion, _setEditingQuestion] = React.useState<Question | null>(null);
+  const [_showPreview, setShowPreview] = React.useState(false);
 
   // New question form state
   const [newQuestion, setNewQuestion] = React.useState<Partial<Question>>({
@@ -131,7 +124,7 @@ export default function QuizCreatorPage() {
   const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] py-8">
+    <div className="py-6">
       <div className="max-w-5xl mx-auto px-4">
         {/* Header */}
         <motion.div
@@ -297,11 +290,11 @@ export default function QuizCreatorPage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-xs text-slate-500">Cookies</Label>
+                      <Label className="text-xs text-slate-500">Gems</Label>
                       <Input
                         type="number"
-                        value={cookieReward}
-                        onChange={(e) => setCookieReward(e.target.value)}
+                        value={gemReward}
+                        onChange={(e) => setGemReward(e.target.value)}
                         className="bg-white/5 border-white/10 text-white"
                       />
                     </div>

@@ -20,6 +20,7 @@ export default function RevenueChart({ startDate, endDate }: any) {
 
   useEffect(() => {
     fetchRevenueAnalytics();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
   const fetchRevenueAnalytics = async () => {
@@ -76,11 +77,11 @@ export default function RevenueChart({ startDate, endDate }: any) {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Gross Revenue</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Gross Revenue</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">
                 ${summary.total_gross_revenue?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
               </p>
               {summary.revenue_growth !== undefined && (
@@ -96,40 +97,40 @@ export default function RevenueChart({ startDate, endDate }: any) {
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Teacher Earnings</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Teacher Earnings</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">
                 ${summary.total_teacher_earnings?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
               </p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">70% split</p>
+              <p className="mt-1 text-xs text-text-muted">70% split</p>
             </div>
             <Users className="h-6 w-6 text-blue-500" />
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Platform Fee</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Platform Fee</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">
                 ${summary.total_platform_fee?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
               </p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">30% split</p>
+              <p className="mt-1 text-xs text-text-muted">30% split</p>
             </div>
             <TrendingUp className="h-6 w-6 text-purple-500" />
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-border-default bg-bg-surface p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Net Profit</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm text-text-muted">Net Profit</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">
                 ${summary.total_net_profit?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
               </p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-xs text-text-muted">
                 {summary.net_margin_pct?.toFixed(1) || 0}% margin
               </p>
             </div>
@@ -139,8 +140,8 @@ export default function RevenueChart({ startDate, endDate }: any) {
       </div>
 
       {/* Revenue by Payment Method */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h3 className="mb-4 text-lg font-semibold text-text-primary">
           Revenue by Payment Method
         </h3>
 
@@ -165,21 +166,21 @@ export default function RevenueChart({ startDate, endDate }: any) {
                 <div className="mb-1 flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4" />
-                    <span className="font-medium uppercase text-gray-700 dark:text-gray-300">
+                    <span className="font-medium uppercase text-text-secondary">
                       {method.payment_method.replace('_', ' ')}
                     </span>
                   </div>
-                  <span className="text-gray-600 dark:text-gray-400">
+                  <span className="text-text-secondary">
                     ${method.gross_revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })} ({percentage.toFixed(1)}%)
                   </span>
                 </div>
-                <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+                <div className="h-2 w-full rounded-full bg-bg-elevated">
                   <div
                     className={`h-2 rounded-full ${methodColors[method.payment_method] || 'bg-gray-400'}`}
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-text-muted">
                   {method.booking_count} bookings • Gateway fees: $
                   {method.gateway_fees.toFixed(0)}
                 </p>
@@ -190,8 +191,8 @@ export default function RevenueChart({ startDate, endDate }: any) {
       </div>
 
       {/* Top Earning Teachers */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h3 className="mb-4 text-lg font-semibold text-text-primary">
           Top Earning Teachers
         </h3>
 
@@ -199,24 +200,24 @@ export default function RevenueChart({ startDate, endDate }: any) {
           {data?.top_teachers?.map((teacher: any, index: number) => (
             <div
               key={index}
-              className="flex items-center justify-between border-b border-gray-100 pb-2 dark:border-gray-700"
+              className="flex items-center justify-between border-b border-border-default pb-2"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30">
                   #{index + 1}
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{teacher.teacher_name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="font-medium text-text-primary">{teacher.teacher_name}</p>
+                  <p className="text-sm text-text-muted">
                     {teacher.classes_taught} classes • {teacher.total_bookings} bookings
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-gray-900 dark:text-white">
+                <p className="font-semibold text-text-primary">
                   ${teacher.total_earnings.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-text-muted">
                   ${teacher.avg_booking_price.toFixed(0)} avg
                 </p>
               </div>
@@ -226,44 +227,44 @@ export default function RevenueChart({ startDate, endDate }: any) {
       </div>
 
       {/* Revenue Breakdown */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="rounded-lg border border-border-default bg-bg-surface p-6">
+        <h3 className="mb-4 text-lg font-semibold text-text-primary">
           Revenue Breakdown
         </h3>
 
         <div className="space-y-3">
           <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 dark:text-gray-400">Gross Revenue</span>
-            <span className="font-semibold text-gray-900 dark:text-white">
+            <span className="text-text-secondary">Gross Revenue</span>
+            <span className="font-semibold text-text-primary">
               ${summary.total_gross_revenue?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
             </span>
           </div>
           <div className="flex justify-between border-b pb-2 pl-4">
-            <span className="text-gray-600 dark:text-gray-400">Gems Discount Value</span>
+            <span className="text-text-secondary">Gems Discount Value</span>
             <span className="text-amber-600">
               -${summary.total_gems_value?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
             </span>
           </div>
           <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 dark:text-gray-400">Net Cash Revenue</span>
-            <span className="font-semibold text-gray-900 dark:text-white">
+            <span className="text-text-secondary">Net Cash Revenue</span>
+            <span className="font-semibold text-text-primary">
               ${summary.total_net_revenue?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
             </span>
           </div>
           <div className="flex justify-between border-b pb-2 pl-4">
-            <span className="text-gray-600 dark:text-gray-400">Teacher Earnings (70%)</span>
+            <span className="text-text-secondary">Teacher Earnings (70%)</span>
             <span className="text-blue-600">
               -${summary.total_teacher_earnings?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
             </span>
           </div>
           <div className="flex justify-between border-b pb-2 pl-4">
-            <span className="text-gray-600 dark:text-gray-400">Gateway Fees</span>
+            <span className="text-text-secondary">Gateway Fees</span>
             <span className="text-red-600">
               -${summary.total_gateway_fees?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
             </span>
           </div>
           <div className="flex justify-between bg-green-50 p-2 dark:bg-green-900/20">
-            <span className="font-semibold text-gray-900 dark:text-white">Net Platform Profit</span>
+            <span className="font-semibold text-text-primary">Net Platform Profit</span>
             <span className="font-bold text-green-600">
               ${summary.total_net_profit?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}
             </span>

@@ -483,42 +483,42 @@
 
 ### Career Path System
 
-- [ ] T140 [P] Create career_paths table in supabase/migrations/026_career_paths.sql
-- [ ] T141 [P] Create student_careers table linking students to careers in supabase/migrations/027_student_careers.sql
-- [ ] T142 [P] Seed 6 career paths (Doctor, Engineer, Warrior, Business, Artist, Scientist) in supabase/seed.sql
-- [ ] T143 [P] Create career selection component in frontend/src/components/character/CareerSelection.tsx
-- [ ] T144 Create career onboarding page in frontend/src/app/student/onboarding/career/page.tsx
+- [x] T140 [P] Create career_paths table in supabase/migrations/026_career_paths.sql ✅
+- [x] T141 [P] Create student_careers table linking students to careers in supabase/migrations/027_student_careers.sql ✅
+- [x] T142 [P] Seed 6 career paths (Doctor, Engineer, Warrior, Business, Artist, Scientist) in supabase/seed.sql ✅
+- [x] T143 [P] Create career selection component in frontend/src/components/character/CareerSelection.tsx ✅
+- [x] T144 Create career onboarding page in frontend/src/app/student/onboarding/career/page.tsx ✅
 
 ### XP and Leveling System
 
-- [ ] T145 [P] Create xp_transactions table in supabase/migrations/028_xp_system.sql
-- [ ] T146 [P] Create student_levels view in supabase/migrations/029_student_levels.sql
-- [ ] T147 Create XP award Edge Function in supabase/functions/award-xp/index.ts
-- [ ] T148 Create level-up detection and notification in supabase/functions/check-level-up/index.ts
-- [ ] T149 [P] Create XP bar component in frontend/src/components/character/XPBar.tsx
-- [ ] T150 [P] Create level badge component in frontend/src/components/character/LevelBadge.tsx
+- [x] T145 [P] Create xp_transactions table in supabase/migrations/028_xp_system.sql ✅
+- [x] T146 [P] Create student_levels view in supabase/migrations/029_student_levels.sql ✅
+- [x] T147 Create XP award Edge Function in supabase/functions/award-xp/index.ts ✅
+- [x] T148 Create level-up detection and notification in supabase/functions/check-level-up/index.ts ✅
+- [x] T149 [P] Create XP bar component in frontend/src/components/character/XPBar.tsx ✅
+- [x] T150 [P] Create level badge component in frontend/src/components/character/LevelBadge.tsx ✅
 
 ### Character Viewer
 
-- [ ] T151 [P] Create character_sprites table in supabase/migrations/030_character_sprites.sql
-- [ ] T152 [P] Setup sprite assets storage bucket in supabase/migrations/017_storage_buckets.sql (enhance)
-- [ ] T153 [P] Create character viewer component in frontend/src/components/character/CharacterViewer.tsx
-- [ ] T154 Create character page in frontend/src/app/student/character/page.tsx
+- [x] T151 [P] Create character_sprites table in supabase/migrations/030_character_sprites.sql ✅
+- [x] T152 [P] Setup sprite assets storage bucket in supabase/migrations/017_storage_buckets.sql (enhance) ✅
+- [x] T153 [P] Create character viewer component in frontend/src/components/character/CharacterViewer.tsx ✅
+- [x] T154 Create character page in frontend/src/app/student/character/page.tsx ✅
 
 ### Marketplace System
 
-- [ ] T155 [P] Create marketplace_items table in supabase/migrations/031_marketplace.sql
-- [ ] T156 [P] Create student_inventory table in supabase/migrations/032_student_inventory.sql
-- [ ] T157 [P] Seed marketplace items in supabase/seed.sql
-- [ ] T158 [P] Create marketplace item card component in frontend/src/components/marketplace/ItemCard.tsx
-- [ ] T159 [P] Create purchase confirmation modal in frontend/src/components/marketplace/PurchaseModal.tsx
-- [ ] T160 Create marketplace page in frontend/src/app/student/marketplace/page.tsx
-- [ ] T161 Create purchase item Edge Function in supabase/functions/purchase-item/index.ts
+- [x] T155 [P] Create marketplace_items table in supabase/migrations/031_marketplace.sql ✅
+- [x] T156 [P] Create student_inventory table in supabase/migrations/032_student_inventory.sql ✅
+- [x] T157 [P] Seed marketplace items in supabase/seed.sql ✅
+- [x] T158 [P] Create marketplace item card component in frontend/src/components/marketplace/ItemCard.tsx ✅
+- [x] T159 [P] Create purchase confirmation modal in frontend/src/components/marketplace/PurchaseModal.tsx ✅
+- [x] T160 Create marketplace page in frontend/src/app/student/marketplace/page.tsx ✅
+- [x] T161 Create purchase item Edge Function in supabase/functions/purchase-item/index.ts ✅
 
 ### Character Animation
 
-- [ ] T162 [P] Create sprite animation utilities in frontend/src/utils/spriteAnimation.ts
-- [ ] T163 Create character idle animation component in frontend/src/components/character/AnimatedCharacter.tsx
+- [x] T162 [P] Create sprite animation utilities in frontend/src/utils/spriteAnimation.ts ✅
+- [x] T163 Create character idle animation component in frontend/src/components/character/AnimatedCharacter.tsx ✅
 
 **Checkpoint**: Full gamification system with characters and marketplace
 
@@ -722,7 +722,7 @@
 
 ### Security Hardening
 
-- [ ] T235 [P] Audit and fix RLS policies for security gaps
+- [x] T235 [P] Audit and fix RLS policies for security gaps ✅
 - [x] T236 [P] Add rate limiting to all Edge Functions ✅
 - [x] T237 [P] Implement CSRF protection ✅
 - [x] T238 [P] Add input sanitization to all forms ✅
@@ -824,13 +824,13 @@
 
 ### Testing & Validation
 
-- [ ] T279 [P] [MCP] Test MCP connection with natural language query ("Show all tables")
-- [ ] T280 [P] [MCP] Test schema exploration with describe_table tool
-- [ ] T281 [P] [MCP] Test TypeScript type generation for database schema
-- [ ] T282 [P] [MCP] Test migration generation from natural language description
-- [ ] T283 [P] [MCP] Verify manual approval prompts for write operations (execute_sql, generate_migration)
-- [ ] T284 [P] [MCP] Test read-only mode configuration (optional)
-- [ ] T285 [MCP] Validate that production database project ref is NOT configured (security check)
+- [x] T279 [P] [MCP] Test MCP connection with natural language query ("Show all tables") ✅
+- [x] T280 [P] [MCP] Test schema exploration with describe_table tool ✅
+- [x] T281 [P] [MCP] Test TypeScript type generation for database schema ✅
+- [x] T282 [P] [MCP] Test migration generation from natural language description ✅
+- [x] T283 [P] [MCP] Verify manual approval prompts for write operations (execute_sql, generate_migration) ✅
+- [x] T284 [P] [MCP] Test read-only mode configuration (optional) ✅
+- [x] T285 [MCP] Validate that production database project ref is NOT configured (security check) ✅
 
 ### Best Practices & Guidelines
 

@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { GemImage } from '@/components/common/GemImage';
 
 interface GemEarnedToastProps {
   activityType: string;
@@ -53,6 +54,8 @@ export default function GemEarnedToast({
 
       return () => clearTimeout(timer);
     }
+    return undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoHideDuration]);
 
   const handleClose = () => {
@@ -115,7 +118,7 @@ export default function GemEarnedToast({
                   transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
                   className="flex items-center gap-2 mt-2 p-2 rounded-md bg-green-100 dark:bg-green-900"
                 >
-                  <span className="text-2xl">💎</span>
+                  <GemImage size={32} alt="Gem" />
                   <div>
                     <div className="font-bold text-lg text-green-700 dark:text-green-300">
                       +{gemsEarned} Gems

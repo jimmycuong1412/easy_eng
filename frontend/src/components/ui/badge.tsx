@@ -20,8 +20,8 @@ const badgeVariants = cva(
           'border-transparent bg-success text-white',
         warning:
           'border-transparent bg-warning text-bg-primary',
-        cookie:
-          'border-transparent bg-accent-cookie/20 text-accent-cookie',
+        gem:
+          'border-transparent bg-accent-gem/20 text-accent-gem',
         gold:
           'border-transparent bg-accent-gold/20 text-accent-gold',
         level:

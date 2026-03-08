@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslations, useLocale } from 'next-intl';
 import { getUserRecordings } from '@/lib/queries';
 
 interface RecordingItem {
@@ -62,6 +63,8 @@ const itemVariants = {
 
 export default function RecordingsPage() {
   const { user } = useAuth();
+  const t = useTranslations('recordings');
+  const locale = useLocale();
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -120,7 +123,7 @@ export default function RecordingsPage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
+    return date.toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -137,14 +140,14 @@ export default function RecordingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] py-8">
+    <div className="py-6">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <motion.div
@@ -152,10 +155,8 @@ export default function RecordingsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-2xl font-bold text-white mb-2">Bản ghi buổi học</h1>
-          <p className="text-slate-400">
-            Xem lại các buổi học đã hoàn thành trong 30 ngày qua
-          </p>
+          <h1 className="text-2xl font-bold text-white mb-2">{t('title')}</h1>
+          <p className="text-slate-400">{t('subtitle')}</p>
         </motion.div>
 
         {/* Stats */}
@@ -169,7 +170,7 @@ export default function RecordingsPage() {
             <CardContent className="p-4 text-center">
               <Video className="w-8 h-8 text-[#3B82F6] mx-auto mb-2" />
               <p className="text-2xl font-bold text-white">{recordings.length}</p>
-              <p className="text-sm text-slate-400">Tổng bản ghi</p>
+              <p className="text-sm text-slate-400">{t('stats.total')}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
@@ -178,7 +179,7 @@ export default function RecordingsPage() {
               <p className="text-2xl font-bold text-white">
                 {recordings.filter((r) => r.watchedProgress === 100).length}
               </p>
-              <p className="text-sm text-slate-400">Đã xem xong</p>
+              <p className="text-sm text-slate-400">{t('stats.watched')}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
@@ -187,7 +188,7 @@ export default function RecordingsPage() {
               <p className="text-2xl font-bold text-white">
                 {recordings.filter((r) => !r.watched).length}
               </p>
-              <p className="text-sm text-slate-400">Chưa xem</p>
+              <p className="text-sm text-slate-400">{t('stats.unwatched')}</p>
             </CardContent>
           </Card>
           <Card className="bg-white/5 border-white/10">
@@ -196,7 +197,7 @@ export default function RecordingsPage() {
               <p className="text-2xl font-bold text-white">
                 {recordings.reduce((acc, r) => acc + r.duration, 0)}
               </p>
-              <p className="text-sm text-slate-400">Tổng phút</p>
+              <p className="text-sm text-slate-400">{t('stats.totalMinutes')}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -211,7 +212,7 @@ export default function RecordingsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              placeholder="Tìm kiếm theo chủ đề..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500"
@@ -220,10 +221,10 @@ export default function RecordingsPage() {
           <Select value={filterTeacher} onValueChange={setFilterTeacher}>
             <SelectTrigger className="w-full md:w-[200px] bg-white/5 border-white/10 text-white">
               <Filter className="w-4 h-4 mr-2 text-slate-400" />
-              <SelectValue placeholder="Giáo viên" />
+              <SelectValue placeholder={t('filterTeacher')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tất cả giáo viên</SelectItem>
+              <SelectItem value="all">{t('allTeachers')}</SelectItem>
               {uniqueTeachers.map((teacher) => (
                 <SelectItem key={teacher} value={teacher}>
                   {teacher}
@@ -261,7 +262,7 @@ export default function RecordingsPage() {
 
                     {/* Duration badge */}
                     <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0">
-                      {recording.duration} phút
+                      {recording.duration} {t('minutes')}
                     </Badge>
 
                     {/* Progress bar */}
@@ -277,7 +278,7 @@ export default function RecordingsPage() {
                     {/* Watched badge */}
                     {recording.watchedProgress === 100 && (
                       <Badge className="absolute top-2 right-2 bg-emerald-500/80 text-white border-0">
-                        Đã xem
+                        {t('watched')}
                       </Badge>
                     )}
                   </div>
@@ -309,7 +310,7 @@ export default function RecordingsPage() {
                           daysUntilExpiry <= 7 ? 'text-amber-400' : 'text-slate-500'
                         }`}
                       >
-                        Còn {daysUntilExpiry} ngày
+                        {t('expiresIn', { days: daysUntilExpiry })}
                       </span>
                     </div>
 
@@ -318,7 +319,7 @@ export default function RecordingsPage() {
                       <Link href={`/class/${recording.classId}/materials?tab=recording`} className="flex-1">
                         <Button className="w-full bg-[#3B82F6] hover:bg-[#3B82F6]/90">
                           <Play className="w-4 h-4 mr-1" />
-                          Xem
+                          {t('watchBtn')}
                         </Button>
                       </Link>
                       <Button
@@ -344,12 +345,8 @@ export default function RecordingsPage() {
             className="text-center py-12"
           >
             <Video className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">
-              Không tìm thấy bản ghi
-            </h3>
-            <p className="text-slate-400">
-              Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
-            </p>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('empty.title')}</h3>
+            <p className="text-slate-400">{t('empty.desc')}</p>
           </motion.div>
         )}
 
@@ -363,8 +360,7 @@ export default function RecordingsPage() {
           <Card className="bg-amber-500/10 border-amber-500/30">
             <CardContent className="p-4">
               <p className="text-sm text-amber-400">
-                💡 <strong>Lưu ý:</strong> Bản ghi được lưu trữ trong 30 ngày sau buổi học. 
-                Hãy tải xuống nếu bạn muốn lưu trữ lâu dài.
+                💡 {t('retentionNote')}
               </p>
             </CardContent>
           </Card>

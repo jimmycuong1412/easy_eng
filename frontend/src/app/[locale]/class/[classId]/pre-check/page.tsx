@@ -14,27 +14,14 @@ import {
   RefreshCw,
   ChevronRight,
   Wifi,
-  Monitor,
-  RotateCcw,
 } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-
-// Mock class data
-const mockClassData = {
-  id: 'class-1',
-  topic: 'Business English: Meeting Skills',
-  teacher: {
-    name: 'Nguyễn Minh Anh',
-    avatar: '/avatars/teacher1.png',
-  },
-  scheduledAt: '2026-01-23T09:00:00+07:00',
-  duration: 25,
-};
+import { getClassById } from '@/lib/queries';
 
 interface DeviceStatus {
   camera: 'checking' | 'success' | 'error';
@@ -51,6 +38,32 @@ interface DeviceErrorMessage {
 }
 
 export default function PreClassCheckPage({ params }: { params: { classId: string } }) {
+  const t = useTranslations('preCheck');
+  const [classData, setClassData] = React.useState({
+    id: params.classId,
+    topic: '',
+    teacher: { name: '', avatar: '' },
+    scheduledAt: new Date().toISOString(),
+    duration: 25,
+  });
+
+  React.useEffect(() => {
+    getClassById(params.classId)
+      .then((data: Record<string, unknown>) => {
+        const teacher = data.profiles as Record<string, unknown> | undefined;
+        setClassData({
+          id: (data.id as string) || params.classId,
+          topic: (data.title as string) || 'Class',
+          teacher: {
+            name: (teacher?.full_name as string) || 'Teacher',
+            avatar: (teacher?.avatar_url as string) || '',
+          },
+          scheduledAt: (data.start_time as string) || new Date().toISOString(),
+          duration: (data.duration_minutes as number) || 25,
+        });
+      })
+      .catch(console.error);
+  }, [params.classId]);
   const router = useRouter();
   const [deviceStatus, setDeviceStatus] = React.useState<DeviceStatus>({
     camera: 'checking',
@@ -100,7 +113,7 @@ export default function PreClassCheckPage({ params }: { params: { classId: strin
 
           // Set up audio context for microphone level monitoring
           if (!audioContextRef.current) {
-            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
           }
 
           const audioContext = audioContextRef.current;
@@ -118,7 +131,7 @@ export default function PreClassCheckPage({ params }: { params: { classId: strin
 
         // Check speaker (play a tone)
         try {
-          const audioContext = audioContextRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+          const audioContext = audioContextRef.current || new (window.AudioContext || window.webkitAudioContext)();
           const oscillator = audioContext.createOscillator();
           const gain = audioContext.createGain();
 
@@ -178,18 +191,20 @@ export default function PreClassCheckPage({ params }: { params: { classId: strin
 
     checkDevices();
 
+    const videoEl = videoRef.current;
     return () => {
       // Cleanup: stop any active streams
       if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach((track) => track.stop());
       }
-      if (videoRef.current && videoRef.current.srcObject) {
-        (videoRef.current.srcObject as MediaStream).getTracks().forEach((track) => track.stop());
+      if (videoEl && videoEl.srcObject) {
+        (videoEl.srcObject as MediaStream).getTracks().forEach((track) => track.stop());
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getStatusIcon = (status: 'checking' | 'success' | 'error') => {
@@ -205,7 +220,7 @@ export default function PreClassCheckPage({ params }: { params: { classId: strin
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString('vi-VN', {
+    return date.toLocaleString(undefined, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -219,250 +234,246 @@ export default function PreClassCheckPage({ params }: { params: { classId: strin
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <Badge className="bg-[#3B82F6]/20 text-[#3B82F6] border-0 mb-4">
-            Chuẩn bị vào lớp
-          </Badge>
-          <h1 className="text-2xl font-bold text-white mb-2">{mockClassData.topic}</h1>
-          <p className="text-slate-400">
-            {formatDateTime(mockClassData.scheduledAt)} • {mockClassData.duration} phút
-          </p>
-        </motion.div>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-8"
+      >
+        <Badge className="bg-[#3B82F6]/20 text-[#3B82F6] border-0 mb-4">
+          {t('badge')}
+        </Badge>
+        <h1 className="text-2xl font-bold text-white mb-2">{classData.topic}</h1>
+        <p className="text-slate-400">
+          {formatDateTime(classData.scheduledAt)} • {t('durationMin', { n: classData.duration })}
+        </p>
+      </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Video Preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="bg-white/5 border-white/10 overflow-hidden">
-              <div className="aspect-video bg-slate-800 relative">
-                {isCameraOn && deviceStatus.camera === 'success' ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    {deviceStatus.camera === 'checking' ? (
-                      <div className="text-center">
-                        <RefreshCw className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-spin" />
-                        <p className="text-slate-400 text-sm">Đang kiểm tra camera...</p>
-                      </div>
-                    ) : deviceStatus.camera === 'error' ? (
-                      <div className="text-center">
-                        <VideoOff className="w-12 h-12 text-red-500 mx-auto mb-2" />
-                        <p className="text-red-400 text-sm">Camera lỗi</p>
-                        {deviceErrors.camera && (
-                          <p className="text-red-300 text-xs mt-1">{deviceErrors.camera}</p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        <Avatar className="h-24 w-24 mx-auto mb-2 border-2 border-white/20">
-                          <AvatarFallback className="bg-emerald-500/20 text-emerald-400 text-3xl">
-                            B
-                          </AvatarFallback>
-                        </Avatar>
-                        <p className="text-slate-400 text-sm">Camera đã tắt</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Controls overlay */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className={`w-12 h-12 rounded-full ${
-                      isCameraOn
-                        ? 'bg-white/10 border-white/20 text-white'
-                        : 'bg-red-500 border-red-500 text-white'
-                    }`}
-                    onClick={() => setIsCameraOn(!isCameraOn)}
-                  >
-                    {isCameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className={`w-12 h-12 rounded-full ${
-                      isMicOn
-                        ? 'bg-white/10 border-white/20 text-white'
-                        : 'bg-red-500 border-red-500 text-white'
-                    }`}
-                    onClick={() => setIsMicOn(!isMicOn)}
-                  >
-                    {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-
-          {/* Device Checks & Class Info */}
-          <div className="space-y-6">
-            {/* Device Checks */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card className="bg-white/5 border-white/10">
-                <CardHeader>
-                  <CardTitle className="text-white text-lg">Kiểm tra thiết bị</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Camera */}
-                  <div>
-                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Video className="w-5 h-5 text-slate-400" />
-                        <span className="text-white">Camera</span>
-                      </div>
-                      {getStatusIcon(deviceStatus.camera)}
-                    </div>
-                    {deviceErrors.camera && (
-                      <p className="text-xs text-red-400 mt-1 px-3">{deviceErrors.camera}</p>
-                    )}
-                  </div>
-
-                  {/* Microphone */}
-                  <div>
-                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Mic className="w-5 h-5 text-slate-400" />
-                        <span className="text-white">Microphone</span>
-                      </div>
-                      {getStatusIcon(deviceStatus.microphone)}
-                    </div>
-                    {deviceErrors.microphone && (
-                      <p className="text-xs text-red-400 mt-1 px-3">{deviceErrors.microphone}</p>
-                    )}
-                  </div>
-
-                  {/* Speaker */}
-                  <div>
-                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Speaker className="w-5 h-5 text-slate-400" />
-                        <span className="text-white">Loa</span>
-                      </div>
-                      {getStatusIcon(deviceStatus.speaker)}
-                    </div>
-                    {deviceErrors.speaker && (
-                      <p className="text-xs text-red-400 mt-1 px-3">{deviceErrors.speaker}</p>
-                    )}
-                  </div>
-
-                  {/* Network */}
-                  <div>
-                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Wifi className="w-5 h-5 text-slate-400" />
-                        <div>
-                          <span className="text-white">Kết nối mạng</span>
-                          {networkSpeed && (
-                            <p className="text-xs text-slate-500">{networkSpeed}</p>
-                          )}
-                        </div>
-                      </div>
-                      {getStatusIcon(deviceStatus.network)}
-                    </div>
-                    {deviceErrors.network && (
-                      <p className="text-xs text-red-400 mt-1 px-3">{deviceErrors.network}</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Teacher Info */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Card className="bg-white/5 border-white/10">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-14 w-14 border-2 border-[#3B82F6]/30">
-                      <AvatarImage src={mockClassData.teacher.avatar} />
-                      <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6]">
-                        {mockClassData.teacher.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm text-slate-400">Giáo viên</p>
-                      <p className="font-semibold text-white">{mockClassData.teacher.name}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Tips */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-            >
-              <Card className="bg-amber-500/10 border-amber-500/30">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-amber-400 mb-2">💡 Mẹo nhỏ</h4>
-                  <ul className="text-sm text-slate-300 space-y-1">
-                    <li>• Đảm bảo ánh sáng đủ và mặt bạn rõ ràng</li>
-                    <li>• Chọn nơi yên tĩnh để tập trung</li>
-                    <li>• Chuẩn bị giấy bút để ghi chú</li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Join Button */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Video Preview */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-8 text-center"
+          transition={{ delay: 0.1 }}
         >
-          <Button
-            size="lg"
-            className="bg-emerald-500 hover:bg-emerald-500/90 min-w-[200px]"
-            onClick={handleJoinClass}
-            disabled={!allChecksComplete}
-          >
-            {allChecksComplete ? (
-              <>
-                Vào lớp học
-                <ChevronRight className="w-5 h-5 ml-2" />
-              </>
-            ) : (
-              <>
-                Đang kiểm tra...
-                <RefreshCw className="w-5 h-5 ml-2 animate-spin" />
-              </>
-            )}
-          </Button>
-          <p className="text-xs text-slate-500 mt-2">
-            Bạn có thể vào lớp sớm 5 phút trước giờ học
-          </p>
+          <Card className="bg-white/5 border-white/10 overflow-hidden">
+            <div className="aspect-video bg-slate-800 relative">
+              {isCameraOn && deviceStatus.camera === 'success' ? (
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  {deviceStatus.camera === 'checking' ? (
+                    <div className="text-center">
+                      <RefreshCw className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-spin" />
+                      <p className="text-slate-400 text-sm">{t('checkingCamera')}</p>
+                    </div>
+                  ) : deviceStatus.camera === 'error' ? (
+                    <div className="text-center">
+                      <VideoOff className="w-12 h-12 text-red-500 mx-auto mb-2" />
+                      <p className="text-red-400 text-sm">{t('cameraError')}</p>
+                      {deviceErrors.camera && (
+                        <p className="text-red-300 text-xs mt-1">{deviceErrors.camera}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <Avatar className="h-24 w-24 mx-auto mb-2 border-2 border-white/20">
+                        <AvatarFallback className="bg-emerald-500/20 text-emerald-400 text-3xl">
+                          B
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-slate-400 text-sm">{t('cameraOff')}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Controls overlay */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={`w-12 h-12 rounded-full ${
+                    isCameraOn
+                      ? 'bg-white/10 border-white/20 text-white'
+                      : 'bg-red-500 border-red-500 text-white'
+                  }`}
+                  onClick={() => setIsCameraOn(!isCameraOn)}
+                >
+                  {isCameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={`w-12 h-12 rounded-full ${
+                    isMicOn
+                      ? 'bg-white/10 border-white/20 text-white'
+                      : 'bg-red-500 border-red-500 text-white'
+                  }`}
+                  onClick={() => setIsMicOn(!isMicOn)}
+                >
+                  {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                </Button>
+              </div>
+            </div>
+          </Card>
         </motion.div>
+
+        {/* Device Checks & Class Info */}
+        <div className="space-y-6">
+          {/* Device Checks */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="bg-white/5 border-white/10">
+              <CardHeader>
+                <CardTitle className="text-white text-lg">{t('deviceCheck')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Camera */}
+                <div>
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Video className="w-5 h-5 text-slate-400" />
+                      <span className="text-white">{t('camera')}</span>
+                    </div>
+                    {getStatusIcon(deviceStatus.camera)}
+                  </div>
+                  {deviceErrors.camera && (
+                    <p className="text-xs text-red-400 mt-1 px-3">{deviceErrors.camera}</p>
+                  )}
+                </div>
+
+                {/* Microphone */}
+                <div>
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Mic className="w-5 h-5 text-slate-400" />
+                      <span className="text-white">{t('microphone')}</span>
+                    </div>
+                    {getStatusIcon(deviceStatus.microphone)}
+                  </div>
+                  {deviceErrors.microphone && (
+                    <p className="text-xs text-red-400 mt-1 px-3">{deviceErrors.microphone}</p>
+                  )}
+                </div>
+
+                {/* Speaker */}
+                <div>
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Speaker className="w-5 h-5 text-slate-400" />
+                      <span className="text-white">{t('speaker')}</span>
+                    </div>
+                    {getStatusIcon(deviceStatus.speaker)}
+                  </div>
+                  {deviceErrors.speaker && (
+                    <p className="text-xs text-red-400 mt-1 px-3">{deviceErrors.speaker}</p>
+                  )}
+                </div>
+
+                {/* Network */}
+                <div>
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Wifi className="w-5 h-5 text-slate-400" />
+                      <div>
+                        <span className="text-white">{t('network')}</span>
+                        {networkSpeed && (
+                          <p className="text-xs text-slate-500">{networkSpeed}</p>
+                        )}
+                      </div>
+                    </div>
+                    {getStatusIcon(deviceStatus.network)}
+                  </div>
+                  {deviceErrors.network && (
+                    <p className="text-xs text-red-400 mt-1 px-3">{deviceErrors.network}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Teacher Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="bg-white/5 border-white/10">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-14 w-14 border-2 border-[#3B82F6]/30">
+                    <AvatarImage src={classData.teacher.avatar} />
+                    <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6]">
+                      {classData.teacher.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm text-slate-400">{t('teacher')}</p>
+                    <p className="font-semibold text-white">{classData.teacher.name}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Tips */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <Card className="bg-amber-500/10 border-amber-500/30">
+              <CardContent className="p-4">
+                <h4 className="font-semibold text-amber-400 mb-2">{t('tips')}</h4>
+                <ul className="text-sm text-slate-300 space-y-1">
+                  <li>• {t('tip1')}</li>
+                  <li>• {t('tip2')}</li>
+                  <li>• {t('tip3')}</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
+
+      {/* Join Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="mt-8 text-center"
+      >
+        <Button
+          size="lg"
+          className="bg-emerald-500 hover:bg-emerald-500/90 min-w-[200px]"
+          onClick={handleJoinClass}
+          disabled={!allChecksComplete}
+        >
+          {allChecksComplete ? (
+            <>
+              {t('joinClass')}
+              <ChevronRight className="w-5 h-5 ml-2" />
+            </>
+          ) : (
+            <>
+              {t('joining')}
+              <RefreshCw className="w-5 h-5 ml-2 animate-spin" />
+            </>
+          )}
+        </Button>
+        <p className="text-xs text-slate-500 mt-2">{t('earlyNote')}</p>
+      </motion.div>
     </div>
   );
 }

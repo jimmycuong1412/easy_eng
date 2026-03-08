@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -16,42 +17,49 @@ import {
 
 import { cn } from '@/lib/utils';
 
-const settingsNav = [
+type NavItem = {
+  titleKey: string;
+  href: string;
+  icon: React.ElementType;
+  descriptionKey: string;
+};
+
+const settingsNavItems: NavItem[] = [
   {
-    title: 'Hồ sơ',
+    titleKey: 'profile',
     href: '/settings/profile',
     icon: User,
-    description: 'Thông tin cá nhân và avatar',
+    descriptionKey: 'profile',
   },
   {
-    title: 'Bảo mật',
+    titleKey: 'security',
     href: '/settings/security',
     icon: Shield,
-    description: 'Mật khẩu và xác thực',
+    descriptionKey: 'security',
   },
   {
-    title: 'Thông báo',
+    titleKey: 'notifications',
     href: '/settings/notifications',
     icon: Bell,
-    description: 'Email và push notifications',
+    descriptionKey: 'notifications',
   },
   {
-    title: 'Ngôn ngữ & Khu vực',
+    titleKey: 'preferences',
     href: '/settings/preferences',
     icon: Globe,
-    description: 'Ngôn ngữ, múi giờ, tiền tệ',
+    descriptionKey: 'preferences',
   },
   {
-    title: 'Thanh toán',
+    titleKey: 'billing',
     href: '/settings/billing',
     icon: CreditCard,
-    description: 'Phương thức thanh toán',
+    descriptionKey: 'billing',
   },
   {
-    title: 'Giới thiệu bạn bè',
+    titleKey: 'referral',
     href: '/settings/referral',
     icon: Share2,
-    description: 'Mã giới thiệu và rewards',
+    descriptionKey: 'referral',
   },
 ];
 
@@ -61,6 +69,13 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const locale = useLocale();
+  const t = useTranslations('settings');
+
+  // Match active item against locale-aware pathname
+  const isActive = (href: string) => {
+    return pathname === `/${locale}${href}` || pathname === href;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
@@ -76,12 +91,10 @@ export default function SettingsLayout({
             className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
           >
             <ChevronLeft className="w-4 h-4" />
-            Quay lại Dashboard
+            {t('backToDashboard')}
           </Link>
-          <h1 className="text-3xl font-bold text-white">Cài đặt</h1>
-          <p className="text-slate-400 mt-1">
-            Quản lý tài khoản và tùy chỉnh trải nghiệm của bạn
-          </p>
+          <h1 className="text-3xl font-bold text-white">{t('title')}</h1>
+          <p className="text-slate-400 mt-1">{t('subtitle')}</p>
         </motion.div>
 
         <div className="flex flex-col md:flex-row gap-8">
@@ -92,27 +105,27 @@ export default function SettingsLayout({
             className="md:w-64 flex-shrink-0"
           >
             <div className="bg-white/5 rounded-2xl border border-white/10 p-2 space-y-1">
-              {settingsNav.map((item) => {
-                const isActive = pathname === item.href;
+              {settingsNavItems.map((item) => {
+                const active = isActive(item.href);
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={`/${locale}${item.href}`}
                     className={cn(
                       'flex items-center gap-3 px-4 py-3 rounded-xl transition-all',
-                      isActive
+                      active
                         ? 'bg-[#3B82F6] text-white'
                         : 'text-slate-400 hover:text-white hover:bg-white/10'
                     )}
                   >
                     <item.icon className="w-5 h-5" />
                     <div>
-                      <p className="font-medium">{item.title}</p>
+                      <p className="font-medium">{t(`nav.${item.titleKey}.title`)}</p>
                       <p className={cn(
                         'text-xs',
-                        isActive ? 'text-white/70' : 'text-slate-500'
+                        active ? 'text-white/70' : 'text-slate-500'
                       )}>
-                        {item.description}
+                        {t(`nav.${item.descriptionKey}.description`)}
                       </p>
                     </div>
                   </Link>

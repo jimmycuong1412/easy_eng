@@ -123,12 +123,15 @@ export function levelFromXp(totalXp: number): { level: number; currentXp: number
 }
 
 /**
- * Calculate discount from cookies.
- * 1 Cookie = 1000 VND discount (as per spec).
+ * Calculate discount from gems.
+ * 1 Gem = 1000 VND discount (as per spec).
  */
-export function cookieDiscount(cookies: number): number {
-  return cookies * 1000; // in VND
+export function gemDiscount(gems: number): number {
+  return gems * 1000; // in VND
 }
+
+/** @deprecated Use gemDiscount instead */
+export const cookieDiscount = gemDiscount;
 
 /**
  * Truncate text to a maximum length with ellipsis.

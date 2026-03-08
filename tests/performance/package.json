@@ -1,0 +1,28 @@
+{
+  "name": "easy_eng-performance-tests",
+  "version": "1.0.0",
+  "description": "Performance testing suite for Easy English Learning Platform",
+  "type": "module",
+  "scripts": {
+    "test": "k6 run",
+    "test:booking": "k6 run booking-load.test.js",
+    "test:search": "k6 run class-search.test.js",
+    "test:dashboard": "k6 run dashboard-load.test.js",
+    "test:gems": "k6 run gem-transaction.test.js",
+    "test:concurrent": "k6 run concurrent-users.test.js",
+    "test:conflicts": "k6 run concurrent-bookings.test.js",
+    "test:all": "npm run test:booking && npm run test:search && npm run test:dashboard && npm run test:gems && npm run test:concurrent && npm run test:conflicts",
+    "generate-data": "node generate-test-data.ts"
+  },
+  "devDependencies": {
+    "k6": "^0.0.0"
+  },
+  "keywords": [
+    "performance",
+    "load-testing",
+    "k6",
+    "english-learning"
+  ],
+  "author": "Easy English Team",
+  "license": "MIT"
+}

@@ -20,17 +20,17 @@ export default function ReconciliationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="flex items-center gap-2 text-3xl font-bold text-text-primary">
                 <Shield className="h-8 w-8 text-blue-600" />
                 Data Reconciliation
               </h1>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              <p className="mt-2 text-sm text-text-secondary">
                 Verify data integrity across bookings, payments, and Gem transactions
               </p>
             </div>
@@ -94,14 +94,14 @@ export default function ReconciliationPage() {
         <ReconciliationReport key={refreshKey} />
 
         {/* Help Section */}
-        <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-          <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
+        <div className="mt-8 rounded-lg border border-border-default bg-bg-surface p-6">
+          <h3 className="mb-4 font-semibold text-text-primary">
             Understanding Reconciliation
           </h3>
 
-          <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+          <div className="space-y-3 text-sm text-text-secondary">
             <div>
-              <strong className="text-gray-900 dark:text-white">Critical Issues:</strong>
+              <strong className="text-text-primary">Critical Issues:</strong>
               <ul className="ml-5 mt-1 list-disc">
                 <li>Missing payments for confirmed bookings</li>
                 <li>Negative Gem balances (should never happen)</li>
@@ -110,7 +110,7 @@ export default function ReconciliationPage() {
             </div>
 
             <div>
-              <strong className="text-gray-900 dark:text-white">Warnings:</strong>
+              <strong className="text-text-primary">Warnings:</strong>
               <ul className="ml-5 mt-1 list-disc">
                 <li>Gem balances exceeding cap (1000 Gems)</li>
                 <li>Orphaned payment records</li>
@@ -119,7 +119,7 @@ export default function ReconciliationPage() {
             </div>
 
             <div>
-              <strong className="text-gray-900 dark:text-white">Resolution:</strong>
+              <strong className="text-text-primary">Resolution:</strong>
               <p className="mt-1">
                 Critical issues require immediate investigation. Contact the development team if
                 issues persist after manual verification.

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { GemImage } from '@/components/common/GemImage';
 import { motion } from 'framer-motion';
 import {
   CheckCircle,
@@ -10,7 +11,7 @@ import {
   Calendar,
   Clock,
   Video,
-  Cookie,
+  Gem,
   ArrowRight,
   Home,
   CalendarPlus,
@@ -19,21 +20,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-
-// Mock booking data - in real app, fetch from server based on booking ID
-const mockBookingData = {
-  id: 'booking-123',
-  classId: '1',
-  topic: 'Business English: Meeting Skills',
-  teacherName: 'Nguyễn Minh Anh',
-  scheduledAt: '2026-01-23T09:00:00+07:00',
-  duration: 25,
-  originalPrice: 200000,
-  cookiesUsed: 75,
-  discountAmount: 75000,
-  finalPrice: 125000,
-  paymentMethod: 'VNPay',
-};
+import { getBookingById } from '@/lib/queries';
 
 function formatVND(amount: number): string {
   return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
@@ -61,7 +48,44 @@ export default function BookingConfirmationPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const isSuccess = searchParams.get('success') === 'true';
-  const bookingData = mockBookingData;
+  const bookingId = searchParams.get('booking_id');
+
+  const [bookingData, setBookingData] = React.useState({
+    id: '',
+    classId: '',
+    topic: '',
+    teacherName: '',
+    scheduledAt: new Date().toISOString(),
+    duration: 25,
+    originalPrice: 0,
+    gemsUsed: 0,
+    discountAmount: 0,
+    finalPrice: 0,
+    paymentMethod: '',
+  });
+
+  React.useEffect(() => {
+    if (!bookingId) return;
+    getBookingById(bookingId)
+      .then((data: Record<string, unknown>) => {
+        const cls = data.classes as Record<string, unknown> | undefined;
+        const teacher = cls?.profiles as Record<string, unknown> | undefined;
+        setBookingData({
+          id: (data.id as string) || '',
+          classId: (data.class_id as string) || '',
+          topic: (cls?.title as string) || 'Class',
+          teacherName: (teacher?.full_name as string) || 'Teacher',
+          scheduledAt: (cls?.start_time as string) || new Date().toISOString(),
+          duration: (cls?.duration_minutes as number) || 25,
+          originalPrice: (data.original_price as number) || 0,
+          gemsUsed: (data.gems_used as number) || 0,
+          discountAmount: (data.gems_discount_amount as number) || 0,
+          finalPrice: (data.final_price as number) || 0,
+          paymentMethod: '',
+        });
+      })
+      .catch(console.error);
+  }, [bookingId]);
 
   // Generate calendar URL
   const generateCalendarUrl = () => {
@@ -150,11 +174,11 @@ export default function BookingConfirmationPage() {
                     <span className="text-slate-400">Giá gốc</span>
                     <span className="text-white">{formatVND(bookingData.originalPrice)}</span>
                   </div>
-                  {bookingData.cookiesUsed > 0 && (
+                  {bookingData.gemsUsed > 0 && (
                     <div className="flex justify-between">
                       <span className="text-amber-400 flex items-center gap-1">
-                        <Cookie className="w-4 h-4" />
-                        Giảm giá ({bookingData.cookiesUsed} Cookies)
+                        <Gem className="w-4 h-4" />
+                        Giảm giá ({bookingData.gemsUsed} Gems)
                       </span>
                       <span className="text-amber-400">-{formatVND(bookingData.discountAmount)}</span>
                     </div>
@@ -206,7 +230,7 @@ export default function BookingConfirmationPage() {
                 </div>
               </motion.div>
 
-              {/* Cookie Earned Notification */}
+              {/* Gem Earned Notification */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -214,11 +238,11 @@ export default function BookingConfirmationPage() {
                 className="mt-6 p-4 bg-amber-500/10 rounded-xl border border-amber-500/20"
               >
                 <div className="flex items-center gap-3">
-                  <div className="text-3xl">🍪</div>
+                  <div className="text-3xl"><GemImage size={36} /></div>
                   <div>
-                    <p className="text-amber-400 font-medium">+5 Cookies!</p>
+                    <p className="text-amber-400 font-medium">+5 Gems!</p>
                     <p className="text-xs text-slate-400">
-                      Bạn sẽ nhận 5 Cookies sau khi hoàn thành lớp học
+                      Bạn sẽ nhận 5 Gems sau khi hoàn thành lớp học
                     </p>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { GemImage } from '@/components/common/GemImage';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -165,7 +166,7 @@ export default function GemAdjustmentModal({
               <span className="text-sm text-slate-600 dark:text-slate-400">
                 Current Balance
               </span>
-              <span className="text-2xl font-bold">{currentBalance} 💎</span>
+              <span className="text-2xl font-bold flex items-center gap-1">{currentBalance} <GemImage size={22} /></span>
             </div>
           </div>
 
@@ -212,7 +213,7 @@ export default function GemAdjustmentModal({
                   New Balance Preview
                 </span>
                 <span className={`text-xl font-bold ${isNegativeBalance ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                  {newBalance} 💎
+                  <span className="inline-flex items-center gap-1">{newBalance} <GemImage size={18} /></span>
                   {isNegativeBalance && ' ⚠️'}
                 </span>
               </div>

@@ -1,22 +1,18 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import {
   AlertTriangle,
   Clock,
   Calendar,
   ArrowLeft,
-  Cookie,
-  CreditCard,
   CheckCircle,
-  XCircle,
-  AlertCircle,
   Info,
 } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,44 +30,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-
-// Mock booking data
-const mockBooking = {
-  id: '1',
-  classId: '1',
-  topic: 'Business English: Meeting Skills',
-  teacherName: 'Nguyễn Minh Anh',
-  teacherAvatar: '/avatars/teacher1.png',
-  scheduledAt: '2026-01-25T09:00:00+07:00', // Future date for testing
-  duration: 25,
-  originalPrice: 200000,
-  cookiesUsed: 75,
-  discountAmount: 75000,
-  finalPrice: 125000,
-  paymentMethod: 'VNPay',
-};
+import { getBookingById } from '@/lib/queries';
+import { GemImage } from '@/components/common/GemImage';
 
 // Cancellation policy
 const cancellationPolicy = [
   {
     timeframe: 'Hủy trước 24 giờ',
     refundPercent: 100,
-    cookiesRefund: 100,
-    description: 'Hoàn tiền 100% và hoàn lại toàn bộ Cookies đã sử dụng',
+    gemsRefund: 100,
+    description: 'Hoàn tiền 100% và hoàn lại toàn bộ Gems đã sử dụng',
     color: 'emerald',
   },
   {
     timeframe: 'Hủy trước 2-24 giờ',
     refundPercent: 50,
-    cookiesRefund: 100,
-    description: 'Hoàn tiền 50%, hoàn lại toàn bộ Cookies đã sử dụng',
+    gemsRefund: 100,
+    description: 'Hoàn tiền 50%, hoàn lại toàn bộ Gems đã sử dụng',
     color: 'amber',
   },
   {
     timeframe: 'Hủy trước ít hơn 2 giờ',
     refundPercent: 0,
-    cookiesRefund: 0,
-    description: 'Không hoàn tiền, không hoàn Cookies',
+    gemsRefund: 0,
+    description: 'Không hoàn tiền, không hoàn Gems',
     color: 'red',
   },
 ];
@@ -107,26 +89,26 @@ function getHoursUntilClass(scheduledAt: string): number {
   return diffMs / (1000 * 60 * 60);
 }
 
-function getRefundDetails(hoursUntil: number, originalPrice: number, cookiesUsed: number) {
+function getRefundDetails(hoursUntil: number, originalPrice: number, gemsUsed: number) {
   if (hoursUntil >= 24) {
     return {
       refundPercent: 100,
       refundAmount: originalPrice,
-      cookiesRefund: cookiesUsed,
+      gemsRefund: gemsUsed,
       policy: cancellationPolicy[0],
     };
   } else if (hoursUntil >= 2) {
     return {
       refundPercent: 50,
       refundAmount: Math.floor(originalPrice * 0.5),
-      cookiesRefund: cookiesUsed,
+      gemsRefund: gemsUsed,
       policy: cancellationPolicy[1],
     };
   } else {
     return {
       refundPercent: 0,
       refundAmount: 0,
-      cookiesRefund: 0,
+      gemsRefund: 0,
       policy: cancellationPolicy[2],
     };
   }
@@ -143,13 +125,61 @@ export default function CancelBookingPage({
   const [additionalNotes, setAdditionalNotes] = React.useState('');
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+  const [booking, setBooking] = React.useState({
+    id: params.bookingId,
+    classId: '',
+    topic: '',
+    teacherName: '',
+    teacherAvatar: '',
+    scheduledAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+    duration: 25,
+    originalPrice: 0,
+    gemsUsed: 0,
+    discountAmount: 0,
+    finalPrice: 0,
+    paymentMethod: '',
+  });
 
-  const hoursUntilClass = getHoursUntilClass(mockBooking.scheduledAt);
+  React.useEffect(() => {
+    setLoading(true);
+    getBookingById(params.bookingId)
+      .then((data: Record<string, unknown>) => {
+        const cls = data.classes as Record<string, unknown> | undefined;
+        const teacher = cls?.profiles as Record<string, unknown> | undefined;
+        setBooking({
+          id: (data.id as string) || params.bookingId,
+          classId: (data.class_id as string) || '',
+          topic: (cls?.title as string) || 'Class',
+          teacherName: (teacher?.full_name as string) || 'Teacher',
+          teacherAvatar: (teacher?.avatar_url as string) || '',
+          scheduledAt: (cls?.start_time as string) || new Date().toISOString(),
+          duration: (cls?.duration_minutes as number) || 25,
+          originalPrice: Number(data.original_price) || 0,
+          gemsUsed: (data.gems_used as number) || 0,
+          discountAmount: Number(data.gems_discount_amount) || 0,
+          finalPrice: Number(data.final_price) || 0,
+          paymentMethod: '',
+        });
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [params.bookingId]);
+
+  const hoursUntilClass = getHoursUntilClass(booking.scheduledAt);
   const refundDetails = getRefundDetails(
     hoursUntilClass,
-    mockBooking.finalPrice,
-    mockBooking.cookiesUsed
+    booking.finalPrice,
+    booking.gemsUsed
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const handleCancelBooking = async () => {
     setIsProcessing(true);
@@ -192,11 +222,11 @@ export default function CancelBookingPage({
                       {formatVND(refundDetails.refundAmount)}
                     </span>
                   </div>
-                  {refundDetails.cookiesRefund > 0 && (
+                  {refundDetails.gemsRefund > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Cookies hoàn lại:</span>
+                      <span className="text-slate-400">Gems hoàn lại:</span>
                       <span className="text-amber-400 font-semibold">
-                        +{refundDetails.cookiesRefund} 🍪
+                        +{refundDetails.gemsRefund} <GemImage size={14} className="inline-block align-middle" />
                       </span>
                     </div>
                   )}
@@ -262,18 +292,18 @@ export default function CancelBookingPage({
             <CardContent className="p-5">
               <div className="flex items-center gap-4">
                 <Avatar className="h-14 w-14 border-2 border-[#3B82F6]/30">
-                  <AvatarImage src={mockBooking.teacherAvatar} />
+                  <AvatarImage src={booking.teacherAvatar} />
                   <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6]">
-                    {mockBooking.teacherName.charAt(0)}
+                    {booking.teacherName.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-white mb-1">{mockBooking.topic}</h3>
-                  <p className="text-sm text-slate-400">với {mockBooking.teacherName}</p>
+                  <h3 className="font-semibold text-white mb-1">{booking.topic}</h3>
+                  <p className="text-sm text-slate-400">với {booking.teacherName}</p>
                   <div className="flex items-center gap-3 mt-2 text-sm text-slate-400">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{formatDateTime(mockBooking.scheduledAt)}</span>
+                      <span>{formatDateTime(booking.scheduledAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -321,7 +351,7 @@ export default function CancelBookingPage({
                     Còn {Math.floor(hoursUntilClass)} giờ trước lớp học
                   </p>
                   <p className="text-sm text-slate-400 mt-1">
-                    {refundDetails.policy.description}
+                    {refundDetails.policy?.description}
                   </p>
                 </div>
               </div>
@@ -343,13 +373,13 @@ export default function CancelBookingPage({
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Số tiền đã thanh toán</span>
                 <span className="text-white font-semibold">
-                  {formatVND(mockBooking.finalPrice)}
+                  {formatVND(booking.finalPrice)}
                 </span>
               </div>
-              {mockBooking.cookiesUsed > 0 && (
+              {booking.gemsUsed > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Cookies đã sử dụng</span>
-                  <span className="text-amber-400">{mockBooking.cookiesUsed} 🍪</span>
+                  <span className="text-slate-400">Gems đã sử dụng</span>
+                  <span className="text-amber-400">{booking.gemsUsed} <GemImage size={14} className="inline-block align-middle" /></span>
                 </div>
               )}
               <Separator className="bg-white/10" />
@@ -373,11 +403,11 @@ export default function CancelBookingPage({
                   {formatVND(refundDetails.refundAmount)}
                 </span>
               </div>
-              {refundDetails.cookiesRefund > 0 && (
+              {refundDetails.gemsRefund > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Cookies hoàn lại</span>
+                  <span className="text-slate-400">Gems hoàn lại</span>
                   <span className="text-amber-400 font-bold">
-                    +{refundDetails.cookiesRefund} 🍪
+                    +{refundDetails.gemsRefund} <GemImage size={14} className="inline-block align-middle" />
                   </span>
                 </div>
               )}
@@ -504,12 +534,12 @@ export default function CancelBookingPage({
                 <span className="text-emerald-400 font-semibold">
                   {formatVND(refundDetails.refundAmount)}
                 </span>
-                {refundDetails.cookiesRefund > 0 && (
+                {refundDetails.gemsRefund > 0 && (
                   <>
                     {' '}
                     và{' '}
                     <span className="text-amber-400 font-semibold">
-                      {refundDetails.cookiesRefund} Cookies
+                      {refundDetails.gemsRefund} Gems
                     </span>
                   </>
                 )}

@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { cn, formatNumber } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { GemImage } from '@/components/common/GemImage';
 
-interface CookieBadgeProps {
+interface GemBadgeProps {
   count: number;
   size?: 'sm' | 'md' | 'lg';
   showAnimation?: boolean;
@@ -14,15 +15,15 @@ interface CookieBadgeProps {
 }
 
 /**
- * Cookie badge component displaying the user's cookie count.
+ * Gem badge component displaying the user's gem count.
  * Features animated updates when count changes.
  */
-export function CookieBadge({
+export function GemBadge({
   count,
   size = 'md',
   showAnimation = true,
   className,
-}: CookieBadgeProps) {
+}: GemBadgeProps) {
   const [prevCount, setPrevCount] = React.useState(count);
   const [isAnimating, setIsAnimating] = React.useState(false);
 
@@ -35,6 +36,7 @@ export function CookieBadge({
       }, 600);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [count, prevCount, showAnimation]);
 
   const sizeClasses = {
@@ -43,23 +45,17 @@ export function CookieBadge({
     lg: 'text-base px-4 py-1.5',
   };
 
-  const iconSizes = {
-    sm: 'text-sm',
-    md: 'text-lg',
-    lg: 'text-xl',
-  };
-
   return (
     <div className={cn('relative', className)}>
       <Badge
-        variant="cookie"
+        variant="gem"
         className={cn(
           'inline-flex items-center gap-1.5 font-semibold',
           sizeClasses[size],
           isAnimating && 'animate-bounce-subtle'
         )}
       >
-        <span className={iconSizes[size]}>🍪</span>
+        <GemImage size={size === 'sm' ? 14 : size === 'lg' ? 22 : 18} alt="Gem" />
         <AnimatePresence mode="popLayout">
           <motion.span
             key={count}
@@ -73,7 +69,7 @@ export function CookieBadge({
         </AnimatePresence>
       </Badge>
 
-      {/* Floating +cookies animation */}
+      {/* Floating +gems animation */}
       <AnimatePresence>
         {isAnimating && count > prevCount && (
           <motion.div
@@ -81,7 +77,7 @@ export function CookieBadge({
             animate={{ opacity: 1, y: -20, scale: 1 }}
             exit={{ opacity: 0, y: -40, scale: 0.8 }}
             transition={{ duration: 0.6 }}
-            className="absolute -top-2 left-1/2 -translate-x-1/2 text-accent-cookie font-bold text-sm pointer-events-none"
+            className="absolute -top-2 left-1/2 -translate-x-1/2 text-accent-gem font-bold text-sm pointer-events-none"
           >
             +{count - prevCount}
           </motion.div>
@@ -90,3 +86,6 @@ export function CookieBadge({
     </div>
   );
 }
+
+// Legacy alias
+export const CookieBadge = GemBadge;

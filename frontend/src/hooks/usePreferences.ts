@@ -10,7 +10,7 @@ import {
 export interface UserPreferences {
   locale: string;
   timezone: string;
-  currency: string;
+  currency: string; // UI-only, not persisted to DB
 }
 
 export interface UsePreferencesReturn {
@@ -30,7 +30,7 @@ export function usePreferences(): UsePreferencesReturn {
     ? {
         locale: profile.locale || 'vi',
         timezone: profile.timezone || 'Asia/Ho_Chi_Minh',
-        currency: profile.currency || 'VND',
+        currency: 'VND',
       }
     : null;
 

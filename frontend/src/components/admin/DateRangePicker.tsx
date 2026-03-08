@@ -27,7 +27,7 @@ export default function DateRangePicker({
   const calculateDateRange = (range: string) => {
     const today = new Date();
     let startDate: Date;
-    let endDate = today;
+    const endDate = today;
 
     switch (range) {
       case 'week':
@@ -52,7 +52,7 @@ export default function DateRangePicker({
     };
   };
 
-  const handleRangeChange = (range: string) => {
+  const handleRangeChange = (range: 'week' | 'month' | 'quarter' | 'year' | 'custom') => {
     setSelectedRange(range);
 
     if (range === 'custom') {
@@ -78,31 +78,32 @@ export default function DateRangePicker({
     if (dates) {
       onDateChange(dates.start, dates.end);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <div className="rounded-lg border border-border-default bg-bg-surface p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Calendar className="h-5 w-5 text-gray-500" />
-        <h3 className="font-semibold text-gray-900 dark:text-white">Date Range</h3>
+        <Calendar className="h-5 w-5 text-text-muted" />
+        <h3 className="font-semibold text-text-primary">Date Range</h3>
       </div>
 
       {/* Quick Range Buttons */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {[
+        {([
           { value: 'week', label: 'Last 7 Days' },
           { value: 'month', label: 'Last 30 Days' },
           { value: 'quarter', label: 'Last 90 Days' },
           { value: 'year', label: 'Last Year' },
           { value: 'custom', label: 'Custom' },
-        ].map((range) => (
+        ] as const).map((range) => (
           <button
             key={range.value}
             onClick={() => handleRangeChange(range.value)}
             className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               selectedRange === range.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                ? 'bg-accent-primary text-white'
+                : 'bg-bg-elevated text-text-secondary hover:bg-border-default'
             }`}
           >
             {range.label}
@@ -112,21 +113,21 @@ export default function DateRangePicker({
 
       {/* Custom Date Inputs */}
       {selectedRange === 'custom' && (
-        <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+        <div className="space-y-3 border-t border-border-default pt-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Start Date
             </label>
             <input
               type="date"
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              className="w-full rounded-md border border-border-default bg-bg-elevated px-3 py-2 text-sm text-text-primary"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               End Date
             </label>
             <input
@@ -134,7 +135,7 @@ export default function DateRangePicker({
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
               max={new Date().toISOString().split('T')[0]}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              className="w-full rounded-md border border-border-default bg-bg-elevated px-3 py-2 text-sm text-text-primary"
             />
           </div>
 
@@ -150,7 +151,7 @@ export default function DateRangePicker({
 
       {/* Selected Range Display */}
       {selectedRange !== 'custom' && (
-        <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-3 text-sm text-text-muted">
           {(() => {
             const dates = calculateDateRange(selectedRange);
             if (!dates) return null;

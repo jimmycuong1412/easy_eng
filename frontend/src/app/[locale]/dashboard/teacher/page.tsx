@@ -19,7 +19,9 @@ import {
 
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { getTeacherSchedule } from '@/lib/queries';
+import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,6 +64,7 @@ type ReviewItem = {
 export default function TeacherDashboardPage() {
   const { user, profile } = useAuth();
   const router = useRouter();
+  const t = useTranslations('teacherDashboard');
   const [todayClasses, setTodayClasses] = React.useState<ClassItem[]>([]);
   const [recentReviews, setRecentReviews] = React.useState<ReviewItem[]>([]);
   const [weeklyStats, setWeeklyStats] = React.useState({
@@ -113,7 +116,7 @@ export default function TeacherDashboardPage() {
         .map((s: Record<string, unknown>) => {
           const cls = s.classes as Record<string, unknown> | undefined;
           const startTime = new Date(s.scheduled_start_time as string);
-          const sessionStatus = s.status === 'live' ? 'in-progress' : 'upcoming';
+          const sessionStatus = s.status === 'in_progress' ? 'in-progress' : 'upcoming';
           return {
             id: s.id as string,
             studentName: (cls?.title as string) || 'Class',
@@ -126,18 +129,17 @@ export default function TeacherDashboardPage() {
         });
       setTodayClasses(todaySessions);
 
-      // Map reviews
+      // Map reviews — store raw diff hours, format with t() in render
       const mappedReviews = (reviews || []).map((r: Record<string, unknown>) => {
         const student = r.profiles as Record<string, unknown> | undefined;
         const createdAt = new Date(r.created_at as string);
         const diffHours = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60));
-        const dateStr = diffHours < 24 ? `${diffHours} giờ trước` : `${Math.floor(diffHours / 24)} ngày trước`;
         return {
           id: r.id as string,
           studentName: (student?.full_name as string) || 'Student',
           rating: (r.rating as number) || 5,
           comment: (r.comment as string) || '',
-          date: dateStr,
+          date: String(diffHours), // raw hours, formatted in render
         };
       });
       setRecentReviews(mappedReviews);
@@ -165,10 +167,17 @@ export default function TeacherDashboardPage() {
   const currentHour = new Date().getHours();
   const greeting =
     currentHour < 12
-      ? 'Chào buổi sáng'
+      ? t('goodMorning')
       : currentHour < 18
-        ? 'Chào buổi chiều'
-        : 'Chào buổi tối';
+        ? t('goodAfternoon')
+        : t('goodEvening');
+
+  const formatReviewDate = (rawHours: string) => {
+    const diffHours = parseInt(rawHours, 10);
+    if (diffHours < 1) return t('minutesAgo', { n: Math.max(1, diffHours * 60) });
+    if (diffHours < 24) return t('hoursAgo', { n: diffHours });
+    return t('daysAgo', { n: Math.floor(diffHours / 24) });
+  };
 
   return (
     <motion.div
@@ -184,21 +193,28 @@ export default function TeacherDashboardPage() {
             {greeting}, {profile?.full_name?.split(' ').pop() || 'Teacher'}! 👋
           </h1>
           <p className="text-slate-400 mt-1">
-            Bạn có {todayClasses.length} lớp học hôm nay
+            {todayClasses.length === 0
+              ? t('noClassesToday')
+              : t(todayClasses.length === 1 ? 'classesToday' : 'classesTodayPlural', { n: todayClasses.length })}
           </p>
         </motion.div>
         <motion.div variants={itemVariants} className="flex gap-3">
           <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
             <Bell className="w-4 h-4 mr-2" />
-            Thông báo
+            {t('notifications')}
             <Badge className="ml-2 bg-red-500 text-white text-xs">3</Badge>
           </Button>
           <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90" onClick={() => router.push('/teacher/schedule')}>
             <Plus className="w-4 h-4 mr-2" />
-            Tạo lớp học
+            {t('createClass')}
           </Button>
         </motion.div>
       </div>
+
+      {/* Active class reconnect banner */}
+      <motion.div variants={itemVariants}>
+        <ActiveClassBanner userId={user?.id} role="teacher" />
+      </motion.div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -207,7 +223,7 @@ export default function TeacherDashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">Lớp hôm nay</p>
+                  <p className="text-slate-400 text-sm">{t('todayClasses')}</p>
                   <p className="text-2xl font-bold text-white mt-1">{todayClasses.length}</p>
                 </div>
                 <div className="p-3 bg-[#3B82F6]/20 rounded-xl">
@@ -223,9 +239,8 @@ export default function TeacherDashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">Thu nhập tuần</p>
+                  <p className="text-slate-400 text-sm">{t('weeklyEarnings')}</p>
                   <p className="text-2xl font-bold text-white mt-1">{stats.earnings}</p>
-                  <p className="text-xs text-emerald-400">tuần này</p>
                 </div>
                 <div className="p-3 bg-emerald-500/20 rounded-xl">
                   <DollarSign className="w-6 h-6 text-emerald-400" />
@@ -240,9 +255,8 @@ export default function TeacherDashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">Học viên</p>
+                  <p className="text-slate-400 text-sm">{t('students')}</p>
                   <p className="text-2xl font-bold text-white mt-1">{stats.students}</p>
-                  <p className="text-xs text-amber-400">học viên</p>
                 </div>
                 <div className="p-3 bg-amber-500/20 rounded-xl">
                   <Users className="w-6 h-6 text-amber-400" />
@@ -257,9 +271,8 @@ export default function TeacherDashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">Đánh giá TB</p>
+                  <p className="text-slate-400 text-sm">{t('avgRating')}</p>
                   <p className="text-2xl font-bold text-white mt-1">{stats.avgRating || '—'}</p>
-                  <p className="text-xs text-purple-400">{stats.totalReviews} đánh giá</p>
                 </div>
                 <div className="p-3 bg-purple-500/20 rounded-xl">
                   <Star className="w-6 h-6 text-purple-400" />
@@ -277,16 +290,19 @@ export default function TeacherDashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-white flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-[#3B82F6]" />
-                Lịch dạy hôm nay
+                {t('todaySchedule')}
               </CardTitle>
               <Link href="/dashboard/schedule">
                 <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                  Xem tất cả
+                  {t('viewAll')}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
             </CardHeader>
             <CardContent className="space-y-3">
+              {todayClasses.length === 0 && (
+                <p className="text-slate-400 text-sm py-4 text-center">{t('noSchedule')}</p>
+              )}
               {todayClasses.map((classItem, index) => (
                 <motion.div
                   key={classItem.id}
@@ -301,7 +317,7 @@ export default function TeacherDashboardPage() {
                 >
                   <div className="text-center min-w-[60px]">
                     <p className="text-lg font-bold text-white">{classItem.time}</p>
-                    <p className="text-xs text-slate-400">{classItem.duration} phút</p>
+                    <p className="text-xs text-slate-400">{t('durationMin', { n: classItem.duration })}</p>
                   </div>
 
                   <div className="h-12 w-px bg-white/10" />
@@ -322,7 +338,7 @@ export default function TeacherDashboardPage() {
                     {classItem.status === 'in-progress' ? (
                       <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90">
                         <Video className="w-4 h-4 mr-2" />
-                        Vào lớp
+                        {t('joinClass')}
                       </Button>
                     ) : (
                       <>
@@ -330,7 +346,7 @@ export default function TeacherDashboardPage() {
                           <BookOpen className="w-4 h-4" />
                         </Button>
                         <Badge variant="outline" className="border-slate-500 text-slate-400">
-                          Sắp tới
+                          {t('upcoming')}
                         </Badge>
                       </>
                     )}
@@ -347,14 +363,14 @@ export default function TeacherDashboardPage() {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-emerald-400" />
-                Tiến độ tuần
+                {t('weeklyProgress')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Classes Progress */}
               <div>
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm text-slate-400">Số lớp đã dạy</span>
+                  <span className="text-sm text-slate-400">{t('classesTaught')}</span>
                   <span className="text-sm text-white">
                     {weeklyStats.classesCompleted}/{weeklyStats.classesTarget}
                   </span>
@@ -371,7 +387,7 @@ export default function TeacherDashboardPage() {
                   <div className="p-2 bg-[#3B82F6]/20 rounded-lg">
                     <Clock className="w-4 h-4 text-[#3B82F6]" />
                   </div>
-                  <span className="text-slate-400">Giờ dạy</span>
+                  <span className="text-slate-400">{t('teachingHours')}</span>
                 </div>
                 <span className="text-xl font-bold text-white">{weeklyStats.hoursTeaching}h</span>
               </div>
@@ -382,7 +398,7 @@ export default function TeacherDashboardPage() {
                   <div className="p-2 bg-emerald-500/20 rounded-lg">
                     <Users className="w-4 h-4 text-emerald-400" />
                   </div>
-                  <span className="text-slate-400">Tỷ lệ học lại</span>
+                  <span className="text-slate-400">{t('repeatRate')}</span>
                 </div>
                 <span className="text-xl font-bold text-emerald-400">{weeklyStats.repeatRate}%</span>
               </div>
@@ -393,7 +409,7 @@ export default function TeacherDashboardPage() {
                   <div className="p-2 bg-amber-500/20 rounded-lg">
                     <TrendingUp className="w-4 h-4 text-amber-400" />
                   </div>
-                  <span className="text-slate-400">Học viên mới</span>
+                  <span className="text-slate-400">{t('newStudents')}</span>
                 </div>
                 <span className="text-xl font-bold text-amber-400">+{weeklyStats.newStudents}</span>
               </div>
@@ -408,16 +424,19 @@ export default function TeacherDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-white flex items-center gap-2">
               <Star className="w-5 h-5 text-amber-400" />
-              Đánh giá gần đây
+              {t('recentReviews')}
             </CardTitle>
             <Link href="/dashboard/reviews">
               <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                Xem tất cả
+                {t('viewAll')}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
+            {recentReviews.length === 0 && (
+              <p className="text-slate-400 text-sm py-4 text-center">{t('noReviews')}</p>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {recentReviews.map((review) => (
                 <div
@@ -430,7 +449,7 @@ export default function TeacherDashboardPage() {
                         <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
                       ))}
                     </div>
-                    <span className="text-xs text-slate-500">{review.date}</span>
+                    <span className="text-xs text-slate-500">{formatReviewDate(review.date)}</span>
                   </div>
                   <p className="text-white font-medium mb-1">{review.studentName}</p>
                   <p className="text-sm text-slate-400 line-clamp-2">{review.comment}</p>

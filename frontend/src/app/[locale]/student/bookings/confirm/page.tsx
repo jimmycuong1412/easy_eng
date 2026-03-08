@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { CheckCircle, Calendar, Clock, User, Gem, ArrowRight, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Booking Confirmed | Easy English',
@@ -15,44 +16,66 @@ interface ConfirmationPageProps {
   };
 }
 
-/**
- * Booking Confirmation Page
- *
- * Displays successful booking confirmation with:
- * - Confirmation message
- * - Booking details (class, teacher, schedule)
- * - Payment summary
- * - Gems used and saved amount
- * - Next steps
- * - Links to dashboard and booking details
- */
 export default async function BookingConfirmationPage({
   searchParams,
 }: ConfirmationPageProps) {
   const { booking_id } = searchParams;
 
-  // TODO: Fetch booking details from API
-  // const booking = await fetch(`/api/bookings/${booking_id}`).then(res => res.json());
-
-  // Mock data for now
-  const booking = {
-    id: booking_id || 'booking-123',
+  // Fetch booking from Supabase
+  let booking = {
+    id: booking_id || '',
     class: {
-      id: 'class-1',
-      title: 'English Conversation Practice',
-      teacher_name: 'Teacher Sarah',
-      scheduled_at: new Date(Date.now() + 2 * 60 * 60 * 1000),
+      id: '',
+      title: 'Class',
+      teacher_name: 'Teacher',
+      scheduled_at: new Date(),
       duration: 25,
     },
     payment: {
-      original_price: 20,
-      gems_used: 10,
-      discount_amount: 5,
-      final_price: 15,
+      original_price: 0,
+      gems_used: 0,
+      discount_amount: 0,
+      final_price: 0,
     },
-    confirmation_code: 'EC' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+    confirmation_code: 'EC' + (booking_id?.slice(0, 6) || '000000').toUpperCase(),
     booking_date: new Date(),
   };
+
+  if (booking_id) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from('bookings')
+        .select('*, classes(id, title, start_time, duration_minutes, profiles!classes_teacher_id_profiles_fkey(full_name))')
+        .eq('id', booking_id)
+        .single();
+
+      if (data) {
+        const cls = data.classes as Record<string, unknown> | undefined;
+        const teacher = cls?.profiles as Record<string, unknown> | undefined;
+        booking = {
+          id: data.id,
+          class: {
+            id: (cls?.id as string) || '',
+            title: (cls?.title as string) || 'Class',
+            teacher_name: (teacher?.full_name as string) || 'Teacher',
+            scheduled_at: new Date((cls?.start_time as string) || Date.now()),
+            duration: (cls?.duration_minutes as number) || 25,
+          },
+          payment: {
+            original_price: Number(data.original_price) || 0,
+            gems_used: data.gems_used || 0,
+            discount_amount: Number(data.gems_discount_amount) || 0,
+            final_price: Number(data.final_price) || 0,
+          },
+          confirmation_code: 'EC' + data.id.slice(0, 6).toUpperCase(),
+          booking_date: new Date(data.created_at),
+        };
+      }
+    } catch (err) {
+      console.error('Error fetching booking:', err);
+    }
+  }
 
   const savings = booking.payment.discount_amount;
   const savingsPercentage = (

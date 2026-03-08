@@ -14,7 +14,7 @@ import { format, formatDistanceToNow, isBefore, isAfter, addMinutes } from 'date
 
 export default function WaitingRoom({
   sessionId,
-  classId,
+  classId: _classId,
   scheduledStartTime,
   onJoinReady,
   userRole,
@@ -40,6 +40,7 @@ export default function WaitingRoom({
     checkDevices();
 
     return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduledStartTime]);
 
   // ============================================================================
@@ -113,7 +114,7 @@ export default function WaitingRoom({
       if (!confirm) return;
     }
 
-    onJoinReady();
+    onJoinReady?.();
   };
 
   // ============================================================================

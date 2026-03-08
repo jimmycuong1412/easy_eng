@@ -66,15 +66,12 @@ export function getDashboardPath(user: UserProfile | null): string {
 
   switch (user.role) {
     case 'admin':
-      return '/admin/dashboard';
+      return '/dashboard/admin';
     case 'teacher':
-      return '/teacher/dashboard';
     case 'student':
-      return '/student/dashboard';
     case 'parent':
-      return '/parent/dashboard';
     default:
-      return '/';
+      return '/dashboard';
   }
 }
 

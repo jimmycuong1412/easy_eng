@@ -27,7 +27,7 @@ export class CallErrorBoundary extends Component<
     };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<CallErrorBoundaryState> {
+  static getDerivedStateFromError(_error: Error): Partial<CallErrorBoundaryState> {
     return { hasError: true };
   }
 

@@ -3,10 +3,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { CometChat } from '@/lib/cometchat/client';
 import { logger } from '@/lib/cometchat/logger';
-import type { UseCometChatMessagesReturn } from '@/types/cometchat';
 
 interface Message {
-  id: string;
+  id: string | number;
   text: string;
   sender: {
     uid: string;
@@ -19,6 +18,17 @@ interface Message {
 
 const MESSAGE_LIMIT = 50;
 
+interface UseCometChatMessagesReturn {
+  messages: Message[];
+  isLoading: boolean;
+  isSending: boolean;
+  error: Error | null;
+  typingIndicator: string | null;
+  sendMessage: (text: string) => Promise<void>;
+  sendTypingIndicator: () => Promise<void>;
+  clearMessages: () => void;
+}
+
 export function useCometChatMessages(userId: string): UseCometChatMessagesReturn {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +36,6 @@ export function useCometChatMessages(userId: string): UseCometChatMessagesReturn
   const [error, setError] = useState<Error | null>(null);
   const [typingIndicator, setTypingIndicator] = useState<string | null>(null);
   const messageListenerRef = useRef<string | null>(null);
-  const typingListenerRef = useRef<string | null>(null);
 
   // Load initial message history
   useEffect(() => {

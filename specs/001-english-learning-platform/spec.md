@@ -68,19 +68,23 @@ Students can select their dream career path and see their 8-bit pixel art charac
 11. **Given** a student reaches Level 11, **When** they view their character, **Then** they see professional attire and advanced animations
 12. **Given** a student reaches Level 21+, **When** they view their character, **Then** they see master-level appearance with career-specific effects
 13. **Given** a student views their dashboard, **When** the page loads, **Then** they see real-time character preview with current equipment and level
+14. **Given** a student levels up during an active video class, **When** the level-up threshold is crossed, **Then** the level-up celebration is queued and displays after the class ends (prevents interruption)
+15. **Given** a student's 8-bit character is displayed, **When** rendered, **Then** the sprite is 64x64 pixels with career-specific color palette (6 palettes: Doctor-green, Engineer-blue, Warrior-red, Business-gold, Artist-purple, Scientist-cyan)
 
 #### Customization Marketplace
-14. **Given** a student has 100 Gold, **When** they browse the marketplace, **Then** they see purchasable items: Hats (50-200 Gold), Outfits (100-500 Gold), Backgrounds (150 Gold), Emotes (75 Gold), Pets (300 Gold)
-15. **Given** a student wants to buy a hat costing 75 Gold, **When** they have 100 Gold and click purchase, **Then** the item is added to inventory, 75 Gold is deducted, and they see purchase confirmation
-16. **Given** a student owns an item, **When** they access customization, **Then** they can equip/unequip items and see live preview on their character
-17. **Given** a student has 50 Gold but tries to buy a 75 Gold item, **When** they click purchase, **Then** they see "Insufficient Gold" error with their current balance
+16. **Given** a student has 100 Gold, **When** they browse the marketplace, **Then** they see purchasable items: Hats (50-200 Gold), Outfits (100-500 Gold), Backgrounds (150 Gold), Emotes (75 Gold), Pets (300 Gold)
+17. **Given** a student wants to buy a hat costing 75 Gold, **When** they have 100 Gold and click purchase, **Then** the item is added to inventory, 75 Gold is deducted, and they see purchase confirmation
+18. **Given** a student owns an item, **When** they access customization, **Then** they can equip/unequip items and see live preview on their character
+19. **Given** a student has 50 Gold but tries to buy a 75 Gold item, **When** they click purchase, **Then** they see "Insufficient Gold" error with their current balance
+20. **Given** marketplace items have career compatibility tags, **When** a student with "Doctor" career views items, **Then** universal items show "All Careers" tag and career-specific items show compatibility (e.g., "Doctor Only" or "Not compatible with Doctor")
+21. **Given** two students attempt to purchase the same item simultaneously, **When** both click purchase, **Then** system uses database row-level locking on student Gold balance to process transactions sequentially and prevent negative balances
 
 #### Leaderboards & Social
-18. **Given** a student views leaderboards, **When** the page loads, **Then** they see top characters ranked by XP within each career path
-19. **Given** a student is ranked #15 in "Engineer" leaderboard, **When** they view the leaderboard, **Then** they see their position highlighted with character preview
+22. **Given** a student views leaderboards, **When** the page loads, **Then** they see top characters ranked by XP within each career path
+23. **Given** a student is ranked #15 in "Engineer" leaderboard, **When** they view the leaderboard, **Then** they see their position highlighted with character preview
 
 #### Parental Controls
-20. **Given** parental controls are enabled with 100 Gold/day spending limit, **When** a student tries to spend 150 Gold in one day, **Then** the purchase is blocked with explanation message
+24. **Given** parental controls are enabled with 100 Gold/day spending limit, **When** a student tries to spend 150 Gold in one day, **Then** the purchase is blocked with explanation message
 
 ---
 
@@ -126,8 +130,15 @@ Teachers and students can participate in real-time video classes with face-to-fa
 9. **Given** a student's internet connection is unstable, **When** video quality drops, **Then** the system automatically adjusts to maintain audio quality
 
 #### Class End and Rewards
-10. **Given** a teacher ends the class, **When** the session closes, **Then** all participants are redirected to a "Class Ended" summary page
+10. **Given** a teacher ends the class, **When** the session closes, **Then** all participants are redirected to a "Class Ended" summary page showing:
+    - Session duration and attendance percentage
+    - XP and Gold earned (for students who met 50% attendance threshold)
+    - Teacher rating prompt (5-star system)
+    - "Book Next Class" button with recommended classes
+    - Session transcript/chat history download option
 11. **Given** a class has ended, **When** the system processes attendance, **Then** students who attended receive their XP and Gold rewards
+12. **Given** a video class is in progress, **When** participants view the interface, **Then** they see a session timer displaying elapsed time (MM:SS format) and scheduled end time
+13. **Given** the session timer reaches scheduled end time, **When** class continues, **Then** timer shows overrun duration in orange/yellow with "+ MM:SS" format
 
 ---
 
@@ -192,6 +203,13 @@ Administrators can view comprehensive platform metrics including user growth, cl
 25. **Multiple device login**: When same user attempts to join video class from multiple devices simultaneously, system allows only one active session and disconnects older sessions
 26. **Class overrun**: When a teacher continues past scheduled end time, system sends 5-minute warning; after 15 minutes overrun, displays "Class Extended" to students but doesn't force disconnect
 27. **Network bandwidth**: When detected bandwidth is below 500kbps, system automatically disables video and maintains audio-only mode with notification to user
+28. **Concurrent student joins**: When multiple students join simultaneously within 1 second, system queues join requests and processes sequentially to prevent CometChat API race conditions; students see "Joining class..." indicator
+29. **Teacher ends while student joining**: When teacher ends session while student is in process of joining, student receives "Class Ended" message with session summary instead of entering empty room
+30. **CometChat service outage**: When CometChat API is unreachable, system displays "Video service unavailable" error with estimated recovery time and allows students to reschedule or request refund
+31. **Session cleanup on end**: When teacher ends class, system executes cleanup sequence: (1) disconnect all participants, (2) finalize attendance records, (3) trigger reward calculations, (4) archive session metadata, (5) update class status
+32. **Late join window**: Students can join live class up to 10 minutes after scheduled start time; joining after 10 minutes shows "Class in progress - late join may affect participation credit"
+33. **Minimum attendance for rewards**: Students must attend at least 50% of session duration (based on joined_at to left_at timestamps) to qualify for XP/Gold rewards
+34. **Server restart during session**: Active video sessions continue in CometChat infrastructure (unaffected); database reconnection logic ensures attendance tracking resumes when server recovers
 
 ## Requirements *(mandatory)*
 
@@ -289,7 +307,10 @@ Administrators can view comprehensive platform metrics including user growth, cl
 - Teachers receive **70% of booking price** (after Gem discounts); platform retains 30%
 - Gems are primarily earned through **referral coupons** (100 Gems when referred friend completes first booking)
 - Quizzes are **built into the platform** with 5-10 questions, 70% pass threshold
-- Character sprites are **AI-generated** with manual cleanup for consistency
+- Character sprites are **AI-generated** with manual cleanup for consistency (quality validated by design team before deployment)
+- **Video class network requirements**: Target market (Vietnam) has adequate broadband infrastructure - minimum 5 Mbps down / 2 Mbps up available to 85%+ of urban users (validated via 2025 Vietnam Internet Speed Report)
+- **Camera/microphone hardware**: Students are expected to have device with camera and microphone (desktop webcam, laptop built-in, or smartphone); students without hardware can attend audio-only with prior teacher notification
+- **CometChat encryption**: Video/audio streams are encrypted end-to-end by CometChat infrastructure (AES-256); platform does not implement additional encryption layer
 
 ## Constraints *(optional)*
 
@@ -320,6 +341,9 @@ Administrators can view comprehensive platform metrics including user growth, cl
 - Cloud storage for class materials and user profile images
 - Analytics platform for tracking user behavior and platform metrics
 - **CometChat** for real-time video/voice calling and in-call chat (Build Plan - Free Tier for development, Basic Plan for production)
+  - **Rate Limits**: 100 requests/minute for user provisioning API, 500 requests/minute for session operations
+  - **MAU Limits**: Free tier supports 100 monthly active users, Basic tier supports unlimited MAU
+  - **Concurrent Session Estimation**: Free tier ~20 concurrent sessions, Basic tier unlimited (based on MAU distribution)
 
 ### Prerequisites
 - User registration and authentication system must be operational before class booking
@@ -375,11 +399,24 @@ This feature specification explicitly **excludes**:
 - **NFR-002**: Class search results return in under 500ms for catalogs up to 10,000 classes
 - **NFR-003**: System supports 1,000 concurrent users with <200ms p95 response time
 - **NFR-004**: Payment processing completes within 10 seconds under normal conditions
+- **NFR-027**: Video class connection establishes within 5 seconds for 95% of attempts
+- **NFR-028**: Video sessions maintain stable quality on broadband connections ≥5 Mbps download, ≥2 Mbps upload, <100ms latency
+- **NFR-029**: Video quality automatically adjusts based on network conditions with defined tiers:
+  - **High Quality**: ≥10 Mbps down / ≥4 Mbps up → 1080p @ 30fps
+  - **Standard Quality**: ≥5 Mbps down / ≥2 Mbps up → 720p @ 30fps (minimum requirement)
+  - **Low Quality**: ≥2 Mbps down / ≥1 Mbps up → 480p @ 24fps
+  - **Audio-Only Fallback**: <2 Mbps down → disable video, maintain audio
+- **NFR-030**: In-call chat messages deliver within 500ms during active video sessions
+- **NFR-031**: Session metadata queries (join validation, participant list) complete within 200ms
+- **NFR-032**: Video session creation (CometChat group setup) completes within 3 seconds
 
 ### Scalability
 - **NFR-005**: Platform architecture supports horizontal scaling to accommodate 100,000+ registered users
 - **NFR-006**: Database design supports efficient queries as Gem transaction history grows to millions of records
 - **NFR-007**: System handles peak booking loads (e.g., 500 bookings/minute during promotions)
+- **NFR-033**: System supports up to 20 concurrent video sessions on Free tier (100 MAU limit), unlimited on Basic tier
+- **NFR-034**: Database indexes support efficient session participant queries for up to 1000 concurrent video sessions
+- **NFR-035**: CometChat API rate limits honored: 100 requests/minute for user sync, 500 requests/minute for session operations
 
 ### Reliability
 - **NFR-008**: System maintains 99.9% uptime during business hours (6am-midnight local time)

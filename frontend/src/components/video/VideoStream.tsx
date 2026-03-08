@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import Image from 'next/image';
 
 interface VideoStreamProps {
   stream?: MediaStream | null;
@@ -48,9 +49,11 @@ export function VideoStream({
       ) : (
         <div className="flex flex-col items-center justify-center w-full h-full">
           {userAvatar ? (
-            <img
+            <Image
               src={userAvatar}
               alt={userName}
+              width={96}
+              height={96}
               className="w-24 h-24 rounded-full object-cover mb-4"
             />
           ) : (

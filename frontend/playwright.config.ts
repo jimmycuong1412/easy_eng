@@ -8,6 +8,12 @@ import { defineConfig, devices } from '@playwright/test';
 // dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
+ * Import axe-core for accessibility testing
+ * Note: @axe-core/playwright is used in test files via AxeBuilder
+ * This configuration enables WCAG 2.1 Level AA compliance testing
+ */
+
+/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -28,8 +34,8 @@ export default defineConfig({
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    /* Base URL — includes /en locale prefix to avoid redirect overhead */
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000/en',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',

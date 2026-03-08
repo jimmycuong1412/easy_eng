@@ -10,7 +10,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { CheckCircle, Calendar, User, Mail, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -23,26 +23,24 @@ interface PaymentDetails {
     class: {
       title: string;
       description: string;
-      scheduled_at: string;
+      start_time: string;
       duration_minutes: number;
       teacher: {
-        display_name: string;
+        full_name: string;
         email: string;
       };
     };
   };
   payment: {
-    transaction_id: string;
+    payment_provider_id: string;
     payment_method: string;
-    completed_at: string;
+    updated_at: string;
   };
 }
 
 export default function PaymentSuccessPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('booking_id');
-  const sessionId = searchParams.get('session_id'); // For Stripe
 
   const [details, setDetails] = useState<PaymentDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,6 +89,7 @@ export default function PaymentSuccessPage() {
     }
 
     loadPaymentDetails();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
   const loadPaymentDetails = async () => {
@@ -104,10 +103,10 @@ export default function PaymentSuccessPage() {
           class:classes (
             title,
             description,
-            scheduled_at,
+            start_time,
             duration_minutes,
-            teacher:profiles!teacher_id (
-              display_name,
+            teacher:profiles!classes_teacher_id_profiles_fkey (
+              full_name,
               email
             )
           )
@@ -120,17 +119,17 @@ export default function PaymentSuccessPage() {
 
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
-        .select('transaction_id, payment_method, completed_at')
+        .select('payment_provider_id, payment_method, updated_at')
         .eq('booking_id', bookingId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (paymentError) throw paymentError;
 
       setDetails({
         booking: booking as any,
-        payment: payment as any,
+        payment: (payment || { payment_provider_id: 'N/A', payment_method: 'N/A', updated_at: new Date().toISOString() }) as any,
       });
       setLoading(false);
     } catch (err: any) {
@@ -203,7 +202,7 @@ export default function PaymentSuccessPage() {
             <Calendar className="h-5 w-5 text-gray-400" />
             <div>
               <p className="font-medium text-gray-900 dark:text-white">
-                {new Date(booking.class.scheduled_at).toLocaleDateString('en-US', {
+                {new Date((booking.class as any).start_time).toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -211,7 +210,7 @@ export default function PaymentSuccessPage() {
                 })}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {new Date(booking.class.scheduled_at).toLocaleTimeString('en-US', {
+                {new Date((booking.class as any).start_time).toLocaleTimeString('en-US', {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}{' '}
@@ -225,7 +224,7 @@ export default function PaymentSuccessPage() {
             <User className="h-5 w-5 text-gray-400" />
             <div>
               <p className="font-medium text-gray-900 dark:text-white">
-                {booking.class.teacher.display_name}
+                {(booking.class.teacher as any).full_name || 'Teacher'}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Your Instructor</p>
             </div>
@@ -250,7 +249,7 @@ export default function PaymentSuccessPage() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Transaction ID</span>
               <span className="font-mono text-gray-900 dark:text-white">
-                {payment.transaction_id}
+                {(payment as any).payment_provider_id}
               </span>
             </div>
             <div className="flex justify-between text-sm">
@@ -268,7 +267,7 @@ export default function PaymentSuccessPage() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Payment Date</span>
               <span className="text-gray-900 dark:text-white">
-                {new Date(payment.completed_at).toLocaleString()}
+                {new Date((payment as any).updated_at).toLocaleString()}
               </span>
             </div>
           </div>

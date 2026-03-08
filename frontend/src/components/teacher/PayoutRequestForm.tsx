@@ -125,11 +125,11 @@ export default function PayoutRequestForm({
       setLoading(true);
 
       // Create payout request
-      const { data, error: rpcError } = await supabase.rpc('create_payout_request', {
+      const { data: _data, error: rpcError } = await supabase.rpc('create_payout_request', {
         p_teacher_id: teacherId,
         p_amount: amountNum,
         p_payment_method: paymentMethod,
-        p_payment_details: paymentDetails[paymentMethod],
+        p_payment_details: (paymentDetails as Record<string, any>)[paymentMethod],
       });
 
       if (rpcError) {
@@ -153,7 +153,7 @@ export default function PayoutRequestForm({
   };
 
   const validatePaymentDetails = (): boolean => {
-    const details = paymentDetails[paymentMethod];
+    const details = (paymentDetails as Record<string, any>)[paymentMethod];
     if (!details) return false;
 
     switch (paymentMethod) {
@@ -178,7 +178,7 @@ export default function PayoutRequestForm({
     setPaymentDetails((prev) => ({
       ...prev,
       [paymentMethod]: {
-        ...prev[paymentMethod],
+        ...(prev as Record<string, any>)[paymentMethod],
         [field]: value,
       },
     }));
@@ -327,7 +327,7 @@ export default function PayoutRequestForm({
             </label>
             <input
               type="email"
-              value={paymentDetails[paymentMethod]?.email || ''}
+              value={(paymentDetails as Record<string, any>)[paymentMethod]?.email || ''}
               onChange={(e) => updatePaymentDetail('email', e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder={`Your ${paymentMethod} email`}

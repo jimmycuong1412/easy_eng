@@ -8,7 +8,7 @@
 
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { analytics } from '@/lib/analytics';
 
 export function AnalyticsScripts() {
@@ -76,7 +76,9 @@ export default function Analytics() {
   return (
     <>
       <AnalyticsScripts />
-      <AnalyticsPageViewTracker />
+      <Suspense fallback={null}>
+        <AnalyticsPageViewTracker />
+      </Suspense>
     </>
   );
 }

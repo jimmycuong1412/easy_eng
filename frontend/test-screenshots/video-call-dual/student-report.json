@@ -1,0 +1,64 @@
+{
+  "role": "student",
+  "classId": "fde7bbf5-c6ec-431a-9506-9613c19d089f",
+  "teacherId": "7a46e4e2-782c-471a-ba1b-cea449e75028",
+  "finalUrl": "http://localhost:3000/en/class/fde7bbf5-c6ec-431a-9506-9613c19d089f/live",
+  "videoCount": 0,
+  "liveCount": 1,
+  "connectingCount": 0,
+  "callErrCount": 0,
+  "fallbackCount": 1,
+  "cometEls": 0,
+  "ccStatus": {
+    "error": "CometChat not on window"
+  },
+  "studentToken": {
+    "success": true,
+    "userId": "70311902-706f-416c-9520-192a6cc96072",
+    "authToken": "70311902-706f-416c-9520-192a6cc96072_177247113602058c79f6a83fd066964cc5004ecd"
+  },
+  "bodyText": "Skip to main content\nLIVE\nIELTS Speaking Practice\n\nwith Teacher User\n\n24:51\n\nReal-time features unavailable. Using fallback mode.\n\nT\n\nTeacher User\n\nCamera Off\n\nTeacher User\n\nS\n\nStudent User\n\nCamera Off\n\nDuration: 00:06\n\nMute\nCamera\nShare\nEnd Call\nMessages\n\nNo messages yet. Start the conversation!\n\nHome\n🐛",
+  "errors": [
+    "[ERR] Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "[ERR] [CometChat] [ERROR] Error in useCometChatMessages loadMessages: {message: User not logged in, stack: Error: User not logged in\n    at loadMessages (web…owser)/./src/hooks/useCometChatMessages.ts:28:27)}",
+    "[ERR] [CometChat] [ERROR] Error in useCometChatMessages loadMessages: {message: User not logged in, stack: Error: User not logged in\n    at loadMessages (web…owser)/./src/hooks/useCometChatMessages.ts:28:27)}",
+    "[ERR] Failed to load resource: the server responded with a status of 406 ()",
+    "[ERR] Failed to load resource: the server responded with a status of 406 ()",
+    "[ERR] [CometChat] [ERROR] Error in useCometChatMessages loadMessages: {message: User not logged in, stack: Error: User not logged in\n    at loadMessages (web…owser)/./src/hooks/useCometChatMessages.ts:28:27)}",
+    "[ERR] [CometChat] Login failed: o",
+    "[ERR] [CometChat] [ERROR] Error in useCometChat login: {message: Login failed, stack: Error: Login failed\n    at eval (webpack-internal:…pages-browser)/./src/hooks/useCometChat.ts:78:56)}",
+    "[ERR] [LiveClass] CometChat login failed: Error: Login failed\n    at eval (webpack-internal:///(app-pages-browser)/./src/hooks/useCometChat.ts:78:56)",
+    "[ERR] [CometChat] Login failed: o",
+    "[ERR] [CometChat] [ERROR] Error in useCometChat login: {message: Login failed, stack: Error: Login failed\n    at eval (webpack-internal:…pages-browser)/./src/hooks/useCometChat.ts:78:56)}",
+    "[ERR] [LiveClass] CometChat login failed: Error: Login failed\n    at eval (webpack-internal:///(app-pages-browser)/./src/hooks/useCometChat.ts:78:56)"
+  ],
+  "info": [
+    "[ERROR] [CometChat] [ERROR] Error in useCometChatMessages loadMessages: {message: User not logged in, stack: Error: User not logged in\n    at loadMessages (web…owser)/./src/hooks/useCometChatMessages.ts:28:27)}",
+    "[ERROR] [CometChat] [ERROR] Error in useCometChatMessages loadMessages: {message: User not logged in, stack: Error: User not logged in\n    at loadMessages (web…owser)/./src/hooks/useCometChatMessages.ts:28:27)}",
+    "[WARNING] [CometChat] [INFO] CometChat initialized successfully ",
+    "[WARNING] [CometChat] [INFO] CometChat initialized successfully ",
+    "[ERROR] [CometChat] [ERROR] Error in useCometChatMessages loadMessages: {message: User not logged in, stack: Error: User not logged in\n    at loadMessages (web…owser)/./src/hooks/useCometChatMessages.ts:28:27)}",
+    "[ERROR] [CometChat] Login failed: o",
+    "[ERROR] [CometChat] [ERROR] Error in useCometChat login: {message: Login failed, stack: Error: Login failed\n    at eval (webpack-internal:…pages-browser)/./src/hooks/useCometChat.ts:78:56)}",
+    "[ERROR] [LiveClass] CometChat login failed: Error: Login failed\n    at eval (webpack-internal:///(app-pages-browser)/./src/hooks/useCometChat.ts:78:56)",
+    "[ERROR] [CometChat] Login failed: o",
+    "[ERROR] [CometChat] [ERROR] Error in useCometChat login: {message: Login failed, stack: Error: Login failed\n    at eval (webpack-internal:…pages-browser)/./src/hooks/useCometChat.ts:78:56)}",
+    "[ERROR] [LiveClass] CometChat login failed: Error: Login failed\n    at eval (webpack-internal:///(app-pages-browser)/./src/hooks/useCometChat.ts:78:56)",
+    "[WARNING] [CometChat] [INFO] User logged in successfully {userId: 70311902-706f-416c-9520-192a6cc96072}",
+    "[WARNING] [CometChat] [INFO] Call Event: call_started {userId: undefined, callType: video, duration: undefined, timestamp: Tue Mar 03 2026 00:05:30 GMT+0700 (Indochina Time)}"
+  ],
+  "network": [
+    "500 /en/class/fde7bbf5-c6ec-431a-9506-9613c19d089f/live",
+    "406 https://evrcwtsexlamacawofxo.supabase.co/rest/v1/class_sessions?select=*%2Cclasses%28id%2Ctitle%2Cdescription%2Cduration_minutes%2Clevel%2Cprice%2Cprofiles%21classes_teacher_id_profiles_fkey%28full_name%2Cavatar_url%29%29&class_id=eq.fde7bbf5-c6ec-431a-9506-9613c19d089f&status=in.%28live%2Cwaiting%2Cscheduled%29&order=scheduled_start_time.desc&limit=1",
+    "406 https://evrcwtsexlamacawofxo.supabase.co/rest/v1/class_sessions?select=*%2Cclasses%28id%2Ctitle%2Cdescription%2Cduration_minutes%2Clevel%2Cprice%2Cprofiles%21classes_teacher_id_profiles_fkey%28full_name%2Cavatar_url%29%29&class_id=eq.fde7bbf5-c6ec-431a-9506-9613c19d089f&status=in.%28live%2Cwaiting%2Cscheduled%29&order=scheduled_start_time.desc&limit=1",
+    "200 /api/cometchat/auth-token",
+    "200 /api/cometchat/auth-token",
+    "200 /api/cometchat/auth-token",
+    "200 https://167456197b8d940a5.apiclient-us.cometchat.io/v3.0/me",
+    "200 https://metrics-us.cometchat.io/v1/ping",
+    "200 https://167456197b8d940a5.apiclient-us.cometchat.io/v3.0/calls",
+    "200 /api/cometchat/auth-token",
+    "200 https://167456197b8d940a5.apiclient-us.cometchat.io/v3.0/user_sessions",
+    "200 /api/cometchat/auth-token"
+  ]
+}

@@ -8,18 +8,21 @@ import {
   Gift,
   Users,
   Check,
-  Cookie,
+  Gem,
   Trophy,
   Facebook,
   Twitter,
   Send,
 } from 'lucide-react';
 
+import { GemImage } from '@/components/common/GemImage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/hooks/useAuth';
+import { getUserReferralData } from '@/lib/queries';
 
 // Animation variants
 const containerVariants = {
@@ -35,32 +38,51 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock referral data
-const referralData = {
-  code: 'ANNGUYEN2024',
-  totalReferrals: 8,
-  successfulReferrals: 5,
-  pendingReferrals: 3,
-  totalCookiesEarned: 250,
-  nextMilestone: 10,
-  referredUsers: [
-    { name: 'Trần Văn Bình', date: '2024-01-15', status: 'completed', cookiesEarned: 50 },
-    { name: 'Lê Thị Mai', date: '2024-01-12', status: 'completed', cookiesEarned: 50 },
-    { name: 'Nguyễn Hoàng Nam', date: '2024-01-10', status: 'completed', cookiesEarned: 50 },
-    { name: 'Phạm Quốc Anh', date: '2024-01-08', status: 'pending', cookiesEarned: 0 },
-    { name: 'Võ Thị Hương', date: '2024-01-05', status: 'completed', cookiesEarned: 50 },
-  ],
-};
-
 const milestones = [
-  { referrals: 5, reward: '100 Cookies + Badge Bronze', achieved: true },
-  { referrals: 10, reward: '250 Cookies + Badge Silver', achieved: false },
-  { referrals: 25, reward: '500 Cookies + Badge Gold', achieved: false },
-  { referrals: 50, reward: '1000 Cookies + Badge Diamond + 1 Free Class', achieved: false },
+  { referrals: 5, reward: '100 Gems + Badge Bronze', achieved: false },
+  { referrals: 10, reward: '250 Gems + Badge Silver', achieved: false },
+  { referrals: 25, reward: '500 Gems + Badge Gold', achieved: false },
+  { referrals: 50, reward: '1000 Gems + Badge Diamond + 1 Free Class', achieved: false },
 ];
 
 export default function ReferralSettingsPage() {
+  const { user } = useAuth();
   const [copied, setCopied] = React.useState(false);
+  const [referralData, setReferralData] = React.useState({
+    code: '',
+    totalReferrals: 0,
+    successfulReferrals: 0,
+    pendingReferrals: 0,
+    totalGemsEarned: 0,
+    nextMilestone: 5,
+    referredUsers: [] as Array<{ name: string; date: string; status: string; gemsEarned: number }>,
+  });
+
+  React.useEffect(() => {
+    if (!user?.id) return;
+    getUserReferralData(user.id)
+      .then((data: Record<string, unknown>) => {
+        const referrals = (data.referrals as Array<Record<string, unknown>>) || [];
+        const successful = referrals.filter((r) => r.referred_completed_first_class);
+        setReferralData({
+          code: (data.referral_code as string) || '',
+          totalReferrals: (data.total_referrals as number) || 0,
+          successfulReferrals: successful.length,
+          pendingReferrals: referrals.length - successful.length,
+          totalGemsEarned: (data.total_gems_earned as number) || 0,
+          nextMilestone: milestones.find((m) => m.referrals > referrals.length)?.referrals || 50,
+          referredUsers: referrals.map((r) => ({
+            name: 'Referred User',
+            date: new Date(r.created_at as string).toLocaleDateString('vi-VN'),
+            status: r.referred_completed_first_class ? 'completed' : 'pending',
+            gemsEarned: (r.gems_awarded_to_referrer as number) || 0,
+          })),
+        });
+        // Update milestones achieved
+        milestones.forEach((m) => { m.achieved = referrals.length >= m.referrals; });
+      })
+      .catch(console.error);
+  }, [user?.id]);
 
   const referralLink = `https://easyeng.vn/join?ref=${referralData.code}`;
 
@@ -77,7 +99,7 @@ export default function ReferralSettingsPage() {
   };
 
   const handleShare = (platform: string) => {
-    const text = `Tham gia EasyEng cùng mình và nhận 20 Cookies miễn phí! Dùng mã giới thiệu: ${referralData.code}`;
+    const text = `Tham gia EasyEng cùng mình và nhận 20 Gems miễn phí! Dùng mã giới thiệu: ${referralData.code}`;
     const urls: Record<string, string> = {
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}&quote=${encodeURIComponent(text)}`,
       twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralLink)}`,
@@ -103,15 +125,15 @@ export default function ReferralSettingsPage() {
               </div>
               <div className="text-center md:text-left flex-1">
                 <h2 className="text-2xl font-bold text-white mb-2">
-                  Giới thiệu bạn bè, nhận Cookies! 🍪
+                  Giới thiệu bạn bè, nhận Gems! <GemImage size={24} className="inline-block align-middle ml-1" />
                 </h2>
                 <p className="text-slate-300">
-                  Mỗi bạn bè đăng ký thành công, bạn nhận <span className="text-amber-400 font-bold">50 Cookies</span>.
-                  Bạn bè của bạn cũng nhận <span className="text-amber-400 font-bold">20 Cookies</span> miễn phí!
+                  Mỗi bạn bè đăng ký thành công, bạn nhận <span className="text-amber-400 font-bold">50 Gems</span>.
+                  Bạn bè của bạn cũng nhận <span className="text-amber-400 font-bold">20 Gems</span> miễn phí!
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-4xl font-bold text-amber-400">🍪 {referralData.totalCookiesEarned}</p>
+                <p className="text-4xl font-bold text-amber-400 flex items-center justify-center gap-1"><GemImage size={32} /> {referralData.totalGemsEarned}</p>
                 <p className="text-sm text-slate-400">Đã kiếm được</p>
               </div>
             </div>
@@ -240,7 +262,7 @@ export default function ReferralSettingsPage() {
                   className="h-2 bg-white/10"
                 />
                 <p className="text-xs text-slate-500">
-                  Còn {referralData.nextMilestone - referralData.successfulReferrals} người nữa để nhận 250 Cookies!
+                  Còn {referralData.nextMilestone - referralData.successfulReferrals} người nữa để nhận 250 Gems!
                 </p>
               </div>
             </CardContent>
@@ -272,7 +294,7 @@ export default function ReferralSettingsPage() {
                     {milestone.achieved ? (
                       <Check className="w-4 h-4 text-emerald-400" />
                     ) : (
-                      <Cookie className="w-4 h-4 text-slate-400" />
+                      <Gem className="w-4 h-4 text-slate-400" />
                     )}
                   </div>
                   <div className="flex-1">
@@ -325,9 +347,9 @@ export default function ReferralSettingsPage() {
                     }>
                       {user.status === 'completed' ? 'Hoàn thành' : 'Đang chờ'}
                     </Badge>
-                    {user.cookiesEarned > 0 && (
+                    {user.gemsEarned > 0 && (
                       <span className="text-amber-400 font-bold">
-                        +{user.cookiesEarned} 🍪
+                        +{user.gemsEarned} <GemImage size={14} className="inline-block align-middle" />
                       </span>
                     )}
                   </div>

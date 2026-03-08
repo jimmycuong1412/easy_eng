@@ -41,7 +41,7 @@ export async function verifySupabaseConnection(): Promise<SupabaseConnectionStat
     const startTime = Date.now();
     
     // Try to get current session (doesn't require auth)
-    const { data, error } = await supabase.auth.getSession();
+    const { error } = await supabase.auth.getSession();
     
     const responseTime = Date.now() - startTime;
 

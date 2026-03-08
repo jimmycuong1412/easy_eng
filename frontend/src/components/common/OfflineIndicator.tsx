@@ -173,6 +173,7 @@ export function useOfflineAwareFetch<T>(
       .finally(() => {
         setLoading(false);
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnline, options?.refetchOnReconnect]);
 
   return { data, loading, error, isOnline };

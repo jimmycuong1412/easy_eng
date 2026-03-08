@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Star, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { GemImage } from '@/components/common/GemImage';
 
 interface ReviewFormProps {
   bookingId: string;
@@ -195,7 +196,7 @@ export default function ReviewForm({ bookingId, className, onSuccess }: ReviewFo
                 Review submitted successfully!
                 {gemsAwarded > 0 && (
                   <span className="font-semibold ml-1">
-                    You earned {gemsAwarded} gems! 💎
+                    You earned {gemsAwarded} gems! <GemImage size={16} className="inline-block align-middle" />
                   </span>
                 )}
               </AlertDescription>
@@ -230,7 +231,7 @@ export default function ReviewForm({ bookingId, className, onSuccess }: ReviewFo
               <li>Be honest and constructive</li>
               <li>Focus on your experience in the class</li>
               <li>Avoid personal attacks or inappropriate language</li>
-              <li>First review earns 50 bonus gems! 💎</li>
+              <li>First review earns 50 bonus gems! <GemImage size={16} className="inline-block align-middle" /></li>
             </ul>
           </div>
         </form>

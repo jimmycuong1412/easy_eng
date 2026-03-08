@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { withCsrfRouteProtection } from '@/lib/csrf';
+import { withCsrfRouteProtection } from '@/lib/csrf.server';
 
 // Map DB row → frontend GemRule shape
 function toFrontend(row: Record<string, unknown>) {
