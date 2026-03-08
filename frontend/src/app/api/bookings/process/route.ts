@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { classId, gemsToUse = 0, paymentMethodId, idempotencyKey = randomUUID() } = body;
+  const { classId, gemsToUse = 0, idempotencyKey = randomUUID() } = body;
 
   if (!classId) {
     return NextResponse.json({ error: 'classId is required' }, { status: 400 });
