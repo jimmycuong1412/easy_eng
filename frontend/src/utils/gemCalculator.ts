@@ -8,7 +8,7 @@ import {
   GEMS_TO_USD_RATE,
   MAX_DISCOUNT_PERCENTAGE,
   MIN_FINAL_PRICE,
-} from '../../../shared/constants/gems';
+} from '@/constants/gems';
 
 /**
  * Convert Gems to USD

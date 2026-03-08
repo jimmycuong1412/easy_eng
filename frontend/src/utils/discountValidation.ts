@@ -8,7 +8,7 @@ import {
   MAX_DISCOUNT_PERCENTAGE,
   MIN_FINAL_PRICE,
   GEMS_TO_USD_RATE,
-} from '../../../shared/constants/gems';
+} from '@/constants/gems';
 
 /**
  * Validate 50% discount cap

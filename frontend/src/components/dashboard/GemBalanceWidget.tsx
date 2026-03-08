@@ -5,6 +5,7 @@ import { Sparkles, TrendingUp, Gift } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
 import { useAuthStore } from '@/stores/authStore';
+import { gemsToUSD } from '@/constants/gems';
 
 /**
  * Gem Balance Widget
@@ -17,16 +18,16 @@ import { useAuthStore } from '@/stores/authStore';
  */
 export function GemBalanceWidget() {
   const { user } = useAuthStore();
-  const { balance, isLoading, error, refetch } = useGemsBalance(user?.id || '');
+  const { balance, isLoading, error, refreshBalance } = useGemsBalance();
 
   useEffect(() => {
     if (user?.id) {
-      refetch();
+      refreshBalance();
     }
-  }, [user?.id, refetch]);
+  }, [user?.id, refreshBalance]);
 
-  // Calculate discount value (1 Gem = $0.50)
-  const discountValue = balance * 0.5;
+  // Calculate discount value using shared conversion rate
+  const discountValue = gemsToUSD(balance);
 
   if (isLoading) {
     return (

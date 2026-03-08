@@ -1,9 +1,11 @@
 'use client';
 
 import { Sparkles, Calendar, Clock, User, DollarSign, Gem } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { gemsToUSD } from '@/constants/gems';
 
 interface BookingSummaryProps {
   classDetails: {
@@ -20,16 +22,6 @@ interface BookingSummaryProps {
   isProcessing?: boolean;
 }
 
-/**
- * Booking Summary Component
- *
- * Displays a summary of the booking before confirmation with:
- * - Class details
- * - Pricing breakdown
- * - Gems discount applied
- * - Final amount to pay
- * - Confirm/Cancel actions
- */
 export function BookingSummary({
   classDetails,
   gemsUsed,
@@ -37,10 +29,11 @@ export function BookingSummary({
   onCancel,
   isProcessing = false,
 }: BookingSummaryProps) {
+  const t = useTranslations('bookingSummary');
   const { title, teacher, scheduledAt, duration, price } = classDetails;
 
-  // Calculate discount (1 Gem = $0.50)
-  const gemDiscount = gemsUsed * 0.5;
+  // Calculate discount using shared conversion rate
+  const gemDiscount = gemsToUSD(gemsUsed);
   const finalPrice = Math.max(price - gemDiscount, 5); // $5 minimum
   const actualDiscount = price - finalPrice;
   const discountPercentage = ((actualDiscount / price) * 100).toFixed(0);
@@ -54,7 +47,7 @@ export function BookingSummary({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-purple-500" />
-          Booking Summary
+          {t('title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -80,7 +73,7 @@ export function BookingSummary({
 
             <div className="flex items-center gap-2 text-gray-400">
               <Clock className="h-4 w-4" />
-              <span>{duration} minutes</span>
+              <span>{t('durationMinutes', { n: duration })}</span>
             </div>
           </div>
         </div>
@@ -89,11 +82,11 @@ export function BookingSummary({
 
         {/* Pricing Breakdown */}
         <div className="space-y-3">
-          <h4 className="font-semibold text-sm text-gray-300">Pricing Breakdown</h4>
+          <h4 className="font-semibold text-sm text-gray-300">{t('pricingBreakdown')}</h4>
 
           {/* Original Price */}
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-400">Original Price</span>
+            <span className="text-sm text-gray-400">{t('originalPrice')}</span>
             <span className="font-medium">${price.toFixed(2)}</span>
           </div>
 
@@ -104,7 +97,7 @@ export function BookingSummary({
                 <div className="flex items-center gap-2">
                   <Gem className="h-4 w-4 text-purple-500" />
                   <span className="text-sm text-gray-400">
-                    Gems Used ({gemsUsed} gems)
+                    {t('gemsUsed', { n: gemsUsed })}
                   </span>
                 </div>
                 <span className="text-purple-400 font-medium">
@@ -115,7 +108,7 @@ export function BookingSummary({
               {/* Discount Capped Warning */}
               {wasDiscountCapped && (
                 <div className="text-xs text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-2">
-                  ⚠️ Discount capped at {discountPercentage}% ({cappedReason})
+                  {t('discountCapped', { pct: discountPercentage, reason: cappedReason })}
                 </div>
               )}
             </>
@@ -125,7 +118,7 @@ export function BookingSummary({
 
           {/* Final Price */}
           <div className="flex justify-between items-center">
-            <span className="font-semibold">Total Amount</span>
+            <span className="font-semibold">{t('totalAmount')}</span>
             <div className="text-right">
               {gemsUsed > 0 && (
                 <div className="text-sm text-gray-400 line-through">
@@ -137,7 +130,7 @@ export function BookingSummary({
               </div>
               {gemsUsed > 0 && (
                 <div className="text-xs text-green-400">
-                  You save ${actualDiscount.toFixed(2)} ({discountPercentage}%)
+                  {t('youSave', { amount: actualDiscount.toFixed(2), pct: discountPercentage })}
                 </div>
               )}
             </div>
@@ -152,7 +145,7 @@ export function BookingSummary({
             <div className="flex items-center gap-2 text-sm">
               <Sparkles className="h-4 w-4 text-purple-400" />
               <span className="text-purple-200">
-                {gemsUsed} gems will be deducted from your balance
+                {t('gemsDeducted', { n: gemsUsed })}
               </span>
             </div>
           </div>
@@ -166,7 +159,7 @@ export function BookingSummary({
             onClick={onCancel}
             disabled={isProcessing}
           >
-            Cancel
+            {t('cancel')}
           </Button>
           <Button
             className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
@@ -176,12 +169,12 @@ export function BookingSummary({
             {isProcessing ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                Processing...
+                {t('processing')}
               </>
             ) : (
               <>
                 <DollarSign className="h-4 w-4 mr-2" />
-                Confirm & Pay ${finalPrice.toFixed(2)}
+                {t('confirm', { amount: finalPrice.toFixed(2) })}
               </>
             )}
           </Button>
@@ -189,13 +182,13 @@ export function BookingSummary({
 
         {/* Terms */}
         <p className="text-xs text-gray-500 text-center">
-          By confirming, you agree to our{' '}
+          {t('termsText')}{' '}
           <a href="/terms" className="text-purple-400 hover:underline">
-            Terms of Service
+            {t('termsLink')}
           </a>{' '}
           and{' '}
           <a href="/cancellation-policy" className="text-purple-400 hover:underline">
-            Cancellation Policy
+            {t('cancellationPolicy')}
           </a>
         </p>
       </CardContent>

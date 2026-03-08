@@ -9,7 +9,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { calculateGemsDiscount, calculateMaxGemsUsable } from '@/utils/gemCalculator';
-import { GEMS_TO_USD_RATE } from '../../../../shared/constants/gems';
+import { GemImage } from '@/components/common/GemImage';
+import { GEMS_TO_USD_RATE } from '@/constants/gems';
 
 interface GemDiscountSliderProps {
   classPrice: number;
@@ -156,7 +157,7 @@ export function GemDiscountSlider({
 
       {userGemsBalance === 0 && (
         <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
-          💎 You don't have any Gems yet. Complete classes to earn Gems!
+          <GemImage size={16} className="inline-block align-middle mr-1" /> You don't have any Gems yet. Complete classes to earn Gems!
         </div>
       )}
 
