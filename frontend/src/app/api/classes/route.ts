@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('classes')
-    .select('*, teacher:profiles!classes_teacher_id_fkey(id, full_name, email)', { count: 'exact' })
+    .select('*, teacher:profiles!classes_teacher_id_fkey(id, full_name)', { count: 'exact' })
     .eq('status', status)
     .order('start_time', { ascending: true })
     .range(offset, offset + limit - 1);

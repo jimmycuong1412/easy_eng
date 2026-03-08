@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { withCsrfRouteProtection } from '@/lib/csrf.server';
 import { randomUUID } from 'crypto';
 
-export async function POST(req: NextRequest) {
+async function handlePost(req: NextRequest): Promise<NextResponse> {
   const supabase = await createClient();
 
   // Verify authenticated user
@@ -118,3 +119,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export const POST = withCsrfRouteProtection(handlePost);
