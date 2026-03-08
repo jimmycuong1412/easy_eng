@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl';
 
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -37,14 +38,16 @@ const studentNav: NavItem[] = [
 const teacherNav: NavItem[] = [
   { labelKey: 'home', href: '/dashboard', icon: '🏠' },
   { labelKey: 'teachingSchedule', href: '/teacher/schedule', icon: '📅' },
-  { labelKey: 'createQuiz', href: '/teacher/quiz/create', icon: '📝' },
+  { labelKey: 'myQuizzes', href: '/teacher/quiz', icon: '📝' },
+  { labelKey: 'createQuiz', href: '/teacher/quiz/create', icon: '✏️' },
+  { labelKey: 'earnings', href: '/teacher/earnings', icon: '💰' },
   { labelKey: 'notifications', href: '/notifications', icon: '🔔' },
-  { labelKey: 'analytics', href: '/admin/analytics', icon: '📊' },
 ];
 
 const adminNav: NavItem[] = [
   { labelKey: 'adminDashboard', href: '/dashboard/admin', icon: '🛡️' },
   { labelKey: 'analytics', href: '/admin/analytics', icon: '📊' },
+  { labelKey: 'users', href: '/admin/users', icon: '👥' },
   { labelKey: 'gemRules', href: '/admin/gems-rules', icon: '💎' },
   { labelKey: 'reconciliation', href: '/admin/reconciliation', icon: '⚖️' },
   { labelKey: 'monitoring', href: '/admin/monitoring/rollbacks', icon: '🔍' },
@@ -65,9 +68,24 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user: _user, profile, isLoading, signOut } = useAuth();
+  const { user: _user, profile: liveProfile, isLoading, signOut } = useAuth();
+  const { profile: storedProfile, setProfile: storeProfile } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   const { balance: gemCount } = useGemsBalance();
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Keep the store in sync with the live profile
+  React.useEffect(() => {
+    if (liveProfile) storeProfile(liveProfile);
+  }, [liveProfile, storeProfile]);
+
+  // After mount, prefer stored profile (instant from localStorage), fall back to live
+  // Before mount, only use liveProfile to avoid hydration mismatch with persisted store
+  const profile = mounted ? (storedProfile ?? liveProfile) : liveProfile;
   const tNav = useTranslations('dashboard.nav');
   const tCommon = useTranslations('common');
 
@@ -79,9 +97,9 @@ export default function DashboardLayout({
     return segments.length > 2 && segments[1] === 'dashboard';
   }, [pathname]);
 
-  // Select nav based on role — return empty while loading to avoid flashing wrong nav
+  // Select nav based on role — return empty while profile not yet loaded
   const navItems = React.useMemo(() => {
-    if (isLoading || !profile) return [];
+    if (!profile) return [];
     switch (profile.role) {
       case 'admin':
         return adminNav;
@@ -92,7 +110,7 @@ export default function DashboardLayout({
       default:
         return studentNav;
     }
-  }, [profile, isLoading]);
+  }, [profile]);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return '?';

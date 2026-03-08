@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -31,55 +31,40 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<AuthError | null>(null);
 
-  const supabase = getSupabaseClient();
+  const supabaseRef = useRef<ReturnType<typeof getSupabaseClient> | null>(null);
+  if (!supabaseRef.current) {
+    supabaseRef.current = getSupabaseClient();
+  }
+  const supabase = supabaseRef.current;
 
   // Fetch user profile
   const fetchProfile = useCallback(
     async (userId: string) => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
+        if (error) {
+          return null;
+        }
+
+        return data as Profile;
+      } catch {
         return null;
       }
-
-      return data as Profile;
     },
     [supabase]
   );
 
   // Initialize auth state
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          const profile = await fetchProfile(session.user.id);
-          setProfile(profile);
-        }
-      } catch (err) {
-        console.error('Error initializing auth:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Subscribe to auth changes
+    // Subscribe to auth changes first — Supabase fires this immediately with current session
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 

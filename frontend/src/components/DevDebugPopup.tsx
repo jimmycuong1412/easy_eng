@@ -12,6 +12,7 @@ interface DebugInfo {
 }
 
 export default function DevDebugPopup() {
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [supabaseStatus, setSupabaseStatus] = useState<SupabaseConnectionStatus | null>(null);
   const [isCheckingSupabase, setIsCheckingSupabase] = useState(false);
@@ -22,6 +23,8 @@ export default function DevDebugPopup() {
     timestamp: '',
     environment: process.env.NODE_ENV || 'development',
   });
+
+  useEffect(() => { setMounted(true); }, []);
 
   // Update debug info
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function DevDebugPopup() {
     if (isOpen && !supabaseStatus) {
       checkSupabaseConnection();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Function to check Supabase connection
@@ -86,8 +90,8 @@ export default function DevDebugPopup() {
     }
   };
 
-  // Only show in development
-  if (process.env.NODE_ENV === 'production') {
+  // Only show in development and after mount (to avoid hydration mismatch)
+  if (process.env.NODE_ENV === 'production' || !mounted) {
     return null;
   }
 
@@ -249,7 +253,7 @@ export default function DevDebugPopup() {
                 </button>
                 <button
                   onClick={() => {
-                    console.log('Debug Info:', debugInfo);
+                    console.warn('Debug Info:', debugInfo);
                     alert('Check console for debug info');
                   }}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded transition-colors"
