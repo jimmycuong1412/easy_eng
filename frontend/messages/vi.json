@@ -252,6 +252,33 @@
       "saveButton": "Lưu cài đặt",
       "saving": "Đang lưu...",
       "saved": "Đã lưu thay đổi"
+    },
+    "profile": {
+      "title": "Thông tin cá nhân",
+      "description": "Cập nhật thông tin hồ sơ của bạn. Thông tin này sẽ được hiển thị cho giáo viên.",
+      "fullName": "Họ và tên",
+      "fullNamePlaceholder": "Nhập họ và tên",
+      "displayName": "Tên hiển thị",
+      "displayNamePlaceholder": "Tên hiển thị trong lớp học",
+      "email": "Email",
+      "phone": "Số điện thoại",
+      "location": "Địa điểm",
+      "locationPlaceholder": "Thành phố, Quốc gia",
+      "dateOfBirth": "Ngày sinh",
+      "bio": "Giới thiệu bản thân",
+      "bioPlaceholder": "Viết vài dòng về bản thân và mục tiêu học tập...",
+      "bioCounter": "{count}/500 ký tự",
+      "saveChanges": "Lưu thay đổi",
+      "saving": "Đang lưu...",
+      "saved": "Đã lưu thay đổi",
+      "memberSince": "Tham gia từ",
+      "roleStudent": "Học viên",
+      "roleTeacher": "Giáo viên",
+      "roleAdmin": "Quản trị viên",
+      "dangerZone": "Vùng nguy hiểm",
+      "dangerZoneDesc": "Các hành động không thể hoàn tác. Hãy cẩn thận!",
+      "disableAccount": "Vô hiệu hóa tài khoản",
+      "deleteAccount": "Xóa tài khoản vĩnh viễn"
     }
   },
   "language": {
@@ -794,14 +821,38 @@
     "reselect": "Chọn lại",
     "confirmStart": "Xác nhận & Bắt đầu",
     "careers": {
-      "business_pro": { "name": "Business Pro", "desc": "Thành thạo tiếng Anh thương mại, đàm phán và thuyết trình" },
-      "global_citizen": { "name": "Global Citizen", "desc": "Giao tiếp tự tin trong môi trường quốc tế đa văn hóa" },
-      "academic_achiever": { "name": "Academic Achiever", "desc": "Chuẩn bị cho IELTS, TOEFL và du học nước ngoài" },
-      "corporate_leader": { "name": "Corporate Leader", "desc": "Kỹ năng lãnh đạo và quản lý bằng tiếng Anh chuyên nghiệp" },
-      "wanderlust": { "name": "Wanderlust", "desc": "Tự tin giao tiếp khi du lịch và khám phá thế giới" },
-      "healthcare_hero": { "name": "Healthcare Hero", "desc": "Tiếng Anh chuyên ngành y tế và chăm sóc sức khỏe" },
-      "legal_expert": { "name": "Legal Expert", "desc": "Tiếng Anh pháp lý cho luật sư và chuyên gia pháp luật" },
-      "tech_innovator": { "name": "Tech Innovator", "desc": "Tiếng Anh cho ngành IT, lập trình và công nghệ" }
+      "business_pro": {
+        "name": "Business Pro",
+        "desc": "Thành thạo tiếng Anh thương mại, đàm phán và thuyết trình"
+      },
+      "global_citizen": {
+        "name": "Global Citizen",
+        "desc": "Giao tiếp tự tin trong môi trường quốc tế đa văn hóa"
+      },
+      "academic_achiever": {
+        "name": "Academic Achiever",
+        "desc": "Chuẩn bị cho IELTS, TOEFL và du học nước ngoài"
+      },
+      "corporate_leader": {
+        "name": "Corporate Leader",
+        "desc": "Kỹ năng lãnh đạo và quản lý bằng tiếng Anh chuyên nghiệp"
+      },
+      "wanderlust": {
+        "name": "Wanderlust",
+        "desc": "Tự tin giao tiếp khi du lịch và khám phá thế giới"
+      },
+      "healthcare_hero": {
+        "name": "Healthcare Hero",
+        "desc": "Tiếng Anh chuyên ngành y tế và chăm sóc sức khỏe"
+      },
+      "legal_expert": {
+        "name": "Legal Expert",
+        "desc": "Tiếng Anh pháp lý cho luật sư và chuyên gia pháp luật"
+      },
+      "tech_innovator": {
+        "name": "Tech Innovator",
+        "desc": "Tiếng Anh cho ngành IT, lập trình và công nghệ"
+      }
     }
   },
   "learningPath": {
@@ -860,5 +911,79 @@
     "footerTerms": "Điều khoản",
     "footerPrivacy": "Quyền riêng tư",
     "footerHelp": "Hỗ trợ"
+  },
+  "classes": {
+    "title": "Khám phá lớp học",
+    "subtitle": "Tìm các lớp học phù hợp với trình độ và mục tiêu học tập của bạn",
+    "searchPlaceholder": "Tìm kiếm theo chủ đề, giáo viên...",
+    "filters": "Bộ lọc",
+    "loading": "Đang tải lớp học...",
+    "loadFailed": "Không thể tải lớp học",
+    "tryAgain": "Thử lại",
+    "found": "Tìm thấy {count} lớp học",
+    "sortUpcoming": "Sắp diễn ra",
+    "sortPriceLow": "Giá: Thấp đến Cao",
+    "sortPriceHigh": "Giá: Cao đến Thấp",
+    "sortRating": "Đánh giá cao nhất",
+    "full": "Hết chỗ",
+    "gemDiscount": "Có thể dùng Gem giảm giá",
+    "noResults": "Không tìm thấy lớp học",
+    "noResultsHint": "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm",
+    "clearFilters": "Xóa bộ lọc",
+    "category": "Danh mục",
+    "level": "Trình độ",
+    "priceRange": "Khoảng giá",
+    "levelAll": "Tất cả",
+    "levelBeginner": "Cơ bản",
+    "levelElementary": "Sơ cấp",
+    "levelIntermediate": "Trung cấp",
+    "levelUpperIntermediate": "Trên trung cấp",
+    "levelAdvanced": "Nâng cao"
+  },
+  "classDetail": {
+    "backToList": "Quay lại danh sách lớp",
+    "language": "Tiếng Việt & Tiếng Anh",
+    "spotsLeft": "Còn {count} chỗ",
+    "onlySpots": "Chỉ còn {count} chỗ!",
+    "descriptionTitle": "Mô tả lớp học",
+    "noDescription": "Chưa có mô tả.",
+    "topicsTitle": "Chủ đề học",
+    "requirementsTitle": "Yêu cầu",
+    "reqLevel": "Trình độ tiếng Anh: {level} trở lên",
+    "reqMic": "Micro và camera",
+    "reqEnv": "Môi trường yên tĩnh",
+    "teacherTitle": "Giáo viên",
+    "reviews": "({count} đánh giá)",
+    "noBio": "Chưa có giới thiệu.",
+    "reviewsTitle": "Đánh giá của học viên",
+    "viewAll": "Xem tất cả",
+    "noReviews": "Chưa có đánh giá cho lớp này.",
+    "anonymousStudent": "Học viên ẩn danh",
+    "loading": "Đang tải thông tin lớp...",
+    "loadFailed": "Không thể tải lớp học",
+    "notFound": "Không tìm thấy lớp học",
+    "goBack": "Quay lại",
+    "bookingCost": "Chi phí đặt lớp",
+    "yourBalance": "Số dư của bạn",
+    "topUpGems": "Nạp thêm Gems",
+    "spotsLeftLabel": "Chỗ còn lại",
+    "full": "Hết chỗ",
+    "booking": "Đang đặt lớp...",
+    "bookClass": "Đặt lớp — {gems} Gems",
+    "bookSuccess": "Đặt lớp thành công!",
+    "gemsDeducted": "Đã trừ {gems} Gems",
+    "viewMySchedule": "Xem lịch học của tôi",
+    "needMoreGems": "Cần thêm {count} Gems",
+    "save": "Lưu",
+    "saved": "Đã lưu",
+    "share": "Chia sẻ",
+    "date": "Ngày",
+    "time": "Giờ",
+    "duration": "Thời lượng",
+    "format": "Hình thức",
+    "liveVideoCall": "Video trực tiếp",
+    "minutes": "{count} phút",
+    "bookingFailed": "Đặt lớp thất bại. Vui lòng thử lại.",
+    "needGemsMsg": "Bạn cần {needed} Gems để đặt lớp này. Số dư hiện tại: {balance} Gems."
   }
 }

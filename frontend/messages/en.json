@@ -252,6 +252,33 @@
       "saveButton": "Save Settings",
       "saving": "Saving...",
       "saved": "Changes saved"
+    },
+    "profile": {
+      "title": "Personal Information",
+      "description": "Update your profile information. This information will be displayed to teachers.",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter your full name",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Display name shown in classes",
+      "email": "Email",
+      "phone": "Phone Number",
+      "location": "Location",
+      "locationPlaceholder": "City, Country",
+      "dateOfBirth": "Date of Birth",
+      "bio": "About Me",
+      "bioPlaceholder": "Write a few lines about yourself and your learning goals...",
+      "bioCounter": "{count}/500 characters",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "saved": "Changes saved",
+      "memberSince": "Member since",
+      "roleStudent": "Student",
+      "roleTeacher": "Teacher",
+      "roleAdmin": "Admin",
+      "dangerZone": "Danger Zone",
+      "dangerZoneDesc": "Irreversible actions. Be careful!",
+      "disableAccount": "Disable Account",
+      "deleteAccount": "Delete Account Permanently"
     }
   },
   "language": {
@@ -794,14 +821,38 @@
     "reselect": "Re-select",
     "confirmStart": "Confirm & Start",
     "careers": {
-      "business_pro": { "name": "Business Pro", "desc": "Master business English for negotiations and presentations" },
-      "global_citizen": { "name": "Global Citizen", "desc": "Communicate confidently in international multicultural environments" },
-      "academic_achiever": { "name": "Academic Achiever", "desc": "Prepare for IELTS, TOEFL and studying abroad" },
-      "corporate_leader": { "name": "Corporate Leader", "desc": "Leadership and management skills in professional English" },
-      "wanderlust": { "name": "Wanderlust", "desc": "Communicate confidently when traveling and exploring the world" },
-      "healthcare_hero": { "name": "Healthcare Hero", "desc": "English for medical and healthcare professionals" },
-      "legal_expert": { "name": "Legal Expert", "desc": "Legal English for lawyers and legal professionals" },
-      "tech_innovator": { "name": "Tech Innovator", "desc": "English for IT, programming and technology" }
+      "business_pro": {
+        "name": "Business Pro",
+        "desc": "Master business English for negotiations and presentations"
+      },
+      "global_citizen": {
+        "name": "Global Citizen",
+        "desc": "Communicate confidently in international multicultural environments"
+      },
+      "academic_achiever": {
+        "name": "Academic Achiever",
+        "desc": "Prepare for IELTS, TOEFL and studying abroad"
+      },
+      "corporate_leader": {
+        "name": "Corporate Leader",
+        "desc": "Leadership and management skills in professional English"
+      },
+      "wanderlust": {
+        "name": "Wanderlust",
+        "desc": "Communicate confidently when traveling and exploring the world"
+      },
+      "healthcare_hero": {
+        "name": "Healthcare Hero",
+        "desc": "English for medical and healthcare professionals"
+      },
+      "legal_expert": {
+        "name": "Legal Expert",
+        "desc": "Legal English for lawyers and legal professionals"
+      },
+      "tech_innovator": {
+        "name": "Tech Innovator",
+        "desc": "English for IT, programming and technology"
+      }
     }
   },
   "learningPath": {
@@ -860,5 +911,79 @@
     "footerTerms": "Terms",
     "footerPrivacy": "Privacy",
     "footerHelp": "Help"
+  },
+  "classes": {
+    "title": "Explore Classes",
+    "subtitle": "Find classes that match your level and learning goals",
+    "searchPlaceholder": "Search by topic, teacher...",
+    "filters": "Filters",
+    "loading": "Loading classes...",
+    "loadFailed": "Failed to load classes",
+    "tryAgain": "Try again",
+    "found": "Found {count} classes",
+    "sortUpcoming": "Sort: Upcoming",
+    "sortPriceLow": "Price: Low to High",
+    "sortPriceHigh": "Price: High to Low",
+    "sortRating": "Highest Rated",
+    "full": "Full",
+    "gemDiscount": "Gem discount available",
+    "noResults": "No classes found",
+    "noResultsHint": "Try changing your filters or search terms",
+    "clearFilters": "Clear filters",
+    "category": "Category",
+    "level": "Level",
+    "priceRange": "Price Range",
+    "levelAll": "All",
+    "levelBeginner": "Beginner",
+    "levelElementary": "Elementary",
+    "levelIntermediate": "Intermediate",
+    "levelUpperIntermediate": "Upper Intermediate",
+    "levelAdvanced": "Advanced"
+  },
+  "classDetail": {
+    "backToList": "Back to class list",
+    "language": "Vietnamese & English",
+    "spotsLeft": "{count} spots left",
+    "onlySpots": "Only {count} spots left!",
+    "descriptionTitle": "Class Description",
+    "noDescription": "No description available.",
+    "topicsTitle": "Topics Covered",
+    "requirementsTitle": "Requirements",
+    "reqLevel": "English level: {level} or above",
+    "reqMic": "Microphone and camera",
+    "reqEnv": "Quiet environment",
+    "teacherTitle": "Teacher",
+    "reviews": "({count} reviews)",
+    "noBio": "No bio available.",
+    "reviewsTitle": "Student Reviews",
+    "viewAll": "View all",
+    "noReviews": "No reviews yet for this class.",
+    "anonymousStudent": "Anonymous Student",
+    "loading": "Loading class details...",
+    "loadFailed": "Failed to load class",
+    "notFound": "Class not found",
+    "goBack": "Go back",
+    "bookingCost": "Booking cost",
+    "yourBalance": "Your balance",
+    "topUpGems": "Top up Gems",
+    "spotsLeftLabel": "Spots left",
+    "full": "Full",
+    "booking": "Booking...",
+    "bookClass": "Book — {gems} Gems",
+    "bookSuccess": "Booking successful!",
+    "gemsDeducted": "{gems} Gems deducted",
+    "viewMySchedule": "View my schedule",
+    "needMoreGems": "Need {count} more Gems",
+    "save": "Save",
+    "saved": "Saved",
+    "share": "Share",
+    "date": "Date",
+    "time": "Time",
+    "duration": "Duration",
+    "format": "Format",
+    "liveVideoCall": "Live video call",
+    "minutes": "{count} min",
+    "bookingFailed": "Booking failed. Please try again.",
+    "needGemsMsg": "You need {needed} Gems to book this class. Your balance: {balance} Gems."
   }
 }

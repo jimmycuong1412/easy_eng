@@ -20,6 +20,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,14 +72,6 @@ interface ReviewData {
   } | null;
 }
 
-const levelLabels: Record<string, string> = {
-  'beginner': 'Beginner',
-  'elementary': 'Elementary',
-  'intermediate': 'Intermediate',
-  'upper_intermediate': 'Upper Intermediate',
-  'advanced': 'Advanced',
-};
-
 function formatVND(amount: number): string {
   return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
 }
@@ -107,6 +100,8 @@ function getCategoryFromTags(tags: string[] | null): string {
 }
 
 export default function ClassDetailPage() {
+  const t = useTranslations('classDetail');
+  const tc = useTranslations('classes');
   const params = useParams();
   const router = useRouter();
   const classId = params.classId as string;
@@ -121,6 +116,14 @@ export default function ClassDetailPage() {
   const [isBooking, setIsBooking] = React.useState(false);
   const [bookingSuccess, setBookingSuccess] = React.useState(false);
 
+  const levelLabels: Record<string, string> = {
+    'beginner': tc('levelBeginner'),
+    'elementary': tc('levelElementary'),
+    'intermediate': tc('levelIntermediate'),
+    'upper_intermediate': tc('levelUpperIntermediate'),
+    'advanced': tc('levelAdvanced'),
+  };
+
   React.useEffect(() => {
     async function fetchClassData() {
       try {
@@ -128,7 +131,6 @@ export default function ClassDetailPage() {
         setError(null);
         const supabase = getSupabaseClient();
 
-        // Fetch class with teacher profile
         const { data: classResult, error: classError } = await supabase
           .from('classes')
           .select('*, profiles!classes_teacher_id_profiles_fkey(id, full_name, avatar_url, bio, role)')
@@ -138,7 +140,6 @@ export default function ClassDetailPage() {
         if (classError) throw classError;
         setClassData(classResult as ClassDetail);
 
-        // Fetch reviews for this class's teacher
         const { data: reviewsResult, error: reviewsError } = await supabase
           .from('reviews')
           .select('id, rating, comment, is_anonymous, created_at, profiles!reviews_student_id_fkey(full_name)')
@@ -160,7 +161,7 @@ export default function ClassDetailPage() {
         }
       } catch (err) {
         console.error('Failed to fetch class data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load class details');
+        setError(err instanceof Error ? err.message : t('loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -176,10 +177,7 @@ export default function ClassDetailPage() {
 
     const gemCost = Math.ceil(classData.price * GEMS_PER_VND);
     if (gemBalance < gemCost) {
-      setBookingError(
-        `Bạn cần ${gemCost.toLocaleString()} Gems để đặt lớp này. ` +
-        `Số dư hiện tại: ${gemBalance.toLocaleString()} Gems.`
-      );
+      setBookingError(t('needGemsMsg', { needed: gemCost.toLocaleString(), balance: gemBalance.toLocaleString() }));
       return;
     }
 
@@ -191,7 +189,6 @@ export default function ClassDetailPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/auth/login'); return; }
 
-      // Check if a booking already exists for this user + class
       const { data: existing } = await supabase
         .from('bookings')
         .select('id, status, payment_status')
@@ -205,7 +202,6 @@ export default function ClassDetailPage() {
           return;
         }
         if (existing.status === 'pending') {
-          // Already have a pending booking — confirm it now with gems
           const { error: updateError } = await supabase
             .from('bookings')
             .update({
@@ -221,7 +217,6 @@ export default function ClassDetailPage() {
             .eq('id', existing.id);
           if (updateError) throw updateError;
 
-          // Deduct gems
           const { error: gemError } = await supabase
             .from('gem_transactions')
             .insert({
@@ -230,7 +225,7 @@ export default function ClassDetailPage() {
               transaction_type: 'booking_payment',
               booking_id: existing.id,
               class_id: classData.id,
-              description: `Đặt lớp: ${classData.title}`,
+              description: `Book class: ${classData.title}`,
             });
           if (gemError) throw gemError;
 
@@ -239,7 +234,6 @@ export default function ClassDetailPage() {
           return;
         }
 
-        // Cancelled/failed — reset and rebook
         const { error: updateError } = await supabase
           .from('bookings')
           .update({
@@ -265,7 +259,7 @@ export default function ClassDetailPage() {
             transaction_type: 'booking_payment',
             booking_id: existing.id,
             class_id: classData.id,
-            description: `Đặt lớp: ${classData.title}`,
+            description: `Book class: ${classData.title}`,
           });
         if (gemError) throw gemError;
 
@@ -274,7 +268,6 @@ export default function ClassDetailPage() {
         return;
       }
 
-      // No existing booking — create + immediately confirm with gems
       const { data: booking, error: insertError } = await supabase
         .from('bookings')
         .insert({
@@ -294,7 +287,6 @@ export default function ClassDetailPage() {
         .single();
       if (insertError) throw insertError;
 
-      // Deduct gems
       const { error: gemError } = await supabase
         .from('gem_transactions')
         .insert({
@@ -303,7 +295,7 @@ export default function ClassDetailPage() {
           transaction_type: 'booking_payment',
           booking_id: booking.id,
           class_id: classData.id,
-          description: `Đặt lớp: ${classData.title}`,
+          description: `Book class: ${classData.title}`,
         });
       if (gemError) throw gemError;
 
@@ -311,36 +303,34 @@ export default function ClassDetailPage() {
       setBookingSuccess(true);
     } catch (err: any) {
       console.error('Booking error:', err);
-      setBookingError(err.message || 'Đặt lớp thất bại. Vui lòng thử lại.');
+      setBookingError(err.message || t('bookingFailed'));
       setIsBooking(false);
     }
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-[#3B82F6] animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Loading class details...</p>
+          <p className="text-slate-400">{t('loading')}</p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error || !classData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">Failed to load class</h2>
-          <p className="text-slate-400 mb-4">{error || 'Class not found'}</p>
+          <h2 className="text-xl font-semibold text-white mb-2">{t('loadFailed')}</h2>
+          <p className="text-slate-400 mb-4">{error || t('notFound')}</p>
           <Button
             onClick={() => router.back()}
             className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
           >
-            Go back
+            {t('goBack')}
           </Button>
         </div>
       </div>
@@ -356,7 +346,6 @@ export default function ClassDetailPage() {
   const spotsLeft = classData.max_students - classData.current_enrollments;
   const isFull = spotsLeft <= 0;
   const priceUsd = Math.round(classData.price / 25000);
-  // Gem cost: 1 Gem = 250 VND
   const gemCost = Math.ceil(classData.price * GEMS_PER_VND);
   const hasEnoughGems = gemBalance >= gemCost;
 
@@ -374,7 +363,7 @@ export default function ClassDetailPage() {
             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to class list
+            {t('backToList')}
           </button>
         </motion.div>
 
@@ -397,7 +386,7 @@ export default function ClassDetailPage() {
                     </Badge>
                     <Badge variant="outline" className="border-white/20 text-slate-300">
                       <Globe className="w-3 h-3 mr-1" />
-                      Vietnamese & English
+                      {t('language')}
                     </Badge>
                   </div>
 
@@ -412,12 +401,12 @@ export default function ClassDetailPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-5 h-5" />
-                      <span>{formatTime(classData.start_time)} ({classData.duration_minutes} min)</span>
+                      <span>{formatTime(classData.start_time)} ({t('minutes', { count: classData.duration_minutes })})</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="w-5 h-5" />
                       <span className={spotsLeft <= 2 ? 'text-amber-400' : ''}>
-                        {spotsLeft} spots left
+                        {t('spotsLeft', { count: spotsLeft })}
                       </span>
                     </div>
                   </div>
@@ -435,18 +424,18 @@ export default function ClassDetailPage() {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-[#3B82F6]" />
-                    Class Description
+                    {t('descriptionTitle')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-300 whitespace-pre-line leading-relaxed">
-                    {classData.description || 'No description available.'}
+                    {classData.description || t('noDescription')}
                   </p>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* What You'll Learn */}
+            {/* Topics Covered */}
             {classData.tags && classData.tags.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -457,7 +446,7 @@ export default function ClassDetailPage() {
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-amber-400" />
-                      Topics Covered
+                      {t('topicsTitle')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -488,15 +477,15 @@ export default function ClassDetailPage() {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Award className="w-5 h-5 text-purple-400" />
-                    Requirements
+                    {t('requirementsTitle')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
                     {[
-                      `English level: ${levelLabels[classData.level] || classData.level} or above`,
-                      'Microphone and camera',
-                      'Quiet environment',
+                      t('reqLevel', { level: levelLabels[classData.level] || classData.level }),
+                      t('reqMic'),
+                      t('reqEnv'),
                     ].map((req, index) => (
                       <li key={index} className="flex items-center gap-3 text-slate-300">
                         <div className="w-1.5 h-1.5 bg-[#3B82F6] rounded-full" />
@@ -516,7 +505,7 @@ export default function ClassDetailPage() {
             >
               <Card className="bg-white/5 border-white/10">
                 <CardHeader>
-                  <CardTitle className="text-white">Teacher</CardTitle>
+                  <CardTitle className="text-white">{t('teacherTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-start gap-4">
@@ -534,10 +523,10 @@ export default function ClassDetailPage() {
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                           <span>{teacherRating > 0 ? teacherRating.toFixed(1) : 'New'}</span>
-                          <span>({teacherReviewCount} reviews)</span>
+                          <span>{t('reviews', { count: teacherReviewCount })}</span>
                         </div>
                       </div>
-                      <p className="text-slate-300">{teacherBio || 'No bio available.'}</p>
+                      <p className="text-slate-300">{teacherBio || t('noBio')}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -554,17 +543,17 @@ export default function ClassDetailPage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-white flex items-center gap-2">
                     <MessageSquare className="w-5 h-5 text-[#3B82F6]" />
-                    Student Reviews
+                    {t('reviewsTitle')}
                   </CardTitle>
                   <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                    View all
+                    {t('viewAll')}
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {reviews.length > 0 ? (
                     reviews.map((review) => {
                       const studentName = review.is_anonymous
-                        ? 'Anonymous Student'
+                        ? t('anonymousStudent')
                         : review.student_profile?.full_name || 'Student';
 
                       return (
@@ -586,13 +575,13 @@ export default function ClassDetailPage() {
                             <p className="text-slate-300">{review.comment}</p>
                           )}
                           <p className="text-xs text-slate-500 mt-2">
-                            {new Date(review.created_at).toLocaleDateString('vi-VN')}
+                            {new Date(review.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       );
                     })
                   ) : (
-                    <p className="text-slate-500 text-center py-4">No reviews yet for this class.</p>
+                    <p className="text-slate-500 text-center py-4">{t('noReviews')}</p>
                   )}
                 </CardContent>
               </Card>
@@ -617,22 +606,22 @@ export default function ClassDetailPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
-                      <p className="text-white font-bold text-lg mb-1">Đặt lớp thành công!</p>
+                      <p className="text-white font-bold text-lg mb-1">{t('bookSuccess')}</p>
                       <p className="text-slate-400 text-sm mb-4">
-                        Đã trừ <span className="text-amber-400 font-medium">{gemCost.toLocaleString()} Gems</span>
+                        {t('gemsDeducted', { gems: gemCost.toLocaleString() })}
                       </p>
                       <Button
                         className="w-full bg-emerald-600 hover:bg-emerald-700"
                         onClick={() => router.push('/student/bookings')}
                       >
-                        Xem lịch học của tôi
+                        {t('viewMySchedule')}
                       </Button>
                     </div>
                   ) : (
                     <>
                       {/* Gem price */}
                       <div className="text-center mb-5">
-                        <p className="text-sm text-slate-400 mb-1">Chi phí đặt lớp</p>
+                        <p className="text-sm text-slate-400 mb-1">{t('bookingCost')}</p>
                         <div className="flex items-center justify-center gap-2">
                           <GemImage size={28} />
                           <span className="text-3xl font-bold text-amber-400">{gemCost.toLocaleString()}</span>
@@ -650,7 +639,7 @@ export default function ClassDetailPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-sm">
                             <GemImage size={16} />
-                            <span className="text-slate-300">Số dư của bạn</span>
+                            <span className="text-slate-300">{t('yourBalance')}</span>
                           </div>
                           <span className={`font-bold ${hasEnoughGems ? 'text-emerald-400' : 'text-red-400'}`}>
                             {gemBalance.toLocaleString()} Gems
@@ -658,7 +647,7 @@ export default function ClassDetailPage() {
                         </div>
                         {!hasEnoughGems && (
                           <p className="text-xs text-red-400 mt-1.5">
-                            Cần thêm {(gemCost - gemBalance).toLocaleString()} Gems
+                            {t('needMoreGems', { count: (gemCost - gemBalance).toLocaleString() })}
                           </p>
                         )}
                       </div>
@@ -671,14 +660,14 @@ export default function ClassDetailPage() {
                           onClick={() => router.push('/student/gems/buy')}
                         >
                           <GemImage size={16} className="mr-2" />
-                          Nạp thêm Gems
+                          {t('topUpGems')}
                         </Button>
                       )}
 
                       {/* Spots Left */}
                       <div className="mb-5">
                         <div className="flex justify-between mb-2 text-sm">
-                          <span className="text-slate-400">Chỗ còn lại</span>
+                          <span className="text-slate-400">{t('spotsLeftLabel')}</span>
                           <span className="text-white">{classData.current_enrollments}/{classData.max_students}</span>
                         </div>
                         <Progress
@@ -686,7 +675,7 @@ export default function ClassDetailPage() {
                           className="h-2 bg-white/10"
                         />
                         {spotsLeft <= 2 && spotsLeft > 0 && (
-                          <p className="text-xs text-amber-400 mt-1.5">Chỉ còn {spotsLeft} chỗ!</p>
+                          <p className="text-xs text-amber-400 mt-1.5">{t('onlySpots', { count: spotsLeft })}</p>
                         )}
                       </div>
 
@@ -701,16 +690,16 @@ export default function ClassDetailPage() {
                         onClick={() => { setBookingError(null); handleBookNow(); }}
                       >
                         {isFull ? (
-                          'Hết chỗ'
+                          t('full')
                         ) : isBooking ? (
                           <>
                             <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                            Đang đặt lớp...
+                            {t('booking')}
                           </>
                         ) : (
                           <>
                             <GemImage size={18} className="mr-2" />
-                            Đặt lớp — {gemCost.toLocaleString()} Gems
+                            {t('bookClass', { gems: gemCost.toLocaleString() })}
                           </>
                         )}
                       </Button>
@@ -733,14 +722,14 @@ export default function ClassDetailPage() {
                           onClick={() => setIsLiked(!isLiked)}
                         >
                           <Heart className={`w-4 h-4 mr-2 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                          {isLiked ? 'Saved' : 'Save'}
+                          {isLiked ? t('saved') : t('save')}
                         </Button>
                         <Button
                           variant="outline"
                           className="flex-1 border-white/20 text-white hover:bg-white/10"
                         >
                           <Share2 className="w-4 h-4 mr-2" />
-                          Share
+                          {t('share')}
                         </Button>
                       </div>
                       <Separator className="my-6 bg-white/10" />
@@ -750,20 +739,20 @@ export default function ClassDetailPage() {
                   {/* Class Info Summary */}
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Date</span>
+                      <span className="text-slate-400">{t('date')}</span>
                       <span className="text-white">{formatDate(classData.start_time)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Time</span>
+                      <span className="text-slate-400">{t('time')}</span>
                       <span className="text-white">{formatTime(classData.start_time)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Duration</span>
-                      <span className="text-white">{classData.duration_minutes} min</span>
+                      <span className="text-slate-400">{t('duration')}</span>
+                      <span className="text-white">{t('minutes', { count: classData.duration_minutes })}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Format</span>
-                      <span className="text-white">Live video call</span>
+                      <span className="text-slate-400">{t('format')}</span>
+                      <span className="text-white">{t('liveVideoCall')}</span>
                     </div>
                   </div>
                 </CardContent>

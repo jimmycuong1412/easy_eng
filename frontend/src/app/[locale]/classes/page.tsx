@@ -17,6 +17,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,20 +66,19 @@ interface ClassWithTeacher {
 
 const categories = ['All', 'Business', 'IELTS', 'TOEIC', 'Conversation', 'Grammar', 'Pronunciation'];
 const levels = ['All', 'beginner', 'intermediate', 'advanced'];
-const levelLabels: Record<string, string> = {
-  'All': 'All',
-  'beginner': 'Beginner',
-  'elementary': 'Elementary',
-  'intermediate': 'Intermediate',
-  'upper_intermediate': 'Upper Intermediate',
-  'advanced': 'Advanced',
-};
+
 const priceRanges = [
-  { label: 'All', min: 0, max: Infinity },
-  { label: 'Under 150K', min: 0, max: 150000 },
-  { label: '150K - 250K', min: 150000, max: 250000 },
-  { label: 'Over 250K', min: 250000, max: Infinity },
+  { labelKey: 'levelAll', min: 0, max: Infinity },
+  { labelKey: 'under150k', min: 0, max: 150000 },
+  { labelKey: '150k250k', min: 150000, max: 250000 },
+  { labelKey: 'over250k', min: 250000, max: Infinity },
 ];
+
+const priceRangeLabels: Record<string, { en: string; vi: string }> = {
+  under150k: { en: 'Under 150K', vi: 'Dưới 150K' },
+  '150k250k': { en: '150K - 250K', vi: '150K - 250K' },
+  over250k: { en: 'Over 250K', vi: 'Trên 250K' },
+};
 
 function formatVND(amount: number): string {
   return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
@@ -104,11 +104,11 @@ function formatTime(dateString: string): string {
 function getCategoryFromTags(tags: string[] | null): string {
   if (!tags || tags.length === 0) return 'General';
   const tag = tags[0];
-  // Capitalize first letter
   return tag.charAt(0).toUpperCase() + tag.slice(1);
 }
 
 export default function ClassCatalogPage() {
+  const t = useTranslations('classes');
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [showFilters, setShowFilters] = React.useState(false);
@@ -121,6 +121,15 @@ export default function ClassCatalogPage() {
   const [classes, setClasses] = React.useState<ClassWithTeacher[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+
+  const levelLabels: Record<string, string> = {
+    'All': t('levelAll'),
+    'beginner': t('levelBeginner'),
+    'elementary': t('levelElementary'),
+    'intermediate': t('levelIntermediate'),
+    'upper_intermediate': t('levelUpperIntermediate'),
+    'advanced': t('levelAdvanced'),
+  };
 
   // Fetch classes from Supabase
   React.useEffect(() => {
@@ -141,7 +150,7 @@ export default function ClassCatalogPage() {
         setClasses((data as ClassWithTeacher[]) || []);
       } catch (err) {
         console.error('Failed to fetch classes:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load classes');
+        setError(err instanceof Error ? err.message : t('loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -152,7 +161,6 @@ export default function ClassCatalogPage() {
 
   // Filter classes based on search and filters
   const filteredClasses = classes.filter((classItem) => {
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const teacherName = classItem.profiles?.full_name || '';
@@ -163,7 +171,6 @@ export default function ClassCatalogPage() {
       if (!matchesSearch) return false;
     }
 
-    // Category filter
     if (filters.category !== 'All') {
       const classCategory = getCategoryFromTags(classItem.tags);
       if (classCategory.toLowerCase() !== filters.category.toLowerCase()) {
@@ -171,12 +178,10 @@ export default function ClassCatalogPage() {
       }
     }
 
-    // Level filter
     if (filters.level !== 'All' && classItem.level !== filters.level) {
       return false;
     }
 
-    // Price filter
     const priceRange = priceRanges[filters.priceRange];
     if (priceRange && (classItem.price < priceRange.min || classItem.price > priceRange.max)) {
       return false;
@@ -186,11 +191,7 @@ export default function ClassCatalogPage() {
   });
 
   const clearFilters = () => {
-    setFilters({
-      category: 'All',
-      level: 'All',
-      priceRange: 0,
-    });
+    setFilters({ category: 'All', level: 'All', priceRange: 0 });
     setSearchQuery('');
   };
 
@@ -200,31 +201,35 @@ export default function ClassCatalogPage() {
     filters.priceRange !== 0 ||
     searchQuery !== '';
 
-  // Loading state
+  const getPriceRangeLabel = (index: number): string => {
+    if (index === 0) return t('levelAll');
+    const key = priceRanges[index].labelKey;
+    return priceRangeLabels[key]?.en ?? key;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-[#3B82F6] animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Loading classes...</p>
+          <p className="text-slate-400">{t('loading')}</p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">Failed to load classes</h2>
+          <h2 className="text-xl font-semibold text-white mb-2">{t('loadFailed')}</h2>
           <p className="text-slate-400 mb-4">{error}</p>
           <Button
             onClick={() => window.location.reload()}
             className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
           >
-            Try again
+            {t('tryAgain')}
           </Button>
         </div>
       </div>
@@ -240,10 +245,8 @@ export default function ClassCatalogPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-white mb-2">Explore Classes</h1>
-          <p className="text-slate-400">
-            Find classes that match your level and learning goals
-          </p>
+          <h1 className="text-3xl font-bold text-white mb-2">{t('title')}</h1>
+          <p className="text-slate-400">{t('subtitle')}</p>
         </motion.div>
 
         {/* Search and Filters */}
@@ -253,13 +256,12 @@ export default function ClassCatalogPage() {
           transition={{ delay: 0.1 }}
           className="mb-6 space-y-4"
         >
-          {/* Search Bar */}
           <div className="flex gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 type="text"
-                placeholder="Search by topic, teacher..."
+                placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-12 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-[#3B82F6]"
@@ -271,7 +273,7 @@ export default function ClassCatalogPage() {
               className={`h-12 px-6 border-white/20 ${showFilters ? 'bg-[#3B82F6] text-white border-[#3B82F6]' : 'text-white hover:bg-white/10'}`}
             >
               <Filter className="w-5 h-5 mr-2" />
-              Filters
+              {t('filters')}
               {hasActiveFilters && (
                 <Badge className="ml-2 bg-[#3B82F6] text-white">
                   {[filters.category !== 'All', filters.level !== 'All', filters.priceRange !== 0].filter(Boolean).length}
@@ -306,7 +308,7 @@ export default function ClassCatalogPage() {
                 <div className="p-6 bg-white/5 rounded-2xl border border-white/10 space-y-6">
                   {/* Category Filter */}
                   <div>
-                    <label className="text-sm text-slate-400 mb-3 block">Category</label>
+                    <label className="text-sm text-slate-400 mb-3 block">{t('category')}</label>
                     <div className="flex flex-wrap gap-2">
                       {categories.map((category) => (
                         <button
@@ -326,7 +328,7 @@ export default function ClassCatalogPage() {
 
                   {/* Level Filter */}
                   <div>
-                    <label className="text-sm text-slate-400 mb-3 block">Level</label>
+                    <label className="text-sm text-slate-400 mb-3 block">{t('level')}</label>
                     <div className="flex flex-wrap gap-2">
                       {levels.map((level) => (
                         <button
@@ -346,7 +348,7 @@ export default function ClassCatalogPage() {
 
                   {/* Price Filter */}
                   <div>
-                    <label className="text-sm text-slate-400 mb-3 block">Price Range</label>
+                    <label className="text-sm text-slate-400 mb-3 block">{t('priceRange')}</label>
                     <div className="flex flex-wrap gap-2">
                       {priceRanges.map((range, index) => (
                         <button
@@ -358,13 +360,12 @@ export default function ClassCatalogPage() {
                               : 'bg-white/10 text-slate-300 hover:bg-white/20'
                           }`}
                         >
-                          {range.label}
+                          {getPriceRangeLabel(index)}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Clear Filters */}
                   {hasActiveFilters && (
                     <Button
                       variant="ghost"
@@ -372,7 +373,7 @@ export default function ClassCatalogPage() {
                       className="text-slate-400 hover:text-white"
                     >
                       <X className="w-4 h-4 mr-2" />
-                      Clear filters
+                      {t('clearFilters')}
                     </Button>
                   )}
                 </div>
@@ -389,13 +390,13 @@ export default function ClassCatalogPage() {
           className="mb-4 flex items-center justify-between"
         >
           <p className="text-slate-400">
-            Found <span className="text-white font-medium">{filteredClasses.length}</span> classes
+            {t('found', { count: filteredClasses.length })}
           </p>
           <select className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-[#3B82F6]">
-            <option value="date">Sort: Upcoming</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="rating">Highest Rated</option>
+            <option value="date">{t('sortUpcoming')}</option>
+            <option value="price-asc">{t('sortPriceLow')}</option>
+            <option value="price-desc">{t('sortPriceHigh')}</option>
+            <option value="rating">{t('sortRating')}</option>
           </select>
         </motion.div>
 
@@ -475,14 +476,14 @@ export default function ClassCatalogPage() {
                                 {classItem.current_enrollments}/{classItem.max_students}
                               </span>
                               {classItem.current_enrollments >= classItem.max_students && (
-                                <Badge className="bg-red-500/20 text-red-400 border-0">Full</Badge>
+                                <Badge className="bg-red-500/20 text-red-400 border-0">{t('full')}</Badge>
                               )}
                             </div>
                             <div className="text-right">
                               <p className="text-lg font-bold text-white">{formatVND(classItem.price)}</p>
                               <p className="text-xs text-slate-500 flex items-center gap-1">
                                 <Gem className="w-3 h-3" />
-                                Gem discount available
+                                {t('gemDiscount')}
                               </p>
                             </div>
                           </div>
@@ -503,10 +504,10 @@ export default function ClassCatalogPage() {
             <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
               <Search className="w-10 h-10 text-slate-500" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">No classes found</h3>
-            <p className="text-slate-400 mb-4">Try changing your filters or search terms</p>
+            <h3 className="text-xl font-semibold text-white mb-2">{t('noResults')}</h3>
+            <p className="text-slate-400 mb-4">{t('noResultsHint')}</p>
             <Button onClick={clearFilters} className="bg-[#3B82F6] hover:bg-[#3B82F6]/90">
-              Clear filters
+              {t('clearFilters')}
             </Button>
           </motion.div>
         )}

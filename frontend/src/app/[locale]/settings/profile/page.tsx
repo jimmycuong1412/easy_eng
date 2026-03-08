@@ -13,6 +13,7 @@ import {
   Loader2,
   Check,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { GemImage } from '@/components/common/GemImage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -40,6 +41,7 @@ const itemVariants = {
 };
 
 export default function ProfileSettingsPage() {
+  const t = useTranslations('settings.profile');
   const { user } = useAuth();
   const { balance: gemBalance } = useGemsBalance();
   const [profile, setProfile] = React.useState<Profile | null>(null);
@@ -116,6 +118,13 @@ export default function ProfileSettingsPage() {
 
   const displayName = profile?.full_name || 'User';
 
+  const getRoleLabel = (role: string | undefined) => {
+    if (role === 'student') return t('roleStudent');
+    if (role === 'teacher') return t('roleTeacher');
+    if (role === 'admin') return t('roleAdmin');
+    return t('roleStudent');
+  };
+
   return (
     <motion.div
       variants={containerVariants}
@@ -144,12 +153,12 @@ export default function ProfileSettingsPage() {
                 <div className="flex items-center gap-2 justify-center sm:justify-start">
                   <h2 className="text-xl font-bold text-white">{displayName}</h2>
                   <Badge className="bg-[#3B82F6]/20 text-[#3B82F6] border-0">
-                    {profile?.role === 'student' ? 'Học viên' : profile?.role || 'student'}
+                    {getRoleLabel(profile?.role)}
                   </Badge>
                 </div>
                 <p className="text-slate-400 mt-1">{profile?.email}</p>
                 <p className="text-sm text-slate-500 mt-2">
-                  Tham gia từ {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('vi-VN') : ''}
+                  {t('memberSince')} {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : ''}
                 </p>
               </div>
 
@@ -170,10 +179,10 @@ export default function ProfileSettingsPage() {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <User className="w-5 h-5 text-[#3B82F6]" />
-              Thông tin cá nhân
+              {t('title')}
             </CardTitle>
             <CardDescription className="text-slate-400">
-              Cập nhật thông tin hồ sơ của bạn. Thông tin này sẽ được hiển thị cho giáo viên.
+              {t('description')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -181,7 +190,7 @@ export default function ProfileSettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="fullName" className="text-slate-300">
-                    Họ và tên
+                    {t('fullName')}
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -191,14 +200,14 @@ export default function ProfileSettingsPage() {
                       value={formData.fullName}
                       onChange={handleChange}
                       className="pl-10 bg-white/5 border-white/10 text-white focus:border-[#3B82F6]"
-                      placeholder="Nhập họ và tên"
+                      placeholder={t('fullNamePlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="displayName" className="text-slate-300">
-                    Tên hiển thị
+                    {t('displayName')}
                   </Label>
                   <Input
                     id="displayName"
@@ -206,13 +215,13 @@ export default function ProfileSettingsPage() {
                     value={formData.displayName}
                     onChange={handleChange}
                     className="bg-white/5 border-white/10 text-white focus:border-[#3B82F6]"
-                    placeholder="Tên hiển thị trong lớp học"
+                    placeholder={t('displayNamePlaceholder')}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-slate-300">
-                    Email
+                    {t('email')}
                   </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -230,7 +239,7 @@ export default function ProfileSettingsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-slate-300">
-                    Số điện thoại
+                    {t('phone')}
                   </Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -247,7 +256,7 @@ export default function ProfileSettingsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="location" className="text-slate-300">
-                    Địa điểm
+                    {t('location')}
                   </Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -257,14 +266,14 @@ export default function ProfileSettingsPage() {
                       value={formData.location}
                       onChange={handleChange}
                       className="pl-10 bg-white/5 border-white/10 text-white focus:border-[#3B82F6]"
-                      placeholder="Thành phố, Quốc gia"
+                      placeholder={t('locationPlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="dateOfBirth" className="text-slate-300">
-                    Ngày sinh
+                    {t('dateOfBirth')}
                   </Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -282,7 +291,7 @@ export default function ProfileSettingsPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="bio" className="text-slate-300">
-                  Giới thiệu bản thân
+                  {t('bio')}
                 </Label>
                 <textarea
                   id="bio"
@@ -291,10 +300,10 @@ export default function ProfileSettingsPage() {
                   onChange={handleChange}
                   rows={4}
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 focus:border-[#3B82F6] focus:outline-none focus:ring-1 focus:ring-[#3B82F6] resize-none"
-                  placeholder="Viết vài dòng về bản thân và mục tiêu học tập..."
+                  placeholder={t('bioPlaceholder')}
                 />
                 <p className="text-xs text-slate-500">
-                  {formData.bio.length}/500 ký tự
+                  {t('bioCounter', { count: formData.bio.length })}
                 </p>
               </div>
 
@@ -306,7 +315,7 @@ export default function ProfileSettingsPage() {
                     className="flex items-center gap-2 text-emerald-400"
                   >
                     <Check className="w-4 h-4" />
-                    <span className="text-sm">Đã lưu thay đổi</span>
+                    <span className="text-sm">{t('saved')}</span>
                   </motion.div>
                 )}
                 <Button
@@ -317,12 +326,12 @@ export default function ProfileSettingsPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Đang lưu...
+                      {t('saving')}
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Lưu thay đổi
+                      {t('saveChanges')}
                     </>
                   )}
                 </Button>
@@ -336,17 +345,17 @@ export default function ProfileSettingsPage() {
       <motion.div variants={itemVariants}>
         <Card className="bg-red-500/5 border-red-500/20">
           <CardHeader>
-            <CardTitle className="text-red-400">Vùng nguy hiểm</CardTitle>
+            <CardTitle className="text-red-400">{t('dangerZone')}</CardTitle>
             <CardDescription className="text-slate-400">
-              Các hành động không thể hoàn tác. Hãy cẩn thận!
+              {t('dangerZoneDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row gap-4">
             <Button variant="outline" className="border-red-500/30 text-red-400 hover:bg-red-500/10">
-              Vô hiệu hóa tài khoản
+              {t('disableAccount')}
             </Button>
             <Button variant="outline" className="border-red-500/30 text-red-400 hover:bg-red-500/10">
-              Xóa tài khoản vĩnh viễn
+              {t('deleteAccount')}
             </Button>
           </CardContent>
         </Card>
