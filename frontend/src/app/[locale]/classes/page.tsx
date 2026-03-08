@@ -350,7 +350,7 @@ export default function ClassCatalogPage() {
                   <div>
                     <label className="text-sm text-slate-400 mb-3 block">{t('priceRange')}</label>
                     <div className="flex flex-wrap gap-2">
-                      {priceRanges.map((range, index) => (
+                      {priceRanges.map((_range, index) => (
                         <button
                           key={index}
                           onClick={() => setFilters((f) => ({ ...f, priceRange: index }))}
