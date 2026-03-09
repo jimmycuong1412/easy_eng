@@ -155,16 +155,13 @@ export function useAuth(): UseAuthReturn {
   const signOut = useCallback(async () => {
     setError(null);
 
-    const { error } = await supabase.auth.signOut();
+    // Call the server-side logout route which signs out + clears role-cache cookies.
+    // This prevents the middleware from redirecting back to the dashboard due to
+    // stale x-user-role / x-user-id cookies (cached for 5 minutes).
+    await fetch('/api/auth/logout', { method: 'POST' });
 
-    if (error) {
-      setError(error);
-      throw error;
-    }
-
-    // Redirect to login page after successful logout
     window.location.href = '/auth/login';
-  }, [supabase]);
+  }, []);
 
   // Reset password
   const resetPassword = useCallback(
