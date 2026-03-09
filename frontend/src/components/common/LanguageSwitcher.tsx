@@ -6,7 +6,6 @@ import { Globe } from 'lucide-react';
 
 import { locales, localeNames, type Locale } from '@/i18n/config';
 import { Button } from '@/components/ui/button';
-import { updateUserPreferences } from '@/app/[locale]/settings/preferences/actions';
 
 const localeFlags: Record<Locale, string> = {
   vi: '🇻🇳',
@@ -23,10 +22,13 @@ export function LanguageSwitcher() {
   const pathname = usePathname();
 
   const switchLocale = async (newLocale: Locale) => {
-    // Persist to DB silently (best-effort, don't block navigation)
-    updateUserPreferences({
-      locale: newLocale,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh',
+    // Clear the middleware role-cache cookies AND update the DB locale.
+    // Must await this before navigating — otherwise the middleware reads the
+    // stale x-user-locale cookie and redirects back to the old locale.
+    await fetch('/api/auth/set-locale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale: newLocale }),
     }).catch(() => {
       // Ignore errors — user may not be authenticated (public pages)
     });
@@ -63,10 +65,10 @@ export function LanguageDropdown() {
   const pathname = usePathname();
 
   const switchLocale = async (newLocale: Locale) => {
-    // Persist to DB silently (best-effort)
-    updateUserPreferences({
-      locale: newLocale,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh',
+    await fetch('/api/auth/set-locale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale: newLocale }),
     }).catch(() => {});
 
     const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/';
