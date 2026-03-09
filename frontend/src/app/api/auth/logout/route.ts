@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 /**
  * POST /api/auth/logout
@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
  *   response in a Route Handler — so the Supabase sb-*-auth-token cookies are
  *   never actually deleted from the browser. We clear them manually here instead.
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   const response = NextResponse.json({ success: true });
 
   const expired = { path: '/', maxAge: 0 };
