@@ -964,6 +964,7 @@
     "notFound": "Class not found",
     "goBack": "Go back",
     "bookingCost": "Booking cost",
+    "fixedPrice": "Fixed price per class",
     "yourBalance": "Your balance",
     "topUpGems": "Top up Gems",
     "spotsLeftLabel": "Spots left",

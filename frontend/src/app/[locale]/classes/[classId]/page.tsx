@@ -32,8 +32,7 @@ import { GemImage } from '@/components/common/GemImage';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
 
-// 100 Gems = 25,000 VND  →  1 Gem = 250 VND
-const GEMS_PER_VND = 1 / 250;
+const CLASS_GEM_PRICE = 100;
 
 interface ClassDetail {
   id: string;
@@ -72,9 +71,6 @@ interface ReviewData {
   } | null;
 }
 
-function formatVND(amount: number): string {
-  return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
-}
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -175,7 +171,7 @@ export default function ClassDetailPage() {
   const handleBookNow = async () => {
     if (!classData || isBooking) return;
 
-    const gemCost = Math.ceil(classData.price * GEMS_PER_VND);
+    const gemCost = CLASS_GEM_PRICE;
     if (gemBalance < gemCost) {
       setBookingError(t('needGemsMsg', { needed: gemCost.toLocaleString(), balance: gemBalance.toLocaleString() }));
       return;
@@ -345,8 +341,7 @@ export default function ClassDetailPage() {
   const category = getCategoryFromTags(classData.tags);
   const spotsLeft = classData.max_students - classData.current_enrollments;
   const isFull = spotsLeft <= 0;
-  const priceUsd = Math.round(classData.price / 25000);
-  const gemCost = Math.ceil(classData.price * GEMS_PER_VND);
+  const gemCost = CLASS_GEM_PRICE;
   const hasEnoughGems = gemBalance >= gemCost;
 
   return (
@@ -627,7 +622,7 @@ export default function ClassDetailPage() {
                           <span className="text-3xl font-bold text-amber-400">{gemCost.toLocaleString()}</span>
                           <span className="text-slate-400 text-lg">Gems</span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">{formatVND(classData.price)} • ~${priceUsd} USD</p>
+                        <p className="text-xs text-slate-500 mt-1">{t('fixedPrice')}</p>
                       </div>
 
                       {/* Gem balance */}

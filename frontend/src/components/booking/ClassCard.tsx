@@ -121,11 +121,8 @@ export function ClassCard({
       {/* Price and Action */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
         <div>
-          <div className="text-2xl font-bold text-indigo-600">
-            ${classData.price.toFixed(2)}
-          </div>
-          <div className="text-xs text-gray-500">
-            Use Gems for discount
+          <div className="text-2xl font-bold text-amber-500">
+            💎 100 Gems
           </div>
         </div>
 

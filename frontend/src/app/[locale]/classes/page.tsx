@@ -80,9 +80,6 @@ const priceRangeLabels: Record<string, { en: string; vi: string }> = {
   over250k: { en: 'Over 250K', vi: 'Trên 250K' },
 };
 
-function formatVND(amount: number): string {
-  return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
-}
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -480,11 +477,10 @@ export default function ClassCatalogPage() {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-bold text-white">{formatVND(classItem.price)}</p>
-                              <p className="text-xs text-slate-500 flex items-center gap-1">
-                                <Gem className="w-3 h-3" />
-                                {t('gemDiscount')}
-                              </p>
+                              <div className="flex items-center gap-1.5 justify-end">
+                                <Gem className="w-4 h-4 text-amber-400" />
+                                <p className="text-lg font-bold text-amber-400">100 Gems</p>
+                              </div>
                             </div>
                           </div>
                         </div>

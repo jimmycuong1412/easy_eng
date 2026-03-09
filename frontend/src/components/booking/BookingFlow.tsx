@@ -1,15 +1,10 @@
-/**
- * BookingFlow Component
- * 
- * Complete booking flow with Gems discount
- */
-
 'use client';
 
 import React, { useState } from 'react';
 import { ClassData } from './ClassCard';
-import { GemDiscountSlider } from './GemDiscountSlider';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
+
+const CLASS_GEM_PRICE = 100;
 
 interface BookingFlowProps {
   selectedClass: ClassData;
@@ -17,26 +12,20 @@ interface BookingFlowProps {
   onSuccess?: (bookingId: string) => void;
 }
 
-export function BookingFlow({ 
-  selectedClass, 
+export function BookingFlow({
+  selectedClass,
   onCancel,
-  onSuccess 
+  onSuccess
 }: BookingFlowProps) {
   const { balance: gemsBalance, refreshBalance } = useGemsBalance();
-  const [gemsToUse, setGemsToUse] = useState(0);
-  const [finalPrice, setFinalPrice] = useState(selectedClass.price);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMethodId] = useState('pm_test_123'); // Mock payment method
 
-  const handleGemsChange = (gems: number, price: number) => {
-    setGemsToUse(gems);
-    setFinalPrice(price);
-  };
+  const hasEnoughGems = gemsBalance >= CLASS_GEM_PRICE;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setIsProcessing(true);
       setError(null);
@@ -49,8 +38,7 @@ export function BookingFlow({
         },
         body: JSON.stringify({
           classId: selectedClass.id,
-          gemsToUse,
-          paymentMethodId: finalPrice > 0 ? paymentMethodId : undefined,
+          gemsToUse: CLASS_GEM_PRICE,
           idempotencyKey: `booking-${selectedClass.id}-${Date.now()}`,
         }),
       });
@@ -61,11 +49,7 @@ export function BookingFlow({
       }
 
       const data = await response.json();
-      
-      // Refresh Gems balance
       refreshBalance();
-      
-      // Call success callback
       if (onSuccess) {
         onSuccess(data.data.id);
       }
@@ -84,7 +68,7 @@ export function BookingFlow({
         {/* Header */}
         <div className="bg-indigo-600 text-white p-6">
           <h2 className="text-2xl font-bold">Book Your Class</h2>
-          <p className="text-indigo-100 mt-1">Complete your booking with Gems discount</p>
+          <p className="text-indigo-100 mt-1">100 Gems per class</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -115,48 +99,24 @@ export function BookingFlow({
             </div>
           </div>
 
-          {/* Gems Discount Slider */}
-          <div>
-            <h3 className="font-semibold text-lg mb-3">Apply Gems Discount</h3>
-            <GemDiscountSlider
-              classPrice={selectedClass.price}
-              userGemsBalance={gemsBalance}
-              onGemsChange={handleGemsChange}
-            />
+          {/* Gem Cost Summary */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-gray-800">Class Price</span>
+              <span className="text-xl font-bold text-amber-600">💎 {CLASS_GEM_PRICE} Gems</span>
+            </div>
+            <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
+              <span>Your balance</span>
+              <span className={hasEnoughGems ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                {gemsBalance} Gems
+              </span>
+            </div>
+            {!hasEnoughGems && (
+              <p className="text-xs text-red-600 mt-2">
+                You need {CLASS_GEM_PRICE - gemsBalance} more Gems to book this class.
+              </p>
+            )}
           </div>
-
-          {/* Payment Info */}
-          {finalPrice > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium">Payment Required</p>
-                  <p className="mt-1">
-                    You'll be charged ${finalPrice.toFixed(2)} after applying your Gems discount.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {finalPrice === 0 && gemsToUse > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div className="text-sm text-green-800">
-                  <p className="font-medium">Free Booking!</p>
-                  <p className="mt-1">
-                    Your Gems cover the full cost of this class. No payment required!
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Error Display */}
           {error && (
@@ -185,7 +145,7 @@ export function BookingFlow({
             </button>
             <button
               type="submit"
-              disabled={isProcessing}
+              disabled={isProcessing || !hasEnoughGems}
               className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isProcessing ? (
@@ -197,7 +157,7 @@ export function BookingFlow({
                   <span>Processing...</span>
                 </>
               ) : (
-                <span>Confirm Booking - ${finalPrice.toFixed(2)}</span>
+                <span>Confirm Booking — 💎 {CLASS_GEM_PRICE} Gems</span>
               )}
             </button>
           </div>
