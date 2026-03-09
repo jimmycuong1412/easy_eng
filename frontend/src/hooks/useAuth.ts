@@ -155,14 +155,14 @@ export function useAuth(): UseAuthReturn {
   const signOut = useCallback(async () => {
     setError(null);
 
-    // 1. Sign out client-side first — clears the in-memory session and
-    //    removes Supabase tokens from localStorage so the client SDK stops
-    //    attaching them to requests.
-    await supabase.auth.signOut();
-
-    // 2. Hit the server route to clear HttpOnly auth cookies and role-cache
-    //    cookies so the middleware doesn't redirect back to dashboard.
+    // 1. Clear server-side HttpOnly cookies FIRST — must happen before
+    //    supabase.auth.signOut() because that fires onAuthStateChange(SIGNED_OUT)
+    //    which triggers a React re-render/unmount that can abort this async fn
+    //    before the fetch completes.
     await fetch('/api/auth/logout', { method: 'POST' });
+
+    // 2. Clear client-side Supabase session (in-memory + localStorage).
+    await supabase.auth.signOut();
 
     window.location.href = '/auth/login';
   }, [supabase]);
