@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 
 import { cn, formatNumber } from '@/lib/utils';
-import { env } from '@/lib/env';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -83,26 +83,22 @@ export default function TeachersPage() {
   React.useEffect(() => {
     (async () => {
       try {
-        const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
-        const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, bio, role, is_active')
+          .eq('role', 'teacher')
+          .eq('is_active', true)
+          .order('full_name', { ascending: true });
 
-        const res = await fetch(
-          `${supabaseUrl}/rest/v1/profiles?select=id,full_name,avatar_url,bio,role,is_active&role=eq.teacher&is_active=eq.true&order=full_name.asc`,
-          {
-            headers: {
-              apikey: anonKey,
-              Authorization: `Bearer ${anonKey}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        const data: Record<string, unknown>[] = await res.json();
+        if (error) throw error;
+
         const mapped: Teacher[] = (data || []).map((t) => ({
           id: t.id as string,
           name: (t.full_name as string) || 'Teacher',
           avatar: (t.avatar_url as string) || undefined,
           bio: (t.bio as string) || '',
-          specializations: ['English'],
+          specializations: ['all'],
           languages: ['English', 'Vietnamese'],
           hourlyRate: 200000,
           rating: 0,
@@ -135,9 +131,10 @@ export default function TeachersPage() {
       );
     }
 
-    // Specialization filter
+    // Specialization filter — skip if teacher has no specific specs
     if (selectedSpecialization !== 'all') {
       result = result.filter((t) =>
+        t.specializations.includes('all') ||
         t.specializations.includes(selectedSpecialization)
       );
     }
