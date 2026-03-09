@@ -155,13 +155,17 @@ export function useAuth(): UseAuthReturn {
   const signOut = useCallback(async () => {
     setError(null);
 
-    // Call the server-side logout route which signs out + clears role-cache cookies.
-    // This prevents the middleware from redirecting back to the dashboard due to
-    // stale x-user-role / x-user-id cookies (cached for 5 minutes).
+    // 1. Sign out client-side first — clears the in-memory session and
+    //    removes Supabase tokens from localStorage so the client SDK stops
+    //    attaching them to requests.
+    await supabase.auth.signOut();
+
+    // 2. Hit the server route to clear HttpOnly auth cookies and role-cache
+    //    cookies so the middleware doesn't redirect back to dashboard.
     await fetch('/api/auth/logout', { method: 'POST' });
 
     window.location.href = '/auth/login';
-  }, []);
+  }, [supabase]);
 
   // Reset password
   const resetPassword = useCallback(
