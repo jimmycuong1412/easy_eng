@@ -174,8 +174,8 @@ export function findAvailableSlots(
   existingSlots: TimeSlot[],
   date: Date,
   slotDuration: number,
-  workHoursStart: number = 9, // 9 AM
-  workHoursEnd: number = 18 // 6 PM
+  workHoursStart: number = 0, // midnight
+  workHoursEnd: number = 24 // midnight (full day)
 ): TimeSlot[] {
   const available: TimeSlot[] = [];
 

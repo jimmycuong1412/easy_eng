@@ -42,11 +42,11 @@ interface ScheduleSlot {
 
 type ScheduleData = Record<string, ScheduleSlot[]>;
 
-// 25-minute class slots from 08:00 to 21:25
+// 25-minute class slots covering full 24 hours (00:00 to 23:35)
 const timeSlots = (() => {
   const slots: string[] = [];
-  let totalMinutes = 8 * 60; // 08:00
-  while (totalMinutes <= 21 * 60 + 25) {
+  let totalMinutes = 0; // 00:00
+  while (totalMinutes < 24 * 60) {
     const h = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
     const m = (totalMinutes % 60).toString().padStart(2, '0');
     slots.push(`${h}:${m}`);

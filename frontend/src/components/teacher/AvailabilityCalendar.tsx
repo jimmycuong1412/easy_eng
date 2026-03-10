@@ -32,8 +32,8 @@ const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const ORDERED_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun
 
-const DEFAULT_START = '08:00:00';
-const DEFAULT_END = '21:00:00';
+const DEFAULT_START = '00:00:00';
+const DEFAULT_END = '23:30:00';
 
 /** Expand an availability range into 30-min slot start times */
 function expandSlots(startTime: string, endTime: string): string[] {
