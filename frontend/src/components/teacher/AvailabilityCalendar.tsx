@@ -35,7 +35,7 @@ const ORDERED_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun
 const DEFAULT_START = '00:00:00';
 const DEFAULT_END = '23:30:00';
 
-/** Expand an availability range into 30-min slot start times */
+/** Expand an availability range into 25-min slot start times (matches schedule grid) */
 function expandSlots(startTime: string, endTime: string): string[] {
   const [sh, sm] = startTime.slice(0, 5).split(':').map(Number);
   const [eh, em] = endTime.slice(0, 5).split(':').map(Number);
@@ -46,7 +46,7 @@ function expandSlots(startTime: string, endTime: string): string[] {
     const h = Math.floor(mins / 60).toString().padStart(2, '0');
     const m = (mins % 60).toString().padStart(2, '0');
     slots.push(`${h}:${m}`);
-    mins += 30;
+    mins += 25;
   }
   return slots;
 }

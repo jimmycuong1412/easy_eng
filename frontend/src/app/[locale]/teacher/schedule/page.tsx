@@ -74,7 +74,7 @@ export default function TeacherSchedulePage() {
   const [selectedSlot, setSelectedSlot] = React.useState<ScheduleSlot | null>(null);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = React.useState(false);
 
-  // Expand availability row into 30-min slot start times (HH:MM)
+  // Expand availability row into 25-min slot start times (HH:MM) — must match timeSlots grid step
   const expandAvailSlots = (startTime: string, endTime: string): string[] => {
     const [sh, sm] = startTime.slice(0, 5).split(':').map(Number);
     const [eh, em] = endTime.slice(0, 5).split(':').map(Number);
@@ -83,7 +83,7 @@ export default function TeacherSchedulePage() {
     const slots: string[] = [];
     while (mins + 25 <= endMins) {
       slots.push(`${Math.floor(mins / 60).toString().padStart(2, '0')}:${(mins % 60).toString().padStart(2, '0')}`);
-      mins += 30;
+      mins += 25;
     }
     return slots;
   };
