@@ -308,11 +308,11 @@ export default function TeacherSchedulePage() {
               <table className="w-full min-w-[900px]">
                 <thead>
                   <tr className="border-b border-white/10">
-                    <th className="p-3 text-left text-slate-400 font-medium w-20">{t('timeCol')}</th>
+                    <th className="px-2 py-2 text-left text-slate-400 font-medium w-16">{t('timeCol')}</th>
                     {weekDays.map((day) => (
                       <th
                         key={day.toISOString()}
-                        className={`p-3 text-center font-medium ${isToday(day) ? 'bg-[#3B82F6]/10' : ''}`}
+                        className={`px-2 py-2 text-center font-medium ${isToday(day) ? 'bg-[#3B82F6]/10' : ''}`}
                       >
                         <span className={isToday(day) ? 'text-[#3B82F6]' : 'text-slate-400'}>
                           {formatDisplayDate(day)}
@@ -328,33 +328,33 @@ export default function TeacherSchedulePage() {
                 </thead>
                 <tbody>
                   {timeSlots.map((time) => (
-                    <tr key={time} className="border-b border-white/5">
-                      <td className="p-3 text-slate-400 text-sm font-medium">{time}</td>
+                    <tr key={time} className="border-b border-white/5 h-8">
+                      <td className="px-2 py-0.5 text-slate-400 text-xs font-medium w-16 leading-none">{time}</td>
                       {weekDays.map((day) => {
                         const slot = getSlotForTime(day, time);
                         return (
                           <td
                             key={`${day.toISOString()}-${time}`}
-                            className={`p-2 ${isToday(day) ? 'bg-[#3B82F6]/5' : ''}`}
+                            className={`px-1 py-0.5 ${isToday(day) ? 'bg-[#3B82F6]/5' : ''}`}
                           >
                             {slot ? (
                               <button
                                 onClick={() => setSelectedSlot(slot)}
-                                className={`w-full p-2 rounded-lg border text-left transition-all hover:scale-[1.02] ${getStatusColor(slot.status)}`}
+                                className={`w-full px-1.5 py-0.5 rounded border text-left transition-all hover:scale-[1.02] ${getStatusColor(slot.status)}`}
                               >
                                 {slot.student ? (
                                   <div>
-                                    <p className="text-xs font-medium truncate">{slot.topic}</p>
-                                    <p className="text-xs opacity-70 truncate">{slot.student.name}</p>
+                                    <p className="text-xs font-medium truncate leading-tight">{slot.topic}</p>
+                                    <p className="text-xs opacity-70 truncate leading-tight">{slot.student.name}</p>
                                   </div>
                                 ) : (
-                                  <div className="flex items-center justify-center h-8">
-                                    <Plus className="w-4 h-4" />
+                                  <div className="flex items-center justify-center h-5">
+                                    <Plus className="w-3 h-3" />
                                   </div>
                                 )}
                               </button>
                             ) : (
-                              <div className="h-12" />
+                              <div className="h-7" />
                             )}
                           </td>
                         );
