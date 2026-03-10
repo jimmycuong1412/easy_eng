@@ -379,7 +379,9 @@ export default function TeacherSchedulePage() {
                                 )}
                               </button>
                             ) : (
-                              <div className="h-7" />
+                              <div className="flex items-center justify-center h-7">
+                                <Plus className="w-3 h-3 text-white/10" />
+                              </div>
                             )}
                           </td>
                         );
