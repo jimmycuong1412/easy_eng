@@ -74,18 +74,15 @@ export default function TeacherSchedulePage() {
   const [selectedSlot, setSelectedSlot] = React.useState<ScheduleSlot | null>(null);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = React.useState(false);
 
-  // Expand availability row into 25-min slot start times (HH:MM) — must match timeSlots grid step
+  // Return the subset of timeSlots that fall within [startTime, endTime)
+  // Using timeSlots directly guarantees keys match the grid rows exactly.
   const expandAvailSlots = (startTime: string, endTime: string): string[] => {
-    const [sh, sm] = startTime.slice(0, 5).split(':').map(Number);
-    const [eh, em] = endTime.slice(0, 5).split(':').map(Number);
-    let mins = sh * 60 + sm;
-    const endMins = eh * 60 + em;
-    const slots: string[] = [];
-    while (mins + 25 <= endMins) {
-      slots.push(`${Math.floor(mins / 60).toString().padStart(2, '0')}:${(mins % 60).toString().padStart(2, '0')}`);
-      mins += 25;
-    }
-    return slots;
+    const startMins = parseInt(startTime.slice(0, 2)) * 60 + parseInt(startTime.slice(3, 5));
+    const endMins   = parseInt(endTime.slice(0, 2))   * 60 + parseInt(endTime.slice(3, 5));
+    return timeSlots.filter((slot) => {
+      const slotMins = parseInt(slot.slice(0, 2)) * 60 + parseInt(slot.slice(3, 5));
+      return slotMins >= startMins && slotMins + 25 <= endMins;
+    });
   };
 
   const fetchSchedule = React.useCallback(async () => {

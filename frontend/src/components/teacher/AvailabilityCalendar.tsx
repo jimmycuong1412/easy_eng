@@ -35,20 +35,25 @@ const ORDERED_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun
 const DEFAULT_START = '00:00:00';
 const DEFAULT_END = '23:30:00';
 
-/** Expand an availability range into 25-min slot start times (matches schedule grid) */
-function expandSlots(startTime: string, endTime: string): string[] {
-  const [sh, sm] = startTime.slice(0, 5).split(':').map(Number);
-  const [eh, em] = endTime.slice(0, 5).split(':').map(Number);
-  let mins = sh * 60 + sm;
-  const endMins = eh * 60 + em;
+// Canonical 25-min slot grid anchored at midnight — same as schedule/page.tsx
+const ALL_SLOTS: string[] = (() => {
   const slots: string[] = [];
-  while (mins + 25 <= endMins) {
-    const h = Math.floor(mins / 60).toString().padStart(2, '0');
-    const m = (mins % 60).toString().padStart(2, '0');
-    slots.push(`${h}:${m}`);
-    mins += 25;
+  let t = 0;
+  while (t < 24 * 60) {
+    slots.push(`${Math.floor(t / 60).toString().padStart(2, '0')}:${(t % 60).toString().padStart(2, '0')}`);
+    t += 25;
   }
   return slots;
+})();
+
+/** Return grid slots that fall within [startTime, endTime) */
+function expandSlots(startTime: string, endTime: string): string[] {
+  const startMins = parseInt(startTime.slice(0, 2)) * 60 + parseInt(startTime.slice(3, 5));
+  const endMins   = parseInt(endTime.slice(0, 2))   * 60 + parseInt(endTime.slice(3, 5));
+  return ALL_SLOTS.filter((slot) => {
+    const slotMins = parseInt(slot.slice(0, 2)) * 60 + parseInt(slot.slice(3, 5));
+    return slotMins >= startMins && slotMins + 25 <= endMins;
+  });
 }
 
 export default function AvailabilityCalendar({ locale: _locale }: AvailabilityCalendarProps) {
