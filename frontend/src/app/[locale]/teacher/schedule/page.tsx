@@ -74,77 +74,105 @@ export default function TeacherSchedulePage() {
   const [selectedSlot, setSelectedSlot] = React.useState<ScheduleSlot | null>(null);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = React.useState(false);
 
-  useEffect(() => {
+  // Expand availability row into 30-min slot start times (HH:MM)
+  const expandAvailSlots = (startTime: string, endTime: string): string[] => {
+    const [sh, sm] = startTime.slice(0, 5).split(':').map(Number);
+    const [eh, em] = endTime.slice(0, 5).split(':').map(Number);
+    let mins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    const slots: string[] = [];
+    while (mins + 25 <= endMins) {
+      slots.push(`${Math.floor(mins / 60).toString().padStart(2, '0')}:${(mins % 60).toString().padStart(2, '0')}`);
+      mins += 30;
+    }
+    return slots;
+  };
+
+  const fetchSchedule = React.useCallback(async () => {
     if (!user?.id) return;
+    try {
+      setLoading(true);
+      const data = await getTeacherSchedule(user.id);
+      const sessions = data.sessions || [];
+      const availability = data.availability || [];
+      const disabledSlots = data.disabledSlots as Set<string>;
 
-    const fetchSchedule = async () => {
-      try {
-        setLoading(true);
-        const data = await getTeacherSchedule(user.id) as Record<string, unknown>;
-        const sessions = (data.sessions as Record<string, unknown>[]) || [];
-        const availability = (data.availability as Record<string, unknown>[]) || [];
+      const scheduleMap: ScheduleData = {};
 
-        const scheduleMap: ScheduleData = {};
+      sessions.forEach((session: Record<string, unknown>) => {
+        const startTime = new Date(session.scheduled_start_time as string);
+        const dateKey = startTime.toISOString().split('T')[0];
+        const timeStr = startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const cls = session.classes as Record<string, unknown> | null;
 
-        sessions.forEach((session) => {
-          const startTime = new Date(session.scheduled_start_time as string);
-          const dateKey = startTime.toISOString().split('T')[0];
-          const timeStr = startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-          const cls = session.classes as Record<string, unknown> | null;
+        if (!scheduleMap[dateKey]) scheduleMap[dateKey] = [];
 
+        const now = new Date();
+        let status = 'upcoming';
+        if (startTime < now) status = 'completed';
+        if (session.status === 'cancelled') status = 'cancelled';
+
+        scheduleMap[dateKey].push({
+          id: session.id as string,
+          time: timeStr,
+          duration: (cls?.duration_minutes as number) || 25,
+          status,
+          student: null,
+          topic: (cls?.title as string) || null,
+        });
+      });
+
+      // Expand every availability row into individual 30-min slots
+      availability.forEach((avail: Record<string, unknown>) => {
+        const dayOfWeek = avail.day_of_week as number;
+        const slotTimes = expandAvailSlots(avail.start_time as string, avail.end_time as string);
+
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(currentWeekStart);
+          date.setDate(currentWeekStart.getDate() + i);
+          if (date.getDay() !== dayOfWeek) continue;
+
+          const dateKey = date.toISOString().split('T')[0];
           if (!scheduleMap[dateKey]) scheduleMap[dateKey] = [];
+          const existingTimes = new Set(scheduleMap[dateKey].map(s => s.time));
 
-          const now = new Date();
-          let status = 'upcoming';
-          if (startTime < now) status = 'completed';
-          if (session.status === 'cancelled') status = 'cancelled';
-
-          scheduleMap[dateKey].push({
-            id: session.id as string,
-            time: timeStr,
-            duration: (cls?.duration_minutes as number) || 25,
-            status,
-            student: null,
-            topic: (cls?.title as string) || null,
+          slotTimes.forEach((slotTime) => {
+            const disableKey = `${dayOfWeek}:${slotTime}`;
+            if (disabledSlots?.has(disableKey)) return; // skip disabled overrides
+            if (existingTimes.has(slotTime)) return;     // skip if session already there
+            scheduleMap[dateKey].push({
+              id: `avail-${avail.id}-${dateKey}-${slotTime}`,
+              time: slotTime,
+              duration: 25,
+              status: 'available',
+              student: null,
+              topic: null,
+            });
+            existingTimes.add(slotTime);
           });
-        });
+        }
+      });
 
-        availability.forEach((avail) => {
-          const dayOfWeek = avail.day_of_week as number;
-          const startTimeStr = avail.start_time as string;
-
-          const weekStart = new Date(currentWeekStart);
-          for (let i = 0; i < 7; i++) {
-            const date = new Date(weekStart);
-            date.setDate(weekStart.getDate() + i);
-            if (date.getDay() === dayOfWeek) {
-              const dateKey = date.toISOString().split('T')[0];
-              if (!scheduleMap[dateKey]) scheduleMap[dateKey] = [];
-              const existingTimes = scheduleMap[dateKey].map(s => s.time);
-              if (!existingTimes.includes(startTimeStr.slice(0, 5))) {
-                scheduleMap[dateKey].push({
-                  id: `avail-${avail.id}-${dateKey}`,
-                  time: startTimeStr.slice(0, 5),
-                  duration: 25,
-                  status: 'available',
-                  student: null,
-                  topic: null,
-                });
-              }
-            }
-          }
-        });
-
-        setSchedule(scheduleMap);
-      } catch (err) {
-        console.error('Error fetching teacher schedule:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSchedule();
+      setSchedule(scheduleMap);
+    } catch (err) {
+      console.error('Error fetching teacher schedule:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [user?.id, currentWeekStart]);
+
+  useEffect(() => {
+    fetchSchedule();
+  }, [fetchSchedule]);
+
+  // Re-fetch when availability dialog closes (after saving settings)
+  const prevDialogOpen = React.useRef(false);
+  useEffect(() => {
+    if (prevDialogOpen.current && !showAvailabilityDialog) {
+      fetchSchedule();
+    }
+    prevDialogOpen.current = showAvailabilityDialog;
+  }, [showAvailabilityDialog, fetchSchedule]);
 
   const getWeekDays = (startDate: Date) => {
     const days: Date[] = [];
