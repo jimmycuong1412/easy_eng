@@ -11,7 +11,6 @@ import {
   Video,
   Plus,
   X,
-  Settings,
   Loader2,
 } from 'lucide-react';
 
@@ -30,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLocale, useTranslations } from 'next-intl';
 import { getTeacherSchedule } from '@/lib/queries';
 import AvailabilityCalendar from '@/components/teacher/AvailabilityCalendar';
+import { createClient } from '@/lib/supabase/client';
 
 interface ScheduleSlot {
   id: string;
@@ -73,6 +73,42 @@ export default function TeacherSchedulePage() {
   });
   const [selectedSlot, setSelectedSlot] = React.useState<ScheduleSlot | null>(null);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = React.useState(false);
+  const [togglingSlot, setTogglingSlot] = React.useState(false);
+  const supabase = createClient();
+
+  // Enable or disable a slot via teacher_slot_overrides
+  // slot.time is always "HH:MM" (from the grid), slot.id encodes the date
+  const toggleSlot = async (slot: ScheduleSlot, enable: boolean) => {
+    if (!user?.id) return;
+    setTogglingSlot(true);
+    try {
+      // Extract the date from the slot id:
+      // available: "avail-{uuid}-{YYYY-MM-DD}-{HH:MM}"
+      // new empty: "new-{ISO8601date}-{HH:MM}"
+      // The time portion is always the last 5 chars before end (HH:MM)
+      // The date is always 10 chars (YYYY-MM-DD) immediately before the trailing "-HH:MM"
+      const slotTime = slot.time; // already "HH:MM"
+      // Strip trailing "-HH:MM" to get the date portion
+      const withoutTime = slot.id.slice(0, slot.id.length - slotTime.length - 1);
+      const dateKey = withoutTime.slice(withoutTime.length - 10); // last 10 chars = YYYY-MM-DD
+      const [y, m, d] = dateKey.split('-').map(Number);
+      const dayOfWeek = new Date(y, m - 1, d).getDay();
+
+      const { error } = await supabase
+        .from('teacher_slot_overrides')
+        .upsert(
+          { teacher_id: user.id, day_of_week: dayOfWeek, slot_time: slotTime + ':00', is_enabled: enable },
+          { onConflict: 'teacher_id,day_of_week,slot_time' }
+        );
+      if (error) throw error;
+      setSelectedSlot(null);
+      await fetchSchedule();
+    } catch (err) {
+      console.error('toggleSlot error:', err);
+    } finally {
+      setTogglingSlot(false);
+    }
+  };
 
   // Return the subset of timeSlots that fall within [startTime, endTime)
   // Using timeSlots directly guarantees keys match the grid rows exactly.
@@ -96,9 +132,16 @@ export default function TeacherSchedulePage() {
 
       const scheduleMap: ScheduleData = {};
 
+      const localDateKey = (d: Date) => {
+        const y = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const dy = String(d.getDate()).padStart(2, '0');
+        return `${y}-${mo}-${dy}`;
+      };
+
       sessions.forEach((session: Record<string, unknown>) => {
         const startTime = new Date(session.scheduled_start_time as string);
-        const dateKey = startTime.toISOString().split('T')[0];
+        const dateKey = localDateKey(startTime);
         const timeStr = startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
         const cls = session.classes as Record<string, unknown> | null;
 
@@ -129,19 +172,19 @@ export default function TeacherSchedulePage() {
           date.setDate(currentWeekStart.getDate() + i);
           if (date.getDay() !== dayOfWeek) continue;
 
-          const dateKey = date.toISOString().split('T')[0];
+          const dateKey = localDateKey(date);
           if (!scheduleMap[dateKey]) scheduleMap[dateKey] = [];
           const existingTimes = new Set(scheduleMap[dateKey].map(s => s.time));
 
           slotTimes.forEach((slotTime) => {
             const disableKey = `${dayOfWeek}:${slotTime}`;
-            if (disabledSlots?.has(disableKey)) return; // skip disabled overrides
-            if (existingTimes.has(slotTime)) return;     // skip if session already there
+            const isDisabled = disabledSlots?.has(disableKey);
+            if (existingTimes.has(slotTime)) return; // skip if session already there
             scheduleMap[dateKey].push({
               id: `avail-${avail.id}-${dateKey}-${slotTime}`,
               time: slotTime,
               duration: 25,
-              status: 'available',
+              status: isDisabled ? 'disabled' : 'available',
               student: null,
               topic: null,
             });
@@ -183,7 +226,12 @@ export default function TeacherSchedulePage() {
 
   const weekDays = getWeekDays(currentWeekStart);
 
-  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+  const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
 
   // Day abbreviations from translations (index 0=Sun…6=Sat)
   const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
@@ -224,6 +272,8 @@ export default function TeacherSchedulePage() {
         return 'bg-amber-500/20 border-amber-500/50 text-amber-400';
       case 'available':
         return 'bg-white/5 border-white/20 text-slate-400 border-dashed';
+      case 'disabled':
+        return 'bg-red-500/5 border-red-500/20 text-red-400/50 border-dashed';
       default:
         return 'bg-white/5 border-white/10';
     }
@@ -266,20 +316,6 @@ export default function TeacherSchedulePage() {
           <div>
             <h1 className="text-2xl font-bold text-white mb-1">{t('title')}</h1>
             <p className="text-slate-400">{t('subtitle')}</p>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="border-white/20 text-white"
-              onClick={() => setShowAvailabilityDialog(true)}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              {t('settingsBtn')}
-            </Button>
-            <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90" onClick={() => setShowAvailabilityDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              {t('addSlotBtn')}
-            </Button>
           </div>
         </motion.div>
 
@@ -337,13 +373,13 @@ export default function TeacherSchedulePage() {
                     {weekDays.map((day) => (
                       <th
                         key={day.toISOString()}
-                        className={`px-2 py-2 text-center font-medium ${isToday(day) ? 'bg-[#3B82F6]/10' : ''}`}
+                        className={`w-[12.5%] px-2 py-2 text-center font-medium ${isToday(day) ? 'bg-[#3B82F6]/10' : ''}`}
                       >
                         <span className={isToday(day) ? 'text-[#3B82F6]' : 'text-slate-400'}>
                           {formatDisplayDate(day)}
                         </span>
                         {isToday(day) && (
-                          <Badge className="ml-2 bg-[#3B82F6] text-white border-0 text-xs">
+                          <Badge className="block mx-auto mt-0.5 w-fit bg-[#3B82F6] text-white border-0 text-xs">
                             {t('today')}
                           </Badge>
                         )}
@@ -380,7 +416,7 @@ export default function TeacherSchedulePage() {
                               </button>
                             ) : (
                               <button
-                                onClick={() => setSelectedSlot({ id: `new-${day.toISOString()}-${time}`, time, duration: 25, status: 'available', student: null, topic: null })}
+                                onClick={() => setSelectedSlot({ id: `new-${formatDate(day)}-${time}`, time, duration: 25, status: 'empty', student: null, topic: null })}
                                 className="w-full px-1.5 py-0.5 rounded border border-white/10 text-white/20 hover:border-white/30 hover:text-white/50 transition-all"
                               >
                                 <div className="flex items-center justify-center h-5">
@@ -474,12 +510,39 @@ export default function TeacherSchedulePage() {
                 ) : (
                   <div className="text-center py-6">
                     <Clock className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-                    <p className="text-white font-medium mb-1">{t('slotDetail.emptySlot')}</p>
-                    <p className="text-sm text-slate-400 mb-4">{t('slotDetail.emptySlotDesc')}</p>
-                    <Button variant="outline" className="border-red-500/50 text-red-400">
-                      <X className="w-4 h-4 mr-2" />
-                      {t('slotDetail.deleteSlot')}
-                    </Button>
+                    {selectedSlot.status === 'available' ? (
+                      <>
+                        <p className="text-white font-medium mb-1">Available Slot</p>
+                        <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · {selectedSlot.duration} min · Students can book</p>
+                        <Button
+                          variant="outline"
+                          className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                          disabled={togglingSlot}
+                          onClick={() => toggleSlot(selectedSlot, false)}
+                        >
+                          {togglingSlot ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <X className="w-4 h-4 mr-2" />}
+                          Disable Slot
+                        </Button>
+                      </>
+                    ) : selectedSlot.status === 'disabled' ? (
+                      <>
+                        <p className="text-white font-medium mb-1">Disabled Slot</p>
+                        <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · Hidden from students</p>
+                        <Button
+                          className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
+                          disabled={togglingSlot}
+                          onClick={() => toggleSlot(selectedSlot, true)}
+                        >
+                          {togglingSlot ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                          Enable Slot
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-white font-medium mb-1">Empty Slot</p>
+                        <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · Outside your availability hours</p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
