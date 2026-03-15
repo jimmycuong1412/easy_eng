@@ -28,6 +28,13 @@ export interface CookieStats {
   averageRedemption: number;
 }
 
+export interface GemStats {
+  totalCirculating: number;
+  issuedThisMonth: number;
+  redeemedThisMonth: number;
+  averageRedemption: number;
+}
+
 export interface BookingStats {
   totalBookings: number;
   completedThisMonth: number;
@@ -195,6 +202,34 @@ export async function getCookieStats(): Promise<CookieStats> {
   } catch (error) {
     console.error('Error fetching cookie stats:', error);
     throw error;
+  }
+}
+
+/**
+ * Get gem circulation statistics from Supabase
+ */
+export async function getGemStats(): Promise<GemStats> {
+  try {
+    const supabase = await createClient();
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const [circulating, issued, redeemed] = await Promise.all([
+      (supabase as any).from('gem_balances').select('balance', { count: 'exact' }),
+      (supabase as any).from('gem_transactions').select('amount', { count: 'exact' }).eq('type', 'earned').gte('created_at', startOfMonth),
+      (supabase as any).from('gem_transactions').select('amount', { count: 'exact' }).eq('type', 'spent').gte('created_at', startOfMonth),
+    ]);
+
+    const totalCirculating = (circulating.data ?? []).reduce((sum: number, row: any) => sum + (row.balance ?? 0), 0);
+    const issuedThisMonth = (issued.data ?? []).reduce((sum: number, row: any) => sum + (row.amount ?? 0), 0);
+    const redeemedThisMonth = (redeemed.data ?? []).reduce((sum: number, row: any) => sum + (row.amount ?? 0), 0);
+    const averageRedemption = redeemedThisMonth > 0 && (redeemed.count ?? 0) > 0
+      ? Math.round(redeemedThisMonth / (redeemed.count ?? 1))
+      : 0;
+
+    return { totalCirculating, issuedThisMonth, redeemedThisMonth, averageRedemption };
+  } catch {
+    return { totalCirculating: 0, issuedThisMonth: 0, redeemedThisMonth: 0, averageRedemption: 0 };
   }
 }
 
