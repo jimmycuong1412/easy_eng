@@ -5,7 +5,7 @@
  * Task: T112 [P] Create CometChat configuration
  */
 
-import { CometChat } from '@cometchat-pro/chat';
+import { CometChat } from '@cometchat/chat-sdk-javascript';
 import type { CometChatConfig, CometChatUser, CometChatError } from '@/types/cometchat.types';
 import { env } from '@/lib/env';
 
@@ -140,7 +140,7 @@ export async function loginToCometChat(uid: string): Promise<CometChatUser | nul
       uid: user.getUid(),
       name: user.getName(),
       avatar: user.getAvatar(),
-      metadata: user.getMetadata(),
+      metadata: user.getMetadata() as Record<string, unknown>,
     };
   } catch (error) {
     console.error('CometChat login failed:', error);
@@ -174,7 +174,7 @@ export async function getLoggedInUser(): Promise<CometChatUser | null> {
       uid: user.getUid(),
       name: user.getName(),
       avatar: user.getAvatar(),
-      metadata: user.getMetadata(),
+      metadata: user.getMetadata() as Record<string, unknown>,
     };
   } catch (error) {
     console.error('Failed to get logged in user:', error);
@@ -230,7 +230,7 @@ export async function joinClassGroup(
   password?: string
 ): Promise<boolean> {
   try {
-    await CometChat.joinGroup(groupId, groupType, password);
+    await CometChat.joinGroup(groupId, groupType as CometChat.GroupType, password);
     // Joined CometChat group
     return true;
   } catch (error) {

@@ -66,13 +66,13 @@ export const useVideoCallStore = create<VideoCallState>()(
           );
 
           const callHistory: CallHistory = {
-            id: state.activeCall.id,
+            id: state.activeCall.id ?? state.activeCall.sessionId ?? '',
             participantId: '', // Should be set from context
             participantName: '', // Should be set from context
             startTime: state.callStartTime,
             endTime: new Date(),
             duration,
-            type: state.activeCall.type,
+            type: (state.activeCall.type as 'audio' | 'video') ?? 'video',
           };
 
           set({

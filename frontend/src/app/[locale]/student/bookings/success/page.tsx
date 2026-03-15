@@ -94,7 +94,7 @@ export default function PaymentSuccessPage() {
 
   const loadPaymentDetails = async () => {
     try {
-      const { data: booking, error: bookingError } = await supabase
+      const { data: booking, error: bookingError } = await (supabase as any)
         .from('bookings')
         .select(
           `
@@ -117,7 +117,7 @@ export default function PaymentSuccessPage() {
 
       if (bookingError) throw bookingError;
 
-      const { data: payment, error: paymentError } = await supabase
+      const { data: payment, error: paymentError } = await (supabase as any)
         .from('payments')
         .select('payment_provider_id, payment_method, updated_at')
         .eq('booking_id', bookingId)

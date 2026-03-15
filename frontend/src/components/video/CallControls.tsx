@@ -3,14 +3,20 @@
 import React from 'react';
 
 interface CallControlsProps {
-  micEnabled: boolean;
-  cameraEnabled: boolean;
+  micEnabled?: boolean;
+  cameraEnabled?: boolean;
+  isAudioMuted?: boolean;
+  isVideoOff?: boolean;
   isScreenSharing: boolean;
-  onToggleMic: () => void | Promise<void>;
-  onToggleCamera: () => void | Promise<void>;
-  onToggleScreenShare?: () => void | Promise<void>;
-  onEndCall: () => void | Promise<void>;
+  onToggleMic?: () => Promise<void>;
+  onToggleCamera?: () => Promise<void>;
+  onToggleAudio?: () => Promise<void>;
+  onToggleVideo?: () => Promise<void>;
+  onToggleScreenShare?: () => Promise<void>;
+  onEndCall?: () => Promise<void>;
+  onLeaveCall?: () => Promise<void>;
   isConnecting?: boolean;
+  userRole?: string;
 }
 
 export function CallControls({
@@ -23,7 +29,8 @@ export function CallControls({
   onEndCall,
   isConnecting = false,
 }: CallControlsProps) {
-  const handleButtonClick = async (action: () => void | Promise<void>) => {
+  const handleButtonClick = async (action: (() => Promise<void>) | undefined) => {
+    if (!action) return;
     try {
       await action();
     } catch (error) {
@@ -31,7 +38,7 @@ export function CallControls({
     }
   };
 
-  const controlButtonClass = (isActive: boolean) =>
+  const controlButtonClass = (isActive: boolean | undefined) =>
     `flex flex-col items-center gap-1 px-4 py-3 rounded-lg transition-all ${
       isActive
         ? 'bg-gray-700 text-white hover:bg-gray-600'
@@ -99,7 +106,7 @@ export function CallControls({
 
       {/* Screen Share Toggle */}
       <button
-        onClick={() => onToggleScreenShare && handleButtonClick(onToggleScreenShare)}
+        onClick={() => handleButtonClick(onToggleScreenShare)}
         disabled={isConnecting}
         className={controlButtonClass(isScreenSharing)}
         title={isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
@@ -131,3 +138,5 @@ export function CallControls({
     </div>
   );
 }
+
+export default CallControls;

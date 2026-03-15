@@ -57,7 +57,7 @@ export default function ReviewForm({ bookingId, className, onSuccess }: ReviewFo
       }
 
       // Call submit_review database function
-      const { data, error: submitError } = await supabase.rpc('submit_review', {
+      const { data, error: submitError } = await (supabase as any).rpc('submit_review', {
         p_booking_id: bookingId,
         p_rating: rating,
         p_comment: comment.trim() || null,

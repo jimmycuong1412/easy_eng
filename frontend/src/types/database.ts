@@ -1234,6 +1234,34 @@ export type Database = {
         };
         Relationships: [];
       };
+
+      // =========================================================================
+      // Classes & Sessions (stubs — full schema in migrations)
+      // =========================================================================
+      classes: {
+        Row: { id: string; teacher_id: string; title: string; status: string; scheduled_at: string | null; duration_minutes: number; metadata: Json | null; created_at: string; updated_at: string };
+        Insert: { id?: string; teacher_id: string; title: string; status?: string; scheduled_at?: string | null; duration_minutes?: number; metadata?: Json | null; created_at?: string; updated_at?: string };
+        Update: { teacher_id?: string; title?: string; status?: string; scheduled_at?: string | null; duration_minutes?: number; metadata?: Json | null; updated_at?: string };
+        Relationships: [];
+      };
+      class_sessions: {
+        Row: { id: string; class_id: string; teacher_id: string; group_id: string | null; status: string; started_at: string | null; ended_at: string | null; metadata: Json | null; created_at: string };
+        Insert: { id?: string; class_id: string; teacher_id: string; group_id?: string | null; status?: string; started_at?: string | null; ended_at?: string | null; metadata?: Json | null; created_at?: string };
+        Update: { status?: string; started_at?: string | null; ended_at?: string | null; metadata?: Json | null };
+        Relationships: [];
+      };
+      session_participants: {
+        Row: { id: string; session_id: string; user_id: string; role: string; joined_at: string | null; left_at: string | null };
+        Insert: { id?: string; session_id: string; user_id: string; role?: string; joined_at?: string | null; left_at?: string | null };
+        Update: { role?: string; joined_at?: string | null; left_at?: string | null };
+        Relationships: [];
+      };
+      gem_transaction_audit_log: {
+        Row: { id: string; user_id: string; amount: number; action: string; description: string | null; created_at: string; metadata: Json | null };
+        Insert: { id?: string; user_id: string; amount: number; action: string; description?: string | null; created_at?: string; metadata?: Json | null };
+        Update: { description?: string | null; metadata?: Json | null };
+        Relationships: [];
+      };
     };
     Views: {
       user_gems_balances: {

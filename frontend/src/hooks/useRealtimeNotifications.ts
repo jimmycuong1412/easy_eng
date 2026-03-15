@@ -76,7 +76,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
       }
 
       // Fetch notifications
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await (supabase as any)
         .from('notifications')
         .select('*')
         .eq('user_id', targetUserId)
@@ -88,7 +88,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
       setNotifications(data || []);
 
       // Calculate unread count
-      const unread = data?.filter(n => !n.read && (!n.expires_at || new Date(n.expires_at) > new Date())).length || 0;
+      const unread = data?.filter((n: any) => !n.read && (!n.expires_at || new Date(n.expires_at) > new Date())).length || 0;
       setUnreadCount(unread);
 
       setLoading(false);
@@ -214,7 +214,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
   const markAsRead = useCallback(
     async (notificationId: string) => {
       try {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from('notifications')
           .update({
             read: true,
@@ -250,7 +250,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error: updateError } = await supabase.rpc('mark_all_notifications_read', {
+      const { error: updateError } = await (supabase as any).rpc('mark_all_notifications_read', {
         p_user_id: user.id,
       });
 
@@ -278,7 +278,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
   const deleteNotification = useCallback(
     async (notificationId: string) => {
       try {
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await (supabase as any)
           .from('notifications')
           .delete()
           .eq('id', notificationId);

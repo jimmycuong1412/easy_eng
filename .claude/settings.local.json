@@ -30,7 +30,8 @@
       "mcp__playwright__browser_press_key",
       "mcp__playwright__browser_resize",
       "mcp__playwright__browser_handle_dialog",
-      "mcp__playwright__browser_close"
+      "mcp__playwright__browser_close",
+      "Bash(GIT_EDITOR=true git rebase --continue)"
     ]
   }
 }

@@ -1,613 +1,326 @@
 'use client';
 
-import * as React from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import {
-  Video,
-  Mic,
-  Phone,
-  MessageSquare,
-  Maximize2,
-  Monitor,
-  Clock,
-  Star,
-  Send,
-  X,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
+/**
+ * Live Class Page
+ *
+ * Main page for live video class sessions
+ * Task: T124 Create live class page
+ */
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import ClassRoom from '@/components/video/ClassRoom';
+import WaitingRoom from '@/components/video/WaitingRoom';
+import { Loader2, AlertCircle } from 'lucide-react';
 
-import { useCometChat } from '@/hooks/useCometChat';
-import { useCometChatMessages } from '@/hooks/useCometChatMessages';
-import { CometChatVideoCall } from '@/components/video/CometChatVideoCall';
-import { CallErrorBoundary } from '@/components/video/CallErrorBoundary';
-import { useVideoCallStore } from '@/stores/videoCallStore';
-import { getSupabaseClient } from '@/lib/supabase/client';
-
-interface ClassSessionData {
+interface ClassSession {
   id: string;
   class_id: string;
-  teacher_id: string;
   cometchat_group_id: string;
-  cometchat_session_id: string | null;
-  status: string;
+  status: 'scheduled' | 'waiting' | 'live' | 'ended' | 'cancelled' | 'no_show';
   scheduled_start_time: string;
-  duration_minutes: number | null;
-  max_participants: number;
-  current_participants: number;
-  recording_url: string | null;
-  classes: {
-    id: string;
-    title: string;
-    description: string | null;
-    duration_minutes: number;
-    level: string;
-    price: number;
-    profiles: {
-      full_name: string | null;
-      avatar_url: string | null;
-      average_rating?: number;
-    } | null;
-  } | null;
+  actual_start_time: string | null;
+  teacher_id: string;
+}
+
+interface ClassDetails {
+  id: string;
+  title: string;
+  description: string;
+  teacher_id: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  price: number;
 }
 
 export default function LiveClassPage() {
-  const router = useRouter();
   const params = useParams();
+  const router = useRouter();
+  const supabase = createClient();
+
   const classId = params.classId as string;
 
-  const [classSession, setClassSession] = React.useState<ClassSessionData | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  const [currentUser, setCurrentUser] = React.useState<{ id: string; full_name: string; avatar_url: string | null } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<ClassSession | null>(null);
+  const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
+  const [userRole, setUserRole] = useState<'teacher' | 'student'>('student');
+  const [hasBooking, setHasBooking] = useState(false);
+  const [isInWaitingRoom, setIsInWaitingRoom] = useState(true);
 
-  const [isChatOpen, setIsChatOpen] = React.useState(true);
-  const [showEndDialog, setShowEndDialog] = React.useState(false);
-  const [newMessage, setNewMessage] = React.useState('');
-  const [timeRemaining, setTimeRemaining] = React.useState(0);
-  const [isFullscreen, _setIsFullscreen] = React.useState(false);
-  const [useCometChatIntegration, _setUseCometChatIntegration] = React.useState(true);
+  // ============================================================================
+  // Data Loading
+  // ============================================================================
 
-  // CometChat integration
-  const { isInitialized, isLoggedIn, currentUser: cometChatUser, error: cometChatError, login: cometChatLogin } = useCometChat();
-  const teacherName = classSession?.classes?.profiles?.full_name || '';
-  const teacherId = classSession?.teacher_id || '';
-
-  // Determine if the current user is the teacher or the student.
-  // Teachers wait for the student's incoming call — they don't initiate.
-  // Students initiate the call to the teacher.
-  const isTeacher = !!(currentUser && teacherId && currentUser.id === teacherId);
-
-  const { messages, sendMessage, isSending: _isSending } = useCometChatMessages(teacherId);
-  const { setActiveCall: _setActiveCall } = useVideoCallStore();
-
-  // Auto-login to CometChat once initialized and user data is available.
-  // Also pre-register the teacher so calls can be directed to them.
-  const [teacherPreRegistered, setTeacherPreRegistered] = React.useState(false);
-  React.useEffect(() => {
-    if (!isInitialized || !currentUser) return;
-
-    if (!isLoggedIn) {
-      // Login — pass teacherId if available so backend registers teacher at same time
-      cometChatLogin(currentUser.id, undefined, teacherId || undefined)
-        .then(() => {
-          if (teacherId) setTeacherPreRegistered(true);
-        })
-        .catch((err) => {
-          console.error('[LiveClass] CometChat login failed:', err);
-        });
-    } else if (isLoggedIn && teacherId && !teacherPreRegistered) {
-      // Already logged in but teacher not yet pre-registered — register now
-      fetch('/api/cometchat/auth-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUserId: teacherId }),
-      })
-        .then(() => setTeacherPreRegistered(true))
-        .catch((err) => console.error('[LiveClass] Teacher pre-registration failed:', err));
-    }
-  }, [isInitialized, isLoggedIn, currentUser, teacherId, teacherPreRegistered, cometChatLogin]);
-
-  // Fallback mock messages
-  const [fallbackMessages, setFallbackMessages] = React.useState<Array<{
-    id: string;
-    sender: string;
-    name: string;
-    message: string;
-    time: string;
-  }>>([]);
-  const displayMessages = useCometChatIntegration && isLoggedIn ? messages : fallbackMessages;
-
-  // Fetch class session and user data from Supabase
-  React.useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        setError(null);
-        const supabase = getSupabaseClient();
-
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, full_name, avatar_url')
-            .eq('id', user.id)
-            .single();
-          if (profile) {
-            setCurrentUser(profile);
-          }
-        }
-
-        // Fetch the active class session for this class
-        const { data: sessionData, error: sessionError } = await supabase
-          .from('class_sessions')
-          .select('*, classes(id, title, description, duration_minutes, level, price, profiles!classes_teacher_id_profiles_fkey(full_name, avatar_url))')
-          .eq('class_id', classId)
-          .in('status', ['live', 'waiting', 'scheduled'])
-          .order('scheduled_start_time', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (sessionError) {
-          // If no active session found, try to get class info directly
-          const { data: classData, error: classError } = await supabase
-            .from('classes')
-            .select('*, profiles!classes_teacher_id_profiles_fkey(full_name, avatar_url)')
-            .eq('id', classId)
-            .single();
-
-          if (classError) throw classError;
-
-          // Create a synthetic session object from class data
-          setClassSession({
-            id: '',
-            class_id: classId,
-            teacher_id: classData.teacher_id,
-            cometchat_group_id: classId,
-            cometchat_session_id: null,
-            status: 'live',
-            scheduled_start_time: classData.start_time,
-            duration_minutes: classData.duration_minutes,
-            max_participants: classData.max_students,
-            current_participants: classData.current_enrollments,
-            recording_url: null,
-            classes: {
-              id: classData.id,
-              title: classData.title,
-              description: classData.description,
-              duration_minutes: classData.duration_minutes,
-              level: classData.level,
-              price: classData.price,
-              profiles: classData.profiles,
-            },
-          });
-        } else {
-          setClassSession(sessionData as ClassSessionData);
-        }
-      } catch (err) {
-        console.error('Failed to fetch class session:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load class session');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (classId) {
-      fetchData();
-    }
+  useEffect(() => {
+    loadClassData();
   }, [classId]);
 
-  // Set initial timer once session data is available
-  React.useEffect(() => {
-    if (classSession) {
-      const duration = classSession.duration_minutes || classSession.classes?.duration_minutes || 25;
-      setTimeRemaining(duration * 60);
-    }
-  }, [classSession]);
+  const loadClassData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  // Timer countdown
-  React.useEffect(() => {
-    if (timeRemaining <= 0) return;
+      // Get current user
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeRemaining]);
-
-  const formatTimeDisplay = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
-
-    if (useCometChatIntegration && isLoggedIn) {
-      try {
-        await sendMessage(newMessage);
-        setNewMessage('');
-      } catch (err) {
-        console.error('Failed to send message:', err);
+      if (userError || !user) {
+        throw new Error('You must be logged in to access this class');
       }
-    } else {
-      const message = {
-        id: String(fallbackMessages.length + 1),
-        sender: 'student',
-        name: currentUser?.full_name || 'Student',
-        message: newMessage,
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      };
 
-      setFallbackMessages([...fallbackMessages, message]);
-      setNewMessage('');
+      // Get user profile and role
+      const { data: profile, error: profileError } = await (supabase as any)
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) throw profileError ?? new Error('Profile not found');
+      setUserRole((profile as any).role as 'teacher' | 'student');
+
+      // Get class details
+      const { data: classData, error: classError } = await (supabase as any)
+        .from('classes')
+        .select('*')
+        .eq('id', classId)
+        .single();
+
+      if (classError) throw classError;
+      setClassDetails(classData);
+
+      // Check if student has a valid booking
+      if ((profile as any).role === 'student') {
+        const { data: booking, error: bookingError } = await (supabase as any)
+          .from('bookings')
+          .select('*')
+          .eq('student_id', user.id)
+          .eq('class_id', classId)
+          .in('status', ['confirmed', 'completed'])
+          .single();
+
+        if (bookingError || !booking) {
+          throw new Error('You must have a confirmed booking to join this class');
+        }
+        setHasBooking(true);
+      }
+
+      // Get or create session
+      let { data: existingSession, error: sessionError } = await (supabase as any)
+        .from('class_sessions')
+        .select('*')
+        .eq('class_id', classId)
+        .single();
+
+      if (sessionError && sessionError.code !== 'PGRST116') {
+        throw sessionError;
+      }
+
+      // If no session exists and user is teacher, create one
+      if (!existingSession && (profile as any).role === 'teacher' && classData.teacher_id === user.id) {
+        const groupId = `class-${classId}-${Date.now()}`;
+
+        const { data: newSession, error: createError } = await (supabase as any)
+          .from('class_sessions')
+          .insert({
+            class_id: classId,
+            teacher_id: user.id,
+            cometchat_group_id: groupId,
+            status: 'scheduled',
+            scheduled_start_time: classData.scheduled_at,
+            max_participants: classData.capacity,
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        existingSession = newSession;
+      }
+
+      if (!existingSession) {
+        throw new Error('Class session not found');
+      }
+
+      setSession(existingSession);
+      setLoading(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load class data';
+      setError(errorMessage);
+      setLoading(false);
     }
   };
 
-  const handleEndClass = () => {
-    router.push(`/class/${classId}/feedback`);
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
+
+  const handleJoinReady = async () => {
+    if (!session) return;
+
+    try {
+      // Update session status to live if teacher is starting
+      if (userRole === 'teacher') {
+        await (supabase as any)
+          .from('class_sessions')
+          .update({
+            status: 'live',
+            actual_start_time: new Date().toISOString(),
+          })
+          .eq('id', session.id);
+
+        setSession({ ...session, status: 'live', actual_start_time: new Date().toISOString() });
+      }
+
+      // Record participant joining
+      await (supabase as any).from('session_participants').upsert(
+        {
+          session_id: session.id,
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          role: userRole,
+          joined_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'session_id,user_id',
+        }
+      );
+
+      setIsInWaitingRoom(false);
+    } catch (err) {
+      console.error('Failed to join class:', err);
+      setError('Failed to join class. Please try again.');
+    }
   };
 
-  // Loading state
+  const handleLeave = async () => {
+    if (!session) return;
+
+    try {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+
+      // Update participant left time
+      await (supabase as any)
+        .from('session_participants')
+        .update({
+          left_at: new Date().toISOString(),
+        })
+        .eq('session_id', session.id)
+        .eq('user_id', userId);
+
+      // If teacher is leaving, end the session
+      if (userRole === 'teacher') {
+        await (supabase as any)
+          .from('class_sessions')
+          .update({
+            status: 'ended',
+            end_time: new Date().toISOString(),
+          })
+          .eq('id', session.id);
+      }
+
+      // Redirect to appropriate page
+      if (userRole === 'teacher') {
+        router.push('/teacher/classes');
+      } else {
+        router.push('/student/classes');
+      }
+    } catch (err) {
+      console.error('Failed to leave class:', err);
+      // Force redirect anyway
+      router.push(userRole === 'teacher' ? '/teacher/classes' : '/student/classes');
+    }
+  };
+
+  const handleError = (error: string | Error) => {
+    console.error('ClassRoom error:', error);
+    setError(typeof error === 'string' ? error : error.message);
+  };
+
+  // ============================================================================
+  // Render States
+  // ============================================================================
+
   if (loading) {
     return (
-      <div className="h-screen bg-[#0A1628] flex items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-gray-900">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[#3B82F6] animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Connecting to class...</p>
+          <Loader2 className="mx-auto h-12 w-12 animate-spin text-blue-500" />
+          <p className="mt-4 text-lg text-gray-300">Loading class...</p>
         </div>
       </div>
     );
   }
 
-  // Error state
-  if (error || !classSession) {
+  if (error) {
     return (
-      <div className="h-screen bg-[#0A1628] flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">Unable to join class</h2>
-          <p className="text-slate-400 mb-4">{error || 'Class session not found'}</p>
-          <Button
-            onClick={() => router.back()}
-            className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
+      <div className="flex h-screen items-center justify-center bg-gray-900">
+        <div className="max-w-md text-center">
+          <AlertCircle className="mx-auto h-16 w-16 text-red-500" />
+          <h2 className="mt-4 text-xl font-semibold text-white">Unable to Join Class</h2>
+          <p className="mt-2 text-gray-400">{error}</p>
+          <button
+            onClick={() => router.push(userRole === 'teacher' ? '/teacher/classes' : '/student/classes')}
+            className="mt-6 rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
           >
-            Go back
-          </Button>
+            Back to Classes
+          </button>
         </div>
       </div>
     );
   }
 
-  const classTopic = classSession.classes?.title || 'Class';
-  const teacherAvatarUrl = classSession.classes?.profiles?.avatar_url || '';
-  const teacherRating = classSession.classes?.profiles?.average_rating || 0;
-  const studentName = currentUser?.full_name || 'Student';
-  const studentAvatar = currentUser?.avatar_url || '';
-  const xpReward = 100;
-  const gemsReward = 5;
-
-  return (
-    <div className="h-screen bg-[#0A1628] flex flex-col">
-      {/* Header */}
-      <header className="bg-[#1E3A5F]/80 backdrop-blur-sm border-b border-white/10 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Badge className="bg-red-500 text-white border-0 animate-pulse">
-              LIVE
-            </Badge>
-            <div>
-              <h1 className="font-semibold text-white">{classTopic}</h1>
-              <p className="text-sm text-slate-400">
-                with {teacherName}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-                timeRemaining < 300 ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white'
-              }`}
-            >
-              <Clock className="w-4 h-4" />
-              <span className="font-mono font-bold">{formatTimeDisplay(timeRemaining)}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-slate-400 hover:text-white"
-              onClick={() => setIsChatOpen(!isChatOpen)}
-            >
-              <MessageSquare className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-slate-400 hover:text-white"
-              onClick={() => _setIsFullscreen(!isFullscreen)}
-            >
-              <Maximize2 className="w-5 h-5" />
-            </Button>
-          </div>
+  if (!session || !classDetails) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-900">
+        <div className="text-center text-gray-400">
+          <p>Session not found</p>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Video Area */}
-        <div className="flex-1 p-4 flex flex-col gap-4">
-          {/* Show error if CometChat failed to initialize */}
-          {useCometChatIntegration && cometChatError && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-amber-300 text-sm">
-              <p>Real-time features unavailable. Using fallback mode.</p>
-            </div>
-          )}
-
-          {/* CometChat Video Call Component */}
-          {useCometChatIntegration && isInitialized && cometChatUser ? (
-            <CallErrorBoundary>
-              <div className="flex-1 rounded-2xl overflow-hidden">
-                {isTeacher ? (
-                  // Teacher waits for student to call — renders in receive/waiting mode
-                  <CometChatVideoCall
-                    remoteUserId=""
-                    remoteUserName="Student"
-                    remoteUserAvatar=""
-                    localUserName={teacherName || studentName}
-                    localUserAvatar={teacherAvatarUrl || studentAvatar}
-                    isIncoming={true}
-                    onCallEnded={() => setShowEndDialog(true)}
-                  />
-                ) : (
-                  // Student initiates the call to the teacher
-                  <CometChatVideoCall
-                    remoteUserId={teacherId}
-                    remoteUserName={teacherName}
-                    remoteUserAvatar={teacherAvatarUrl}
-                    localUserName={studentName}
-                    localUserAvatar={studentAvatar}
-                    isIncoming={false}
-                    onCallEnded={() => setShowEndDialog(true)}
-                  />
-                )}
-              </div>
-            </CallErrorBoundary>
-          ) : (
-            <>
-              {/* Fallback Video Display */}
-              <div className="flex-1 relative bg-slate-800 rounded-2xl overflow-hidden">
-                {/* Placeholder for video */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-[#3B82F6]/30">
-                      <AvatarImage src={teacherAvatarUrl} />
-                      <AvatarFallback className="bg-[#3B82F6]/20 text-[#3B82F6] text-4xl">
-                        {teacherName.charAt(0) || 'T'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <p className="text-white font-semibold text-lg">{teacherName}</p>
-                    <div className="flex items-center justify-center gap-1 text-amber-400 mt-1">
-                      <Star className="w-4 h-4 fill-amber-400" />
-                      <span className="text-sm">{teacherRating > 0 ? teacherRating.toFixed(1) : 'New'}</span>
-                    </div>
-                    {useCometChatIntegration && !isInitialized && (
-                      <p className="text-slate-400 text-sm mt-2">Initializing video...</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Teacher name overlay */}
-                <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1">
-                  <p className="text-white text-sm font-medium">{teacherName}</p>
-                </div>
-              </div>
-
-              {/* Student Video (Picture-in-Picture) */}
-              <div className="absolute bottom-24 right-8 w-48 h-36 bg-slate-900 rounded-xl overflow-hidden border-2 border-white/20 shadow-xl">
-                <div className="w-full h-full flex items-center justify-center bg-slate-800">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={studentAvatar} />
-                    <AvatarFallback className="bg-emerald-500/20 text-emerald-400 text-xl">
-                      {studentName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-                <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm rounded px-2 py-0.5">
-                  <p className="text-white text-xs">You</p>
-                </div>
-              </div>
-
-              {/* Fallback Controls - Basic Controls */}
-              <div className="flex items-center justify-center gap-4 py-4">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="w-14 h-14 rounded-full bg-white/10 border-white/20 text-white hover:bg-white/20"
-                >
-                  <Mic className="w-6 h-6" />
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="w-14 h-14 rounded-full bg-white/10 border-white/20 text-white hover:bg-white/20"
-                >
-                  <Video className="w-6 h-6" />
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="w-14 h-14 rounded-full bg-white/10 border-white/20 text-white hover:bg-white/20"
-                >
-                  <Monitor className="w-6 h-6" />
-                </Button>
-
-                <Button
-                  size="icon"
-                  className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-500/90 text-white"
-                  onClick={() => setShowEndDialog(true)}
-                >
-                  <Phone className="w-6 h-6 rotate-[135deg]" />
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Chat Panel */}
-        {isChatOpen && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 320, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            className="w-80 bg-[#1E3A5F]/50 border-l border-white/10 flex flex-col"
-          >
-            {/* Chat Header */}
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
-              <h3 className="font-semibold text-white">Messages</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-slate-400 hover:text-white"
-                onClick={() => setIsChatOpen(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {displayMessages && displayMessages.length > 0 ? (
-                  displayMessages.map((msg: any) => {
-                    // Handle both CometChat and fallback message formats
-                    const isCometChatMsg = 'sender' in msg && typeof msg.sender === 'object';
-                    const isOwn = isCometChatMsg ? msg.isOwn : msg.sender === 'student';
-                    const senderName = isCometChatMsg ? msg.sender.name : msg.name;
-                    const messageText = isCometChatMsg ? msg.text : msg.message;
-                    const messageTime = isCometChatMsg
-                      ? msg.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-                      : msg.time;
-
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
-                      >
-                        <Avatar className="h-8 w-8 flex-shrink-0">
-                          <AvatarFallback
-                            className={`text-xs ${
-                              isOwn
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : 'bg-[#3B82F6]/20 text-[#3B82F6]'
-                            }`}
-                          >
-                            {senderName.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div
-                          className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
-                        >
-                          <div
-                            className={`px-3 py-2 rounded-lg max-w-[200px] ${
-                              isOwn
-                                ? 'bg-[#3B82F6] text-white'
-                                : 'bg-white/10 text-white'
-                            }`}
-                          >
-                            <p className="text-sm">{messageText}</p>
-                          </div>
-                          <span className="text-xs text-slate-500 mt-1">{messageTime}</span>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center text-slate-500 py-8">
-                    <p className="text-sm">No messages yet. Start the conversation!</p>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-
-            {/* Message Input */}
-            <div className="p-4 border-t border-white/10">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Type a message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  className="bg-white/5 border-white/20 text-white placeholder:text-slate-500"
-                />
-                <Button
-                  size="icon"
-                  className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
-                  onClick={handleSendMessage}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
       </div>
+    );
+  }
 
-      {/* End Class Dialog */}
-      <AlertDialog open={showEndDialog} onOpenChange={setShowEndDialog}>
-        <AlertDialogContent className="bg-[#1E3A5F] border-white/10">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">End class?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-400">
-              Are you sure you want to end the class? You will be redirected to the feedback page.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="bg-white/5 rounded-lg p-4 my-4">
-            <p className="text-sm text-slate-300">Rewards earned:</p>
-            <div className="flex items-center gap-4 mt-2">
-              <Badge className="bg-amber-500/20 text-amber-400 border-0">
-                +{xpReward} XP
-              </Badge>
-              <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
-                +{gemsReward} Gems
-              </Badge>
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/20 text-white hover:bg-white/10">
-              Continue learning
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
-              onClick={handleEndClass}
-            >
-              End class
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+  // Show waiting room before class starts
+  if (isInWaitingRoom || session.status === 'scheduled' || session.status === 'waiting') {
+    return (
+      <WaitingRoom
+        sessionId={session.id}
+        classId={classId}
+        scheduledStartTime={new Date(session.scheduled_start_time)}
+        onJoinReady={handleJoinReady}
+        userRole={userRole}
+      />
+    );
+  }
+
+  // Show classroom when live
+  if (session.status === 'live') {
+    return (
+      <ClassRoom
+        sessionId={session.id}
+        classId={classId}
+        groupId={session.cometchat_group_id}
+        userRole={userRole}
+        onLeave={handleLeave}
+        onError={handleError}
+      />
+    );
+  }
+
+  // Class has ended
+  return (
+    <div className="flex h-screen items-center justify-center bg-gray-900">
+      <div className="max-w-md text-center">
+        <h2 className="text-2xl font-semibold text-white">Class Has Ended</h2>
+        <p className="mt-2 text-gray-400">Thank you for attending!</p>
+        <button
+          onClick={() => router.push(userRole === 'teacher' ? '/teacher/classes' : '/student/classes')}
+          className="mt-6 rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
+        >
+          Back to Classes
+        </button>
+      </div>
     </div>
   );
 }

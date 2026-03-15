@@ -14,8 +14,8 @@
  * Constitution Principle VI: Currency system integrity
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect } from 'react';
+import { createClient as createClientComponentClient } from '@/lib/supabase/client';
 import {
   LineChart,
   Line,
@@ -30,17 +30,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-interface AuditLogRow {
-  id: string;
-  user_id: string;
-  amount_attempted: number;
-  action: string;
-  error_message: string | null;
-  created_at: string;
-  metadata: Record<string, unknown> | null;
-  email?: string;
-}
-
 interface RollbackEvent {
   id: string;
   user_id: string;
@@ -50,7 +39,7 @@ interface RollbackEvent {
   reason: string;
   created_at: string;
   original_transaction_id?: string;
-  metadata?: Record<string, unknown> | null;
+  metadata?: Record<string, any>;
 }
 
 interface RollbackStats {
@@ -77,31 +66,14 @@ const COLORS = {
 };
 
 export default function RollbackMonitoringPage() {
-  const supabase = createClient();
+  const supabase = createClientComponentClient();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<RollbackStats | null>(null);
   const [recentRollbacks, setRecentRollbacks] = useState<RollbackEvent[]>([]);
   const [trends, setTrends] = useState<RollbackTrend[]>([]);
-  const [reasonBreakdown, setReasonBreakdown] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [reasonBreakdown, setReasonBreakdown] = useState<any[]>([]);
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
-  const [alertThreshold] = useState(10); // Alert if rollback rate > 10%
-
-  const loadDashboardData = useCallback(async function loadDashboardData() {
-    setLoading(true);
-    try {
-      await Promise.all([
-        loadStats(),
-        loadRecentRollbacks(),
-        loadTrends(),
-        loadReasonBreakdown(),
-      ]);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeRange]);
+  const [alertThreshold, setAlertThreshold] = useState(10); // Alert if rollback rate > 10%
 
   useEffect(() => {
     loadDashboardData();
@@ -117,8 +89,8 @@ export default function RollbackMonitoringPage() {
           table: 'gem_transaction_audit_log',
           filter: 'action=in.(booking_refund,purchase_refund)',
         },
-        _payload => {
-          // New rollback detected - refresh data
+        payload => {
+          console.log('New rollback detected:', payload);
           loadDashboardData(); // Refresh data
         }
       )
@@ -127,19 +99,34 @@ export default function RollbackMonitoringPage() {
     return () => {
       subscription.unsubscribe();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadDashboardData]);
+  }, [timeRange]);
+
+  async function loadDashboardData() {
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadStats(),
+        loadRecentRollbacks(),
+        loadTrends(),
+        loadReasonBreakdown(),
+      ]);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function loadStats() {
     const timeRangeHours = timeRange === '24h' ? 24 : timeRange === '7d' ? 168 : 720;
     const cutoffDate = new Date(Date.now() - timeRangeHours * 60 * 60 * 1000).toISOString();
 
     // Get rollback stats
-    const { data: rollbackData, error: rollbackError } = await supabase
+    const { data: rollbackData, error: rollbackError } = await (supabase as any)
       .from('gem_transaction_audit_log')
-      .select('amount_attempted, user_id, created_at')
+      .select('amount, user_id, created_at')
       .in('action', ['booking_refund', 'purchase_refund'])
-      .gte('created_at', cutoffDate) as { data: { amount_attempted: number; user_id: string; created_at: string }[] | null; error: unknown };
+      .gte('created_at', cutoffDate);
 
     if (rollbackError) {
       console.error('Error loading rollback stats:', rollbackError);
@@ -147,18 +134,18 @@ export default function RollbackMonitoringPage() {
     }
 
     // Get total transaction count for rate calculation
-    const { count: totalTransactions } = await supabase
+    const { count: totalTransactions } = await (supabase as any)
       .from('gem_transaction_audit_log')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', cutoffDate);
 
     const totalRollbacks = rollbackData?.length || 0;
-    const uniqueUsers = new Set(rollbackData?.map(r => r.user_id) || []).size;
-    const totalGemsRolledBack = rollbackData?.reduce((sum, r) => sum + Math.abs(r.amount_attempted), 0) || 0;
+    const uniqueUsers = new Set(rollbackData?.map((r: any) => r.user_id) || []).size;
+    const totalGemsRolledBack = rollbackData?.reduce((sum: number, r: any) => sum + Math.abs(r.amount), 0) || 0;
 
-    const today = new Date().toISOString().split('T')[0] ?? '';
+    const today = new Date().toISOString().split('T')[0];
     const rollbacksToday =
-      rollbackData?.filter(r => r.created_at.startsWith(today)).length || 0;
+      rollbackData?.filter((r: any) => r.created_at.startsWith(today)).length || 0;
 
     const rollbackRate = totalTransactions
       ? ((totalRollbacks / totalTransactions) * 100).toFixed(2)
@@ -174,22 +161,22 @@ export default function RollbackMonitoringPage() {
   }
 
   async function loadRecentRollbacks() {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('gem_transaction_audit_log')
       .select(
         `
         id,
         user_id,
-        amount_attempted,
+        amount,
         action,
-        error_message,
+        description,
         created_at,
         metadata
       `
       )
       .in('action', ['booking_refund', 'purchase_refund'])
       .order('created_at', { ascending: false })
-      .limit(50) as { data: AuditLogRow[] | null; error: unknown };
+      .limit(50);
 
     if (error) {
       console.error('Error loading recent rollbacks:', error);
@@ -197,21 +184,21 @@ export default function RollbackMonitoringPage() {
     }
 
     // Enrich with user emails
-    const userIds = Array.from(new Set(data?.map((r) => r.user_id) || []));
-    const { data: profiles } = await supabase
+    const userIds = Array.from(new Set(data?.map((r: any) => r.user_id) || []));
+    const { data: profiles } = await (supabase as any)
       .from('profiles')
       .select('id, email')
-      .in('id', userIds) as { data: { id: string; email: string }[] | null };
+      .in('id', userIds);
 
-    const profileMap = new Map(profiles?.map((p) => [p.id, p.email]) || []);
+    const profileMap = new Map(profiles?.map((p: any) => [p.id, p.email]) || []);
 
-    const enrichedRollbacks: RollbackEvent[] = (data || []).map(r => ({
+    const enrichedRollbacks: RollbackEvent[] = (data || []).map((r: any) => ({
       id: r.id,
       user_id: r.user_id,
       user_email: profileMap.get(r.user_id) || 'Unknown',
-      amount: (r as any).amount_attempted,
+      amount: r.amount,
       transaction_type: r.action,
-      reason: (r as any).error_message || 'No reason specified',
+      reason: r.description || 'No reason specified',
       created_at: r.created_at,
       metadata: r.metadata,
     }));
@@ -225,22 +212,22 @@ export default function RollbackMonitoringPage() {
 
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const dateStr = date.toISOString().split('T')[0] ?? '';
+      const dateStr = date.toISOString().split('T')[0];
       const nextDateStr = new Date(date.getTime() + 24 * 60 * 60 * 1000)
         .toISOString()
-        .split('T')[0] ?? '';
+        .split('T')[0];
 
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('gem_transaction_audit_log')
-        .select('amount_attempted')
+        .select('amount')
         .in('action', ['booking_refund', 'purchase_refund'])
         .gte('created_at', `${dateStr}T00:00:00`)
-        .lt('created_at', `${nextDateStr}T00:00:00`) as { data: { amount_attempted: number }[] | null };
+        .lt('created_at', `${nextDateStr}T00:00:00`);
 
       trends.push({
         date: dateStr,
         count: data?.length || 0,
-        gems_amount: data?.reduce((sum, r) => sum + Math.abs(r.amount_attempted), 0) || 0,
+        gems_amount: data?.reduce((sum: number, r: any) => sum + Math.abs(r.amount), 0) || 0,
       });
     }
 
@@ -251,17 +238,17 @@ export default function RollbackMonitoringPage() {
     const timeRangeHours = timeRange === '24h' ? 24 : timeRange === '7d' ? 168 : 720;
     const cutoffDate = new Date(Date.now() - timeRangeHours * 60 * 60 * 1000).toISOString();
 
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('gem_transaction_audit_log')
-      .select('error_message, amount_attempted')
+      .select('description, amount')
       .in('action', ['booking_refund', 'purchase_refund'])
-      .gte('created_at', cutoffDate) as { data: { error_message: string | null; amount_attempted: number }[] | null };
+      .gte('created_at', cutoffDate);
 
     // Categorize by reason
     const reasonCounts: Record<string, number> = {};
 
-    data?.forEach((r) => {
-      const desc = (r.error_message || '').toLowerCase();
+    data?.forEach((r: any) => {
+      const desc = (r.description || '').toLowerCase();
       let category = 'other';
 
       if (desc.includes('payment') || desc.includes('gateway')) {
@@ -289,23 +276,23 @@ export default function RollbackMonitoringPage() {
   }
 
   async function exportAuditLog() {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('gem_transaction_audit_log')
       .select('*')
       .in('action', ['booking_refund', 'purchase_refund'])
       .order('created_at', { ascending: false })
-      .limit(1000) as { data: AuditLogRow[] | null };
+      .limit(1000);
 
     if (!data) return;
 
     // Convert to CSV
-    const headers = ['ID', 'User ID', 'Amount', 'Action', 'Error Message', 'Created At'];
-    const rows = data.map((r) => [
+    const headers = ['ID', 'User ID', 'Amount', 'Action', 'Description', 'Created At'];
+    const rows = data.map((r: any) => [
       r.id,
       r.user_id,
-      r.amount_attempted,
+      r.amount,
       r.action,
-      r.error_message,
+      r.description,
       r.created_at,
     ]);
 
@@ -334,12 +321,12 @@ export default function RollbackMonitoringPage() {
   const isHighRollbackRate = stats && stats.rollback_rate > alertThreshold;
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-text-primary">Rollback Monitoring Dashboard</h1>
-          <p className="mt-2 text-text-secondary">
+          <h1 className="text-3xl font-bold text-gray-900">Rollback Monitoring Dashboard</h1>
+          <p className="mt-2 text-gray-600">
             Real-time monitoring of transaction rollbacks and refunds
           </p>
         </div>
@@ -377,8 +364,8 @@ export default function RollbackMonitoringPage() {
               onClick={() => setTimeRange('24h')}
               className={`px-4 py-2 rounded ${
                 timeRange === '24h'
-                  ? 'bg-accent-primary text-white'
-                  : 'bg-bg-surface text-text-secondary border border-border-default'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 border'
               }`}
             >
               24 Hours
@@ -387,8 +374,8 @@ export default function RollbackMonitoringPage() {
               onClick={() => setTimeRange('7d')}
               className={`px-4 py-2 rounded ${
                 timeRange === '7d'
-                  ? 'bg-accent-primary text-white'
-                  : 'bg-bg-surface text-text-secondary border border-border-default'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 border'
               }`}
             >
               7 Days
@@ -397,8 +384,8 @@ export default function RollbackMonitoringPage() {
               onClick={() => setTimeRange('30d')}
               className={`px-4 py-2 rounded ${
                 timeRange === '30d'
-                  ? 'bg-accent-primary text-white'
-                  : 'bg-bg-surface text-text-secondary border border-border-default'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 border'
               }`}
             >
               30 Days
@@ -415,22 +402,22 @@ export default function RollbackMonitoringPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <div className="bg-bg-surface rounded-lg border border-border-default p-6">
-            <h3 className="text-sm font-medium text-text-muted">Total Rollbacks</h3>
-            <p className="mt-2 text-3xl font-bold text-text-primary">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Total Rollbacks</h3>
+            <p className="mt-2 text-3xl font-bold text-gray-900">
               {stats?.total_rollbacks || 0}
             </p>
           </div>
 
-          <div className="bg-bg-surface rounded-lg border border-border-default p-6">
-            <h3 className="text-sm font-medium text-text-muted">Today</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Today</h3>
             <p className="mt-2 text-3xl font-bold text-blue-600">
               {stats?.rollbacks_today || 0}
             </p>
           </div>
 
-          <div className="bg-bg-surface rounded-lg border border-border-default p-6">
-            <h3 className="text-sm font-medium text-text-muted">Rollback Rate</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Rollback Rate</h3>
             <p
               className={`mt-2 text-3xl font-bold ${
                 isHighRollbackRate ? 'text-red-600' : 'text-green-600'
@@ -440,15 +427,15 @@ export default function RollbackMonitoringPage() {
             </p>
           </div>
 
-          <div className="bg-bg-surface rounded-lg border border-border-default p-6">
-            <h3 className="text-sm font-medium text-text-muted">Gems Rolled Back</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Gems Rolled Back</h3>
             <p className="mt-2 text-3xl font-bold text-purple-600">
               {stats?.total_gems_rolled_back || 0}
             </p>
           </div>
 
-          <div className="bg-bg-surface rounded-lg border border-border-default p-6">
-            <h3 className="text-sm font-medium text-text-muted">Affected Users</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Affected Users</h3>
             <p className="mt-2 text-3xl font-bold text-orange-600">
               {stats?.affected_users || 0}
             </p>
@@ -458,8 +445,8 @@ export default function RollbackMonitoringPage() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Trend Chart */}
-          <div className="bg-bg-surface rounded-lg border border-border-default p-6">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">Rollback Trend</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Rollback Trend</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={trends}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -479,8 +466,8 @@ export default function RollbackMonitoringPage() {
           </div>
 
           {/* Reason Breakdown */}
-          <div className="bg-bg-surface rounded-lg border border-border-default p-6">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">Rollback Reasons</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Rollback Reasons</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -488,7 +475,7 @@ export default function RollbackMonitoringPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+                  label={({ name, percent }: any) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -504,47 +491,47 @@ export default function RollbackMonitoringPage() {
         </div>
 
         {/* Recent Rollbacks Table */}
-        <div className="bg-bg-surface rounded-lg border border-border-default overflow-hidden">
-          <div className="px-6 py-4 border-b border-border-default">
-            <h3 className="text-lg font-semibold text-text-primary">Recent Rollbacks</h3>
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="px-6 py-4 border-b">
+            <h3 className="text-lg font-semibold">Recent Rollbacks</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border-default">
-              <thead className="bg-bg-elevated">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Time
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     User
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Reason
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-default">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {recentRollbacks.map(rollback => (
-                  <tr key={rollback.id} className="hover:bg-bg-elevated">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                  <tr key={rollback.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(rollback.created_at).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {rollback.user_email}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
                       +{Math.abs(rollback.amount)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {rollback.transaction_type}
                     </td>
-                    <td className="px-6 py-4 text-sm text-text-secondary">{rollback.reason}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{rollback.reason}</td>
                   </tr>
                 ))}
               </tbody>

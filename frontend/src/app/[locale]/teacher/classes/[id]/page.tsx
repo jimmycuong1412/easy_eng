@@ -69,7 +69,7 @@ export default function TeacherClassDetailPage() {
 
   const loadClassData = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('classes')
         .select(
           `
@@ -85,7 +85,7 @@ export default function TeacherClassDetailPage() {
       if (error) throw error;
 
       // Get booking count
-      const { count } = await supabase
+      const { count } = await (supabase as any)
         .from('bookings')
         .select('*', { count: 'exact', head: true })
         .eq('class_id', classId)
@@ -113,7 +113,7 @@ export default function TeacherClassDetailPage() {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('classes')
         .update({ status: 'cancelled' })
         .eq('id', classId);

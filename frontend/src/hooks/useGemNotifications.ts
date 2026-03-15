@@ -49,10 +49,10 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
       }
 
       // Fetch current balance
-      const { data: balanceData, error: balanceError } = await supabase.rpc(
-        'get_gems_balance',
+      const { data: balanceData, error: balanceError } = await (supabase as any).rpc(
+        'get_student_gem_balance',
         {
-          p_user_id: user.id,
+          student_id: user.id,
         }
       );
 
@@ -69,7 +69,7 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
             event: 'INSERT',
             schema: 'public',
             table: 'gem_transactions',
-            filter: `user_id=eq.${user.id}`,
+            filter: `student_id=eq.${user.id}`,
           },
           async (payload) => {
             const newTransaction = payload.new;
@@ -77,10 +77,10 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
             // Only notify for positive amounts (gems earned, not spent)
             if (newTransaction.amount > 0) {
               // Fetch updated balance
-              const { data: newBalanceData } = await supabase.rpc(
-                'get_gems_balance',
+              const { data: newBalanceData } = await (supabase as any).rpc(
+                'get_student_gem_balance',
                 {
-                  p_user_id: user.id,
+                  student_id: user.id,
                 }
               );
 
@@ -103,11 +103,13 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
                 onGemEarned(notification);
               }
 
-              // Gem notification received
+              console.log('Gem notification:', notification);
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Gem notifications subscription status:', status);
+        });
     };
 
     setupRealtimeListener();
@@ -118,7 +120,6 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
         supabase.removeChannel(channel);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, onGemEarned]);
 
   const clearNotification = (id: string) => {

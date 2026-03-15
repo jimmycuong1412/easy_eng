@@ -7,9 +7,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { useRouter } from '@/i18n/routing';
-import { createClient } from '@/lib/supabase/client';
+import { useRouter, usePathname } from 'next/navigation';
+import { createClient as createClientComponentClient } from '@/lib/supabase/client';
 import type { UserRole, UserProfile } from '@/utils/roleCheck';
 import { canAccessRoute, getDashboardPath } from '@/utils/roleCheck';
 
@@ -28,13 +27,12 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
+  const supabase = createClientComponentClient();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const [_user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     checkAuthorization();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   async function checkAuthorization() {
@@ -53,7 +51,7 @@ export function ProtectedRoute({
       }
 
       // Get user profile
-      const { data: profile, error } = await supabase
+      const { data: profile, error } = await (supabase as any)
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
@@ -155,13 +153,12 @@ export function withProtectedRoute<P extends object>(
 export function useRequireRole(requiredRoles: UserRole[]) {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
+  const supabase = createClientComponentClient();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     checkRole();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function checkRole() {
@@ -175,7 +172,7 @@ export function useRequireRole(requiredRoles: UserRole[]) {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)

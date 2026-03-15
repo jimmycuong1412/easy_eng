@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import PayoutRequestForm from '@/components/teacher/PayoutRequestForm';
-import { DollarSign, TrendingUp, Clock, CheckCircle, Plus } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, CheckCircle, Download, Plus } from 'lucide-react';
 
 // ============================================================================
 // Types
@@ -62,7 +62,6 @@ export default function TeacherEarningsPage() {
 
   useEffect(() => {
     loadData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -75,18 +74,20 @@ export default function TeacherEarningsPage() {
 
       setTeacherId(user.id);
 
-      // Get earnings summary (RPC may not be deployed — fall back to zeroes gracefully)
-      const { data: summaryData, error: summaryError } = await supabase.rpc(
+      // Get earnings summary
+      const { data: summaryData, error: summaryError } = await (supabase as any).rpc(
         'get_teacher_earnings_summary',
         { p_teacher_id: user.id }
       );
 
-      if (!summaryError && summaryData && summaryData.length > 0) {
+      if (summaryError) throw summaryError;
+
+      if (summaryData && summaryData.length > 0) {
         setSummary(summaryData[0]);
       }
 
       // Get recent earnings
-      const { data: earningsData, error: earningsError } = await supabase
+      const { data: earningsData, error: earningsError } = await (supabase as any)
         .from('teacher_earnings')
         .select('*')
         .eq('teacher_id', user.id)
@@ -97,7 +98,7 @@ export default function TeacherEarningsPage() {
       setEarnings(earningsData || []);
 
       // Get payout requests
-      const { data: payoutsData, error: payoutsError } = await supabase
+      const { data: payoutsData, error: payoutsError } = await (supabase as any)
         .from('payout_requests')
         .select('*')
         .eq('teacher_id', user.id)

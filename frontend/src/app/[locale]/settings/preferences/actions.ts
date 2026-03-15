@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 export interface UpdatePreferencesInput {
   locale: string;
   timezone: string;
-  currency?: string;
+  currency: string;
 }
 
 export interface UpdatePreferencesResult {
@@ -15,6 +15,7 @@ export interface UpdatePreferencesResult {
 }
 
 const VALID_LOCALES = ['vi', 'en'];
+const VALID_CURRENCIES = ['VND', 'USD', 'EUR'];
 
 export async function updateUserPreferences(
   input: UpdatePreferencesInput
@@ -23,6 +24,10 @@ export async function updateUserPreferences(
     // Validate input
     if (!VALID_LOCALES.includes(input.locale)) {
       return { success: false, error: 'Invalid locale' };
+    }
+
+    if (!VALID_CURRENCIES.includes(input.currency)) {
+      return { success: false, error: 'Invalid currency' };
     }
 
     if (!input.timezone) {
@@ -42,12 +47,13 @@ export async function updateUserPreferences(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Update profile (only locale and timezone — no currency column in DB)
-    const { error: updateError } = await supabase
+    // Update profile
+    const { error: updateError } = await (supabase as any)
       .from('profiles')
       .update({
         locale: input.locale,
         timezone: input.timezone,
+        currency: input.currency,
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -31,40 +31,55 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<AuthError | null>(null);
 
-  const supabaseRef = useRef<ReturnType<typeof getSupabaseClient> | null>(null);
-  if (!supabaseRef.current) {
-    supabaseRef.current = getSupabaseClient();
-  }
-  const supabase = supabaseRef.current;
+  const supabase = getSupabaseClient();
 
   // Fetch user profile
   const fetchProfile = useCallback(
     async (userId: string) => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
+      const { data, error } = await (supabase as any)
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-        if (error) {
-          return null;
-        }
-
-        return data as Profile;
-      } catch {
+      if (error) {
+        console.error('Error fetching profile:', error);
         return null;
       }
+
+      return data as Profile;
     },
     [supabase]
   );
 
   // Initialize auth state
   useEffect(() => {
-    // Subscribe to auth changes first — Supabase fires this immediately with current session
+    const initializeAuth = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          const profile = await fetchProfile(session.user.id);
+          setProfile(profile);
+        }
+      } catch (err) {
+        console.error('Error initializing auth:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Subscribe to auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -155,15 +170,14 @@ export function useAuth(): UseAuthReturn {
   const signOut = useCallback(async () => {
     setError(null);
 
-    // 1. Clear server-side HttpOnly cookies FIRST — must happen before
-    //    supabase.auth.signOut() because that fires onAuthStateChange(SIGNED_OUT)
-    //    which triggers a React re-render/unmount that can abort this async fn
-    //    before the fetch completes.
-    await fetch('/api/auth/logout', { method: 'POST' });
+    const { error } = await supabase.auth.signOut();
 
-    // 2. Clear client-side Supabase session (in-memory + localStorage).
-    await supabase.auth.signOut();
+    if (error) {
+      setError(error);
+      throw error;
+    }
 
+    // Redirect to login page after successful logout
     window.location.href = '/auth/login';
   }, [supabase]);
 

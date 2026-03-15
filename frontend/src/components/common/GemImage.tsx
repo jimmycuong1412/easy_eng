@@ -1,27 +1,30 @@
-import Image from 'next/image';
-import { cn } from '@/lib/utils';
+import * as React from 'react';
 
 interface GemImageProps {
-  size?: number | string;
+  size?: number;
   className?: string;
   alt?: string;
 }
 
-/**
- * Gem image component using the gem.svg asset.
- * Use this instead of the 💎 emoji for visual gem representations.
- */
-export function GemImage({ size = 24, className, alt = 'Gem' }: GemImageProps) {
-  const px = typeof size === 'number' ? size : undefined;
+export function GemImage({ size = 16, className = '', alt = 'Gem' }: GemImageProps) {
   return (
-    <Image
-      src="/gem.svg"
+    <img
+      src="/images/gem.png"
       alt={alt}
-      width={px ?? 24}
-      height={px ?? 24}
-      className={cn('inline-block', className)}
-      style={typeof size === 'string' ? { width: size, height: size } : undefined}
-      unoptimized
+      width={size}
+      height={size}
+      className={`inline-block ${className}`}
+      onError={(e) => {
+        // Fallback to emoji if image missing
+        const target = e.currentTarget;
+        target.style.display = 'none';
+        const span = document.createElement('span');
+        span.textContent = '💎';
+        span.style.fontSize = `${size}px`;
+        target.parentNode?.insertBefore(span, target);
+      }}
     />
   );
 }
+
+export default GemImage;

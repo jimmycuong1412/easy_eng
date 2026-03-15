@@ -169,7 +169,7 @@ export default function DashboardLayout({
               <div className="flex items-center gap-3">
                 <Avatar>
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
+                  <AvatarFallback>{getInitials(profile?.full_name ?? null)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-text-primary truncate">
