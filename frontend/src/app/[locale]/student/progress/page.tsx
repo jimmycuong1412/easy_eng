@@ -104,7 +104,8 @@ export default function XPProgressPage() {
       supabase.from('attendance_streaks').select('*').eq('student_id', user.id)
         .single().then(({ data }) => data),
       getLeaderboard(5).catch(() => []),
-    ]).then(([career, xpHistory, streak, leaderboard]) => {
+    ]).then(([careerRaw, xpHistory, streak, leaderboard]) => {
+      const career = careerRaw as any;
       const recentXP = xpHistory.map((x: Record<string, unknown>) => ({
         date: (x.created_at as string)?.slice(0, 10) || '',
         activity: (x.activity_description as string) || (x.activity_type as string) || 'Activity',
