@@ -44,7 +44,7 @@ export default async function BookingConfirmationPage({
   if (booking_id) {
     try {
       const supabase = await createClient();
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('bookings')
         .select('*, classes(id, title, start_time, duration_minutes, profiles!classes_teacher_id_profiles_fkey(full_name))')
         .eq('id', booking_id)

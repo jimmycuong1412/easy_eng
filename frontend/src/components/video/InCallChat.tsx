@@ -14,7 +14,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 let CometChat: any = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  CometChat = require('@cometchat/chat-sdk-javascript').CometChat;
+  CometChat = require(/* webpackIgnore: true */ '@cometchat/chat-sdk-javascript').CometChat ?? null;
 } catch {
   // SDK not available in this environment
 }

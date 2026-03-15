@@ -10,11 +10,11 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
-// CometChatUI loaded dynamically to avoid missing module errors
+// CometChatUI loaded dynamically — webpackIgnore prevents build-time resolution
 const CometChatUI: React.ComponentType<any> = (() => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require('@cometchat-pro/chat').CometChatUI;
+    return require(/* webpackIgnore: true */ '@cometchat/chat-sdk-javascript').CometChatUI ?? (() => null);
   } catch {
     return () => null;
   }
