@@ -197,17 +197,17 @@ export async function createClassGroup(
   metadata?: Record<string, any>
 ): Promise<boolean> {
   try {
-    const group = new CometChat.Group(
+    const group = new (CometChat as any).Group(
       groupId,
       groupName,
-      CometChat.GROUP_TYPE.PUBLIC
+      (CometChat as any).GROUP_TYPE.PUBLIC
     );
 
     if (description) group.setDescription(description);
     if (icon) group.setIcon(icon);
     if (metadata) group.setMetadata(metadata);
 
-    await CometChat.createGroup(group);
+    await (CometChat as any).createGroup(group);
     // CometChat group created
     return true;
   } catch (error: any) {
@@ -226,11 +226,11 @@ export async function createClassGroup(
  */
 export async function joinClassGroup(
   groupId: string,
-  groupType: string = CometChat.GROUP_TYPE.PUBLIC,
+  groupType: string = (CometChat as any).GROUP_TYPE.PUBLIC,
   password?: string
 ): Promise<boolean> {
   try {
-    await CometChat.joinGroup(groupId, groupType as CometChat.GroupType, password);
+    await (CometChat as any).joinGroup(groupId, groupType as any, password);
     // Joined CometChat group
     return true;
   } catch (error) {
@@ -244,7 +244,7 @@ export async function joinClassGroup(
  */
 export async function leaveClassGroup(groupId: string): Promise<boolean> {
   try {
-    await CometChat.leaveGroup(groupId);
+    await (CometChat as any).leaveGroup(groupId);
     // Left CometChat group
     return true;
   } catch (error) {
@@ -258,7 +258,7 @@ export async function leaveClassGroup(groupId: string): Promise<boolean> {
  */
 export async function deleteClassGroup(groupId: string): Promise<boolean> {
   try {
-    await CometChat.deleteGroup(groupId);
+    await (CometChat as any).deleteGroup(groupId);
     // Deleted CometChat group
     return true;
   } catch (error) {
@@ -272,7 +272,7 @@ export async function deleteClassGroup(groupId: string): Promise<boolean> {
  */
 export async function getGroupMembers(groupId: string, limit: number = 30): Promise<any[]> {
   try {
-    const membersRequest = new CometChat.GroupMembersRequestBuilder(groupId)
+    const membersRequest = new (CometChat as any).GroupMembersRequestBuilder(groupId)
       .setLimit(limit)
       .build();
 
@@ -316,7 +316,7 @@ export async function startVideoCall(
  */
 export async function acceptCall(sessionId: string): Promise<any> {
   try {
-    const call = await CometChat.acceptCall(sessionId);
+    const call = await (CometChat as any).acceptCall(sessionId);
     // Call accepted
     return call;
   } catch (error) {
@@ -330,10 +330,10 @@ export async function acceptCall(sessionId: string): Promise<any> {
  */
 export async function rejectCall(
   sessionId: string,
-  status: string = CometChat.CALL_STATUS.REJECTED
+  status: string = (CometChat as any).CALL_STATUS.REJECTED
 ): Promise<any> {
   try {
-    const call = await CometChat.rejectCall(sessionId, status);
+    const call = await (CometChat as any).rejectCall(sessionId, status);
     // Call rejected
     return call;
   } catch (error) {
@@ -347,7 +347,7 @@ export async function rejectCall(
  */
 export async function endCall(sessionId: string): Promise<boolean> {
   try {
-    await CometChat.endCall(sessionId);
+    await (CometChat as any).endCall(sessionId);
     // Call ended
     return true;
   } catch (error) {
