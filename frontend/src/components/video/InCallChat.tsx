@@ -10,7 +10,14 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { CometChat } from '@cometchat-pro/chat';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let CometChat: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  CometChat = require('@cometchat/chat-sdk-javascript').CometChat;
+} catch {
+  // SDK not available in this environment
+}
 import type { InCallChatProps } from '@/types/cometchat.types';
 import { Send, MessageCircle, Minimize2, Maximize2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -81,24 +88,26 @@ export default function InCallChat({
     loadMessages();
 
     // Set up real-time message listener
-    CometChat.addMessageListener(
-      LISTENER_ID,
-      new CometChat.MessageListener({
-        onTextMessageReceived: (msg: CometChat.TextMessage) => {
-          // Only add messages for this group
-          if (msg.getReceiverType() === CometChat.RECEIVER_TYPE.GROUP &&
-              msg.getReceiverId() === groupId) {
-            const mapped = mapCometChatMessage(msg);
-            if (mapped) {
-              setMessages((prev) => [...prev, mapped]);
+    if (CometChat) {
+      CometChat.addMessageListener(
+        LISTENER_ID,
+        new CometChat.MessageListener({
+          onTextMessageReceived: (msg: any) => {
+            // Only add messages for this group
+            if (msg.getReceiverType?.() === (CometChat?.RECEIVER_TYPE?.GROUP ?? 'g') &&
+                msg.getReceiverId?.() === groupId) {
+              const mapped = mapCometChatMessage(msg);
+              if (mapped) {
+                setMessages((prev) => [...prev, mapped]);
+              }
             }
-          }
-        },
-      })
-    );
+          },
+        })
+      );
+    }
 
     return () => {
-      CometChat.removeMessageListener(LISTENER_ID);
+      CometChat?.removeMessageListener(LISTENER_ID);
     };
   }, [groupId, loadMessages, mapCometChatMessage]);
 
