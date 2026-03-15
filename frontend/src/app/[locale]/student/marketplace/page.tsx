@@ -51,7 +51,7 @@ export default function MarketplacePage() {
       }
 
       // Load gem balance
-      const { data: gemBalance } = await supabase.rpc('get_gems_balance', { p_user_id: user.id })
+      const { data: gemBalance } = await (supabase as any).rpc('get_gems_balance', { p_user_id: user.id })
       setStudentGems(gemBalance || 0)
 
       // Load marketplace items

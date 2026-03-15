@@ -81,16 +81,16 @@ export async function createCometChatUser(
   metadata?: Record<string, any>
 ): Promise<boolean> {
   try {
-    const user = new CometChat.User(uid);
-    user.setName(name);
+    const user = new (CometChat as any).User(uid);
+    (user as any).setName(name);
     if (avatar) {
-      user.setAvatar(avatar);
+      (user as any).setAvatar(avatar);
     }
     if (metadata) {
-      user.setMetadata(metadata);
+      (user as any).setMetadata(metadata);
     }
 
-    await CometChat.createUser(user, COMETCHAT_CONFIG.authKey);
+    await (CometChat as any).createUser(user, COMETCHAT_CONFIG.authKey);
     // CometChat user created
     return true;
   } catch (error: any) {
@@ -114,12 +114,12 @@ export async function updateCometChatUser(
   metadata?: Record<string, any>
 ): Promise<boolean> {
   try {
-    const user = new CometChat.User(uid);
-    if (name) user.setName(name);
-    if (avatar) user.setAvatar(avatar);
-    if (metadata) user.setMetadata(metadata);
+    const user = new (CometChat as any).User(uid);
+    if (name) (user as any).setName(name);
+    if (avatar) (user as any).setAvatar(avatar);
+    if (metadata) (user as any).setMetadata(metadata);
 
-    await CometChat.updateUser(user, COMETCHAT_CONFIG.authKey);
+    await (CometChat as any).updateUser(user, COMETCHAT_CONFIG.authKey);
     // CometChat user updated
     return true;
   } catch (error) {
@@ -140,7 +140,7 @@ export async function loginToCometChat(uid: string): Promise<CometChatUser | nul
       uid: user.getUid(),
       name: user.getName(),
       avatar: user.getAvatar(),
-      metadata: user.getMetadata() as Record<string, unknown>,
+      metadata: (user as any).getMetadata() as Record<string, unknown>,
     };
   } catch (error) {
     console.error('CometChat login failed:', error);
@@ -174,7 +174,7 @@ export async function getLoggedInUser(): Promise<CometChatUser | null> {
       uid: user.getUid(),
       name: user.getName(),
       avatar: user.getAvatar(),
-      metadata: user.getMetadata() as Record<string, unknown>,
+      metadata: (user as any).getMetadata() as Record<string, unknown>,
     };
   } catch (error) {
     console.error('Failed to get logged in user:', error);

@@ -21,11 +21,11 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await (supabase as any).auth.getUser();
 
   if (user) {
     // Best-effort DB update (don't fail if this errors)
-    await supabase
+    await (supabase as any)
       .from('profiles')
       .update({
         locale,

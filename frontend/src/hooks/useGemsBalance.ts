@@ -34,7 +34,7 @@ export function useGemsBalance() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setBalance(0); return; }
 
-      const { data, error: rpcError } = await supabase.rpc('get_gems_balance', { p_user_id: user.id });
+      const { data, error: rpcError } = await (supabase as any).rpc('get_gems_balance', { p_user_id: user.id });
       if (rpcError) throw rpcError;
       setBalance((data as number) ?? 0);
     } catch (err) {
@@ -54,7 +54,7 @@ export function useGemsBalance() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error: rpcError } = await supabase.rpc('get_gems_balance', { p_user_id: user.id });
+      const { data, error: rpcError } = await (supabase as any).rpc('get_gems_balance', { p_user_id: user.id });
       if (rpcError) throw rpcError;
       const bal = (data as number) ?? 0;
       setBalance(bal);

@@ -78,7 +78,7 @@ export default function TeacherQuizListPage() {
 
   const handleDelete = async (quiz: Quiz) => {
     setDeletingId(quiz.id);
-    const { error } = await supabase.from('quizzes').delete().eq('id', quiz.id);
+    const { error } = await (supabase as any).from('quizzes').delete().eq('id', quiz.id);
     if (!error) setQuizzes((prev) => prev.filter((q) => q.id !== quiz.id));
     setDeletingId(null);
     setConfirmDelete(null);

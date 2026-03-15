@@ -231,7 +231,7 @@ export function useCometChatMessages(userId: string): UseCometChatMessagesReturn
   }, []);
 
   return {
-    messages: messages as unknown as CometChat.BaseMessage[],
+    messages: messages as unknown as any[],
     isLoading,
     isSending,
     error,

@@ -53,7 +53,7 @@ export function CookieBadge({
   return (
     <div className={cn('relative', className)}>
       <Badge
-        variant="cookie"
+        variant="secondary"
         className={cn(
           'inline-flex items-center gap-1.5 font-semibold',
           sizeClasses[size],

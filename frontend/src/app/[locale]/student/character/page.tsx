@@ -93,7 +93,7 @@ export default function CharacterPage() {
       })
 
       // Load character sprite data
-      const { data: spriteData, error: spriteError } = await supabase.rpc(
+      const { data: spriteData, error: spriteError } = await (supabase as any).rpc(
         'get_student_sprite',
         { p_student_id: user.id }
       )
@@ -119,7 +119,7 @@ export default function CharacterPage() {
       }
 
       // Load equipped items
-      const { data: itemsData, error: itemsError } = await supabase.rpc(
+      const { data: itemsData, error: itemsError } = await (supabase as any).rpc(
         'get_equipped_items',
         { p_student_id: user.id }
       )

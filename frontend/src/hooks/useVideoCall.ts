@@ -217,7 +217,7 @@ export function useVideoCall(): UseVideoCallReturn {
       }
 
       // session.id is the sessionId returned from initiateCall/acceptCall
-      await CometChat.endCall(session.id ?? session.sessionId ?? '');
+      await (CometChat as any).endCall(session.id ?? session.sessionId ?? '');
 
       logger.logCallEvent({
         type: 'call_ended',
