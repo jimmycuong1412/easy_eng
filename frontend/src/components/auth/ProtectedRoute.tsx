@@ -37,10 +37,12 @@ export function ProtectedRoute({
 
   async function checkAuthorization() {
     try {
-      // Check if user is authenticated
+      // Use getSession() (reads cookies directly — no network round-trip needed,
+      // since the middleware already validates the JWT server-side on every request).
       const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+      const authUser = session?.user ?? null;
 
       if (!authUser) {
         // Not authenticated, redirect to login
@@ -164,8 +166,9 @@ export function useRequireRole(requiredRoles: UserRole[]) {
   async function checkRole() {
     try {
       const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+      const authUser = session?.user ?? null;
 
       if (!authUser) {
         router.push(`/auth/login?redirectTo=${encodeURIComponent(pathname)}`);
