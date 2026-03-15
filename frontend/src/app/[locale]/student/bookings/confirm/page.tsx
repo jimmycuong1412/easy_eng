@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { CheckCircle, Calendar, Clock, User, Gem, ArrowRight, Home } from 'lucide-react';

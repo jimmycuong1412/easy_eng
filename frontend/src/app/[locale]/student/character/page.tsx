@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic';
+
 // Page: Student Character Profile
 // Description: Shows character viewer, level progress, and customization options
 // Related to: Phase 10 - Character & Gamification System (T154)

@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Admin Rollback Monitoring Dashboard
  * Task: T139E [P] [CURRENCY] [ADMIN]

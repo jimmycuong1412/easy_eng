@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * Booking Cancellation Page
  * Task: T214 - Create cancellation confirmation page

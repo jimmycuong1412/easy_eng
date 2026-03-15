@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic';
+
 // Page: Student Marketplace
 // Description: Browse and purchase cosmetic items with Gems
 // Related to: Phase 10 - Character & Gamification System (T160)

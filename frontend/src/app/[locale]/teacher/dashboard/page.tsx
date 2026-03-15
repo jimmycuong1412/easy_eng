@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * Teacher Dashboard Page
  *
