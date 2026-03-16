@@ -32,12 +32,12 @@ const ALL_SLOTS: string[] = (() => {
   return slots;
 })();
 
-/** Build an empty SlotState with every day × slot = false */
+/** Build a default SlotState with every day × slot = true (24/7 available) */
 function buildEmptyState(): SlotState {
   const state: SlotState = {};
   for (const day of ORDERED_DAYS) {
     for (const slot of ALL_SLOTS) {
-      state[`${day}:${slot}`] = false;
+      state[`${day}:${slot}`] = true;
     }
   }
   return state;
