@@ -62,6 +62,8 @@ export function useAuth(): UseAuthReturn {
 
         setSession(session);
         setUser(session?.user ?? null);
+        // Resolve loading as soon as auth state is known — don't block on profile fetch
+        setIsLoading(false);
 
         if (session?.user) {
           const profile = await fetchProfile(session.user.id);
@@ -69,7 +71,6 @@ export function useAuth(): UseAuthReturn {
         }
       } catch (err) {
         console.error('Error initializing auth:', err);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -82,6 +83,8 @@ export function useAuth(): UseAuthReturn {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      // Resolve loading immediately — profile loads independently
+      setIsLoading(false);
 
       if (session?.user) {
         const profile = await fetchProfile(session.user.id);
@@ -89,8 +92,6 @@ export function useAuth(): UseAuthReturn {
       } else {
         setProfile(null);
       }
-
-      setIsLoading(false);
     });
 
     return () => {
