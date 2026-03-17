@@ -1,3 +1,5 @@
+'use client';
+
 export const dynamic = 'force-dynamic';
 /**
  * Teacher Earnings Page
@@ -5,8 +7,6 @@ export const dynamic = 'force-dynamic';
  * Dashboard for teachers to view earnings and request payouts
  * Task: T209 - Create teacher earnings page
  */
-
-'use client';
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';

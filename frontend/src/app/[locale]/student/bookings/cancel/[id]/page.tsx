@@ -1,10 +1,6 @@
-export const dynamic = 'force-dynamic';
-/**
- * Booking Cancellation Page
- * Task: T214 - Create cancellation confirmation page
- */
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
