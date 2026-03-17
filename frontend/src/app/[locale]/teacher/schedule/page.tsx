@@ -29,7 +29,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
+import { usePreferences } from '@/hooks/usePreferences';
 import { getTeacherSchedule } from '@/lib/queries';
+import { formatTime, getTimezoneLabel } from '@/lib/timezone';
 import AvailabilityCalendar from '@/components/teacher/AvailabilityCalendar';
 
 interface ScheduleSlot {
@@ -55,7 +57,10 @@ const timeSlots = (() => {
 })();
 
 export default function TeacherSchedulePage() {
-  const { user, isLoading: authLoading } = useAuth();
+  // Single useAuth() call shared with usePreferences to avoid a second auth lock.
+  const { user, profile, isLoading: authLoading, refetchProfile } = useAuth();
+  const { preferences } = usePreferences({ profile, isLoading: authLoading, refetchProfile });
+  const userTimezone = preferences?.timezone || 'Asia/Ho_Chi_Minh';
   const [schedule, setSchedule] = useState<ScheduleData>({});
   const [loading, setLoading] = useState(true);
   const [currentWeekStart, setCurrentWeekStart] = React.useState(() => {
@@ -84,7 +89,7 @@ export default function TeacherSchedulePage() {
         sessions.forEach((session) => {
           const startTime = new Date(session.scheduled_start_time as string);
           const dateKey = startTime.toISOString().split('T')[0];
-          const timeStr = startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const timeStr = formatTime(startTime, userTimezone);
           const cls = session.classes as Record<string, unknown> | null;
 
           if (!scheduleMap[dateKey]) scheduleMap[dateKey] = [];
@@ -225,7 +230,14 @@ export default function TeacherSchedulePage() {
         >
           <div>
             <h1 className="text-2xl font-bold text-white mb-1">Lịch dạy</h1>
-            <p className="text-slate-400">Quản lý lịch trình và thời gian dạy của bạn</p>
+            <p className="text-slate-400">
+              Quản lý lịch trình và thời gian dạy của bạn
+              {preferences && (
+                <span className="ml-2 text-xs bg-white/10 text-slate-300 px-2 py-0.5 rounded-full">
+                  {getTimezoneLabel(userTimezone)}
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex gap-3">
             <Button

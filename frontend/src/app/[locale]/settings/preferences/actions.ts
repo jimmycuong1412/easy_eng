@@ -47,7 +47,9 @@ export async function updateUserPreferences(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Update profile
+    // Update profile — cast to `any` for the values to work around Supabase SDK
+    // strict generic constraints (the Database type shape triggers `never` inference
+    // on the update parameter in supabase-js v2.45+).
     const { error: updateError } = await (supabase as any)
       .from('profiles')
       .update({

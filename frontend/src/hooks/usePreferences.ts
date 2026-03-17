@@ -6,11 +6,12 @@ import {
   updateUserPreferences,
   type UpdatePreferencesInput,
 } from '@/app/[locale]/settings/preferences/actions';
+import type { Profile } from '@/types/database';
 
 export interface UserPreferences {
   locale: string;
   timezone: string;
-  currency: string; // UI-only, not persisted to DB
+  currency: string;
 }
 
 export interface UsePreferencesReturn {
@@ -21,8 +22,26 @@ export interface UsePreferencesReturn {
   isPending: boolean;
 }
 
-export function usePreferences(): UsePreferencesReturn {
-  const { profile, isLoading: authLoading } = useAuth();
+/**
+ * Derives preferences from an already-loaded profile, avoiding a second
+ * useAuth() instantiation (which would contend on the Supabase auth lock).
+ *
+ * Pass `opts` to reuse auth state from the calling component's useAuth() call.
+ * Without opts, falls back to calling useAuth() internally (convenient but
+ * may create a second auth lock on Vercel).
+ */
+export function usePreferences(opts?: {
+  profile: Profile | null;
+  isLoading: boolean;
+  refetchProfile: () => Promise<void>;
+}): UsePreferencesReturn {
+  // Always call useAuth() unconditionally (Rules of Hooks), but only USE
+  // its values when no opts are provided.
+  const fallback = useAuth();
+  const profile = opts ? opts.profile : fallback.profile;
+  const isLoading = opts ? opts.isLoading : fallback.isLoading;
+  const refetchProfile = opts ? opts.refetchProfile : fallback.refetchProfile;
+
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -30,7 +49,7 @@ export function usePreferences(): UsePreferencesReturn {
     ? {
         locale: profile.locale || 'vi',
         timezone: profile.timezone || 'Asia/Ho_Chi_Minh',
-        currency: 'VND',
+        currency: profile.currency || 'VND',
       }
     : null;
 
@@ -47,6 +66,10 @@ export function usePreferences(): UsePreferencesReturn {
           setError(result.error || 'Failed to update preferences');
           resolve(false);
         } else {
+          // Fire profile refresh without awaiting it — the transition completes
+          // immediately (clearing "Saving..." state) while the profile reloads
+          // in the background to update in-memory locale/timezone.
+          refetchProfile().catch(console.error);
           resolve(true);
         }
       });
@@ -55,7 +78,7 @@ export function usePreferences(): UsePreferencesReturn {
 
   return {
     preferences,
-    isLoading: authLoading,
+    isLoading,
     error,
     updatePreferences,
     isPending,

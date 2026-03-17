@@ -18,6 +18,8 @@ interface UseAuthReturn {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
+  /** Re-fetch the user profile from the database (e.g. after updating preferences). */
+  refetchProfile: () => Promise<void>;
 }
 
 /**
@@ -216,6 +218,14 @@ export function useAuth(): UseAuthReturn {
     [supabase]
   );
 
+  // Manually re-fetch the profile (e.g. after updating language/timezone preferences)
+  const refetchProfile = useCallback(async () => {
+    const currentUser = user;
+    if (!currentUser) return;
+    const updated = await fetchProfile(currentUser.id);
+    if (updated) setProfile(updated);
+  }, [user, fetchProfile]);
+
   return {
     user,
     profile,
@@ -228,5 +238,6 @@ export function useAuth(): UseAuthReturn {
     signOut,
     resetPassword,
     updatePassword,
+    refetchProfile,
   };
 }
