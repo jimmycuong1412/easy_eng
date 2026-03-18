@@ -48,9 +48,15 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Check if the route requires role-based access
+  // Check if the route requires role-based access.
+  // Use exact path-segment matching so e.g. /dashboard/teachers does NOT
+  // match the '/teacher' role route (substring "teacher" is inside "teachers").
+  const pathSegments = pathname.split('/');
   const roleRoute = Object.entries(ROLE_ROUTES).find(([_, routes]) =>
-    routes.some((route) => pathname.includes(route))
+    routes.some((route) => {
+      const routeSegments = route.split('/').filter(Boolean);
+      return routeSegments.every((seg, i) => pathSegments.includes(seg));
+    })
   );
 
   if (roleRoute) {
