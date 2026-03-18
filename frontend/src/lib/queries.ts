@@ -102,31 +102,28 @@ export async function getTeachers(filters?: { limit?: number; offset?: number })
 export async function getTeacherById(teacherId: string) {
   const db = supabase();
 
-  // Three separate queries — reviews and availability reference auth.users,
-  // not profiles, so PostgREST cannot join them directly from profiles.
-  const [profileResult, classesResult, reviewsResult, availabilityResult, overridesResult] = await Promise.all([
-    db.from('profiles')
-      .select('id, full_name, avatar_url, bio, average_rating, total_reviews, role, created_at')
-      .eq('id', teacherId)
-      .eq('role', 'teacher')
-      .single(),
-    db.from('classes')
-      .select('id, title, level, price, start_time, status, current_enrollments, max_students')
-      .eq('teacher_id', teacherId)
-      .eq('status', 'scheduled'),
-    (db as any).from('reviews')
-      .select('id, rating, comment, is_anonymous, created_at, student_id')
-      .eq('teacher_id', teacherId)
-      .order('created_at', { ascending: false })
-      .limit(20),
-    db.from('teacher_availability')
-      .select('day_of_week, start_time, end_time, is_active')
-      .eq('teacher_id', teacherId)
-      .eq('is_active', true),
-    db.from('teacher_slot_overrides')
-      .select('day_of_week, slot_time, is_enabled')
-      .eq('teacher_id', teacherId),
-  ]);
+  // Sequential queries to avoid navigator.locks contention on the singleton client
+  const profileResult = await db.from('profiles')
+    .select('id, full_name, avatar_url, bio, average_rating, total_reviews, role, created_at')
+    .eq('id', teacherId)
+    .eq('role', 'teacher')
+    .single();
+  const classesResult = await db.from('classes')
+    .select('id, title, level, price, start_time, status, current_enrollments, max_students')
+    .eq('teacher_id', teacherId)
+    .eq('status', 'scheduled');
+  const reviewsResult = await (db as any).from('reviews')
+    .select('id, rating, comment, is_anonymous, created_at, student_id')
+    .eq('teacher_id', teacherId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  const availabilityResult = await db.from('teacher_availability')
+    .select('day_of_week, start_time, end_time, is_active')
+    .eq('teacher_id', teacherId)
+    .eq('is_active', true);
+  const overridesResult = await db.from('teacher_slot_overrides')
+    .select('day_of_week, slot_time, is_enabled')
+    .eq('teacher_id', teacherId);
 
   if (profileResult.error) throw profileResult.error;
 
