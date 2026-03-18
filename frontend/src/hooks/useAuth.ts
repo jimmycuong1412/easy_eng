@@ -58,9 +58,15 @@ export function useAuth(): UseAuthReturn {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Race getSession() against a 5-second timeout so the UI never stays
+        // locked if the Supabase auth lock hangs (observed on some deployments).
+        const timeoutResult = { data: { session: null as null } };
+        const timeoutPromise = new Promise<typeof timeoutResult>((resolve) =>
+          setTimeout(() => resolve(timeoutResult), 5000)
+        );
         const {
           data: { session },
-        } = await supabase.auth.getSession();
+        } = await Promise.race([supabase.auth.getSession(), timeoutPromise]);
 
         setSession(session);
         setUser(session?.user ?? null);
