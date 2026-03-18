@@ -17,8 +17,6 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PixelAvatar } from '@/components/features/PixelAvatar';
-import { GemBadge } from '@/components/features/CookieBadge';
-import { useGemsBalance } from '@/hooks/useGemsBalance';
 import { GemImage } from '@/components/common/GemImage';
 import { getTeacherById } from '@/lib/queries';
 
@@ -256,9 +254,6 @@ export default function TeacherDetailPage() {
   // dateKey = "dayOfWeek:YYYY-MM-DD"  e.g. "1:2026-02-24"
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [selectedTime, setSelectedTime] = React.useState<string | null>(null);
-  const [gemsApplied, setGemsApplied] = React.useState(0);
-  const { balance: userGems } = useGemsBalance();
-
   React.useEffect(() => {
     getTeacherById(teacherId)
       .then((data: Record<string, unknown>) => {
@@ -350,9 +345,7 @@ export default function TeacherDetailPage() {
     ratingBreakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
   };
 
-  const sessionPriceGems   = Math.round(mockTeacher.hourlyRate / 1000);
-  const maxGemsForDiscount = Math.min(userGems, Math.floor(sessionPriceGems * 0.5));
-  const finalPriceGems     = sessionPriceGems - gemsApplied;
+  const sessionPriceGems = Math.round(mockTeacher.hourlyRate / 1000);
 
   // Parse selectedDate "dayOfWeek:YYYY-MM-DD" for display
   const selectedDateLabel = React.useMemo(() => {
@@ -366,7 +359,7 @@ export default function TeacherDetailPage() {
     if (!selectedDate || !selectedTime) return;
     const [, dateStr] = selectedDate.split(':');
     router.push(
-      `/student/bookings/confirm?teacher=${teacherId}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(selectedTime)}&gems=${gemsApplied}`
+      `/student/bookings/confirm?teacher=${teacherId}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(selectedTime)}&gems=0`
     );
   };
 
@@ -445,7 +438,6 @@ export default function TeacherDetailPage() {
                 onSelect={(dateKey, time) => {
                   setSelectedDate(dateKey);
                   setSelectedTime(time);
-                  setGemsApplied(0);
                 }}
               />
             </CardContent>
@@ -556,7 +548,7 @@ export default function TeacherDetailPage() {
                     return `${Math.floor(end / 60).toString().padStart(2, '0')}:${(end % 60).toString().padStart(2, '0')}`;
                   })()}</p>
                   <button
-                    onClick={() => { setSelectedDate(null); setSelectedTime(null); setGemsApplied(0); }}
+                    onClick={() => { setSelectedDate(null); setSelectedTime(null); }}
                     className="text-xs text-text-muted hover:text-text-primary underline"
                   >
                     {t('changeSlot')}
@@ -568,49 +560,13 @@ export default function TeacherDetailPage() {
                 </div>
               )}
 
-              <Separator />
-
-              {/* Gem discount */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-text-secondary">{t('applyGems')}</label>
-                  <GemBadge count={userGems} size="sm" />
-                </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="0"
-                    max={maxGemsForDiscount}
-                    value={gemsApplied}
-                    onChange={(e) => setGemsApplied(Number(e.target.value))}
-                    className="flex-1"
-                    disabled={maxGemsForDiscount === 0}
-                  />
-                  <span className="text-sm font-medium text-accent-gem w-20 text-right inline-flex items-center gap-1 justify-end">
-                    -{gemsApplied} <GemImage size={14} className="inline-block align-middle" />
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs text-text-muted mt-1">
-                  <span>0</span>
-                  <span>{t('maxDiscount', { pct: 50 })}</span>
-                  <span>{maxGemsForDiscount} <GemImage size={10} className="inline-block align-middle" /></span>
-                </div>
-              </div>
-
-              {/* Final price */}
+              {/* Total price */}
               <div className="p-4 rounded-xl bg-accent-gem/10 border border-accent-gem/20">
                 <div className="flex items-center justify-between">
                   <span className="text-text-secondary">{t('total')}</span>
-                  <div className="text-right">
-                    {gemsApplied > 0 && (
-                      <p className="text-sm text-text-muted line-through inline-flex items-center gap-1">
-                        {sessionPriceGems} <GemImage size={12} className="inline-block align-middle" />
-                      </p>
-                    )}
-                    <p className="text-xl font-bold text-accent-gem inline-flex items-center gap-2">
-                      {finalPriceGems} <GemImage size={20} />
-                    </p>
-                  </div>
+                  <p className="text-xl font-bold text-accent-gem inline-flex items-center gap-2">
+                    {sessionPriceGems} <GemImage size={20} />
+                  </p>
                 </div>
               </div>
 
