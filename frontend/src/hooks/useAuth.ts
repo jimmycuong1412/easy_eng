@@ -179,15 +179,18 @@ export function useAuth(): UseAuthReturn {
   const signOut = useCallback(async () => {
     setError(null);
 
-    const { error } = await supabase.auth.signOut();
+    // Always redirect within 3 s — signOut can hang if the auth lock is busy.
+    const timeout = new Promise<{ error: null }>((resolve) =>
+      setTimeout(() => resolve({ error: null }), 3000)
+    );
+    const { error } = await Promise.race([supabase.auth.signOut(), timeout]);
 
     if (error) {
       setError(error);
-      throw error;
     }
 
-    // Redirect to login page after successful logout
-    window.location.href = '/auth/login';
+    // Redirect to login page regardless of signOut result
+    window.location.href = '/en/auth/login';
   }, [supabase]);
 
   // Reset password
