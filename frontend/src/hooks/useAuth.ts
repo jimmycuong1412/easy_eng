@@ -179,17 +179,21 @@ export function useAuth(): UseAuthReturn {
   const signOut = useCallback(async () => {
     setError(null);
 
-    // Always redirect within 3 s — signOut can hang if the auth lock is busy.
+    // Race signOut against a 3 s timeout — the auth lock can hang.
     const timeout = new Promise<{ error: null }>((resolve) =>
       setTimeout(() => resolve({ error: null }), 3000)
     );
-    const { error } = await Promise.race([supabase.auth.signOut(), timeout]);
+    await Promise.race([supabase.auth.signOut(), timeout]);
 
-    if (error) {
-      setError(error);
-    }
+    // Always clear Supabase auth cookies manually so the middleware doesn't
+    // see a stale session and bounce the user back to the dashboard.
+    document.cookie.split(';').forEach((cookie) => {
+      const name = cookie.split('=')[0].trim();
+      if (name.startsWith('sb-')) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      }
+    });
 
-    // Redirect to login page regardless of signOut result
     window.location.href = '/en/auth/login';
   }, [supabase]);
 
