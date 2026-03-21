@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
 import { Button } from '@/components/ui/button';
@@ -69,7 +70,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user: _user, profile: liveProfile, isLoading, signOut } = useAuth();
+  const { user: _user, profile: liveProfile, isLoading } = useAuth();
   const { profile: storedProfile, setProfile: storeProfile } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
@@ -299,12 +300,18 @@ export default function DashboardLayout({
               )}
             </Link>
             <button
-              onClick={async () => {
-                try {
-                  await signOut();
-                } catch (error) {
-                  console.error('Logout error:', error);
-                }
+              onClick={() => {
+                // Clear Supabase auth cookies immediately so the middleware
+                // won't bounce the user back to the dashboard.
+                document.cookie.split(';').forEach((c) => {
+                  const name = c.split('=')[0].trim();
+                  if (name.startsWith('sb-')) {
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+                  }
+                });
+                // Fire-and-forget network sign-out to invalidate the server session.
+                getSupabaseClient().auth.signOut().catch(() => {});
+                window.location.href = '/en/auth/login';
               }}
               title={sidebarCollapsed ? tCommon('logout') : undefined}
               className={cn(
