@@ -23,8 +23,9 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
   const startTime = new Date(`${date}T${time}:00+07:00`);
   const endTime   = new Date(startTime.getTime() + 25 * 60 * 1000);
 
-  // Use admin client to bypass RLS for class/booking creation
-  const admin = await createAdminClient();
+  // Use admin client (bypasses RLS) cast to any for flexible table access
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const admin = await createAdminClient() as any;
 
   // 1. Create a 1-on-1 class record
   const { data: cls, error: classError } = await admin
@@ -41,7 +42,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
       duration_minutes: 25,
       max_students: 1,
       status: 'scheduled',
-    } as never)
+    })
     .select('id')
     .single();
 
@@ -63,7 +64,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
       payment_status: 'completed',
       status: 'confirmed',
       paid_at: new Date().toISOString(),
-    } as never)
+    })
     .select('id')
     .single();
 
@@ -72,9 +73,9 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: bookingError?.message ?? 'Booking creation failed' }, { status: 500 });
   }
 
-  // 3. Deduct gems
+  // 3. Deduct gems via transaction record
   const { error: gemsError } = await admin
-    .from('gem_transactions' as never)
+    .from('gem_transactions')
     .insert({
       user_id: user.id,
       amount: -GEMS_PER_SESSION,
@@ -82,15 +83,15 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
       description: '1-on-1 English Session',
       class_id: cls.id,
       booking_id: booking.id,
-    } as never);
+    });
 
   if (gemsError) {
-    await admin.from('bookings').delete().eq('id', (booking as { id: string }).id);
+    await admin.from('bookings').delete().eq('id', booking.id);
     await admin.from('classes').delete().eq('id', cls.id);
     return NextResponse.json({ error: 'Failed to deduct gems' }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, bookingId: (booking as { id: string }).id }, { status: 201 });
+  return NextResponse.json({ success: true, bookingId: booking.id }, { status: 201 });
 }
 
 export const POST = withCsrfRouteProtection(handlePost);
