@@ -87,6 +87,16 @@ function isPast(date: Date): boolean {
   return date < t;
 }
 
+// Returns true if the slot time has already passed on the given date.
+// For past dates this is always true; for today it compares current time.
+function isSlotPast(date: Date, time: string): boolean {
+  if (isPast(date)) return true;
+  if (!isToday(date)) return false;
+  const [h, m] = time.split(':').map(Number);
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes() >= h * 60 + m;
+}
+
 // ─── WeeklyCalendar ───────────────────────────────────────────────────────────
 
 interface WeeklyCalendarProps {
@@ -188,7 +198,7 @@ function WeeklyCalendar({ availability, selectedDate, selectedTime, onSelect }: 
                 {weekDates.map((date, i) => {
                   const dow = weekDayOfWeek[i];
                   const hasSlot = (availMap[dow] ?? []).includes(time);
-                  const past = isPast(date);
+                  const past = isSlotPast(date, time);
                   const dateStr = date.toISOString().split('T')[0];
                   const dateKey = `${dow}:${dateStr}`;
                   const isSelected = selectedDate === dateKey && selectedTime === time;
