@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GemImage } from '@/components/common/GemImage';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { csrfFetch } from '@/lib/csrf';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
 
 const GEMS_PER_SESSION = 200;
@@ -55,7 +54,7 @@ export default function BookingConfirmPage() {
     setIsBooking(true);
     setError(null);
     try {
-      const res = await csrfFetch('/api/bookings/book-slot', {
+      const res = await fetch('/api/bookings/book-slot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teacherId, date, time }),

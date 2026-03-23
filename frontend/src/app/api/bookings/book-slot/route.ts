@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { withCsrfRouteProtection } from '@/lib/csrf.server';
 
 const GEMS_PER_SESSION = 200;
 
@@ -94,4 +93,4 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
   return NextResponse.json({ success: true, bookingId: booking.id }, { status: 201 });
 }
 
-export const POST = withCsrfRouteProtection(handlePost);
+export const POST = handlePost;
