@@ -1,295 +1,189 @@
-# Implementation Plan: Security Hardening
+# Implementation Plan: Teacher Schedule Polish — Past Slot Locking + i18n
 
-**Branch**: `001-english-learning-platform` | **Date**: 2026-02-22 | **Spec**: [spec.md](./spec.md)
-**Input**: Security review findings — 10 priority actions covering credentials, CSRF, rate limiting, CometChat key exposure, webhook idempotency, RLS performance, file safety, HSTS, payment webhook verification, and timing-safe comparisons.
-
----
-
-## Summary
-
-Apply 10 targeted security fixes to the production-ready EasyEng platform. The fixes are grouped into 4 phases ordered by severity: (1) credentials & secret leaks, (2) missing CSRF enforcement on state-changing API routes, (3) rate limiting and payment integrity, (4) performance & hardening polish. No new user-facing features — these are infrastructure changes that make the existing system production-safe.
+**Branch**: `001-english-learning-platform` | **Date**: 2026-03-23
+**Input**: Feature request — block past slots + fix English i18n on teacher schedule page
 
 ---
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.4, Node.js 20, Deno (Supabase Edge Functions)
-**Primary Dependencies**: Next.js 14.2, Supabase JS v2, Express 4 (backend), `lru-cache` (new), `server-only` (new)
-**Storage**: Supabase PostgreSQL — new migration for `processed_webhooks` table and JWT claims trigger
-**Testing**: Jest (unit), Playwright (e2e) — new tests for CSRF bypass attempts, rate limit behavior, idempotency
-**Target Platform**: Vercel (frontend), Node.js server (backend), Supabase Edge Functions
-**Project Type**: Web application (frontend + backend + Supabase functions)
-**Performance Goals**: RLS query time reduced from ~150ms to ~10ms via JWT claims; no regression on existing benchmarks
-**Constraints**: Zero breaking changes to existing API surface; no user-visible UI changes; all fixes backward-compatible
-**Scale/Scope**: Affects 6 Next.js API routes, 4 payment webhook handlers, 2 Supabase migrations, 1 config file, 2 new utility modules
+**Tech Stack**: Next.js 14, TypeScript 5.4, next-intl (i18n), Supabase JS v2
+**Affected Files**:
+- `frontend/src/components/teacher/AvailabilityCalendar.tsx`
+- `frontend/src/app/[locale]/teacher/schedule/page.tsx`
+- `frontend/messages/en.json`
+- `frontend/messages/vi.json`
+
+**No DB changes. No new npm packages.**
 
 ---
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-checked after Phase 1 design.*
-
-| Principle | Assessment | Status |
-|-----------|-----------|--------|
-| **I. Code Quality** | All new helpers (rate-limiter, timing-safe compare) must be single-purpose functions <50 lines | ✅ PASS — each fix is a focused utility |
-| **II. Testing Discipline** | Security fixes require tests: CSRF bypass test, rate limit test, idempotency test | ✅ PASS — test tasks included in each phase |
-| **III. UX Consistency** | No UI changes; error messages for 403/429 must be user-friendly | ✅ PASS — existing error format maintained |
-| **IV. Performance** | JWT claims replace subquery RLS — measurable improvement, no regression | ✅ PASS — benchmarked improvement expected |
-| **V. Role-Based Access Control** | CSRF + rate limiting enforced at API level (server-side) for all roles | ✅ PASS — all state-changing routes covered |
-| **VI. Virtual Currency Integrity** | Webhook idempotency prevents double gem credits; timing-safe comparison prevents injection | ✅ PASS — financial operations hardened |
-| **VII. UI Design Excellence** | N/A — no UI changes in this plan | ✅ N/A |
-
-**Gate result: PASS** — proceed to Phase 0.
+| Principle | Status | Notes |
+|-----------|--------|-------|
+| Code Quality | PASS | Changes are small, well-typed, readable |
+| Testing Discipline | PASS | No new business logic that requires unit tests; smoke-test via quickstart |
+| UX Consistency | PASS | Past slots follow same locked-cell pattern as booked slots |
+| Role-Based Access | PASS | No access control changes |
+| Currency Integrity | N/A | No gem/currency changes |
 
 ---
 
-## Project Structure
+## Feature Summary
 
-### Documentation (this feature)
+### Sub-feature A: Past Slot Locking
 
-```text
-specs/001-english-learning-platform/
-├── plan.md              # This file
-├── research.md          # Phase 0 output (security patterns)
-├── data-model.md        # Phase 1 output (processed_webhooks table, JWT trigger)
-├── quickstart.md        # Phase 1 output (credential rotation + fix guide)
-├── contracts/           # Phase 1 output (rate-limit middleware API)
-└── tasks.md             # Phase 2 output (/speckit.tasks — NOT created here)
-```
+**Problem**: Teachers can currently toggle open slots in the past (past days and past times on today).
+**Fix**: Derive `pastSlots: Set<string>` inside `AvailabilityCalendar` from `weekStart` + current time using `useMemo`. Render past slots as dimmed/locked (distinct from booked=blue). Suppress click handlers for past slots.
 
-### Source Code (affected files)
+**Visual hierarchy**:
+| State | Color | Interaction |
+|-------|-------|-------------|
+| OPEN | Green | Click to close |
+| CLOSED | Grey | Click to open |
+| BOOKED | Blue | Locked (cursor-not-allowed) |
+| PAST | Dark striped/dimmed | Locked (cursor-not-allowed) |
+| SELECTED | Yellow highlight | Bulk action |
 
-```text
-frontend/
-├── .env.local                                  # REMOVE from git, rotate secrets
-├── next.config.mjs                             # Add HSTS header
-├── package.json                                # Add: lru-cache, server-only
-├── src/
-│   ├── lib/
-│   │   ├── rate-limit.ts                       # NEW: LRU-map rate limiter
-│   │   ├── server-only-secrets.ts              # NEW: server-only module wrapper
-│   │   └── cometchat/
-│   │       └── config.ts                       # Remove NEXT_PUBLIC_COMETCHAT_AUTH_KEY ref
-│   └── app/api/
-│       ├── cometchat/auth-token/route.ts       # Add CSRF; use server-only key
-│       ├── payments/
-│       │   ├── gem-purchase/route.ts           # Add CSRF + rate limit
-│       │   └── gem-purchase-complete/route.ts  # Add CSRF + timing-safe compare
-│       └── admin/
-│           ├── gems-rules/route.ts             # Add CSRF + rate limit
-│           └── gems-rules/[id]/route.ts        # Add CSRF + rate limit
+### Sub-feature B: i18n for Schedule Page and AvailabilityCalendar
 
-backend/
-├── .env                                        # REMOVE from git, rotate secrets
-└── src/
-    ├── routes/
-    │   └── payment-webhook.routes.ts           # Add early-return on sig fail + idempotency
-    └── services/
-        └── payment.unified.service.ts          # Add idempotency helper
+**Problem**: `schedule/page.tsx` and `AvailabilityCalendar.tsx` contain hardcoded Vietnamese strings. When locale = English, the page still shows Vietnamese.
 
-supabase/
-└── migrations/
-    ├── 056_jwt_claims_trigger.sql              # NEW: role → JWT claims trigger
-    └── 057_processed_webhooks.sql             # NEW: webhook idempotency table
-```
-
-**Structure Decision**: Web application (Option 2). Existing frontend/backend split retained. Two new Supabase migrations added. New frontend utility modules added in `src/lib/`.
+**Fix**:
+1. Add `teacherSchedule.calendar` keys to `en.json` and `vi.json`
+2. Use `useTranslations('teacherSchedule')` in `AvailabilityCalendar.tsx`
+3. Use `useTranslations('teacherSchedule')` and `useLocale()` in `schedule/page.tsx`
+4. Refactor `PRESETS` to use fixed English keys; labels from translations
+5. Replace hardcoded `'vi-VN'` with dynamic locale string
 
 ---
 
-## Complexity Tracking
+## Phase 0: Research (Complete)
 
-> No constitution violations.
-
----
-
-## Implementation Phases
-
-### Phase 1 — Credentials & Secret Leaks (CRITICAL, Day 1)
-
-**Goal**: Eliminate all committed secrets and close the `NEXT_PUBLIC_` auth key exposure.
-
-**Actions**:
-1. Add `.env`, `.env.local`, `.env.*.local` to `.gitignore`
-2. Run `git filter-repo` to purge both files from all git history
-3. Rotate all exposed credentials (Supabase keys, CometChat keys, JWT secret, payment gateway keys)
-4. Remove `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` from `.env.local` and `cometchat/config.ts`
-5. Install `server-only` package; create `src/lib/server-only-secrets.ts`
-6. Update `cometchat/config.ts` to use non-public env var; reference only from API routes
-
-**Files**: `.gitignore`, `.env.local`, `frontend/src/lib/cometchat/config.ts`, `frontend/src/lib/server-only-secrets.ts`
+See `research.md` — all decisions resolved.
 
 ---
 
-### Phase 2 — CSRF on All State-Changing API Routes (CRITICAL, Day 1–2)
+## Phase 1: Design & Contracts
 
-**Goal**: Apply existing `csrfMiddleware` (already built in `csrf.tsx`) to all POST/PUT/DELETE routes.
+### Data Model
 
-**Routes to fix**:
+No schema changes. No new state shapes. The only new derived state:
 
-| Route | Method(s) | Current state |
-|-------|-----------|---------------|
-| `/api/payments/gem-purchase` | POST | No CSRF |
-| `/api/payments/gem-purchase-complete` | POST | No CSRF |
-| `/api/admin/gems-rules` | POST | No CSRF |
-| `/api/admin/gems-rules/[id]` | PUT, DELETE | No CSRF |
-| `/api/cometchat/auth-token` | POST | No CSRF |
-
-**Pattern** — wrap each handler:
 ```typescript
-import { withCsrfProtection } from '@/lib/csrf';
-
-export const POST = withCsrfProtection(async (request) => {
-  // existing handler body unchanged
-});
+// Inside AvailabilityCalendar — derived from weekStart + Date.now()
+pastSlots: Set<string>   // "dayOfWeek:HH:MM" keys that are in the past
 ```
 
-**Note**: The `csrfMiddleware` in `csrf.tsx` targets Express (req/res). A Next.js Route Handler adapter `withCsrfProtection` will be added to `csrf.tsx` using `NextRequest` cookies.
+### New i18n Keys
 
----
-
-### Phase 3 — Rate Limiting & Payment Integrity (HIGH, Day 2–3)
-
-**Goal**: Add in-process rate limiting to all frontend API routes; fix payment webhook verification and idempotency.
-
-**3a. Rate Limiting**
-
-New file: `frontend/src/lib/rate-limit.ts`
-```typescript
-// LRU-cache based, per-IP + per-user-ID rate limiter
-// No external dependency on Redis
-import { LRUCache } from 'lru-cache';
-
-const rateWindows = new LRUCache<string, number[]>({ max: 500, ttl: 15 * 60 * 1000 });
-
-export function rateLimit(key: string, maxRequests: number, windowMs: number): boolean {
-  const now = Date.now();
-  const hits = (rateWindows.get(key) ?? []).filter(t => now - t < windowMs);
-  if (hits.length >= maxRequests) return false;
-  rateWindows.set(key, [...hits, now]);
-  return true;
+**`messages/en.json`** — add under `teacherSchedule`:
+```json
+"calendar": {
+  "presets": {
+    "workHours": "Work hours (8–17)",
+    "morning": "Morning (6–12)",
+    "evening": "Evening (18–22)"
+  },
+  "selectedCount": "{count} slots selected",
+  "bulkOpen": "Open selected",
+  "bulkClose": "Close selected",
+  "deselect": "Deselect",
+  "legend": {
+    "open": "Open",
+    "closed": "Closed",
+    "booked": "Booked",
+    "selected": "Selected",
+    "past": "Past"
+  },
+  "saving": "Saving...",
+  "shiftHint": "Shift+click to select range — click column/row header to select full day/time",
+  "bookedTooltip": "Already booked by a student",
+  "pastTooltip": "Cannot modify past slots",
+  "openTooltip": "Open — click to close",
+  "closedTooltip": "Closed — click to open",
+  "colSelectTitle": "Select full day",
+  "rowSelectTitle": "Select this time across all days"
 }
 ```
 
-Limits per route:
-- `/api/payments/gem-purchase` — 5 req/min per user
-- `/api/payments/gem-purchase-complete` — 10 req/min per IP
-- `/api/admin/gems-rules` — 30 req/min per user
-- `/api/cometchat/auth-token` — 20 req/min per user
-
-**3b. Webhook Signature — Early Return**
-
-In `payment-webhook.routes.ts`, change:
-```typescript
-// BEFORE — logs but continues
-if (!isValid) {
-  logger.warn('...');
-  return res.json({ RspCode: '97', Message: 'Invalid signature' });  // ← return already there
+**`messages/vi.json`** — add under `teacherSchedule.calendar` (Vietnamese equivalents):
+```json
+"calendar": {
+  "presets": {
+    "workHours": "Giờ hành chính (8–17)",
+    "morning": "Buổi sáng (6–12)",
+    "evening": "Buổi tối (18–22)"
+  },
+  "selectedCount": "Đã chọn {count} slot",
+  "bulkOpen": "Mở đã chọn",
+  "bulkClose": "Đóng đã chọn",
+  "deselect": "Bỏ chọn",
+  "legend": {
+    "open": "Mở",
+    "closed": "Đóng",
+    "booked": "Đã đặt",
+    "selected": "Đã chọn",
+    "past": "Đã qua"
+  },
+  "saving": "Đang lưu...",
+  "shiftHint": "Shift+click để chọn dải — nhấn tiêu đề cột/hàng để chọn cả ngày/giờ",
+  "bookedTooltip": "Đã có học viên đặt",
+  "pastTooltip": "Không thể sửa slot đã qua",
+  "openTooltip": "Đang mở — nhấn để đóng",
+  "closedTooltip": "Đang đóng — nhấn để mở",
+  "colSelectTitle": "Chọn cả ngày",
+  "rowSelectTitle": "Chọn giờ này tất cả các ngày"
 }
 ```
 
-Audit all 4 gateway handlers to confirm `return` is present immediately after failed verification. Fix any that fall through.
+### schedule/page.tsx — Strings to Replace
 
-**3c. Webhook Idempotency**
+| Hardcoded | i18n key |
+|-----------|----------|
+| `"Lịch dạy"` | `t('title')` |
+| `"Mở hoặc đóng các khung giờ..."` | `t('subtitle')` |
+| `"Tuần trước"` | `t('prevWeek')` |
+| `"Tuần sau"` | `t('nextWeek')` |
+| `toLocaleDateString('vi-VN', ...)` | `toLocaleDateString(dateLocale, ...)` where `dateLocale = locale === 'vi' ? 'vi-VN' : 'en-US'` |
 
-New migration: `supabase/migrations/057_processed_webhooks.sql`
-```sql
-CREATE TABLE public.processed_webhooks (
-  webhook_source          VARCHAR(50)  NOT NULL,
-  external_transaction_id VARCHAR(255) NOT NULL,
-  PRIMARY KEY (webhook_source, external_transaction_id),
-  booking_id    UUID        REFERENCES public.bookings(id),
-  status        VARCHAR(50) NOT NULL,
-  created_at    TIMESTAMPTZ DEFAULT NOW()
-);
-```
+### AvailabilityCalendar.tsx — Strings to Replace
 
-In webhook handler — check before processing:
-```typescript
-const { data: existing } = await supabase
-  .from('processed_webhooks')
-  .select('status')
-  .eq('webhook_source', 'vnpay')
-  .eq('external_transaction_id', transactionId)
-  .maybeSingle();
-
-if (existing) return res.json({ success: true }); // idempotent
-```
-
-**3d. Timing-Safe Internal Secret**
-
-In `gem-purchase-complete/route.ts`, replace `!== ` comparison with `crypto.timingSafeEqual`. Also throw if env var is missing (remove empty default).
+| Hardcoded | i18n key |
+|-----------|----------|
+| `DAY_NAMES = ['CN', 'Thứ 2', ...]` | `t('days.sun')`, `t('days.mon')` etc. |
+| `PRESETS = { 'Giờ hành chính': ... }` | `PRESET_CONFIG = { workHours: ..., morning: ..., evening: ... }` + `t('calendar.presets.workHours')` |
+| `"Mở đã chọn"` | `t('calendar.bulkOpen')` |
+| `"Đóng đã chọn"` | `t('calendar.bulkClose')` |
+| `"Bỏ chọn"` | `t('calendar.deselect')` |
+| `"{n} slot đã chọn"` | `t('calendar.selectedCount', { count: selected.size })` |
+| `"Mở"` / `"Đóng"` / `"Đã đặt"` / `"Đã chọn"` | `t('calendar.legend.open')` etc. |
+| `"Đang lưu..."` | `t('calendar.saving')` |
+| Shift-click hint | `t('calendar.shiftHint')` |
+| Column header title | `t('calendar.colSelectTitle')` |
+| Row header title | `t('calendar.rowSelectTitle')` |
+| Slot button tooltips | `t('calendar.bookedTooltip')`, `t('calendar.pastTooltip')`, `t('calendar.openTooltip')`, `t('calendar.closedTooltip')` |
 
 ---
 
-### Phase 4 — Hardening Polish (MEDIUM, Day 3–4)
+## Implementation Order
 
-**Goal**: Close remaining medium-priority gaps.
-
-**4a. HSTS Header**
-
-In `next.config.mjs`, add to the headers array:
-```javascript
-{
-  key: 'Strict-Transport-Security',
-  value: isDev ? 'max-age=0' : 'max-age=31536000; includeSubDomains; preload',
-},
-```
-
-**4b. Supabase RLS — JWT Claims**
-
-New migration: `supabase/migrations/056_jwt_claims_trigger.sql`
-- Trigger on `profiles` INSERT/UPDATE of `role` column
-- Updates `auth.users.raw_app_meta_data.user_role`
-- Replaces subquery RLS checks with `auth.jwt() ->> 'user_role'` on the 5 most-called policies (admin policies on `profiles`, `bookings`, `classes`)
-
-**4c. Filename Sanitization**
-
-In `ClassMaterialsUploader.tsx`, replace:
-```typescript
-const filePath = `class-materials/${classId}/${Date.now()}-${file.name}`;
-```
-with:
-```typescript
-import { sanitizeFilename } from '@/lib/sanitization';
-const safeFilename = sanitizeFilename(file.name);
-const filePath = `class-materials/${classId}/${Date.now()}-${safeFilename}`;
-```
-
-**4d. Zustand LocalStorage Persistence**
-
-Reduce `authStore` persistence to non-sensitive fields only:
-```typescript
-partialize: (state) => ({
-  // Only persist non-sensitive UI preferences
-  locale: state.locale,
-  // Remove: profile, role, tokens
-}),
-```
+1. **Update en.json and vi.json** — add `teacherSchedule.calendar` keys
+2. **Rewrite AvailabilityCalendar.tsx**:
+   - Add `useMemo` for `pastSlots` (from `weekStart`)
+   - Add `useTranslations('teacherSchedule')`
+   - Rename `PRESETS` → `PRESET_CONFIG` with fixed English keys
+   - Replace all hardcoded strings with `t(...)` calls
+   - Add past slot visual style + click suppression
+3. **Update schedule/page.tsx**:
+   - Add `useTranslations('teacherSchedule')` + `useLocale()`
+   - Replace hardcoded strings
+   - Fix `toLocaleDateString` to use dynamic locale
+4. **TypeScript check** — `npx tsc --noEmit`
 
 ---
 
-## Risk & Rollback
+## Quickstart / Smoke-Test
 
-| Fix | Risk | Rollback |
-|-----|------|----------|
-| Credential rotation | Gateway APIs stop working if keys wrong | Revert env vars; re-rotate |
-| CSRF on API routes | Frontend must send CSRF token header — already done by existing fetch util | Remove wrapper if clients fail |
-| Rate limiting | Legitimate users may hit limits if too strict | Increase limits; add user-ID bypass |
-| Webhook idempotency | Duplicate processing blocked | Check `processed_webhooks` table for false positives |
-| RLS JWT claims | Role not in JWT until user logs out/in | Backfill with migration data function |
-| HSTS | Commits HTTPS for 1 year — dev users affected | Use `isDev` guard (already in plan) |
-
----
-
-## Success Criteria
-
-- [x] `.env` and `.env.local` absent from `git log --all -- .env.local` (not tracked; confirmed)
-- [x] `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` absent from all source files (removed from config.ts, env.ts, cometchat.ts)
-- [x] All 5 state-changing API routes return 403 without valid CSRF token (withCsrfRouteProtection applied)
-- [ ] All 5 state-changing API routes return 429 after limit exceeded (Phase 3 — pending)
-- [ ] Second identical webhook call returns 200 without processing (idempotency confirmed) (Phase 3 — pending)
-- [ ] `Strict-Transport-Security` header present in production response (Phase 4 — pending)
-- [ ] RLS admin policy uses `auth.jwt()` not subquery (verified in Supabase dashboard) (Phase 4 — pending)
-- [ ] File upload with `../../secret` filename is sanitized (Phase 4 — pending)
-- [x] TypeScript `tsc --noEmit` passes with 0 new errors (verified)
+See updated `quickstart.md` for test checklist including past-slot and i18n scenarios.

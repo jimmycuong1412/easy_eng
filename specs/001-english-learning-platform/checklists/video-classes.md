@@ -172,7 +172,7 @@
 
 - [x] CHK078 - Are requirements defined for connection drops during critical moments (e.g., quiz submission)? [Edge Case, Edge Cases Line 189] ✅ Edge case #22 covers general connection drops with partial attendance logging
 - [x] CHK079 - Are requirements defined for student reconnecting with different device/browser? [Edge Case, Edge Cases Line 192] ✅ Edge case #25 addresses multiple device scenarios
-- [ ] CHK080 - Are requirements defined for network switching (WiFi to cellular) during class? [Edge Case, Gap] ❌ Not explicitly covered
+- [x] CHK080 - Are requirements defined for network switching (WiFi to cellular) during class? [Edge Case, Gap] ✅ Resolved: CometChat SDK handles reconnection automatically on network change. UI shows "Reconnecting…" overlay if reconnection takes > 5s; if connection not restored within 30s, overlay changes to "Connection lost — tap to rejoin" with a manual rejoin button. Partial attendance is logged up to the last confirmed frame. Added as Edge Case #31 in spec.md.
 
 ### Concurrent Operation Edge Cases
 

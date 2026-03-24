@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Frontend (Next.js)",
+      "runtimeExecutable": "cmd.exe",
+      "runtimeArgs": ["/c", "npm --prefix frontend run dev"],
+      "port": 3000
+    },
+    {
+      "name": "Supabase Local",
+      "runtimeExecutable": "cmd.exe",
+      "runtimeArgs": ["/c", "npm run supabase:start"],
+      "port": 54321
+    }
+  ]
+}

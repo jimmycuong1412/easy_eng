@@ -35,7 +35,7 @@
 ## Implementation Readiness
 
 - [x] CHK012 - Are Phase 10 gamification database schema requirements complete (career_paths, student_careers, xp_transactions, marketplace_items)? [Completeness, Tasks §Phase 10] ✅ Tasks.md Phase 10 (T140, T141, T145, T155)
-- [ ] CHK013 - Are Phase 17 load testing acceptance criteria specified (what constitutes passing vs failing tests)? [Acceptance Criteria, Gap] ⚠️ Partial: Thresholds defined, but pass/fail criteria not explicit
+- [x] CHK013 - Are Phase 17 load testing acceptance criteria specified (what constitutes passing vs failing tests)? [Acceptance Criteria, Gap] ✅ Resolved: **PASS** = all of (p95 latency < 200ms, error rate < 1%, throughput ≥ 500 bookings/min, 1000 concurrent users stable for 5 min). **FAIL** = any single metric breaches threshold for > 30 consecutive seconds during sustained load. Criteria added to NFR-007 and SC-006 in spec.md.
 - [x] CHK014 - Are dependencies between remaining phases explicitly documented (e.g., Phase 10 depends on US1 student accounts)? [Dependency, Tasks §Dependencies] ✅ Tasks.md lines 853-876 document all phase dependencies
 
 ## Risk & Ambiguity

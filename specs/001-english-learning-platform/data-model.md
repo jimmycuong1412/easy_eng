@@ -1,206 +1,74 @@
-# Data Model: Security Hardening
+# Data Model: Teacher Schedule Simplification
 
-**Feature**: Security Hardening
-**Date**: 2026-02-22
-**Branch**: `001-english-learning-platform`
-
-## Overview
-
-This feature introduces two new database entities and modifies how existing RLS policies authenticate admin users. All other tables remain unchanged.
+**No schema changes required.** All data lives in existing tables.
 
 ---
 
-## New Entity 1: `processed_webhooks`
+## Entities Used
 
-**Purpose**: Idempotency table for payment gateway webhooks. Prevents double gem credits when gateways retry delivery.
+### teacher_slot_overrides (existing — read/write)
 
-**SQL**:
-```sql
-CREATE TABLE public.processed_webhooks (
-  webhook_source          VARCHAR(50)  NOT NULL,
-  external_transaction_id VARCHAR(255) NOT NULL,
-  PRIMARY KEY (webhook_source, external_transaction_id),
-  booking_id     UUID         REFERENCES public.bookings(id),
-  status         VARCHAR(50)  NOT NULL,
-  created_at     TIMESTAMPTZ  DEFAULT NOW()
-);
-```
+| Column | Type | Notes |
+|--------|------|-------|
+| teacher_id | UUID | FK → auth.users |
+| day_of_week | INT | 0=Sun, 1=Mon … 6=Sat |
+| slot_time | TIME | "HH:MM:00" (30-min intervals) |
+| is_enabled | BOOL | true = open for student booking |
 
-**Fields**:
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `webhook_source` | VARCHAR(50) | NOT NULL, PK | Gateway name: `'vnpay'`, `'momo'`, `'zalopay'`, `'stripe'` |
-| `external_transaction_id` | VARCHAR(255) | NOT NULL, PK | Transaction ID from payment gateway |
-| `booking_id` | UUID | FK → bookings.id, nullable | Associated booking (null for non-booking events) |
-| `status` | VARCHAR(50) | NOT NULL | Processing result: `'completed'`, `'failed'`, `'refunded'` |
-| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | When the webhook was processed |
+**Unique constraint**: `(teacher_id, day_of_week, slot_time)`
 
-**Validation Rules**:
-- `webhook_source` MUST be one of: `'vnpay'`, `'momo'`, `'zalopay'`, `'stripe'`
-- `external_transaction_id` MUST be non-empty
-- Duplicate `(webhook_source, external_transaction_id)` pair → handler returns `{ success: true }` early (idempotent)
-
-**RLS Policies**:
-- No direct user access — only accessible via service role (backend webhook handlers)
-- No SELECT/INSERT/UPDATE/DELETE policies needed for authenticated users
-
-**Migration file**: `supabase/migrations/057_processed_webhooks.sql`
+**Read**: `SELECT * FROM teacher_slot_overrides WHERE teacher_id = $1`
+**Write**: DELETE all for teacher → INSERT only enabled slots (existing pattern, unchanged)
 
 ---
 
-## New Entity 2: JWT Claims Trigger (Postgres Function)
+### bookings (read-only — derive locked slots)
 
-**Purpose**: Keeps `auth.users.raw_app_meta_data.user_role` in sync with `profiles.role`. Enables fast JWT-based role checks in RLS policies (eliminates subquery round-trips).
+| Column | Type | Notes |
+|--------|------|-------|
+| teacher_id | UUID | FK |
+| scheduled_date | DATE | specific calendar date |
+| start_time | TIME | slot start |
+| status | TEXT | 'confirmed' / 'pending' |
 
-**SQL**:
-```sql
-CREATE OR REPLACE FUNCTION public.sync_role_to_jwt_claims()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  UPDATE auth.users
-  SET raw_app_meta_data = jsonb_set(
-    COALESCE(raw_app_meta_data, '{}'::jsonb),
-    '{user_role}', to_jsonb(NEW.role::text)
-  )
-  WHERE id = NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_sync_role_to_jwt
-AFTER INSERT OR UPDATE OF role ON public.profiles
-FOR EACH ROW EXECUTE FUNCTION public.sync_role_to_jwt_claims();
-```
-
-**Trigger Entity**:
-| Property | Value |
-|----------|-------|
-| Name | `trg_sync_role_to_jwt` |
-| Table | `public.profiles` |
-| When | AFTER INSERT OR UPDATE OF role |
-| For Each | ROW |
-| Function | `public.sync_role_to_jwt_claims()` |
-| Security | SECURITY DEFINER (runs as table owner) |
-
-**JWT Claim Written**:
-- Path: `auth.users.raw_app_meta_data.user_role`
-- Value: profiles.role string (`'student'`, `'teacher'`, `'admin'`)
-- Note: `raw_app_meta_data` is server-controlled — users cannot self-modify (unlike `raw_user_meta_data`)
-
-**Caveat**: JWT claims baked at login time. Role changes take effect on user's next login or token refresh. Acceptable for admin role changes (rare operations).
-
-**Migration file**: `supabase/migrations/056_jwt_claims_trigger.sql`
+**Derived key format**: `"dayOfWeek:HH:MM"` computed from `scheduled_date.getDay()` + `start_time.slice(0,5)`.
 
 ---
 
-## Modified Entity: RLS Policies (5 admin policies)
-
-**Purpose**: Replace subquery pattern with JWT claim pattern for 5 most-called admin RLS policies.
-
-**Before** (subquery — slow):
-```sql
-(SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
-```
-
-**After** (JWT claim — fast):
-```sql
-auth.jwt() ->> 'user_role' = 'admin'
-```
-
-**Policies to update**:
-| Table | Policy Name | Operation |
-|-------|-------------|-----------|
-| `public.profiles` | `admin_read_all_profiles` | SELECT |
-| `public.classes` | `admin_manage_all_classes` | ALL |
-| `public.bookings` | `admin_read_all_bookings` | SELECT |
-| `public.gem_transactions` | `admin_read_all_transactions` | SELECT |
-| `public.gem_purchases` | `admin_read_all_purchases` | SELECT |
-
-**Migration file**: `supabase/migrations/058_rls_jwt_claims.sql`
-
----
-
-## Non-Database Security Changes
-
-These changes have no database entities but are part of the security hardening:
-
-### Rate Limiting (In-Process LRU Cache)
-
-**Package**: `lru-cache` v10 (npm)
-**Location**: `frontend/src/lib/rate-limit.ts` (new file)
+## Component State Model
 
 ```typescript
-type RateLimitEntry = { count: number; resetAt: number };
-// LRUCache<key: string, value: RateLimitEntry>
+// AvailabilityCalendar internal state
+slotState: Record<string, boolean>   // "dayOfWeek:HH:MM" → is_enabled
+selected: Set<string>                // multi-select: highlighted keys (not yet saved)
+anchorKey: string | null             // shift-click range anchor
+pendingChanges: Set<string>          // changed since last save (drives debounce)
+saving: boolean
+error: string | null
+
+// Props from parent page
+bookedSlots: Set<string>             // locked — cannot toggle
+weekStart: Date                      // display only; keys are day_of_week-based
 ```
-
-**Limits**:
-| Route | Key | Max | Window |
-|-------|-----|-----|--------|
-| `POST /api/payments/gem-purchase` | user ID | 5 | 60s |
-| `POST /api/payments/gem-purchase-complete` | IP | 10 | 60s |
-| `POST /api/admin/gems-rules` | user ID | 30 | 60s |
-| `PUT /api/admin/gems-rules/[id]` | user ID | 30 | 60s |
-| `DELETE /api/admin/gems-rules/[id]` | user ID | 30 | 60s |
-| `POST /api/cometchat/auth-token` | user ID | 20 | 60s |
-
-### CSRF Adapter
-
-**Location**: Addition to `frontend/src/lib/csrf.tsx` (existing file)
-
-```typescript
-export function withCsrfProtection<T extends NextRequest>(
-  handler: (req: T) => Promise<NextResponse>
-): (req: T) => Promise<NextResponse>
-```
-
-**Routes receiving CSRF wrapping**: All 6 state-changing Next.js API routes listed above.
-
-### Environment Variable Change
-
-**Rename**: `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` → `COMETCHAT_AUTH_KEY`
-
-**Files affected**:
-- `frontend/src/lib/cometchat/config.ts`: Remove `authKey` from client config object
-- `frontend/src/app/api/cometchat/auth-token/route.ts`: Read from `process.env.COMETCHAT_AUTH_KEY`
-- `frontend/src/lib/server-only-secrets.ts` (new file): Export server-only secrets with `import 'server-only'` guard
-
-### Security Headers
-
-**Location**: `frontend/next.config.mjs`
-
-**Addition**:
-```javascript
-{ key: 'Strict-Transport-Security', value: isDev ? 'max-age=0' : 'max-age=31536000; includeSubDomains; preload' }
-```
-
-### Timing-Safe Secret Comparison
-
-**Location**: Addition to `frontend/src/lib/sanitization.ts`
-
-```typescript
-export function compareSecretsTimingSafe(provided: string, expected: string): boolean
-```
-
-**Applied in**: `frontend/src/app/api/payments/gem-purchase-complete/route.ts`
 
 ---
 
-## State Transitions (Unchanged)
+## Slot Key Convention
 
-Existing state machines are not affected by security hardening:
-- **Booking States**: `pending → confirmed → attended | cancelled`
-- **Class States**: `scheduled → live → completed | cancelled`
-- **Webhook Status**: `pending → completed | failed | refunded` (new, in `processed_webhooks`)
+```
+key = `${dayOfWeek}:${HH:MM}`
+
+Examples:
+  "1:08:00"  → Monday 08:00
+  "0:14:30"  → Sunday 14:30
+  "6:20:00"  → Saturday 20:00
+```
+
+Matches the existing key format — no migration needed.
 
 ---
 
-## Migration Sequence
+## Visible Slot Range
 
-```
-056_jwt_claims_trigger.sql      ← Trigger + function (no deps)
-057_processed_webhooks.sql      ← New table (refs bookings)
-058_rls_jwt_claims.sql          ← Policy updates (requires trigger to exist)
-```
-
-Run in order. All are non-destructive (no data loss, no column drops).
+Default: **06:00 – 22:00** = 32 slots per day × 7 days = 224 cells per grid.
+(Down from 48 slots × 7 = 336 in current implementation.)
