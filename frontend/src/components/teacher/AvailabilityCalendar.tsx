@@ -9,12 +9,14 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { Loader2 } from 'lucide-react';
 
 // ---- Constants ----
 
-const DAY_NAMES = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+/** Maps JS day index (0=Sun … 6=Sat) to next-intl translation key suffix */
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const ORDERED_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun display order
 
 /** Visible slots: 06:00–21:30 (32 slots, 30-min intervals) */
@@ -28,10 +30,11 @@ const VISIBLE_SLOTS: string[] = (() => {
   return slots;
 })();
 
-const PRESETS = {
-  'Giờ hành chính': { days: [1, 2, 3, 4, 5], from: '08:00', to: '17:00' },
-  'Buổi sáng': { days: [0, 1, 2, 3, 4, 5, 6], from: '06:00', to: '12:00' },
-  'Buổi tối': { days: [0, 1, 2, 3, 4, 5, 6], from: '18:00', to: '22:00' },
+/** Preset config — keys are fixed English identifiers; labels come from translations */
+const PRESET_CONFIG = {
+  workHours: { days: [1, 2, 3, 4, 5],          from: '08:00', to: '17:00' },
+  morning:   { days: [0, 1, 2, 3, 4, 5, 6],    from: '06:00', to: '12:00' },
+  evening:   { days: [0, 1, 2, 3, 4, 5, 6],    from: '18:00', to: '22:00' },
 } as const;
 
 // ---- Helpers ----
@@ -80,6 +83,7 @@ export default function AvailabilityCalendar({
   bookedSlots = new Set(),
   weekStart: _weekStart,
 }: AvailabilityCalendarProps) {
+  const t = useTranslations('teacherSchedule');
   const supabase = createClient();
   const [slotState, setSlotState] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -282,9 +286,9 @@ export default function AvailabilityCalendar({
 
   // ---- Presets ----
 
-  const applyPreset = (presetName: keyof typeof PRESETS) => {
+  const applyPreset = (presetName: keyof typeof PRESET_CONFIG) => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    const preset = PRESETS[presetName];
+    const preset = PRESET_CONFIG[presetName];
     const presetSlots = VISIBLE_SLOTS.filter(
       (t) => t >= preset.from && t < preset.to
     );
@@ -313,13 +317,13 @@ export default function AvailabilityCalendar({
     <div className="space-y-3">
       {/* Quick presets */}
       <div className="flex flex-wrap gap-2">
-        {(Object.keys(PRESETS) as Array<keyof typeof PRESETS>).map((name) => (
+        {(Object.keys(PRESET_CONFIG) as Array<keyof typeof PRESET_CONFIG>).map((key) => (
           <button
-            key={name}
-            onClick={() => applyPreset(name)}
+            key={key}
+            onClick={() => applyPreset(key)}
             className="px-3 py-1.5 rounded-md text-sm border border-white/20 text-slate-300 hover:border-[#3B82F6]/60 hover:text-[#3B82F6] transition-colors"
           >
-            {name}
+            {t(`calendar.presets.${key}`)}
           </button>
         ))}
       </div>
@@ -327,24 +331,26 @@ export default function AvailabilityCalendar({
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
-          <span className="text-slate-400 mr-1">{selected.size} slot đã chọn</span>
+          <span className="text-slate-400 mr-1">
+            {t('calendar.selectedCount', { count: selected.size })}
+          </span>
           <button
             onClick={bulkOpen}
             className="px-3 py-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30"
           >
-            Mở đã chọn
+            {t('calendar.bulkOpen')}
           </button>
           <button
             onClick={bulkClose}
             className="px-3 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30"
           >
-            Đóng đã chọn
+            {t('calendar.bulkClose')}
           </button>
           <button
             onClick={() => setSelected(new Set())}
             className="px-3 py-1 rounded bg-white/10 text-slate-400 hover:bg-white/20"
           >
-            Bỏ chọn
+            {t('calendar.deselect')}
           </button>
         </div>
       )}
@@ -353,28 +359,28 @@ export default function AvailabilityCalendar({
       <div className="flex flex-wrap gap-4 text-xs text-slate-500">
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-sm bg-green-500/30 border border-green-500/50" />
-          Mở
+          {t('calendar.legend.open')}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-sm bg-white/5 border border-white/20" />
-          Đóng
+          {t('calendar.legend.closed')}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-sm bg-[#3B82F6]/30 border border-[#3B82F6]/50" />
-          Đã đặt
+          {t('calendar.legend.booked')}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-sm bg-yellow-400/20 border border-yellow-400/50" />
-          Đã chọn
+          {t('calendar.legend.selected')}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-sm bg-slate-800/60 border border-slate-700/30 opacity-40" />
-          Đã qua
+          {t('calendar.legend.past')}
         </span>
         {saving && (
           <span className="flex items-center gap-1 text-blue-400">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Đang lưu...
+            {t('calendar.saving')}
           </span>
         )}
       </div>
@@ -384,9 +390,7 @@ export default function AvailabilityCalendar({
       )}
 
       {/* Tip */}
-      <p className="text-xs text-slate-600">
-        Shift+click để chọn dải — nhấn tiêu đề cột/hàng để chọn cả ngày/giờ
-      </p>
+      <p className="text-xs text-slate-600">{t('calendar.shiftHint')}</p>
 
       {/* Grid */}
       <div className="overflow-x-auto rounded-lg border border-white/10">
@@ -399,9 +403,9 @@ export default function AvailabilityCalendar({
                   <button
                     onClick={() => handleColumnHeader(d)}
                     className="w-full text-xs font-medium text-slate-400 hover:text-white transition-colors py-1"
-                    title="Chọn cả ngày"
+                    title={t('calendar.colSelectTitle')}
                   >
-                    {DAY_NAMES[d]}
+                    {t(`days.${DAY_KEYS[d]}`)}
                   </button>
                 </th>
               ))}
@@ -414,7 +418,7 @@ export default function AvailabilityCalendar({
                   <button
                     onClick={() => handleRowHeader(time)}
                     className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors w-full"
-                    title="Chọn giờ này tất cả các ngày"
+                    title={t('calendar.rowSelectTitle')}
                   >
                     {time}
                   </button>
@@ -453,12 +457,12 @@ export default function AvailabilityCalendar({
                         disabled={isBooked || isPast}
                         title={
                           isPast
-                            ? 'Không thể sửa slot đã qua'
+                            ? t('calendar.pastTooltip')
                             : isBooked
-                            ? 'Đã có học viên đặt'
+                            ? t('calendar.bookedTooltip')
                             : isOpen
-                            ? 'Đang mở — nhấn để đóng'
-                            : 'Đang đóng — nhấn để mở'
+                            ? t('calendar.openTooltip')
+                            : t('calendar.closedTooltip')
                         }
                       />
                     </td>

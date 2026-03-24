@@ -12,6 +12,8 @@ import {
   Loader2,
 } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +23,10 @@ import { formatTime, getTimezoneLabel } from '@/lib/timezone';
 import AvailabilityCalendar from '@/components/teacher/AvailabilityCalendar';
 
 export default function TeacherSchedulePage() {
+  const t = useTranslations('teacherSchedule');
+  const locale = useLocale();
+  const dateLocale = locale === 'vi' ? 'vi-VN' : 'en-US';
+
   const { user, profile, isLoading: authLoading, refetchProfile } = useAuth();
   const { preferences } = usePreferences({ profile, isLoading: authLoading, refetchProfile });
   const userTimezone = preferences?.timezone || 'Asia/Ho_Chi_Minh';
@@ -123,9 +129,9 @@ export default function TeacherSchedulePage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-2xl font-bold text-white mb-1">Lịch dạy</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">{t('title')}</h1>
           <p className="text-slate-400">
-            Mở hoặc đóng các khung giờ để học viên có thể đặt lịch học
+            {t('subtitle')}
             {preferences && (
               <span className="ml-2 text-xs bg-white/10 text-slate-300 px-2 py-0.5 rounded-full">
                 {getTimezoneLabel(userTimezone)}
@@ -151,15 +157,15 @@ export default function TeacherSchedulePage() {
                   className="text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="w-5 h-5" />
-                  Tuần trước
+                  {t('prevWeek')}
                 </Button>
 
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-[#3B82F6]" />
                   <span className="text-white font-semibold">
-                    {weekDays[0].toLocaleDateString('vi-VN', { day: 'numeric', month: 'long' })}
+                    {weekDays[0].toLocaleDateString(dateLocale, { day: 'numeric', month: 'long' })}
                     {' – '}
-                    {weekDays[6].toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {weekDays[6].toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })}
                   </span>
                 </div>
 
@@ -169,7 +175,7 @@ export default function TeacherSchedulePage() {
                   onClick={goToNextWeek}
                   className="text-slate-400 hover:text-white"
                 >
-                  Tuần sau
+                  {t('nextWeek')}
                   <ChevronRight className="w-5 h-5" />
                 </Button>
               </div>
