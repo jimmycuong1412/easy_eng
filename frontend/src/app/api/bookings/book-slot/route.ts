@@ -24,7 +24,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
 
   // Use admin client (bypasses RLS) cast to any for flexible table access
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin = await createAdminClient() as any;
+  const admin = createAdminClient() as any;
 
   // 1. Create a 1-on-1 class record
   const { data: cls, error: classError } = await admin
