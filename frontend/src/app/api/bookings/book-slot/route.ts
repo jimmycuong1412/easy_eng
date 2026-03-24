@@ -32,10 +32,10 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
     .insert({
       teacher_id: teacherId,
       title: '1-on-1 English Session',
-      level: 'all',
-      price: 0,
+      level: 'intermediate',
+      price: 5,
       currency: 'USD',
-      schedule_type: 'one_on_one',
+      schedule_type: 'one_time',
       start_time: startTime.toISOString(),
       end_time: endTime.toISOString(),
       duration_minutes: 25,
