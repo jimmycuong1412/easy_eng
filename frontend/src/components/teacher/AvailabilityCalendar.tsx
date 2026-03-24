@@ -8,7 +8,7 @@
  * bulk open/close, quick presets, 800ms debounce auto-save.
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Loader2 } from 'lucide-react';
 
@@ -88,6 +88,36 @@ export default function AvailabilityCalendar({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ---- Past slots (derived from weekStart + current time) ----
+
+  const pastSlots = useMemo<Set<string>>(() => {
+    if (!_weekStart) return new Set<string>();
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const past = new Set<string>();
+
+    for (const d of ORDERED_DAYS) {
+      // Mon=offset 0, Tue=1, ..., Sun=6
+      const offset = d === 0 ? 6 : d - 1;
+      const date = new Date(_weekStart);
+      date.setDate(_weekStart.getDate() + offset);
+      const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+      if (dateStart < todayStart) {
+        // Entire past day — all slots locked
+        VISIBLE_SLOTS.forEach((t) => past.add(`${d}:${t}`));
+      } else if (dateStart.getTime() === todayStart.getTime()) {
+        // Today — lock slots at or before current time
+        VISIBLE_SLOTS.forEach((t) => {
+          const [h, m] = t.split(':').map(Number);
+          if (h * 60 + m <= nowMins) past.add(`${d}:${t}`);
+        });
+      }
+    }
+    return past;
+  }, [_weekStart]);
 
   // ---- Load ----
 
@@ -175,10 +205,11 @@ export default function AvailabilityCalendar({
 
   const handleSlotClick = (key: string, e: React.MouseEvent) => {
     if (bookedSlots.has(key)) return;
+    if (pastSlots.has(key)) return;
 
     if (e.shiftKey && anchorKey) {
-      // Range selection — add to selected, do not save yet
-      const range = getTimeRange(anchorKey, key);
+      // Range selection — add to selected (excluding past), do not save yet
+      const range = getTimeRange(anchorKey, key).filter((k) => !pastSlots.has(k));
       setSelected((prev) => new Set(Array.from(prev).concat(range)));
       return;
     }
@@ -195,7 +226,7 @@ export default function AvailabilityCalendar({
 
   const handleColumnHeader = (dayIndex: number) => {
     const dayKeys = VISIBLE_SLOTS.map((t) => `${dayIndex}:${t}`).filter(
-      (k) => !bookedSlots.has(k)
+      (k) => !bookedSlots.has(k) && !pastSlots.has(k)
     );
     setSelected((prev) => {
       const allSelected = dayKeys.every((k) => prev.has(k));
@@ -210,7 +241,7 @@ export default function AvailabilityCalendar({
 
   const handleRowHeader = (time: string) => {
     const timeKeys = ORDERED_DAYS.map((d) => `${d}:${time}`).filter(
-      (k) => !bookedSlots.has(k)
+      (k) => !bookedSlots.has(k) && !pastSlots.has(k)
     );
     setSelected((prev) => {
       const allSelected = timeKeys.every((k) => prev.has(k));
@@ -230,7 +261,7 @@ export default function AvailabilityCalendar({
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     const next = { ...slotState };
     selected.forEach((k) => {
-      if (!bookedSlots.has(k)) next[k] = true;
+      if (!bookedSlots.has(k) && !pastSlots.has(k)) next[k] = true;
     });
     setSlotState(next);
     setSelected(new Set());
@@ -242,7 +273,7 @@ export default function AvailabilityCalendar({
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     const next = { ...slotState };
     selected.forEach((k) => {
-      if (!bookedSlots.has(k)) next[k] = false;
+      if (!bookedSlots.has(k) && !pastSlots.has(k)) next[k] = false;
     });
     setSlotState(next);
     setSelected(new Set());
@@ -336,6 +367,10 @@ export default function AvailabilityCalendar({
           <span className="inline-block w-3 h-3 rounded-sm bg-yellow-400/20 border border-yellow-400/50" />
           Đã chọn
         </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-sm bg-slate-800/60 border border-slate-700/30 opacity-40" />
+          Đã qua
+        </span>
         {saving && (
           <span className="flex items-center gap-1 text-blue-400">
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -387,12 +422,16 @@ export default function AvailabilityCalendar({
                 {ORDERED_DAYS.map((d) => {
                   const key = `${d}:${time}`;
                   const isBooked = bookedSlots.has(key);
+                  const isPast = pastSlots.has(key);
                   const isOpen = slotState[key] ?? false;
                   const isSelected = selected.has(key);
 
                   let cellClass =
                     'w-full h-6 rounded text-xs transition-colors border ';
-                  if (isBooked) {
+                  if (isPast) {
+                    cellClass +=
+                      'bg-slate-800/60 border-slate-700/30 cursor-not-allowed opacity-40';
+                  } else if (isBooked) {
                     cellClass +=
                       'bg-[#3B82F6]/30 border-[#3B82F6]/50 cursor-not-allowed';
                   } else if (isSelected) {
@@ -411,9 +450,11 @@ export default function AvailabilityCalendar({
                       <button
                         className={cellClass}
                         onClick={(e) => handleSlotClick(key, e)}
-                        disabled={isBooked}
+                        disabled={isBooked || isPast}
                         title={
-                          isBooked
+                          isPast
+                            ? 'Không thể sửa slot đã qua'
+                            : isBooked
                             ? 'Đã có học viên đặt'
                             : isOpen
                             ? 'Đang mở — nhấn để đóng'

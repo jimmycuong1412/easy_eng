@@ -32,8 +32,23 @@ export default function TeacherSchedulePage() {
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-    return new Date(now.setDate(diff));
+    const monday = new Date(now.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
   });
+
+  // Compute this week's Monday (normalised to midnight) for prev-week guard
+  const thisMonday = React.useMemo(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diff);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  }, []);
+
+  const isCurrentWeek = currentWeekStart.getTime() <= thisMonday.getTime();
 
   const weekDays = React.useMemo(() => {
     const days = [];
@@ -132,7 +147,8 @@ export default function TeacherSchedulePage() {
                   variant="ghost"
                   size="sm"
                   onClick={goToPreviousWeek}
-                  className="text-slate-400 hover:text-white"
+                  disabled={isCurrentWeek}
+                  className="text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="w-5 h-5" />
                   Tuần trước

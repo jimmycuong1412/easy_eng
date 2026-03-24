@@ -330,6 +330,32 @@
       "thu": "Thu",
       "fri": "Fri",
       "sat": "Sat"
+    },
+    "calendar": {
+      "presets": {
+        "workHours": "Work hours (8–17)",
+        "morning": "Morning (6–12)",
+        "evening": "Evening (18–22)"
+      },
+      "selectedCount": "{count} slots selected",
+      "bulkOpen": "Open selected",
+      "bulkClose": "Close selected",
+      "deselect": "Deselect",
+      "legend": {
+        "open": "Open",
+        "closed": "Closed",
+        "booked": "Booked",
+        "selected": "Selected",
+        "past": "Past"
+      },
+      "saving": "Saving...",
+      "shiftHint": "Shift+click to select range — click column/row header to select full day/time",
+      "bookedTooltip": "Already booked by a student",
+      "pastTooltip": "Cannot modify past slots",
+      "openTooltip": "Open — click to close",
+      "closedTooltip": "Closed — click to open",
+      "colSelectTitle": "Select full day",
+      "rowSelectTitle": "Select this time across all days"
     }
   },
   "adminUsers": {
