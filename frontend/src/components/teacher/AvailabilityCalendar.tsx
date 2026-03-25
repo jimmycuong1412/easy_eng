@@ -22,7 +22,7 @@ const ORDERED_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun display order
 /** Visible slots: 06:00–21:30 (32 slots, 30-min intervals) */
 const VISIBLE_SLOTS: string[] = (() => {
   const slots: string[] = [];
-  for (let mins = 6 * 60; mins < 22 * 60; mins += 30) {
+  for (let mins = 0; mins < 24 * 60; mins += 30) {
     const h = Math.floor(mins / 60).toString().padStart(2, '0');
     const m = (mins % 60).toString().padStart(2, '0');
     slots.push(`${h}:${m}`);
@@ -396,7 +396,7 @@ export default function AvailabilityCalendar({
 
       {/* Grid */}
       <div className="overflow-x-auto rounded-lg border border-white/10">
-        <table className="w-full min-w-[420px] border-collapse">
+        <table className="w-full min-w-[420px] border-collapse table-fixed">
           <thead>
             <tr>
               <th className="w-8 p-1 border-b border-white/10" />
@@ -416,13 +416,13 @@ export default function AvailabilityCalendar({
           <tbody>
             {VISIBLE_SLOTS.map((time) => (
               <tr key={time} className="border-b border-white/5 last:border-0">
-                <td className="pr-1 text-right">
+                <td className="p-px text-right">
                   <button
                     onClick={() => handleRowHeader(time)}
                     className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors w-full leading-none"
                     title={t('calendar.rowSelectTitle')}
                   >
-                    {time.endsWith(':00') ? time.slice(0, 2) : ''}
+                    {time}
                   </button>
                 </td>
                 {ORDERED_DAYS.map((d) => {
