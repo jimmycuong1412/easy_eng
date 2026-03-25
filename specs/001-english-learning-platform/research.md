@@ -1,3 +1,35 @@
+# Research: Teacher Schedule — Compact General View
+
+## Cell Density
+
+**Decision**: `h-3` (12px) cells
+- 32 rows × 12px = 384px grid body — fits a 900px screen with header/nav
+- Minimum comfortable click target on desktop mouse: ~10px
+- Mobile: handled by `overflow-x-auto` scroll, density acceptable
+
+## Hour-only Label Strategy
+
+**Decision**: Show label only on `:00` rows
+- Pattern: `time.endsWith(':00') ? time.slice(0,2) : ''`
+- `:30` rows still receive a transparent row-select button for range selection
+- Visual anchor spacing: 1 label per 24px (2 × 12px rows) — readable
+
+## Toolbar Consolidation
+
+**Decision**: Swap presets row ↔ bulk-action row (mutually exclusive display)
+- `selected.size > 0` → show bulk-action bar, hide presets
+- `selected.size === 0` → show presets row
+- Saves ~36px when no selection active (no double-row)
+
+## Layout Consolidation
+
+**Decision**: Single `Card` for nav + calendar
+- Week nav becomes the `CardContent` header section (border-bottom separator)
+- Calendar grid directly below, no extra Card wrapper
+- Net saving: ~32px padding + ~2px double border
+
+---
+
 # Research: Teacher Schedule Polish — Past Slot Locking + i18n
 
 ---

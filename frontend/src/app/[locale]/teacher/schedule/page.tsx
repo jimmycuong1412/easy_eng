@@ -123,7 +123,7 @@ export default function TeacherSchedulePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] py-8">
-      <div className="max-w-5xl mx-auto px-4 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -140,57 +140,48 @@ export default function TeacherSchedulePage() {
           </p>
         </motion.div>
 
-        {/* Week Navigation */}
+        {/* Week Navigation + Availability Calendar — single unified card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <Card className="bg-white/5 border-white/10">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={goToPreviousWeek}
-                  disabled={isCurrentWeek}
-                  className="text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  {t('prevWeek')}
-                </Button>
+            {/* Week nav header */}
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToPreviousWeek}
+                disabled={isCurrentWeek}
+                className="text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                {t('prevWeek')}
+              </Button>
 
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[#3B82F6]" />
-                  <span className="text-white font-semibold">
-                    {weekDays[0].toLocaleDateString(dateLocale, { day: 'numeric', month: 'long' })}
-                    {' – '}
-                    {weekDays[6].toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </span>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={goToNextWeek}
-                  className="text-slate-400 hover:text-white"
-                >
-                  {t('nextWeek')}
-                  <ChevronRight className="w-5 h-5" />
-                </Button>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#3B82F6]" />
+                <span className="text-white font-semibold">
+                  {weekDays[0].toLocaleDateString(dateLocale, { day: 'numeric', month: 'long' })}
+                  {' – '}
+                  {weekDays[6].toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
 
-        {/* Inline Availability Calendar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="bg-white/5 border-white/10">
-            <CardContent className="p-4 md:p-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToNextWeek}
+                className="text-slate-400 hover:text-white"
+              >
+                {t('nextWeek')}
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Calendar grid */}
+            <CardContent className="p-3 md:p-4">
               <AvailabilityCalendar
                 bookedSlots={bookedSlots}
                 weekStart={currentWeekStart}

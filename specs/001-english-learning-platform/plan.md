@@ -1,189 +1,137 @@
-# Implementation Plan: Teacher Schedule Polish — Past Slot Locking + i18n
+# Implementation Plan: Teacher Schedule — Compact General View
 
-**Branch**: `001-english-learning-platform` | **Date**: 2026-03-23
-**Input**: Feature request — block past slots + fix English i18n on teacher schedule page
+**Branch**: `001-english-learning-platform` | **Date**: 2026-03-25 | **Spec**: specs/001-english-learning-platform/spec.md
+**Input**: Feature specification from `/specs/001-english-learning-platform/spec.md`
 
----
+## Summary
+
+Redesign the teacher availability calendar (`AvailabilityCalendar` component + `TeacherSchedulePage`) to use a compact, dense grid layout so the full 06:00–22:00 × 7-day week fits on a single screen without vertical scrolling. Slots become small, colour-coded squares; hour labels appear only on the `:00` row; controls are tightened into a single toolbar row. No backend changes required.
 
 ## Technical Context
 
-**Tech Stack**: Next.js 14, TypeScript 5.4, next-intl (i18n), Supabase JS v2
-**Affected Files**:
-- `frontend/src/components/teacher/AvailabilityCalendar.tsx`
-- `frontend/src/app/[locale]/teacher/schedule/page.tsx`
-- `frontend/messages/en.json`
-- `frontend/messages/vi.json`
-
-**No DB changes. No new npm packages.**
-
----
+**Language/Version**: TypeScript 5.4, Next.js 14.2
+**Primary Dependencies**: React 18, Tailwind CSS, next-intl, framer-motion, lucide-react
+**Storage**: N/A (UI-only change)
+**Testing**: Vitest + React Testing Library
+**Target Platform**: Web (desktop-first, responsive)
+**Project Type**: Web application — teacher-facing schedule management page
+**Performance Goals**: 60 fps interactions, no layout shift on render
+**Constraints**: Must preserve all existing functionality (past-slot locking, i18n, shift-click range, bulk actions, presets, auto-save). Must not break mobile view.
+**Scale/Scope**: Single component + single page file
 
 ## Constitution Check
 
-| Principle | Status | Notes |
-|-----------|--------|-------|
-| Code Quality | PASS | Changes are small, well-typed, readable |
-| Testing Discipline | PASS | No new business logic that requires unit tests; smoke-test via quickstart |
-| UX Consistency | PASS | Past slots follow same locked-cell pattern as booked slots |
-| Role-Based Access | PASS | No access control changes |
-| Currency Integrity | N/A | No gem/currency changes |
+| Principle | Gate | Status |
+|-----------|------|--------|
+| I. Code Quality | Functions ≤50 lines, no duplication | ✅ Refactoring only |
+| III. UX Consistency | Role-specific dashboard, clear feedback | ✅ Improves density while preserving all states |
+| IV. Performance | 60fps, no N+1 queries | ✅ Same data layer, fewer DOM nodes |
+| VII. UI Design Excellence | Clean layouts, visual hierarchy, responsive | ✅ Core goal of this feature |
 
----
+## Project Structure
 
-## Feature Summary
+### Documentation (this feature)
 
-### Sub-feature A: Past Slot Locking
-
-**Problem**: Teachers can currently toggle open slots in the past (past days and past times on today).
-**Fix**: Derive `pastSlots: Set<string>` inside `AvailabilityCalendar` from `weekStart` + current time using `useMemo`. Render past slots as dimmed/locked (distinct from booked=blue). Suppress click handlers for past slots.
-
-**Visual hierarchy**:
-| State | Color | Interaction |
-|-------|-------|-------------|
-| OPEN | Green | Click to close |
-| CLOSED | Grey | Click to open |
-| BOOKED | Blue | Locked (cursor-not-allowed) |
-| PAST | Dark striped/dimmed | Locked (cursor-not-allowed) |
-| SELECTED | Yellow highlight | Bulk action |
-
-### Sub-feature B: i18n for Schedule Page and AvailabilityCalendar
-
-**Problem**: `schedule/page.tsx` and `AvailabilityCalendar.tsx` contain hardcoded Vietnamese strings. When locale = English, the page still shows Vietnamese.
-
-**Fix**:
-1. Add `teacherSchedule.calendar` keys to `en.json` and `vi.json`
-2. Use `useTranslations('teacherSchedule')` in `AvailabilityCalendar.tsx`
-3. Use `useTranslations('teacherSchedule')` and `useLocale()` in `schedule/page.tsx`
-4. Refactor `PRESETS` to use fixed English keys; labels from translations
-5. Replace hardcoded `'vi-VN'` with dynamic locale string
-
----
-
-## Phase 0: Research (Complete)
-
-See `research.md` — all decisions resolved.
-
----
-
-## Phase 1: Design & Contracts
-
-### Data Model
-
-No schema changes. No new state shapes. The only new derived state:
-
-```typescript
-// Inside AvailabilityCalendar — derived from weekStart + Date.now()
-pastSlots: Set<string>   // "dayOfWeek:HH:MM" keys that are in the past
+```text
+specs/001-english-learning-platform/
+├── plan.md              ← this file
+├── research.md          ← Phase 0 output
+├── data-model.md        ← N/A (no DB changes)
+├── quickstart.md        ← Phase 1 output
+└── tasks.md             ← Phase 2 output (/speckit.tasks)
 ```
 
-### New i18n Keys
+### Source Code
 
-**`messages/en.json`** — add under `teacherSchedule`:
-```json
-"calendar": {
-  "presets": {
-    "workHours": "Work hours (8–17)",
-    "morning": "Morning (6–12)",
-    "evening": "Evening (18–22)"
-  },
-  "selectedCount": "{count} slots selected",
-  "bulkOpen": "Open selected",
-  "bulkClose": "Close selected",
-  "deselect": "Deselect",
-  "legend": {
-    "open": "Open",
-    "closed": "Closed",
-    "booked": "Booked",
-    "selected": "Selected",
-    "past": "Past"
-  },
-  "saving": "Saving...",
-  "shiftHint": "Shift+click to select range — click column/row header to select full day/time",
-  "bookedTooltip": "Already booked by a student",
-  "pastTooltip": "Cannot modify past slots",
-  "openTooltip": "Open — click to close",
-  "closedTooltip": "Closed — click to open",
-  "colSelectTitle": "Select full day",
-  "rowSelectTitle": "Select this time across all days"
-}
+```text
+frontend/src/
+├── components/teacher/
+│   └── AvailabilityCalendar.tsx   ← PRIMARY: compact grid redesign
+└── app/[locale]/teacher/schedule/
+    └── page.tsx                   ← SECONDARY: consolidate cards, tighten layout
 ```
 
-**`messages/vi.json`** — add under `teacherSchedule.calendar` (Vietnamese equivalents):
-```json
-"calendar": {
-  "presets": {
-    "workHours": "Giờ hành chính (8–17)",
-    "morning": "Buổi sáng (6–12)",
-    "evening": "Buổi tối (18–22)"
-  },
-  "selectedCount": "Đã chọn {count} slot",
-  "bulkOpen": "Mở đã chọn",
-  "bulkClose": "Đóng đã chọn",
-  "deselect": "Bỏ chọn",
-  "legend": {
-    "open": "Mở",
-    "closed": "Đóng",
-    "booked": "Đã đặt",
-    "selected": "Đã chọn",
-    "past": "Đã qua"
-  },
-  "saving": "Đang lưu...",
-  "shiftHint": "Shift+click để chọn dải — nhấn tiêu đề cột/hàng để chọn cả ngày/giờ",
-  "bookedTooltip": "Đã có học viên đặt",
-  "pastTooltip": "Không thể sửa slot đã qua",
-  "openTooltip": "Đang mở — nhấn để đóng",
-  "closedTooltip": "Đang đóng — nhấn để mở",
-  "colSelectTitle": "Chọn cả ngày",
-  "rowSelectTitle": "Chọn giờ này tất cả các ngày"
-}
+## Phase 0: Research
+
+### Decision 1 — Cell density target
+
+**Decision**: 12px tall cells (`h-3`, `py-px`) — smallest touch-able size on desktop without losing click accuracy.
+**Rationale**: 32 rows × 12px + borders = ~416px — fits comfortably inside a 1080p screen with header and nav. Current `h-6` (24px) renders at ~800px requiring scroll.
+**Alternatives considered**: 16px (`h-4`) — still fits but leaves unused space; 8px — too small to click accurately.
+
+### Decision 2 — Time label strategy
+
+**Decision**: Show the hour label only on `:00` rows (e.g., "06", "07"). The `:30` row shows no label (empty `td`).
+**Rationale**: Halves the visual noise in the time column while still giving enough anchoring context. Teachers scan by hour, not by half-hour.
+**Alternatives considered**: Full "06:30" labels on every row — current approach, too noisy; no labels at all — hard to orient.
+
+### Decision 3 — Controls layout
+
+**Decision**: Consolidate preset buttons + bulk-action bar + legend into a 2-row compact toolbar above the grid. Presets and bulk actions share the same row (presets hidden when bulk bar is active).
+**Rationale**: Reduces vertical space above grid from ~100px to ~50px.
+**Alternatives considered**: Sidebar layout — adds horizontal complexity; Collapsible panel — adds cognitive load.
+
+### Decision 4 — Page layout
+
+**Decision**: Merge week navigation bar and calendar into a single `Card`. Remove separate `Card` wrapper from `AvailabilityCalendar` section.
+**Rationale**: Eliminates double-border and double-padding. The nav + grid form a single cohesive widget.
+**Alternatives considered**: Keep separate cards — more vertical space wasted.
+
+## Phase 1: Design
+
+### Component Changes — `AvailabilityCalendar.tsx`
+
+#### Grid cells
+
+```
+Before: h-6 p-0.5  (24px tall cell)
+After:  h-3 p-px   (12px tall cell)
 ```
 
-### schedule/page.tsx — Strings to Replace
+#### Time column
 
-| Hardcoded | i18n key |
-|-----------|----------|
-| `"Lịch dạy"` | `t('title')` |
-| `"Mở hoặc đóng các khung giờ..."` | `t('subtitle')` |
-| `"Tuần trước"` | `t('prevWeek')` |
-| `"Tuần sau"` | `t('nextWeek')` |
-| `toLocaleDateString('vi-VN', ...)` | `toLocaleDateString(dateLocale, ...)` where `dateLocale = locale === 'vi' ? 'vi-VN' : 'en-US'` |
+- Width: `w-14` → `w-8`
+- Show label only when `time.endsWith(':00')` — display just the hour number (`"06"`, `"07"`, …)
+- `:30` rows: empty `<td>` (no button, no label)
+- Row header click still works for `:30` rows (invisible hit area via `w-full h-full`)
 
-### AvailabilityCalendar.tsx — Strings to Replace
+#### Header row
 
-| Hardcoded | i18n key |
-|-----------|----------|
-| `DAY_NAMES = ['CN', 'Thứ 2', ...]` | `t('days.sun')`, `t('days.mon')` etc. |
-| `PRESETS = { 'Giờ hành chính': ... }` | `PRESET_CONFIG = { workHours: ..., morning: ..., evening: ... }` + `t('calendar.presets.workHours')` |
-| `"Mở đã chọn"` | `t('calendar.bulkOpen')` |
-| `"Đóng đã chọn"` | `t('calendar.bulkClose')` |
-| `"Bỏ chọn"` | `t('calendar.deselect')` |
-| `"{n} slot đã chọn"` | `t('calendar.selectedCount', { count: selected.size })` |
-| `"Mở"` / `"Đóng"` / `"Đã đặt"` / `"Đã chọn"` | `t('calendar.legend.open')` etc. |
-| `"Đang lưu..."` | `t('calendar.saving')` |
-| Shift-click hint | `t('calendar.shiftHint')` |
-| Column header title | `t('calendar.colSelectTitle')` |
-| Row header title | `t('calendar.rowSelectTitle')` |
-| Slot button tooltips | `t('calendar.bookedTooltip')`, `t('calendar.pastTooltip')`, `t('calendar.openTooltip')`, `t('calendar.closedTooltip')` |
+- Day name cells: `p-1` → `p-0.5`, `text-xs` unchanged
+- Column header button: `py-1` → `py-0.5`
 
----
+#### Toolbar layout
 
-## Implementation Order
+```
+Row 1: [Preset buttons] ── OR ── [Bulk action bar when selection active]
+Row 2: [Legend + saving indicator]   (compact inline)
+Row 3: [Shift-click hint]            (xs text, single line)
+```
 
-1. **Update en.json and vi.json** — add `teacherSchedule.calendar` keys
-2. **Rewrite AvailabilityCalendar.tsx**:
-   - Add `useMemo` for `pastSlots` (from `weekStart`)
-   - Add `useTranslations('teacherSchedule')`
-   - Rename `PRESETS` → `PRESET_CONFIG` with fixed English keys
-   - Replace all hardcoded strings with `t(...)` calls
-   - Add past slot visual style + click suppression
-3. **Update schedule/page.tsx**:
-   - Add `useTranslations('teacherSchedule')` + `useLocale()`
-   - Replace hardcoded strings
-   - Fix `toLocaleDateString` to use dynamic locale
-4. **TypeScript check** — `npx tsc --noEmit`
+All three rows use `text-xs`, tight `gap-1.5`.
 
----
+#### Table wrapper
 
-## Quickstart / Smoke-Test
+```
+Before: overflow-x-auto rounded-lg border border-white/10
+        min-w-[560px]
+After:  overflow-x-auto rounded-lg border border-white/10
+        min-w-[420px]
+```
 
-See updated `quickstart.md` for test checklist including past-slot and i18n scenarios.
+### Page Changes — `page.tsx`
+
+- Remove the separate `<Card>` that wraps only `<AvailabilityCalendar>` — the calendar's own table border provides visual containment.
+- Week navigation card: `p-4` → `p-3`, remove `motion.div` delay on calendar (0.2 → 0).
+- `max-w-5xl` → `max-w-4xl` (tighter column focus).
+
+### Unchanged
+
+- All logic: `pastSlots`, `handleSlotClick`, `bulkOpen/Close`, `applyPreset`, `saveToDb`, `scheduleSave`
+- All i18n: `t()` calls and translation keys
+- All styling variables: colour palette, border colours, hover states
+- Booked/past/selected/open cell classes — only height/padding change
+
+## quickstart.md
+
+See `quickstart.md` for before/after visual reference and manual test checklist.

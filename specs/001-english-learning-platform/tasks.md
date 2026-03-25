@@ -1,7 +1,100 @@
-# Tasks: Teacher Schedule Polish — Past Slot Locking + i18n
+# Tasks: Teacher Schedule — Compact General View
 
-**Input**: `specs/001-english-learning-platform/plan.md`, `spec.md`, `research.md`
-**Branch**: `001-english-learning-platform`
+**Input**: Design documents from `/specs/001-english-learning-platform/`
+**Prerequisites**: plan.md ✅, research.md ✅, quickstart.md ✅
+**Tests**: Not requested — manual test checklist in quickstart.md
+
+**Organization**: UI-only refactor across 2 files. No backend changes, no new packages.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies)
+- Include exact file paths in every description
+
+---
+
+## Phase 1: Setup (Verify baseline)
+
+**Purpose**: Confirm current files are correct before making changes.
+
+- [x] T001 Verify `frontend/src/components/teacher/AvailabilityCalendar.tsx` exports `AvailabilityCalendar` and contains `pastSlots` useMemo + `PRESET_CONFIG` + `useTranslations`
+- [x] T002 Verify `frontend/src/app/[locale]/teacher/schedule/page.tsx` imports `AvailabilityCalendar` and contains `isCurrentWeek` guard + `useTranslations`
+
+---
+
+## Phase 2: Compact Grid — AvailabilityCalendar.tsx [US1] 🎯 Core
+
+**Goal**: Shrink the 32-row × 7-col grid so the full week fits on screen without vertical scrolling.
+
+**Independent Test**: Open `/en/teacher/schedule` — entire grid visible without scrolling on a 1080p screen. All slot interactions still work.
+
+- [x] T003 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — change all slot cell buttons from `h-6` to `h-3` and cell padding from `p-0.5` to `p-px`
+- [x] T004 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — change time column `<th>` width from `w-14` to `w-8`
+- [x] T005 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — update row header time labels: show only `time.slice(0, 2)` (hour number) when `time.endsWith(':00')`, empty invisible button for `:30` rows so range-select still works; update row `<td>` to `text-right pr-1`
+- [x] T006 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — change table `min-w-[560px]` to `min-w-[420px]`
+- [x] T007 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — change column header `<th>` padding from `p-1` to `p-0.5` and inner button `py-1` to `py-0.5`
+
+---
+
+## Phase 3: Toolbar Consolidation — AvailabilityCalendar.tsx [US1]
+
+**Goal**: Swap preset buttons ↔ bulk-action bar (mutually exclusive) to save vertical space above the grid.
+
+**Independent Test**: When no slots selected — only presets row visible. When slots selected — presets hidden, bulk-action bar appears.
+
+- [x] T008 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — wrap the presets row in `{selected.size === 0 && ( ... )}` so it hides during active selection
+- [x] T009 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — remove the `{selected.size > 0 && ( ... )}` guard from the bulk-action bar (mutual-exclusive swap now handles visibility)
+- [x] T010 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — consolidate legend + saving indicator to a single flex row using `gap-3` (was `gap-4`), shrink colour swatches from `w-3 h-3` to `w-2.5 h-2.5`
+
+---
+
+## Phase 4: Page Layout Consolidation — page.tsx [US1]
+
+**Goal**: Merge week navigation card and calendar card into a single `Card` with an internal `border-b` divider.
+
+**Independent Test**: Page renders with one visible card; week nav is the top section; grid below a thin divider. `max-w-4xl` constrains the column.
+
+- [x] T011 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx` — change `max-w-5xl` to `max-w-4xl`
+- [x] T012 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx` — merge the two separate `<Card>` blocks (week-nav + calendar) into a single `<Card className="bg-white/5 border-white/10">` — week-nav section uses `border-b border-white/10 px-4 py-3`, calendar section uses `<CardContent className="p-3 md:p-4">`
+- [x] T013 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx` — remove the second `<motion.div>` wrapper that previously wrapped only the calendar `<Card>` (the week-nav motion wrapper remains)
+
+---
+
+## Phase 5: Polish & Validation
+
+- [x] T014 In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — final read-through: confirm `pastSlots` logic intact, all `t()` calls unchanged, `bulkOpen`/`bulkClose`/`applyPreset` unchanged, `bookedSlots` guards intact
+- [x] T015 In `frontend/src/app/[locale]/teacher/schedule/page.tsx` — confirm `isCurrentWeek` disabled prop still on prev-week button, `bookedSlots` still passed to `<AvailabilityCalendar>`, `weekStart={currentWeekStart}` still passed
+- [x] T016 Run `cd frontend && npm run build` to verify TypeScript compiles with no errors
+
+---
+
+## Dependencies
+
+```
+T001–T002 (verify baseline)
+    ↓
+T003–T007 (compact grid cells) + T011–T013 (page layout) ← parallel
+    ↓
+T008–T010 (toolbar swap)
+    ↓
+T014–T016 (polish + build check)
+```
+
+## Summary
+
+| Phase | Tasks | File |
+|-------|-------|------|
+| 1 – Baseline verify | T001–T002 | Both |
+| 2 – Compact grid | T003–T007 | AvailabilityCalendar.tsx |
+| 3 – Toolbar swap | T008–T010 | AvailabilityCalendar.tsx |
+| 4 – Page layout | T011–T013 | page.tsx |
+| 5 – Polish + build | T014–T016 | Both |
+| **Total** | **16 tasks** | |
+
+**MVP scope**: All 16 tasks — small, low-risk UI-only changes with no backend impact.
+
+---
+
 
 ---
 

@@ -315,40 +315,42 @@ export default function AvailabilityCalendar({
 
   return (
     <div className="space-y-3">
-      {/* Quick presets */}
-      <div className="flex flex-wrap gap-2">
-        {(Object.keys(PRESET_CONFIG) as Array<keyof typeof PRESET_CONFIG>).map((key) => (
-          <button
-            key={key}
-            onClick={() => applyPreset(key)}
-            className="px-3 py-1.5 rounded-md text-sm border border-white/20 text-slate-300 hover:border-[#3B82F6]/60 hover:text-[#3B82F6] transition-colors"
-          >
-            {t(`calendar.presets.${key}`)}
-          </button>
-        ))}
-      </div>
+      {/* Quick presets — hidden when slots are selected (swaps with bulk bar) */}
+      {selected.size === 0 && (
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(PRESET_CONFIG) as Array<keyof typeof PRESET_CONFIG>).map((key) => (
+            <button
+              key={key}
+              onClick={() => applyPreset(key)}
+              className="px-2.5 py-1 rounded-md text-xs border border-white/20 text-slate-300 hover:border-[#3B82F6]/60 hover:text-[#3B82F6] transition-colors"
+            >
+              {t(`calendar.presets.${key}`)}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Bulk action bar */}
+      {/* Bulk action bar — visible only when slots selected */}
       {selected.size > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs">
           <span className="text-slate-400 mr-1">
             {t('calendar.selectedCount', { count: selected.size })}
           </span>
           <button
             onClick={bulkOpen}
-            className="px-3 py-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30"
+            className="px-2.5 py-0.5 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30"
           >
             {t('calendar.bulkOpen')}
           </button>
           <button
             onClick={bulkClose}
-            className="px-3 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30"
+            className="px-2.5 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30"
           >
             {t('calendar.bulkClose')}
           </button>
           <button
             onClick={() => setSelected(new Set())}
-            className="px-3 py-1 rounded bg-white/10 text-slate-400 hover:bg-white/20"
+            className="px-2.5 py-0.5 rounded bg-white/10 text-slate-400 hover:bg-white/20"
           >
             {t('calendar.deselect')}
           </button>
@@ -356,25 +358,25 @@ export default function AvailabilityCalendar({
       )}
 
       {/* Legend + saving indicator */}
-      <div className="flex flex-wrap gap-4 text-xs text-slate-500">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-sm bg-green-500/30 border border-green-500/50" />
+      <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-green-500/30 border border-green-500/50" />
           {t('calendar.legend.open')}
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-sm bg-white/5 border border-white/20" />
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-white/5 border border-white/20" />
           {t('calendar.legend.closed')}
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-sm bg-[#3B82F6]/30 border border-[#3B82F6]/50" />
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#3B82F6]/30 border border-[#3B82F6]/50" />
           {t('calendar.legend.booked')}
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-sm bg-yellow-400/20 border border-yellow-400/50" />
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-yellow-400/20 border border-yellow-400/50" />
           {t('calendar.legend.selected')}
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-sm bg-slate-800/60 border border-slate-700/30 opacity-40" />
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-slate-800/60 border border-slate-700/30 opacity-40" />
           {t('calendar.legend.past')}
         </span>
         {saving && (
@@ -394,15 +396,15 @@ export default function AvailabilityCalendar({
 
       {/* Grid */}
       <div className="overflow-x-auto rounded-lg border border-white/10">
-        <table className="w-full min-w-[560px] border-collapse">
+        <table className="w-full min-w-[420px] border-collapse">
           <thead>
             <tr>
-              <th className="w-14 p-2 border-b border-white/10" />
+              <th className="w-8 p-1 border-b border-white/10" />
               {ORDERED_DAYS.map((d) => (
-                <th key={d} className="p-1 border-b border-white/10">
+                <th key={d} className="p-0.5 border-b border-white/10">
                   <button
                     onClick={() => handleColumnHeader(d)}
-                    className="w-full text-xs font-medium text-slate-400 hover:text-white transition-colors py-1"
+                    className="w-full text-xs font-medium text-slate-400 hover:text-white transition-colors py-0.5"
                     title={t('calendar.colSelectTitle')}
                   >
                     {t(`days.${DAY_KEYS[d]}`)}
@@ -414,13 +416,13 @@ export default function AvailabilityCalendar({
           <tbody>
             {VISIBLE_SLOTS.map((time) => (
               <tr key={time} className="border-b border-white/5 last:border-0">
-                <td className="p-1 text-center">
+                <td className="pr-1 text-right">
                   <button
                     onClick={() => handleRowHeader(time)}
-                    className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors w-full"
+                    className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors w-full leading-none"
                     title={t('calendar.rowSelectTitle')}
                   >
-                    {time}
+                    {time.endsWith(':00') ? time.slice(0, 2) : ''}
                   </button>
                 </td>
                 {ORDERED_DAYS.map((d) => {
@@ -431,7 +433,7 @@ export default function AvailabilityCalendar({
                   const isSelected = selected.has(key);
 
                   let cellClass =
-                    'w-full h-6 rounded text-xs transition-colors border ';
+                    'w-full h-3 rounded-sm transition-colors border ';
                   if (isPast) {
                     cellClass +=
                       'bg-slate-800/60 border-slate-700/30 cursor-not-allowed opacity-40';
@@ -450,7 +452,7 @@ export default function AvailabilityCalendar({
                   }
 
                   return (
-                    <td key={d} className="p-0.5">
+                    <td key={d} className="p-px">
                       <button
                         className={cellClass}
                         onClick={(e) => handleSlotClick(key, e)}

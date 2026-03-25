@@ -1,3 +1,38 @@
+# Quickstart: Teacher Schedule — Compact General View
+
+## What Changes
+
+The teacher availability calendar is redesigned to fit the full 06:00–22:00 × Mon–Sun grid on one screen without vertical scrolling.
+
+### Before vs After
+
+| Property | Before | After |
+|----------|--------|-------|
+| Cell height | `h-6` (24px) | `h-3` (12px) |
+| Cell padding | `p-0.5` | `p-px` |
+| Grid height | ~800px (requires scroll) | ~420px (fits on screen) |
+| Time labels | "06:00", "06:30" on every row | "06", "07" — hour only, on `:00` rows |
+| Time column width | `w-14` | `w-8` |
+| Table min-width | 560px | 420px |
+| Controls | Presets + Bulk always stacked | Mutually exclusive (swaps on selection) |
+| Cards | 2 cards (nav + calendar) | 1 card with internal divider |
+| Page max-width | `max-w-5xl` | `max-w-4xl` |
+
+## Manual Test Checklist
+
+- [ ] Full week visible without scrolling on 1080p desktop
+- [ ] All 7 day columns visible, hour labels "06"…"21" on `:00` rows
+- [ ] Past slots dimmed/locked (Phase 3 still working)
+- [ ] Click a slot → toggles open/closed
+- [ ] Shift-click → range selection works
+- [ ] Bulk action bar swaps with presets on selection
+- [ ] Auto-save fires (saving indicator visible)
+- [ ] Prev-week disabled on current week
+- [ ] Mobile: grid horizontally scrollable
+- [ ] Vietnamese locale: all labels translated
+
+---
+
 # Quickstart: Teacher Schedule — Past Slot Locking + i18n
 
 **Target**: Developer implementing past-slot blocking and English i18n on the teacher schedule page.
