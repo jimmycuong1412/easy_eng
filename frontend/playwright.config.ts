@@ -45,6 +45,11 @@ export default defineConfig({
 
     /* Record video on failure */
     video: 'on-first-retry',
+
+    /* Vercel deployment protection bypass — required when testing against protected preview/prod deployments */
+    ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+      ? { extraHTTPHeaders: { 'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET } }
+      : {}),
   },
 
   /* Configure projects for major browsers */

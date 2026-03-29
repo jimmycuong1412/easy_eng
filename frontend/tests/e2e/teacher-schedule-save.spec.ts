@@ -1,20 +1,20 @@
 import { test, expect } from '@playwright/test';
 
 const TEACHER_EMAIL = 'jimmycuong1414@gmail.com';
-const TEACHER_PASSWORD = '12345678';
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+const TEACHER_PASSWORD = '123456';
 
 test.describe('Teacher Schedule — Save Button', () => {
   test.beforeEach(async ({ page }) => {
-    // Login as teacher
-    await page.goto(`${BASE_URL}/en/auth/login`);
+    // Login as teacher — baseURL is set via PLAYWRIGHT_BASE_URL (includes /en)
+    await page.goto('/auth/login');
+    await page.waitForSelector('input[type="email"]', { timeout: 10000 });
     await page.fill('input[type="email"]', TEACHER_EMAIL);
     await page.fill('input[type="password"]', TEACHER_PASSWORD);
     await page.click('button[type="submit"]');
-    await page.waitForURL(/\/en\/dashboard/);
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
 
     // Navigate to schedule
-    await page.goto(`${BASE_URL}/en/teacher/schedule`);
+    await page.goto('/teacher/schedule');
     await page.waitForLoadState('networkidle');
   });
 
