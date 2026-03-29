@@ -298,7 +298,21 @@
       "upcoming": "Sắp tới",
       "booked": "Đã đặt",
       "completed": "Hoàn thành",
-      "available": "Còn trống"
+      "available": "Còn trống",
+      "disabled": "Đã tắt"
+    },
+    "saveBar": {
+      "unsavedChanges": "Bạn có thay đổi chưa lưu",
+      "save": "Lưu",
+      "discard": "Huỷ",
+      "saving": "Đang lưu...",
+      "saved": "Đã lưu!"
+    },
+    "stats": {
+      "total": "Tổng",
+      "available": "Trống",
+      "booked": "Đã đặt",
+      "disabled": "Đã tắt"
     },
     "slotDetail": {
       "title": "Chi tiết buổi học",

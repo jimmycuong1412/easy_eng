@@ -26,6 +26,7 @@ interface SlotState {
 
 interface AvailabilityCalendarProps {
   locale?: string;
+  onSaved?: () => void;
 }
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
@@ -56,7 +57,7 @@ function expandSlots(startTime: string, endTime: string): string[] {
   });
 }
 
-export default function AvailabilityCalendar({ locale: _locale }: AvailabilityCalendarProps) {
+export default function AvailabilityCalendar({ locale: _locale, onSaved }: AvailabilityCalendarProps) {
   const t = useTranslations('teacherSchedule');
   const supabase = createClient();
 
@@ -206,6 +207,7 @@ export default function AvailabilityCalendar({ locale: _locale }: AvailabilityCa
       }
 
       setSaved(true);
+      onSaved?.();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {

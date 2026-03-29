@@ -1,418 +1,306 @@
-# Quickstart: Security Hardening
+# Quickstart: Teacher Schedule UX & Save-Button Refactor
 
-**Last Updated**: 2026-02-22
-**Target Audience**: Developers implementing the security fixes
+**Last Updated**: 2026-03-30
+**Target Audience**: Developer implementing the changes
 **Branch**: `001-english-learning-platform`
 
-## What You'll Fix
+---
 
-By the end of this guide, all 10 security issues will be resolved:
+## What's changing
 
-1. ✅ Committed `.env` credentials purged from git history + rotated
-2. ✅ `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` removed from client bundle
-3. ✅ CSRF protection applied to all state-changing API routes
-4. ✅ Rate limiting on all frontend API routes
-5. ✅ Webhook signature verification halts on failure
-6. ✅ Webhook idempotency via `processed_webhooks` table
-7. ✅ JWT claims used in RLS policies (replaces slow subqueries)
-8. ✅ `INTERNAL_API_SECRET` compared timing-safely
-9. ✅ HSTS header added to production responses
-10. ✅ File upload filenames sanitized
+1. **New hook** `frontend/src/hooks/useScheduleDraft.ts` — encapsulates draft slot overrides and batch save.
+2. **Modified page** `frontend/src/app/[locale]/teacher/schedule/page.tsx` — removes `toggleSlot`, adds draft mutations, unsaved banner, stats bar, Save button.
+3. **Modified component** `frontend/src/components/teacher/AvailabilityCalendar.tsx` — add optional `onSaved?: () => void` prop.
+4. **i18n keys** added to `en.json` and `vi.json`.
+5. **Tests** — unit for hook, e2e for save flow.
 
 ---
 
-## Phase 1 — Immediate: Credential Rotation (Do First)
+## Step 1 — Create `useScheduleDraft` hook
 
-**CRITICAL**: Rotate all credentials before any code changes. Committed secrets are already compromised.
+File: `frontend/src/hooks/useScheduleDraft.ts`
 
-### Step 1: Supabase Keys
+```ts
+'use client';
 
-1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project
-2. Go to **Settings** → **API**
-3. Click **Regenerate** next to:
-   - `anon` key → update `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local` and Vercel
-   - `service_role` key → update `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` and Vercel
+import { useState, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
-### Step 2: CometChat Keys
+type DraftOverrides = Record<string, boolean>; // "dayOfWeek:HH:MM" → enabled
 
-1. Open [CometChat Dashboard](https://app.cometchat.com)
-2. Go to **API Credentials**
-3. Regenerate **Auth Key** → update `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` (then rename, see Phase 2)
-4. Regenerate **API Key** → update `COMETCHAT_API_KEY`
+export function useScheduleDraft() {
+  const [draft, setDraft] = useState<DraftOverrides>({});
+  const [isDirty, setIsDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const supabase = createClient();
 
-### Step 3: JWT Secret
+  const toggleDraft = useCallback((dayOfWeek: number, slotTime: string, newValue: boolean) => {
+    setDraft((prev) => ({ ...prev, [`${dayOfWeek}:${slotTime}`]: newValue }));
+    setIsDirty(true);
+    setSaveError(null);
+  }, []);
 
-```bash
-# Generate new 64-char secret
-openssl rand -hex 32
-```
-
-Update `JWT_SECRET` in `.env.local` and Vercel.
-
-### Step 4: Payment Gateway Keys
-
-| Gateway | Where to rotate |
-|---------|----------------|
-| VNPay | Merchant portal → API credentials |
-| MoMo | MoMo Business → Settings → API |
-| ZaloPay | ZaloPay Partner → Account → API keys |
-| Stripe | [Stripe Dashboard](https://dashboard.stripe.com) → Developers → API keys |
-
-Update all payment env vars in `.env.local` and Vercel environment variables.
-
-### Step 5: Internal API Secret
-
-```bash
-# Generate new secret for gem-purchase-complete route
-openssl rand -hex 32
-```
-
-Update `INTERNAL_API_SECRET` in `.env.local` and Vercel.
-
----
-
-## Phase 2 — Git History Purge
-
-**IMPORTANT**: Coordinate with all team members before running. Everyone must re-clone after.
-
-```bash
-# Install git-filter-repo (Python required)
-pip install git-filter-repo
-
-# Purge env files from ALL history
-git filter-repo --path .env --path frontend/.env.local --invert-paths
-
-# Clean up refs
-git reflog expire --expire=now --all && git gc --prune=now
-
-# Force push (coordinate with team)
-git push origin --force --all
-```
-
-After this: all team members must `git clone` fresh. No `git pull` — it won't work on rewritten history.
-
----
-
-## Phase 3 — Code Changes
-
-### 3.1 Remove NEXT_PUBLIC_ from CometChat Auth Key
-
-**File**: `frontend/src/lib/cometchat/config.ts`
-
-Remove `authKey` from the exported config object:
-
-```typescript
-export const COMETCHAT_CONFIG = {
-  appId: process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '',
-  region: process.env.NEXT_PUBLIC_COMETCHAT_REGION || 'us',
-} as const;
-// authKey removed — not needed client-side
-```
-
-**File**: `frontend/src/app/api/cometchat/auth-token/route.ts`
-
-Change:
-```typescript
-// Before
-const AUTH_KEY = process.env.NEXT_PUBLIC_COMETCHAT_AUTH_KEY || '';
-// After
-const AUTH_KEY = process.env.COMETCHAT_AUTH_KEY || '';
-```
-
-**New file**: `frontend/src/lib/server-only-secrets.ts`
-
-```typescript
-import 'server-only'; // Causes build error if imported in client component
-
-export const COMETCHAT_AUTH_KEY = process.env.COMETCHAT_AUTH_KEY ?? '';
-export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-```
-
-Update `.env.local`: rename `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` → `COMETCHAT_AUTH_KEY`.
-
-### 3.2 Add Rate Limiting
-
-Install package:
-```bash
-cd frontend && npm install lru-cache
-```
-
-**New file**: `frontend/src/lib/rate-limit.ts`
-
-```typescript
-import { LRUCache } from 'lru-cache';
-
-type RateLimitEntry = { count: number; resetAt: number };
-
-export function createRateLimiter(max: number, windowMs: number) {
-  const cache = new LRUCache<string, RateLimitEntry>({ max: 10_000, ttl: windowMs });
-
-  return function check(key: string): { allowed: boolean; remaining: number } {
-    const now = Date.now();
-    const entry = cache.get(key) ?? { count: 0, resetAt: now + windowMs };
-    if (now > entry.resetAt) {
-      entry.count = 0;
-      entry.resetAt = now + windowMs;
+  const saveDraft = useCallback(async (teacherId: string) => {
+    if (!isDirty) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const rows = Object.entries(draft).map(([key, isEnabled]) => {
+        const colonIdx = key.indexOf(':');
+        const day = parseInt(key.slice(0, colonIdx));
+        const hm = key.slice(colonIdx + 1);
+        return {
+          teacher_id: teacherId,
+          day_of_week: day,
+          slot_time: hm + ':00',
+          is_enabled: isEnabled,
+        };
+      });
+      if (rows.length > 0) {
+        const { error } = await supabase
+          .from('teacher_slot_overrides')
+          .upsert(rows, { onConflict: 'teacher_id,day_of_week,slot_time' });
+        if (error) throw error;
+      }
+      setDraft({});
+      setIsDirty(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setSaving(false);
     }
-    entry.count += 1;
-    cache.set(key, entry);
-    return { allowed: entry.count <= max, remaining: Math.max(0, max - entry.count) };
+  }, [draft, isDirty, supabase]);
+
+  const discardDraft = useCallback(() => {
+    setDraft({});
+    setIsDirty(false);
+    setSaveError(null);
+  }, []);
+
+  return { draft, isDirty, saving, saveError, toggleDraft, saveDraft, discardDraft };
+}
+```
+
+---
+
+## Step 2 — Update `page.tsx`
+
+Key changes to `frontend/src/app/[locale]/teacher/schedule/page.tsx`:
+
+### 2a. Remove `toggleSlot`, add hook
+
+```ts
+// Remove: const [togglingSlot, setTogglingSlot] = React.useState(false);
+// Remove: const toggleSlot = async (...) => { ... };
+
+// Add:
+import { useScheduleDraft } from '@/hooks/useScheduleDraft';
+// ...
+const { draft, isDirty, saving, saveError, toggleDraft, saveDraft, discardDraft } = useScheduleDraft();
+```
+
+### 2b. Compute effective slot status (merge draft over loaded schedule)
+
+```ts
+// Helper used in getSlotForTime — apply draft overrides on top of DB state
+const getEffectiveStatus = (slot: ScheduleSlot, date: Date): ScheduleSlot['status'] => {
+  const dayOfWeek = date.getDay();
+  const key = `${dayOfWeek}:${slot.time}`;
+  if (key in draft) return draft[key] ? 'available' : 'disabled';
+  return slot.status;
+};
+```
+
+### 2c. Add unsaved banner (above schedule grid)
+
+```tsx
+{isDirty && (
+  <motion.div
+    initial={{ opacity: 0, y: -8 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="mb-4 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5"
+  >
+    <span className="text-sm text-amber-300">{t('saveBar.unsavedChanges')}</span>
+    <div className="flex gap-2">
+      <Button variant="ghost" size="sm" onClick={discardDraft} className="text-slate-400 hover:text-white">
+        {t('saveBar.discard')}
+      </Button>
+      <Button
+        size="sm"
+        onClick={() => saveDraft(user!.id)}
+        disabled={saving}
+        className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
+      >
+        {saving ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />{t('saveBar.saving')}</> : t('saveBar.save')}
+      </Button>
+    </div>
+  </motion.div>
+)}
+```
+
+### 2d. Add stats bar (below week navigation, above grid)
+
+```tsx
+// Compute stats from schedule (memoised)
+const stats = React.useMemo(() => {
+  const slots = Object.values(schedule).flat();
+  return {
+    total: slots.length,
+    available: slots.filter(s => s.status === 'available').length,
+    booked: slots.filter(s => s.status === 'upcoming' || s.status === 'booked').length,
+    disabled: slots.filter(s => s.status === 'disabled').length,
   };
-}
+}, [schedule]);
+
+// JSX — place between week navigation and grid
+<motion.div className="mb-4 grid grid-cols-4 gap-3" ...>
+  {([
+    { label: t('stats.total'),     value: stats.total,     color: 'text-white' },
+    { label: t('stats.available'), value: stats.available, color: 'text-emerald-400' },
+    { label: t('stats.booked'),    value: stats.booked,    color: 'text-[#3B82F6]' },
+    { label: t('stats.disabled'),  value: stats.disabled,  color: 'text-red-400' },
+  ]).map(({ label, value, color }) => (
+    <Card key={label} className="bg-white/5 border-white/10">
+      <CardContent className="p-3 text-center">
+        <p className={`text-2xl font-bold ${color}`}>{value}</p>
+        <p className="text-xs text-slate-400 mt-0.5">{label}</p>
+      </CardContent>
+    </Card>
+  ))}
+</motion.div>
 ```
 
-Apply in each route handler at the top of the `POST`/`PUT`/`DELETE` function:
+### 2e. Update dialog buttons to use draft
 
-```typescript
-import { createRateLimiter } from '@/lib/rate-limit';
+```tsx
+// Replace toggleSlot(selectedSlot, false) with:
+onClick={() => {
+  const dayOfWeek = /* extract from slot.id as before */;
+  toggleDraft(dayOfWeek, selectedSlot.time, false);
+  setSelectedSlot(null);
+}}
 
-const limiter = createRateLimiter(5, 60_000); // 5 per 60s
-
-export async function POST(request: NextRequest) {
-  const userId = /* get from session */ '';
-  const { allowed } = limiter(userId || request.ip || 'anon');
-  if (!allowed) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-  }
-  // ... rest of handler
-}
+// Replace toggleSlot(selectedSlot, true) with:
+onClick={() => {
+  const dayOfWeek = /* extract from slot.id as before */;
+  toggleDraft(dayOfWeek, selectedSlot.time, true);
+  setSelectedSlot(null);
+}}
 ```
 
-### 3.3 Apply CSRF Protection
+### 2f. Add `beforeunload` guard
 
-**File**: `frontend/src/lib/csrf.tsx` — add at bottom of file:
-
-```typescript
-import type { NextRequest, NextResponse } from 'next/server';
-
-export function withCsrfProtection<T extends NextRequest>(
-  handler: (req: T) => Promise<NextResponse>
-): (req: T) => Promise<NextResponse> {
-  return async (req: T) => {
-    const headerToken = req.headers.get(CSRF_HEADER_NAME);
-    const cookieToken = req.cookies.get(CSRF_COOKIE_NAME)?.value ?? null;
-    if (!verifyCsrfToken(headerToken, cookieToken)) {
-      return NextResponse.json(
-        { error: 'CSRF token validation failed' },
-        { status: 403 }
-      );
-    }
-    return handler(req);
-  };
-}
+```ts
+React.useEffect(() => {
+  if (!isDirty) return;
+  const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+  window.addEventListener('beforeunload', handler);
+  return () => window.removeEventListener('beforeunload', handler);
+}, [isDirty]);
 ```
 
-Wrap each route handler:
+### 2g. Add Settings button to header
 
-```typescript
-// In route.ts files
-import { withCsrfProtection } from '@/lib/csrf';
+The header currently has no buttons. Add:
 
-async function handler(request: NextRequest): Promise<NextResponse> {
-  // ... existing handler logic
-}
-
-export const POST = withCsrfProtection(handler);
+```tsx
+<Button
+  variant="outline"
+  size="sm"
+  className="border-white/20 text-white hover:bg-white/10"
+  onClick={() => setShowAvailabilityDialog(true)}
+>
+  <Settings className="w-4 h-4 mr-2" />
+  {t('settingsBtn')}
+</Button>
 ```
 
-Routes to wrap:
-- `frontend/src/app/api/payments/gem-purchase/route.ts`
-- `frontend/src/app/api/payments/gem-purchase-complete/route.ts`
-- `frontend/src/app/api/admin/gems-rules/route.ts` (POST)
-- `frontend/src/app/api/admin/gems-rules/[id]/route.ts` (PUT, DELETE)
-- `frontend/src/app/api/cometchat/auth-token/route.ts`
+---
 
-### 3.4 Timing-Safe Secret Comparison
+## Step 3 — Update i18n files
 
-**File**: `frontend/src/lib/sanitization.ts` — add function:
+### `frontend/messages/en.json` — add under `teacherSchedule`:
 
-```typescript
-import { timingSafeEqual } from 'crypto';
-
-export function compareSecretsTimingSafe(provided: string, expected: string): boolean {
-  try {
-    const a = Buffer.from(provided, 'utf8');
-    const b = Buffer.from(expected, 'utf8');
-    if (a.length !== b.length) return false;
-    return timingSafeEqual(a, b);
-  } catch {
-    return false;
-  }
-}
-```
-
-**File**: `frontend/src/app/api/payments/gem-purchase-complete/route.ts`
-
-Replace:
-```typescript
-// Before
-if (secret !== expectedSecret) {
-// After
-import { compareSecretsTimingSafe } from '@/lib/sanitization';
-if (!compareSecretsTimingSafe(secret, expectedSecret)) {
-```
-
-Also add guard at top of handler:
-```typescript
-const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET;
-if (!INTERNAL_SECRET) throw new Error('INTERNAL_API_SECRET not configured');
-```
-
-### 3.5 Add HSTS Header
-
-**File**: `frontend/next.config.mjs`
-
-Find the `headers()` async function and add to the headers array:
-
-```javascript
-const isDev = process.env.NODE_ENV === 'development';
-
-// In the headers array:
-{
-  key: 'Strict-Transport-Security',
-  value: isDev ? 'max-age=0' : 'max-age=31536000; includeSubDomains; preload',
+```json
+"saveBar": {
+  "unsavedChanges": "You have unsaved changes",
+  "save": "Save",
+  "discard": "Discard",
+  "saving": "Saving...",
+  "saved": "Saved!"
 },
-```
-
-### 3.6 Sanitize File Upload Filenames
-
-**File**: `frontend/src/components/teacher/ClassMaterialsUploader.tsx`
-
-Before uploading to Supabase storage:
-
-```typescript
-import { sanitizeFilename } from '@/lib/sanitization';
-
-// In upload handler:
-const safeFilename = sanitizeFilename(file.name);
-const path = `materials/${classId}/${Date.now()}-${safeFilename}`;
-```
-
-**File**: `frontend/src/lib/sanitization.ts` — add function:
-
-```typescript
-export function sanitizeFilename(filename: string): string {
-  // Remove path traversal characters, keep only safe chars
-  return filename
-    .replace(/[^a-zA-Z0-9._-]/g, '_')
-    .replace(/\.{2,}/g, '_')  // no ..
-    .substring(0, 255);
+"stats": {
+  "total": "Total",
+  "available": "Open",
+  "booked": "Booked",
+  "disabled": "Disabled"
+},
+"legend": {
+  "upcoming": "Upcoming",
+  "booked": "Booked",
+  "completed": "Completed",
+  "available": "Available",
+  "disabled": "Disabled"
 }
 ```
 
-### 3.7 Fix Webhook Signature Verification
+### `frontend/messages/vi.json` — add under `teacherSchedule`:
 
-**File**: `backend/src/routes/payment-webhook.routes.ts`
-
-Ensure signature verification exits on failure (should already `return`, verify it doesn't just log):
-
-```typescript
-// Ensure this pattern (early return on failure):
-if (!isValidSignature) {
-  return res.status(400).json({ error: 'Invalid signature' });
-}
-// NOT this (continues after failure):
-if (!isValidSignature) {
-  logger.warn('Invalid signature');
-  // falls through — BAD
+```json
+"saveBar": {
+  "unsavedChanges": "Bạn có thay đổi chưa lưu",
+  "save": "Lưu",
+  "discard": "Huỷ",
+  "saving": "Đang lưu...",
+  "saved": "Đã lưu!"
+},
+"stats": {
+  "total": "Tổng",
+  "available": "Trống",
+  "booked": "Đã đặt",
+  "disabled": "Đã tắt"
+},
+"legend": {
+  "disabled": "Đã tắt"
 }
 ```
 
 ---
 
-## Phase 4 — Database Migrations
+## Step 4 — Write tests
 
-Apply in order:
+### Unit: `frontend/src/hooks/useScheduleDraft.test.ts`
 
-### Migration 056: JWT Claims Trigger
+Test cases:
+1. `toggleDraft` sets `isDirty = true` and adds entry to draft
+2. `discardDraft` clears draft and sets `isDirty = false`
+3. `saveDraft` calls supabase upsert with correct rows and clears draft on success
+4. `saveDraft` sets `saveError` on failure
+
+### E2E: `frontend/tests/e2e/teacher-schedule-save.spec.ts`
+
+Scenario:
+1. Log in as teacher
+2. Navigate to `/en/teacher/schedule`
+3. Click a slot to open dialog
+4. Click "Disable Slot"
+5. Assert unsaved banner is visible
+6. Click "Save"
+7. Assert banner disappears
+8. Reload page — assert slot is still disabled
+
+---
+
+## Dev setup reminder
 
 ```bash
-# Apply via Supabase CLI or MCP
-supabase db push --db-url <dev-db-url>
-# OR via Supabase dashboard SQL editor
+# Kill stale Next.js server
+powershell -Command "Get-Process node | Stop-Process -Force"
+Remove-Item -Recurse -Force frontend/.next
+
+# Start dev server
+cd frontend && npm run dev
 ```
 
-Content: `supabase/migrations/056_jwt_claims_trigger.sql`
-
-Verify:
-```sql
--- Check trigger exists
-SELECT trigger_name FROM information_schema.triggers
-WHERE event_object_table = 'profiles' AND trigger_name = 'trg_sync_role_to_jwt';
-```
-
-### Migration 057: Processed Webhooks Table
-
-Content: `supabase/migrations/057_processed_webhooks.sql`
-
-Verify:
-```sql
-SELECT table_name FROM information_schema.tables
-WHERE table_name = 'processed_webhooks';
-```
-
-### Migration 058: Update RLS Policies
-
-Content: `supabase/migrations/058_rls_jwt_claims.sql`
-
-Verify:
-```sql
--- Test admin policy uses JWT claim
-EXPLAIN SELECT * FROM profiles; -- Should not show subquery on profiles table
-```
-
-### Add Webhook Idempotency to Handlers
-
-After migration 057, update each payment webhook handler in `backend/src/`:
-
-```typescript
-import { supabase } from '../lib/supabase';
-
-// At the top of each webhook handler:
-const { data: existing } = await supabase
-  .from('processed_webhooks')
-  .select('status')
-  .eq('webhook_source', 'vnpay')  // or 'momo', 'zalopay', 'stripe'
-  .eq('external_transaction_id', transactionId)
-  .maybeSingle();
-
-if (existing) {
-  return res.json({ success: true }); // Already processed — idempotent
-}
-
-// ... existing processing logic ...
-
-// After successful processing, record it:
-await supabase.from('processed_webhooks').insert({
-  webhook_source: 'vnpay',
-  external_transaction_id: transactionId,
-  booking_id: bookingId,
-  status: 'completed',
-});
-```
-
----
-
-## Verification Checklist
-
-After all changes, verify:
-
-- [ ] `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` does NOT appear in browser network tab JS bundles
-- [ ] Rate limit: 6 rapid POST requests to `/api/payments/gem-purchase` → 6th returns 429
-- [ ] CSRF: POST to `/api/payments/gem-purchase` without CSRF header → 403
-- [ ] HSTS header present in production response headers
-- [ ] Duplicate webhook call returns 200 without double-crediting gems
-- [ ] Git log shows no `.env` files: `git log --all --full-history -- .env`
-- [ ] `npm run type-check` passes with 0 errors
-
----
-
-## Troubleshooting
-
-**CSRF 403 on valid requests**: Ensure frontend is sending the CSRF header. Check `csrf.tsx` for the correct header name constant (`CSRF_HEADER_NAME`).
-
-**Rate limiter not resetting**: LRU cache is in-process — restarting the dev server resets all counts. This is expected behavior.
-
-**JWT claims not in token**: After updating role in `profiles`, the trigger fires but the change takes effect on next login. Force token refresh or log user out and back in.
-
-**`processed_webhooks` insert fails**: Check that `booking_id` is a valid UUID that exists in `bookings`. Use `NULL` for non-booking webhook events.
+Login: jimmycuong1414@gmail.com / 12345678 (teacher account)

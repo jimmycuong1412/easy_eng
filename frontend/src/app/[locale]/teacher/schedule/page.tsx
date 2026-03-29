@@ -12,6 +12,8 @@ import {
   Plus,
   X,
   Loader2,
+  Settings,
+  Save,
 } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,7 +31,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLocale, useTranslations } from 'next-intl';
 import { getTeacherSchedule } from '@/lib/queries';
 import AvailabilityCalendar from '@/components/teacher/AvailabilityCalendar';
-import { createClient } from '@/lib/supabase/client';
+import { useScheduleDraft } from '@/hooks/useScheduleDraft';
 
 interface ScheduleSlot {
   id: string;
@@ -55,6 +57,15 @@ const timeSlots = (() => {
   return slots;
 })();
 
+// Extract day-of-week from a slot id
+// Formats: "avail-{uuid}-{YYYY-MM-DD}-{HH:MM}" or "new-{YYYY-MM-DD}-{HH:MM}"
+function dayOfWeekFromSlotId(slotId: string, slotTime: string): number {
+  const withoutTime = slotId.slice(0, slotId.length - slotTime.length - 1);
+  const dateKey = withoutTime.slice(withoutTime.length - 10); // YYYY-MM-DD
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y, m - 1, d).getDay();
+}
+
 export default function TeacherSchedulePage() {
   const { user, isLoading: authLoading } = useAuth();
   const t = useTranslations('teacherSchedule');
@@ -73,42 +84,8 @@ export default function TeacherSchedulePage() {
   });
   const [selectedSlot, setSelectedSlot] = React.useState<ScheduleSlot | null>(null);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = React.useState(false);
-  const [togglingSlot, setTogglingSlot] = React.useState(false);
-  const supabase = createClient();
 
-  // Enable or disable a slot via teacher_slot_overrides
-  // slot.time is always "HH:MM" (from the grid), slot.id encodes the date
-  const toggleSlot = async (slot: ScheduleSlot, enable: boolean) => {
-    if (!user?.id) return;
-    setTogglingSlot(true);
-    try {
-      // Extract the date from the slot id:
-      // available: "avail-{uuid}-{YYYY-MM-DD}-{HH:MM}"
-      // new empty: "new-{ISO8601date}-{HH:MM}"
-      // The time portion is always the last 5 chars before end (HH:MM)
-      // The date is always 10 chars (YYYY-MM-DD) immediately before the trailing "-HH:MM"
-      const slotTime = slot.time; // already "HH:MM"
-      // Strip trailing "-HH:MM" to get the date portion
-      const withoutTime = slot.id.slice(0, slot.id.length - slotTime.length - 1);
-      const dateKey = withoutTime.slice(withoutTime.length - 10); // last 10 chars = YYYY-MM-DD
-      const [y, m, d] = dateKey.split('-').map(Number);
-      const dayOfWeek = new Date(y, m - 1, d).getDay();
-
-      const { error } = await supabase
-        .from('teacher_slot_overrides')
-        .upsert(
-          { teacher_id: user.id, day_of_week: dayOfWeek, slot_time: slotTime + ':00', is_enabled: enable },
-          { onConflict: 'teacher_id,day_of_week,slot_time' }
-        );
-      if (error) throw error;
-      setSelectedSlot(null);
-      await fetchSchedule();
-    } catch (err) {
-      console.error('toggleSlot error:', err);
-    } finally {
-      setTogglingSlot(false);
-    }
-  };
+  const { draft, isDirty, saving, saveError, toggleDraft, saveDraft, discardDraft } = useScheduleDraft();
 
   // Return the subset of timeSlots that fall within [startTime, endTime)
   // Using timeSlots directly guarantees keys match the grid rows exactly.
@@ -162,7 +139,7 @@ export default function TeacherSchedulePage() {
         });
       });
 
-      // Expand every availability row into individual 30-min slots
+      // Expand every availability row into individual 25-min slots
       availability.forEach((avail: Record<string, unknown>) => {
         const dayOfWeek = avail.day_of_week as number;
         const slotTimes = expandAvailSlots(avail.start_time as string, avail.end_time as string);
@@ -205,14 +182,31 @@ export default function TeacherSchedulePage() {
     fetchSchedule();
   }, [fetchSchedule]);
 
-  // Re-fetch when availability dialog closes (after saving settings)
-  const prevDialogOpen = React.useRef(false);
+  // Guard against accidental hard navigation when there are unsaved changes
   useEffect(() => {
-    if (prevDialogOpen.current && !showAvailabilityDialog) {
-      fetchSchedule();
-    }
-    prevDialogOpen.current = showAvailabilityDialog;
-  }, [showAvailabilityDialog, fetchSchedule]);
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
+  // Merge draft overrides on top of the persisted slot status for optimistic rendering
+  const getEffectiveStatus = (slot: ScheduleSlot, dayOfWeek: number): string => {
+    const key = `${dayOfWeek}:${slot.time}`;
+    if (key in draft) return draft[key] ? 'available' : 'disabled';
+    return slot.status;
+  };
+
+  // Stats derived from persisted schedule (no extra DB query)
+  const stats = React.useMemo(() => {
+    const slots = Object.values(schedule).flat();
+    return {
+      total: slots.length,
+      available: slots.filter(s => s.status === 'available').length,
+      booked: slots.filter(s => s.status === 'upcoming' || s.status === 'booked').length,
+      disabled: slots.filter(s => s.status === 'disabled').length,
+    };
+  }, [schedule]);
 
   const getWeekDays = (startDate: Date) => {
     const days: Date[] = [];
@@ -317,7 +311,73 @@ export default function TeacherSchedulePage() {
             <h1 className="text-2xl font-bold text-white mb-1">{t('title')}</h1>
             <p className="text-slate-400">{t('subtitle')}</p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-white/20 text-white hover:bg-white/10 self-start md:self-auto"
+            onClick={() => setShowAvailabilityDialog(true)}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            {t('settingsBtn')}
+          </Button>
         </motion.div>
+
+        {/* Stats bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3"
+        >
+          {([
+            { label: t('stats.total'),     value: stats.total,     color: 'text-white' },
+            { label: t('stats.available'), value: stats.available, color: 'text-emerald-400' },
+            { label: t('stats.booked'),    value: stats.booked,    color: 'text-[#3B82F6]' },
+            { label: t('stats.disabled'),  value: stats.disabled,  color: 'text-red-400' },
+          ] as const).map(({ label, value, color }) => (
+            <Card key={label} className="bg-white/5 border-white/10">
+              <CardContent className="p-3 text-center">
+                <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </motion.div>
+
+        {/* Unsaved changes banner */}
+        {isDirty && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5"
+          >
+            <span className="text-sm text-amber-300">{t('saveBar.unsavedChanges')}</span>
+            {saveError && <span className="text-xs text-red-400">{saveError}</span>}
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={discardDraft}
+                disabled={saving}
+                className="text-slate-400 hover:text-white"
+              >
+                {t('saveBar.discard')}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => user?.id && saveDraft(user.id)}
+                disabled={saving}
+                className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
+              >
+                {saving ? (
+                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />{t('saveBar.saving')}</>
+                ) : (
+                  <><Save className="mr-1.5 h-3.5 w-3.5" />{t('saveBar.save')}</>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Week Navigation */}
         <motion.div
@@ -393,6 +453,7 @@ export default function TeacherSchedulePage() {
                       <td className="px-2 py-0.5 text-slate-400 text-xs font-medium w-16 leading-none">{time}</td>
                       {weekDays.map((day) => {
                         const slot = getSlotForTime(day, time);
+                        const effectiveStatus = slot ? getEffectiveStatus(slot, day.getDay()) : null;
                         return (
                           <td
                             key={`${day.toISOString()}-${time}`}
@@ -401,7 +462,7 @@ export default function TeacherSchedulePage() {
                             {slot ? (
                               <button
                                 onClick={() => setSelectedSlot(slot)}
-                                className={`w-full px-1.5 py-0.5 rounded border text-left transition-all hover:scale-[1.02] ${getStatusColor(slot.status)}`}
+                                className={`w-full px-1.5 py-0.5 rounded border text-left transition-all hover:scale-[1.02] ${getStatusColor(effectiveStatus!)}`}
                               >
                                 {slot.student ? (
                                   <div>
@@ -458,6 +519,10 @@ export default function TeacherSchedulePage() {
             <div className="w-4 h-4 rounded bg-white/5 border border-dashed border-white/20" />
             <span className="text-sm text-slate-400">{t('legend.available')}</span>
           </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-red-500/5 border border-dashed border-red-500/20" />
+            <span className="text-sm text-slate-400">{t('legend.disabled')}</span>
+          </div>
         </motion.div>
 
         {/* Slot Detail Dialog */}
@@ -510,39 +575,54 @@ export default function TeacherSchedulePage() {
                 ) : (
                   <div className="text-center py-6">
                     <Clock className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-                    {selectedSlot.status === 'available' ? (
-                      <>
-                        <p className="text-white font-medium mb-1">Available Slot</p>
-                        <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · {selectedSlot.duration} min · Students can book</p>
-                        <Button
-                          variant="outline"
-                          className="border-red-500/50 text-red-400 hover:bg-red-500/10"
-                          disabled={togglingSlot}
-                          onClick={() => toggleSlot(selectedSlot, false)}
-                        >
-                          {togglingSlot ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <X className="w-4 h-4 mr-2" />}
-                          Disable Slot
-                        </Button>
-                      </>
-                    ) : selectedSlot.status === 'disabled' ? (
-                      <>
-                        <p className="text-white font-medium mb-1">Disabled Slot</p>
-                        <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · Hidden from students</p>
-                        <Button
-                          className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
-                          disabled={togglingSlot}
-                          onClick={() => toggleSlot(selectedSlot, true)}
-                        >
-                          {togglingSlot ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                          Enable Slot
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-white font-medium mb-1">Empty Slot</p>
-                        <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · Outside your availability hours</p>
-                      </>
-                    )}
+                    {(() => {
+                      const effectiveStatus = getEffectiveStatus(selectedSlot, dayOfWeekFromSlotId(selectedSlot.id, selectedSlot.time));
+                      if (effectiveStatus === 'available') {
+                        return (
+                          <>
+                            <p className="text-white font-medium mb-1">Available Slot</p>
+                            <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · {selectedSlot.duration} min · Students can book</p>
+                            <Button
+                              variant="outline"
+                              className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                              onClick={() => {
+                                const dow = dayOfWeekFromSlotId(selectedSlot.id, selectedSlot.time);
+                                toggleDraft(dow, selectedSlot.time, false);
+                                setSelectedSlot(null);
+                              }}
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Disable Slot
+                            </Button>
+                          </>
+                        );
+                      }
+                      if (effectiveStatus === 'disabled') {
+                        return (
+                          <>
+                            <p className="text-white font-medium mb-1">Disabled Slot</p>
+                            <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · Hidden from students</p>
+                            <Button
+                              className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
+                              onClick={() => {
+                                const dow = dayOfWeekFromSlotId(selectedSlot.id, selectedSlot.time);
+                                toggleDraft(dow, selectedSlot.time, true);
+                                setSelectedSlot(null);
+                              }}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Enable Slot
+                            </Button>
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          <p className="text-white font-medium mb-1">Empty Slot</p>
+                          <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · Outside your availability hours</p>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -557,7 +637,13 @@ export default function TeacherSchedulePage() {
               <DialogTitle className="text-white">{t('availSettings.title')}</DialogTitle>
             </DialogHeader>
             <p className="text-sm text-slate-400 -mt-2 mb-2">{t('availSettings.subtitle')}</p>
-            <AvailabilityCalendar locale={locale} />
+            <AvailabilityCalendar
+              locale={locale}
+              onSaved={() => {
+                setShowAvailabilityDialog(false);
+                fetchSchedule();
+              }}
+            />
             <DialogFooter className="mt-4">
               <Button
                 variant="outline"
