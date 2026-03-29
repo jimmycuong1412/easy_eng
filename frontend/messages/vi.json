@@ -336,6 +336,14 @@
       "saved": "✓ Đã lưu",
       "saveBtn": "Lưu cài đặt slot"
     },
+    "batchAction": {
+      "label": "{count} ô đã chọn",
+      "label_plural": "{count} ô đã chọn",
+      "enableSelected": "Bật các ô đã chọn",
+      "disableSelected": "Tắt các ô đã chọn",
+      "clear": "Bỏ chọn"
+    },
+    "settingsHint": "Cấu hình thời gian rảnh",
     "days": {
       "sun": "CN",
       "mon": "Thứ 2",

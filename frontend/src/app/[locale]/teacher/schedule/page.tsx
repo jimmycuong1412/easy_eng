@@ -32,6 +32,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { getTeacherSchedule } from '@/lib/queries';
 import AvailabilityCalendar from '@/components/teacher/AvailabilityCalendar';
 import { useScheduleDraft } from '@/hooks/useScheduleDraft';
+import { useSlotSelection, type CellCoord } from '@/hooks/useSlotSelection';
 
 interface ScheduleSlot {
   id: string;
@@ -66,6 +67,15 @@ function dayOfWeekFromSlotId(slotId: string, slotTime: string): number {
   return new Date(y, m - 1, d).getDay();
 }
 
+// Compact slot visual — dots for availability, bars for bookings
+function CompactSlotContent({ status }: { status: string }) {
+  if (status === 'available') return <span className="block w-1.5 h-1.5 rounded-full bg-white/40 mx-auto" />;
+  if (status === 'disabled') return <span className="block w-1.5 h-1.5 rounded-full bg-red-500/50 mx-auto" />;
+  if (status === 'upcoming' || status === 'booked') return <span className="block w-full h-1.5 rounded-sm bg-[#3B82F6]/70" />;
+  if (status === 'completed') return <span className="block w-full h-1.5 rounded-sm bg-emerald-500/70" />;
+  return null;
+}
+
 export default function TeacherSchedulePage() {
   const { user, isLoading: authLoading } = useAuth();
   const t = useTranslations('teacherSchedule');
@@ -86,6 +96,7 @@ export default function TeacherSchedulePage() {
   const [showAvailabilityDialog, setShowAvailabilityDialog] = React.useState(false);
 
   const { draft, isDirty, saving, saveError, toggleDraft, saveDraft, discardDraft } = useScheduleDraft();
+  const { selected, isDragging, isSelected, selectionCount, startSelect, extendSelect, endSelect, shiftSelect, clearSelection } = useSlotSelection();
 
   // Return the subset of timeSlots that fall within [startTime, endTime)
   // Using timeSlots directly guarantees keys match the grid rows exactly.
@@ -190,12 +201,31 @@ export default function TeacherSchedulePage() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
 
+  // End drag-select on pointer release anywhere in the document
+  useEffect(() => {
+    document.addEventListener('pointerup', endSelect);
+    return () => document.removeEventListener('pointerup', endSelect);
+  }, [endSelect]);
+
   // Merge draft overrides on top of the persisted slot status for optimistic rendering
   const getEffectiveStatus = (slot: ScheduleSlot, dayOfWeek: number): string => {
     const key = `${dayOfWeek}:${slot.time}`;
     if (key in draft) return draft[key] ? 'available' : 'disabled';
     return slot.status;
   };
+
+  // All grid cells as CellCoord — used for rectangle selection computation
+  const allCells = React.useMemo<CellCoord[]>(() => {
+    return timeSlots.flatMap((time, rowIdx) =>
+      weekDays.map((day, colIdx) => ({
+        dateKey: formatDate(day),
+        time,
+        rowIdx,
+        colIdx,
+      }))
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekDays]);
 
   // Stats derived from persisted schedule (no extra DB query)
   const stats = React.useMemo(() => {
@@ -311,15 +341,6 @@ export default function TeacherSchedulePage() {
             <h1 className="text-2xl font-bold text-white mb-1">{t('title')}</h1>
             <p className="text-slate-400">{t('subtitle')}</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-white/20 text-white hover:bg-white/10 self-start md:self-auto"
-            onClick={() => setShowAvailabilityDialog(true)}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            {t('settingsBtn')}
-          </Button>
         </motion.div>
 
         {/* Stats bar */}
@@ -336,9 +357,9 @@ export default function TeacherSchedulePage() {
             { label: t('stats.disabled'),  value: stats.disabled,  color: 'text-red-400' },
           ] as const).map(({ label, value, color }) => (
             <Card key={label} className="bg-white/5 border-white/10">
-              <CardContent className="p-3 text-center">
-                <p className={`text-2xl font-bold ${color}`}>{value}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{label}</p>
+              <CardContent className="p-2 text-center">
+                <p className={`text-xl font-bold ${color}`}>{value}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">{label}</p>
               </CardContent>
             </Card>
           ))}
@@ -426,14 +447,17 @@ export default function TeacherSchedulePage() {
         >
           <Card className="bg-white/5 border-white/10 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px]">
+              <table
+                className={`w-full min-w-[900px]${isDragging ? ' select-none' : ''}`}
+                style={isDragging ? { touchAction: 'none' } : undefined}
+              >
                 <thead>
                   <tr className="border-b border-white/10">
-                    <th className="px-2 py-2 text-left text-slate-400 font-medium w-16">{t('timeCol')}</th>
+                    <th className="px-1 py-1.5 text-left text-slate-400 font-medium w-14 text-[10px]">{t('timeCol')}</th>
                     {weekDays.map((day) => (
                       <th
                         key={day.toISOString()}
-                        className={`w-[12.5%] px-2 py-2 text-center font-medium ${isToday(day) ? 'bg-[#3B82F6]/10' : ''}`}
+                        className={`w-[12.5%] px-2 py-1.5 text-center font-medium ${isToday(day) ? 'bg-[#3B82F6]/10' : ''}`}
                       >
                         <span className={isToday(day) ? 'text-[#3B82F6]' : 'text-slate-400'}>
                           {formatDisplayDate(day)}
@@ -448,42 +472,53 @@ export default function TeacherSchedulePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {timeSlots.map((time) => (
-                    <tr key={time} className="border-b border-white/5 h-8">
-                      <td className="px-2 py-0.5 text-slate-400 text-xs font-medium w-16 leading-none">{time}</td>
-                      {weekDays.map((day) => {
+                  {timeSlots.map((time, rowIdx) => (
+                    <tr key={time} className="border-b border-white/5 h-5">
+                      <td className="px-1 py-0 text-slate-400 text-[10px] font-medium w-14 leading-none">{time}</td>
+                      {weekDays.map((day, colIdx) => {
+                        const dateKey = formatDate(day);
                         const slot = getSlotForTime(day, time);
                         const effectiveStatus = slot ? getEffectiveStatus(slot, day.getDay()) : null;
+                        const cellSelected = isSelected(dateKey, time);
                         return (
                           <td
                             key={`${day.toISOString()}-${time}`}
-                            className={`px-1 py-0.5 ${isToday(day) ? 'bg-[#3B82F6]/5' : ''}`}
+                            className={`px-0.5 py-0 ${isToday(day) ? 'bg-[#3B82F6]/5' : ''}`}
+                            onPointerDown={(e) => {
+                              if (e.shiftKey) return;
+                              e.preventDefault();
+                              startSelect({ dateKey, time, rowIdx, colIdx });
+                            }}
+                            onPointerEnter={() => {
+                              if (isDragging) extendSelect({ dateKey, time, rowIdx, colIdx });
+                            }}
                           >
                             {slot ? (
                               <button
-                                onClick={() => setSelectedSlot(slot)}
-                                className={`w-full px-1.5 py-0.5 rounded border text-left transition-all hover:scale-[1.02] ${getStatusColor(effectiveStatus!)}`}
+                                onClick={(e) => {
+                                  if (e.shiftKey) {
+                                    shiftSelect({ dateKey, time, rowIdx, colIdx }, allCells);
+                                    return;
+                                  }
+                                  if (selectionCount > 0) {
+                                    // In selection mode: clicking resets to single selection on this cell
+                                    startSelect({ dateKey, time, rowIdx, colIdx });
+                                    return;
+                                  }
+                                  setSelectedSlot(slot);
+                                }}
+                                className={`w-full h-3.5 rounded border text-left transition-all hover:opacity-80 ${getStatusColor(effectiveStatus!)}${cellSelected ? ' ring-2 ring-white/60 ring-offset-1 ring-offset-[#0A1628]' : ''}`}
                               >
-                                {slot.student ? (
-                                  <div>
-                                    <p className="text-xs font-medium truncate leading-tight">{slot.topic}</p>
-                                    <p className="text-xs opacity-70 truncate leading-tight">{slot.student.name}</p>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center justify-center h-5">
-                                    <Plus className="w-3 h-3" />
-                                  </div>
-                                )}
+                                <CompactSlotContent status={effectiveStatus!} />
                               </button>
                             ) : (
                               <button
-                                onClick={() => setSelectedSlot({ id: `new-${formatDate(day)}-${time}`, time, duration: 25, status: 'empty', student: null, topic: null })}
-                                className="w-full px-1.5 py-0.5 rounded border border-white/10 text-white/20 hover:border-white/30 hover:text-white/50 transition-all"
-                              >
-                                <div className="flex items-center justify-center h-5">
-                                  <Plus className="w-3 h-3" />
-                                </div>
-                              </button>
+                                onClick={() => {
+                                  if (selectionCount > 0) { clearSelection(); return; }
+                                  setSelectedSlot({ id: `new-${dateKey}-${time}`, time, duration: 25, status: 'empty', student: null, topic: null });
+                                }}
+                                className={`w-full h-3.5 rounded border border-white/10 hover:border-white/30 transition-all${cellSelected ? ' ring-2 ring-white/60 ring-offset-1 ring-offset-[#0A1628]' : ''}`}
+                              />
                             )}
                           </td>
                         );
@@ -493,6 +528,64 @@ export default function TeacherSchedulePage() {
                 </tbody>
               </table>
             </div>
+            {/* Batch Action Bar — shown when cells are selected */}
+            {selectionCount > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 border-t border-white/10 bg-white/5"
+              >
+                <button
+                  onClick={clearSelection}
+                  className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  {t('batchAction.clear')}
+                </button>
+                <span className="text-xs text-slate-400">
+                  {t(selectionCount === 1 ? 'batchAction.label' : 'batchAction.label_plural', { count: selectionCount })}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-red-500/40 text-red-400 hover:bg-red-500/10"
+                    onClick={() => {
+                      selected.forEach((key) => {
+                        const dk = key.slice(0, 10);
+                        const tm = key.slice(11);
+                        const dow = new Date(dk).getDay();
+                        const s = getSlotForTime(weekDays.find(d => formatDate(d) === dk)!, tm);
+                        if (s && ['available', 'disabled'].includes(getEffectiveStatus(s, dow))) {
+                          toggleDraft(dow, tm, false);
+                        }
+                      });
+                      clearSelection();
+                    }}
+                  >
+                    {t('batchAction.disableSelected')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs bg-[#3B82F6] hover:bg-[#3B82F6]/90"
+                    onClick={() => {
+                      selected.forEach((key) => {
+                        const dk = key.slice(0, 10);
+                        const tm = key.slice(11);
+                        const dow = new Date(dk).getDay();
+                        const s = getSlotForTime(weekDays.find(d => formatDate(d) === dk)!, tm);
+                        if (s && ['available', 'disabled'].includes(getEffectiveStatus(s, dow))) {
+                          toggleDraft(dow, tm, true);
+                        }
+                      });
+                      clearSelection();
+                    }}
+                  >
+                    {t('batchAction.enableSelected')}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
           </Card>
         </motion.div>
 
@@ -619,7 +712,14 @@ export default function TeacherSchedulePage() {
                       return (
                         <>
                           <p className="text-white font-medium mb-1">Empty Slot</p>
-                          <p className="text-sm text-slate-400 mb-4">{selectedSlot.time} · Outside your availability hours</p>
+                          <p className="text-sm text-slate-400 mb-3">{selectedSlot.time} · Outside your availability hours</p>
+                          <button
+                            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                            onClick={() => { setSelectedSlot(null); setShowAvailabilityDialog(true); }}
+                          >
+                            <Settings className="w-3 h-3" />
+                            {t('settingsHint')}
+                          </button>
                         </>
                       );
                     })()}

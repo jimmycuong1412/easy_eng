@@ -336,6 +336,14 @@
       "saved": "Saved",
       "saveBtn": "Save Slot Settings"
     },
+    "batchAction": {
+      "label": "{count} slot selected",
+      "label_plural": "{count} slots selected",
+      "enableSelected": "Enable Selected",
+      "disableSelected": "Disable Selected",
+      "clear": "Clear Selection"
+    },
+    "settingsHint": "Configure availability",
     "days": {
       "sun": "Sun",
       "mon": "Mon",

@@ -1,7 +1,7 @@
-# Tasks: Teacher Schedule UX & Save-Button Refactor
+# Tasks: Teacher Schedule — Multi-Select, UI Cleanup & Compact Layout
 
 **Input**: Design documents from `/specs/001-english-learning-platform/`
-**Prerequisites**: plan.md, spec.md, data-model.md, contracts/schedule-draft.md, research.md, quickstart.md
+**Prerequisites**: plan.md, data-model.md, research.md, quickstart.md
 
 **Organization**: Tasks grouped by user story to enable independent implementation and testing.
 
@@ -15,11 +15,11 @@
 
 ## Phase 1: Setup
 
-**Purpose**: Confirm all prerequisites are in place before modifying production code.
+**Purpose**: Confirm prerequisites and dev environment before modifying production code.
 
-- [x] T001 Verify dev server runs cleanly at `http://localhost:3001/en/teacher/schedule` and current slot-toggle writes to DB on every click
-- [x] T00X [P] Confirm `teacher_slot_overrides` unique constraint `(teacher_id, day_of_week, slot_time)` exists by checking `supabase/migrations/`
-- [x] T00X [P] Read `frontend/messages/en.json` and `frontend/messages/vi.json` to confirm `teacherSchedule` namespace structure before adding keys
+- [ ] T001 Verify dev server runs at `http://localhost:3001/en/teacher/schedule` and current page renders with stats bar and Settings button visible
+- [ ] T002 [P] Confirm `frontend/src/hooks/useScheduleDraft.ts` exists and exports `toggleDraft`, `saveDraft`, `discardDraft` interface unchanged
+- [ ] T003 [P] Read `frontend/messages/en.json` and `frontend/messages/vi.json` to confirm `teacherSchedule` namespace before adding keys
 
 ---
 
@@ -29,80 +29,86 @@
 
 **⚠️ CRITICAL**: All user story phases depend on these tasks.
 
-- [x] T00X Create `frontend/src/hooks/useScheduleDraft.ts` with the full interface: `draft`, `isDirty`, `saving`, `saveError`, `toggleDraft`, `saveDraft`, `discardDraft` — using Supabase client batch upsert on `teacher_slot_overrides` (see `quickstart.md` Step 1)
-- [x] T00X [P] Add `saveBar`, `stats`, and updated `legend.disabled` keys to `frontend/messages/en.json` under `teacherSchedule` (see `research.md` R4 for exact keys)
-- [x] T00X [P] Add matching Vietnamese translations to `frontend/messages/vi.json` under `teacherSchedule.saveBar`, `teacherSchedule.stats`, `teacherSchedule.legend.disabled`
+- [ ] T004 Create `frontend/src/hooks/useSlotSelection.ts` with full interface: `selected`, `isDragging`, `isSelected`, `selectionCount`, `startSelect`, `extendSelect`, `endSelect`, `shiftSelect`, `clearSelection` — using pure pointer events and rectangle range computation (see `quickstart.md` Step 1)
+- [ ] T005 [P] Add `batchAction` and `settingsHint` keys to `frontend/messages/en.json` under `teacherSchedule`: `batchAction.label`, `batchAction.label_plural`, `batchAction.enableSelected`, `batchAction.disableSelected`, `batchAction.clear`, `settingsHint` (see `data-model.md` i18n section)
+- [ ] T006 [P] Add matching Vietnamese translations to `frontend/messages/vi.json` under `teacherSchedule.batchAction` and `teacherSchedule.settingsHint`
 
 **Checkpoint**: Hook compiles, i18n keys exist — page modifications can begin
 
 ---
 
-## Phase 3: User Story 1 — Draft State & Save Button (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 — Multi-Select & Batch Action (Priority: P1) 🎯 MVP
 
-**Goal**: Replace per-click DB writes with local draft state. Teacher can toggle multiple slots, see an unsaved-changes banner, then Save all at once with a single batch upsert.
+**Goal**: Teacher can click-drag or shift-click to select multiple availability cells simultaneously, then Enable or Disable all selected slots at once via a batch action bar — all feeding into the existing `useScheduleDraft` save pipeline.
 
-**Independent Test**: Log in as teacher → toggle 3 slots → confirm NO DB writes yet (network tab shows 0 requests) → click Save → confirm exactly 1 upsert request with all 3 rows → reload page → confirm slots reflect saved state.
+**Independent Test**: Login as teacher → shift-click two available slots → batch action bar appears showing "2 slots selected" → click "Disable Selected" → both slots update to disabled style → unsaved banner appears → click Save → reload → slots are still disabled.
 
 ### Implementation for User Story 1
 
-- [x] T00X [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: import `useScheduleDraft` and wire up `draft`, `isDirty`, `saving`, `saveError`, `toggleDraft`, `saveDraft`, `discardDraft` — remove `togglingSlot` state and the `toggleSlot` async function
-- [x] T00X [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `getEffectiveStatus` helper that merges `draft` overrides on top of the loaded slot status (see `quickstart.md` Step 2b) and use it when rendering grid cells
-- [x] T00X [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add amber unsaved-changes banner (Framer Motion slide-in) with Discard and Save buttons, shown only when `isDirty === true` (see `quickstart.md` Step 2c)
-- [x] T0XX [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update the slot detail dialog — replace `toggleSlot(selectedSlot, false/true)` calls with `toggleDraft(dayOfWeek, selectedSlot.time, false/true)` then `setSelectedSlot(null)` (see `quickstart.md` Step 2e)
-- [x] T0XX [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `beforeunload` event listener that calls `e.preventDefault()` when `isDirty === true` (see `quickstart.md` Step 2f)
-- [x] T0XX [US1] Remove now-unused `Loader2` spinner tied to `togglingSlot` from the slot detail dialog buttons in `frontend/src/app/[locale]/teacher/schedule/page.tsx`
+- [ ] T007 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: import `useSlotSelection` and `CellCoord` from `@/hooks/useSlotSelection`; instantiate hook: `const { selected, isDragging, isSelected, selectionCount, startSelect, extendSelect, endSelect, shiftSelect, clearSelection } = useSlotSelection();`
+- [ ] T008 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `allCells` useMemo that maps `timeSlots × weekDays` to `CellCoord[]` with `rowIdx` and `colIdx` (see `quickstart.md` Step 3b)
+- [ ] T009 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `useEffect` that attaches `pointerup` to `document` calling `endSelect` on unmount-safe cleanup (see `quickstart.md` Step 3c)
+- [ ] T010 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `select-none` class and `touch-action: none` style to `<table>` element conditionally when `isDragging === true` (see `quickstart.md` Step 3d)
+- [ ] T011 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update each `<td>` in the schedule grid to add `onPointerDown` (calls `startSelect`) and `onPointerEnter` (calls `extendSelect` when `isDragging`) handlers — passing `{ dateKey, time, rowIdx, colIdx }` (see `quickstart.md` Step 3e)
+- [ ] T012 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update each slot `<button>` click handler to: (a) if `e.shiftKey` → call `shiftSelect`; (b) if `selectionCount > 0` → toggle cell in selection instead of opening dialog; (c) otherwise open dialog as before (see `quickstart.md` Step 3e)
+- [ ] T013 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `ring-2 ring-white/60 ring-offset-1` classes to slot buttons when `isSelected(dateKey, time)` is true
+- [ ] T014 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add the Batch Action Bar — a `motion.div` inside the schedule `<Card>` after the `</div>` wrapping the table, shown only when `selectionCount > 0`, containing: Clear button, count label using `t('batchAction.label', { count: selectionCount })`, "Disable Selected" button, "Enable Selected" button (see `quickstart.md` Step 4)
+- [ ] T015 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: implement batch action handlers — loop over `selected`, parse `dateKey` and `time` from key (`key.slice(0, 10)` and `key.slice(11)`), compute `dayOfWeek`, call `toggleDraft(dow, time, value)` for slots with `available` or `disabled` effective status, then call `clearSelection()`
 
-**Checkpoint**: Save button works, no per-click DB writes, unsaved banner shows/hides correctly
+**Checkpoint**: Multi-select works, batch action bar appears/disappears, draft is updated after batch action
 
 ---
 
-## Phase 4: User Story 2 — Stats Summary Bar (Priority: P1)
+## Phase 4: User Story 2 — UI Cleanup: Remove Settings Button (Priority: P2)
 
-**Goal**: Teacher sees at-a-glance counters (Total / Open / Booked / Disabled) for the current week derived from loaded schedule state — no extra DB query.
+**Goal**: Remove the redundant "Slot Settings" button from the page header. Settings dialog becomes accessible via a contextual link in the slot detail dialog for empty/outside-availability slots, reducing header clutter.
 
-**Independent Test**: Load schedule page with known data → verify stats bar shows correct counts matching the visible grid cells → toggle a slot to draft-disabled → confirm stats do NOT change (stats reflect persisted state, update only after Save + reload).
+**Independent Test**: Load schedule page → confirm NO "Slot Settings" / "Settings" button visible in page header → open slot detail dialog for an empty slot (outside availability) → confirm a "Configure availability" or settings icon link is present → click it → `AvailabilityCalendar` dialog opens.
 
 ### Implementation for User Story 2
 
-- [x] T0XX [US2] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `stats` memo computed from `Object.values(schedule).flat()` counting by `slot.status` → `{ total, available, booked, disabled }` (see `quickstart.md` Step 2d)
-- [x] T0XX [US2] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: render the 4-card stats bar between week navigation and schedule grid using the `stats` memo and `t('stats.*')` i18n keys (see `quickstart.md` Step 2d JSX)
+- [ ] T016 [US2] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: delete the entire `<Button>` block in the page header `<motion.div>` that calls `setShowAvailabilityDialog(true)` (the button with `<Settings className="w-4 h-4 mr-2" />` and `{t('settingsBtn')}`)
+- [ ] T017 [US2] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: in the slot detail dialog's empty slot section (the `effectiveStatus === 'empty'` branch showing "Outside your availability hours"), add a small `<button>` with `<Settings className="w-3 h-3" />` icon and `{t('settingsHint')}` text that calls `setSelectedSlot(null); setShowAvailabilityDialog(true)` (see `quickstart.md` Step 5b)
 
-**Checkpoint**: Stats bar visible with correct live counts
+**Checkpoint**: Header is clean (no Settings button), dialog still accessible from empty slot detail
 
 ---
 
-## Phase 5: User Story 3 — Settings Button & Discoverability (Priority: P2)
+## Phase 5: User Story 3 — Compact Layout: Bird's-Eye Grid (Priority: P2)
 
-**Goal**: The availability settings dialog (currently only openable via hidden state) gets a visible Settings button in the page header, making it easy to find and configure availability.
+**Goal**: Reduce schedule grid row height from 32px to 20px, condense fonts and padding, replace text content with colored visual indicators — allowing ~24 rows to be visible without scrolling on a 1080p screen.
 
-**Independent Test**: Load schedule page → confirm Settings button is visible in page header → click it → confirm `AvailabilityCalendar` dialog opens → confirm dialog save triggers schedule reload.
+**Independent Test**: Load schedule page on 1080p viewport → scroll to verify ~20+ time-slot rows are visible without scrolling → confirm each cell shows a colored dot (available/disabled) or colored bar (booked/upcoming) → confirm time labels are still readable → confirm hovering a slot still works → confirm clicking a slot still opens the detail dialog.
 
 ### Implementation for User Story 3
 
-- [x] T0XX [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `Settings` to lucide imports and render a Settings button in the page header `<div>` that calls `setShowAvailabilityDialog(true)` (see `quickstart.md` Step 2g)
-- [x] T0XX [US3] In `frontend/src/components/teacher/AvailabilityCalendar.tsx`: add optional `onSaved?: () => void` prop to the component interface and call it after a successful `save()` in addition to setting `setSaved(true)`
-- [x] T0XX [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: pass `onSaved={() => { setShowAvailabilityDialog(false); fetchSchedule(); }}` to `<AvailabilityCalendar>` so that saving availability auto-closes the dialog and refreshes the grid (replacing the existing `prevDialogOpen` ref pattern)
+- [ ] T018 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `CompactSlotContent` helper component above the main component — renders `w-1.5 h-1.5 rounded-full` dot for available/disabled and `w-full h-1.5 rounded-sm` bar for upcoming/booked/completed, using same colors as `getStatusColor` (see `quickstart.md` Step 3f)
+- [ ] T019 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: change schedule grid `<tr>` height from `h-8` to `h-5`
+- [ ] T020 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update time `<td>` — change `px-2 py-0.5 text-xs` to `px-1 py-0 text-[10px]` and `w-16` to `w-14`
+- [ ] T021 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update slot cell `<td>` padding from `px-1 py-0.5` to `px-0.5 py-0`
+- [ ] T022 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: replace the slot button content (the `{slot.student ? (...) : (...)}` render block inside the button) with `<CompactSlotContent status={effectiveStatus!} />` — removing the current 2-line text and Plus icon (see `quickstart.md` Step 3e)
+- [ ] T023 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: reduce slot button inner height from `h-5` to `h-3.5` and remove `hover:scale-[1.02]` (replace with `hover:opacity-80` to avoid layout shift at compact size)
+- [ ] T024 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update day header `<th>` padding from `py-2` to `py-1.5` and stats `<CardContent>` padding from `p-3` to `p-2`; reduce stats value font from `text-2xl` to `text-xl` and label font from `text-xs` to `text-[10px]`
 
-**Checkpoint**: Availability settings are easily accessible and auto-refresh the grid on save
+**Checkpoint**: Grid shows ~24 rows at 1080p, colored indicators visible, clicks still work
 
 ---
 
 ## Phase 6: Tests
 
-**Purpose**: Unit and e2e coverage for the new hook and save flow.
+**Purpose**: Unit and e2e coverage for the new hook and multi-select flow.
 
-- [x] T0XX [P] Create `frontend/src/hooks/useScheduleDraft.test.ts` with 4 unit tests: (1) `toggleDraft` sets `isDirty=true`, (2) `discardDraft` clears draft, (3) `saveDraft` calls supabase upsert with correct rows and clears draft, (4) `saveDraft` sets `saveError` on DB failure (see `quickstart.md` Step 4)
-- [x] T0XX [P] Create `frontend/tests/e2e/teacher-schedule-save.spec.ts` with the full save flow e2e: login as teacher → open slot dialog → disable slot → assert unsaved banner → click Save → assert banner gone → reload → assert slot still disabled (see `quickstart.md` Step 4)
+- [ ] T025 [P] Create `frontend/src/hooks/useSlotSelection.test.ts` with 5 unit tests: (1) `startSelect` sets `isDragging=true` and adds key to selected, (2) `extendSelect` from anchor to target selects 2×2 rectangle, (3) `shiftSelect` from anchor to target selects rectangle without `isDragging`, (4) `clearSelection` empties selection and resets anchor, (5) `endSelect` sets `isDragging=false` but preserves selection (see `quickstart.md` Step 7)
+- [ ] T026 [P] Create `frontend/tests/e2e/teacher-schedule-multiselect.spec.ts` with 4 e2e tests: (1) shift-click two available slots → batch action bar shows correct count, (2) click "Disable Selected" → unsaved banner appears, (3) drag across 3 cells → 3 cells selected, (4) "Clear Selection" → batch bar disappears (see `quickstart.md` Step 7)
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [x] T0XX [P] Add `disabled` status to the legend section in `frontend/src/app/[locale]/teacher/schedule/page.tsx` (add a red-dashed swatch + `t('legend.disabled')` label alongside existing legend items)
-- [x] T0XX Remove the dead `prevDialogOpen` ref from `frontend/src/app/[locale]/teacher/schedule/page.tsx` after T017 replaces it with the `onSaved` callback
-- [x] T0XX [P] Run `npm run type-check` in `frontend/` and fix any TypeScript errors introduced by the refactor
-- [x] T0XX [P] Run `npm run lint` in `frontend/` and fix any lint warnings
-- [x] T0XX Smoke-test on mobile viewport (375px) — confirm stats bar wraps to 2×2 grid and save banner stacks vertically
+- [ ] T027 [P] Run `npm run type-check` in `frontend/` and fix any TypeScript errors introduced by the new hook and page changes
+- [ ] T028 [P] Run `npm run lint` in `frontend/` and fix any lint warnings
+- [ ] T029 Smoke-test on mobile viewport (375px) — confirm compact grid still scrolls horizontally, batch action bar stacks vertically, no horizontal overflow from new ring styles
+- [ ] T030 [P] Verify the existing e2e suite still passes: `PLAYWRIGHT_BASE_URL="https://easyeng-dev.vercel.app/en" npx playwright test tests/e2e/teacher-schedule-save.spec.ts --project=chromium` — no regressions from layout changes
 
 ---
 
@@ -112,51 +118,51 @@
 
 - **Phase 1 (Setup)**: No dependencies — start immediately
 - **Phase 2 (Foundational)**: Depends on Phase 1 — blocks Phases 3–5
-- **Phases 3, 4, 5**: All depend on Phase 2; can run in parallel after Phase 2
-- **Phase 6 (Tests)**: Can begin as soon as Phase 3 is complete (T018 after T004; T019 after T012)
+- **Phases 3, 4, 5**: All depend on Phase 2; can run in parallel after Phase 2 (touch different sections of page.tsx)
+- **Phase 6 (Tests)**: T025 can begin after T004; T026 can begin after T014 (batch action complete)
 - **Phase 7 (Polish)**: Depends on Phases 3–5 complete
 
 ### User Story Dependencies
 
-- **US1 (Draft/Save)**: Depends on T004 (hook) + T005/T006 (i18n) — no dependency on US2/US3
-- **US2 (Stats bar)**: Depends on T004/T005/T006 — no dependency on US1 or US3
-- **US3 (Settings button)**: Depends on T004/T005/T006 — no dependency on US1 or US2
+- **US1 (Multi-select)**: Depends on T004 (hook) + T005/T006 (i18n)
+- **US2 (UI Cleanup)**: Depends on T004/T005/T006 — independent of US1
+- **US3 (Compact Layout)**: Depends on T004/T005/T006 — independent of US1 and US2
 
 ### Within Each User Story
 
-- T007 → T008 → T009 → T010 (each builds on the previous in the same file)
-- T013 → T014 (stats memo before JSX render)
-- T015 can run in parallel with T016; T017 depends on both
+- T007 → T008 → T009 → T010 → T011 → T012 → T013 → T014 → T015 (sequential, same file)
+- T016 → T017 (sequential, same file)
+- T018 → T019 → T020 → T021 → T022 → T023 → T024 (sequential, same file)
 
 ---
 
 ## Parallel Opportunities
 
-### Phase 2 (can run in parallel after T001)
+### Phase 2 (after T001–T003)
 ```
-Task T004: Create useScheduleDraft hook in frontend/src/hooks/useScheduleDraft.ts
-Task T005: Add en.json i18n keys
-Task T006: Add vi.json i18n keys
+T004: Create useSlotSelection hook
+T005: Add en.json i18n keys          (different file → parallel)
+T006: Add vi.json i18n keys          (different file → parallel)
 ```
 
 ### Phase 3+4+5 (after Phase 2)
 ```
-Task T007–T012: US1 (draft state)       → one developer
-Task T013–T014: US2 (stats bar)         → another developer
-Task T015–T017: US3 (settings button)   → another developer
+T007–T015: US1 (multi-select)        → developer A
+T016–T017: US2 (Settings cleanup)    → developer B (10 min task)
+T018–T024: US3 (compact layout)      → developer C
 ```
 
-### Phase 6 (after T004 and T012)
+### Phase 6 (after T004 and T014)
 ```
-Task T018: Unit tests for hook
-Task T019: E2E save flow test
+T025: Unit tests for hook
+T026: E2e tests for batch action
 ```
 
 ### Phase 7 (after Phases 3–5)
 ```
-Task T020: Add disabled legend item
-Task T022: Type-check
-Task T023: Lint
+T027: Type-check
+T028: Lint
+T030: Regression e2e
 ```
 
 ---
@@ -167,23 +173,24 @@ Task T023: Lint
 
 1. Complete Phase 1: Setup
 2. Complete Phase 2: Foundational (T004–T006)
-3. Complete Phase 3: US1 Draft/Save (T007–T012)
-4. **STOP and VALIDATE**: Toggle slots, verify 0 per-click requests, Save triggers 1 batch upsert
-5. Ship — this alone eliminates the N DB writes problem
+3. Complete Phase 3: US1 Multi-Select (T007–T015)
+4. **STOP and VALIDATE**: Shift-click 3 slots → batch disable → save → reload → slots still disabled
+5. Ship — teachers can now configure large ranges in seconds instead of clicking one at a time
 
 ### Full Delivery
 
 1. MVP above
-2. Phase 4: Stats bar (T013–T014) — quick win, no DB cost
-3. Phase 5: Settings button (T015–T017) — UX discoverability
-4. Phase 6: Tests (T018–T019) — required for merge
-5. Phase 7: Polish (T020–T024)
+2. Phase 4: UI Cleanup (T016–T017) — quick win, removes header clutter
+3. Phase 5: Compact Layout (T018–T024) — bird's-eye view
+4. Phase 6: Tests (T025–T026) — required for merge
+5. Phase 7: Polish (T027–T030)
 
 ---
 
 ## Notes
 
 - All changes are in `frontend/` only — no DB migrations, no new API routes
-- `useScheduleDraft` follows the same pattern as `AvailabilityCalendar`'s existing save logic
-- Stats bar adds zero DB load — computed from in-memory `schedule` state
+- `useSlotSelection` is purely ephemeral state — no Supabase calls, no side effects
+- Batch action reuses existing `toggleDraft` and `saveDraft` — no hook changes needed
+- Compact layout is non-breaking: slot detail dialog still shows full text on click
 - `[P]` tasks touch different files and have no blocking dependencies on each other

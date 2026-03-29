@@ -1,88 +1,103 @@
-# Data Model: Teacher Schedule UX & Save-Button Refactor
+# Data Model: Teacher Schedule Multi-Select, UI Cleanup & Compact Layout
 
-**Feature**: Teacher Schedule UX & Save-Button Refactor
+**Feature**: Teacher Schedule Multi-Select & Compact View
 **Date**: 2026-03-30
-**Branch**: `001-english-learning-platform`
+**Branch**: `claude/angry-moser`
 
 ---
 
-## Existing DB Tables (no schema changes required)
+## No new database entities
 
-### `teacher_availability`
-Stores the teacher's weekly template (which days + time ranges they're available).
-
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK |
-| teacher_id | uuid | FK → profiles.id |
-| day_of_week | int | 0=Sun … 6=Sat |
-| start_time | time | e.g. `00:00:00` |
-| end_time | time | e.g. `23:30:00` |
-| is_active | boolean | soft delete flag |
-
-### `teacher_slot_overrides`
-Per-slot enable/disable overrides on top of the availability template.
-
-| Column | Type | Notes |
-|--------|------|-------|
-| teacher_id | uuid | FK + unique constraint component |
-| day_of_week | int | unique constraint component |
-| slot_time | time | unique constraint component (e.g. `08:00:00`) |
-| is_enabled | boolean | true = visible/bookable, false = hidden |
-
-**Unique constraint**: `(teacher_id, day_of_week, slot_time)` — supports upsert on conflict.
+All changes are ephemeral client-side state. The existing `teacher_slot_overrides` table (from the previous feature) handles persistence.
 
 ---
 
-## Frontend State Model
+## New Client-Side State Entities
 
-### `ScheduleData` (existing, unchanged)
+### `SlotSelectionState` (via `useSlotSelection` hook)
+
 ```ts
-type ScheduleData = Record<string, ScheduleSlot[]>; // key = "YYYY-MM-DD"
+interface SlotSelectionState {
+  // Primary selection set — keys are "YYYY-MM-DD:HH:MM"
+  selected: Set<string>;
 
-interface ScheduleSlot {
-  id: string;
-  time: string;       // "HH:MM"
-  duration: number;   // minutes
-  status: 'upcoming' | 'completed' | 'booked' | 'available' | 'disabled' | 'empty';
-  student: { name: string; avatar: string; level: string } | null;
-  topic: string | null;
+  // True while pointer button is held down and dragging
+  isDragging: boolean;
+
+  // Anchor cell for drag/shift-click range (stored in useRef, not state)
+  anchor: {
+    dateKey: string;   // "YYYY-MM-DD"
+    time: string;      // "HH:MM"
+    rowIdx: number;    // Index in timeSlots array (0–56)
+    colIdx: number;    // Index in weekDays array (0–6)
+  } | null;
 }
 ```
 
-### `DraftOverrides` (new — in `useScheduleDraft` hook)
-```ts
-// Pending changes not yet persisted to DB
-// key: "dayOfWeek:HH:MM" (e.g. "1:08:00")
-// value: true = enable slot, false = disable slot
-type DraftOverrides = Record<string, boolean>;
-```
-
-**State transitions**:
-```
-IDLE (isDirty=false)
-  → toggleDraft() → DIRTY (isDirty=true, draft has entries)
-  → saveDraft()   → SAVING → IDLE (draft cleared, schedule reloaded)
-  → discardDraft()→ IDLE (draft cleared, no DB write)
-```
-
----
-
-## Derived Stats (computed from `ScheduleData` in-memory)
+### `CellCoord` (used in `shiftSelect` calculation)
 
 ```ts
-interface WeekStats {
-  total: number;      // all non-empty slots
-  available: number;  // status === 'available'
-  booked: number;     // status === 'upcoming' | 'booked'
-  disabled: number;   // status === 'disabled'
+interface CellCoord {
+  dateKey: string;   // "YYYY-MM-DD"
+  time: string;      // "HH:MM"
+  rowIdx: number;    // 0–56
+  colIdx: number;    // 0–6
 }
 ```
 
-Computed with a single O(n) pass over `Object.values(schedule).flat()` — no DB query needed.
+---
+
+## Existing DB Entity: `teacher_slot_overrides` (unchanged)
+
+```sql
+CREATE TABLE teacher_slot_overrides (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id    uuid NOT NULL REFERENCES profiles(id),
+  day_of_week   integer NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+  slot_time     time NOT NULL,    -- "HH:MM:00"
+  is_enabled    boolean NOT NULL,
+  UNIQUE (teacher_id, day_of_week, slot_time)
+);
+```
+
+Batch action writes flow: `selected Set<string>` → loop → `toggleDraft(dayOfWeek, time, value)` → existing `saveDraft(teacherId)` → single upsert.
 
 ---
 
-## No migration required
+## i18n Key Additions (`teacherSchedule` namespace)
 
-All persistence uses existing `teacher_slot_overrides` via batch upsert. No new columns or tables.
+### New keys in `en.json`:
+```json
+"batchAction": {
+  "label": "{{count}} slot selected",
+  "label_plural": "{{count}} slots selected",
+  "enableSelected": "Enable Selected",
+  "disableSelected": "Disable Selected",
+  "clear": "Clear Selection"
+},
+"settingsHint": "Configure availability"
+```
+
+### Same keys in `vi.json`:
+```json
+"batchAction": {
+  "label": "{{count}} ô đã chọn",
+  "label_plural": "{{count}} ô đã chọn",
+  "enableSelected": "Bật các ô đã chọn",
+  "disableSelected": "Tắt các ô đã chọn",
+  "clear": "Bỏ chọn"
+},
+"settingsHint": "Cấu hình thời gian rảnh"
+```
+
+---
+
+## State Transitions
+
+```
+No selection  →  (pointer down on cell)  →  Selecting (isDragging=true)
+Selecting     →  (pointer up)            →  Selection active (isDragging=false, selected.size > 0)
+Selection active → (batch action click)  →  draft updated, selection cleared
+Selection active → (clear button)        →  No selection
+Selection active → (non-shift click)     →  New single selection (anchor reset)
+```

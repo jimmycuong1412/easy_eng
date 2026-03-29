@@ -1,120 +1,93 @@
-# Research: Teacher Schedule UX & Save-Button Refactor
+# Research: Teacher Schedule — Multi-Select, UI Cleanup & Compact Layout
 
-**Phase 0 output** | Branch: `001-english-learning-platform` | Date: 2026-03-30
+**Phase 0 output** | Branch: `claude/angry-moser` | Date: 2026-03-30
 
 ---
 
-## R1 — Current DB write pattern (slot toggle)
+## R1 — Multi-select drag implementation (no external library)
 
-**Decision**: Replace per-click upsert with local draft state + single batch upsert on Save.
+**Decision**: Pure React pointer events — `onPointerDown` / `onPointerEnter` / `onPointerUp` on `<td>` elements, using the Pointer Capture API.
 
 **Findings**:
-- `toggleSlot()` in `page.tsx` fires one `supabase.from('teacher_slot_overrides').upsert()` per click.
-- A teacher configuring a full day (57 slots at 25-min intervals) triggers up to 57 separate DB round-trips.
-- `AvailabilityCalendar.tsx` already uses the correct pattern: local `slotState` object + single `save()` that upserts all rows at once. We replicate this in a custom hook for the main grid.
-
-**Rationale**: Batch upsert is already validated and working in `AvailabilityCalendar`. Extracting into a hook avoids duplication.
+- The Pointer Capture API (`e.currentTarget.setPointerCapture(e.pointerId)`) ensures `onPointerMove` / `onPointerEnter` events continue firing even when the cursor leaves the element, preventing "stuck" drag states.
+- `onPointerEnter` on each cell fires reliably during a drag when pointer capture is NOT set on the table container (if we set capture on the container, `pointerenter` won't fire on children). So we skip container capture and rely on `onPointerEnter` per cell.
+- Rectangle selection: store `(rowIdx, colIdx)` of anchor and current hover cell; compute selection as all cells where `min(anchor.row, curr.row) ≤ row ≤ max(anchor.row, curr.row)` AND same for col.
+- Text selection prevention: add `select-none` class to the `<table>` while `isDragging` is true.
+- Mobile: the table already has `overflow-x-auto` scroll. Adding `touch-action: none` during drag prevents accidental scroll-while-selecting; restore `touch-action: auto` on drag end.
 
 **Alternatives considered**:
-- Debounced auto-save: rejected — teacher could navigate away during debounce window and lose changes.
-- Server Action with optimistic UI: over-engineered for this scope; Supabase client SDK is sufficient.
+- `react-selecto` library: feature-complete but adds ~15kB; overkill for a simple rectangular selection.
+- CSS `user-select: none` + mousemove: pointer events are more reliable than mouse events on touch devices and with pointer capture.
 
 ---
 
-## R2 — Unsaved-changes guard pattern in Next.js 14
+## R2 — Selection key format
 
-**Decision**: Use `beforeunload` event listener + a sticky Framer Motion banner (not a browser dialog).
+**Decision**: Use `"YYYY-MM-DD:HH:MM"` (e.g., `"2026-03-31:08:00"`) as the selection key.
 
 **Findings**:
-- Next.js App Router does not expose `router.beforePopState`. The only reliable way to block hard navigation is `window.addEventListener('beforeunload', ...)`.
-- For soft navigation (Next.js `<Link>` clicks within SPA), a sticky banner warning "You have unsaved changes — Save or Discard" is the idiomatic approach (avoids janky browser dialogs).
-- Pattern observed in: Vercel dashboard, Linear, GitHub PR editor.
-
-**Rationale**: Consistent with the app's existing "toast for feedback" pattern. Non-blocking warning keeps UX smooth.
-
-**Alternatives considered**:
-- `useRouter().push` interception: not available in App Router without a custom middleware, which is overkill.
+- The grid already identifies cells by `(dateKey, time)` — the `dateKey` is `YYYY-MM-DD` and `time` is `HH:MM`.
+- This format is already used for `scheduleMap` lookups in `page.tsx`, so no format conversion needed.
+- A `Set<string>` is the correct data structure: O(1) add/has/delete, fast for 57×7 = 399 max cells.
 
 ---
 
-## R3 — Stats summary bar content
+## R3 — Shift-click range selection
 
-**Decision**: Show four counters — Total slots, Available (open), Booked, Disabled — derived from the already-loaded `schedule` state. No extra DB query.
+**Decision**: Store anchor in a `useRef` (not state), recompute selection on each shift-click.
 
 **Findings**:
-- `schedule` (type `ScheduleData`) is already in memory after `fetchSchedule()`.
-- Counting by `slot.status` is O(n) over the weekly dataset (~400 slots max), negligible cost.
-- Stats teachers care about most: how many slots are open for booking vs already filled.
-
-**Rationale**: Zero extra DB queries. Actionable at a glance.
-
-**Alternatives considered**:
-- Separate DB aggregation query: adds latency and complexity for data already in memory.
+- `useRef` avoids re-renders on anchor update; the selection `Set<string>` in state drives renders.
+- Algorithm: on shift+click, compute rectangle from `anchorRef.current` to clicked cell and set `selected = new Set(computeRectangle(anchor, target, allCells))`.
+- `allCells` is the sorted list of `{dateKey, time, rowIdx, colIdx}` — derived from `timeSlots × weekDays` (same arrays used to render the grid, so indices are stable).
+- On non-shift click: clear selection, set anchor to clicked cell, add to selection.
 
 ---
 
-## R4 — i18n keys needed
+## R4 — Batch action integration with `useScheduleDraft`
 
-**Decision**: Add keys under `teacherSchedule.saveBar` and `teacherSchedule.stats` namespaces.
-
-New keys (en):
-```json
-"saveBar": {
-  "unsavedChanges": "You have unsaved changes",
-  "save": "Save",
-  "discard": "Discard",
-  "saving": "Saving...",
-  "saved": "Saved!"
-},
-"stats": {
-  "total": "Total",
-  "available": "Open",
-  "booked": "Booked",
-  "disabled": "Disabled"
-},
-"legend": {
-  "disabled": "Disabled"
-}
-```
-
-Vietnamese keys to be added to `vi.json` under the same paths.
-
----
-
-## R5 — Hook design: `useScheduleDraft`
-
-**Decision**: Custom hook encapsulating draft slot overrides, dirty flag, save, and discard.
-
-Interface:
-```ts
-interface UseScheduleDraftReturn {
-  draft: Record<string, boolean>; // "dayOfWeek:HH:MM" -> enabled/disabled
-  isDirty: boolean;
-  saving: boolean;
-  saveError: string | null;
-  toggleDraft: (dayOfWeek: number, slotTime: string, newValue: boolean) => void;
-  saveDraft: (teacherId: string) => Promise<void>;
-  discardDraft: () => void;
-}
-```
-
-**Rationale**: Separating draft logic from the 575-line page component makes both units testable. The hook has no side effects on mount — it only writes to DB when `saveDraft` is called.
-
-**Alternatives considered**:
-- Zustand store: unnecessary global state for a single-page concern.
-- Moving logic into `AvailabilityCalendar`: wrong responsibility; that component manages weekly template, not per-slot overrides on the grid.
-
----
-
-## R6 — Slot-toggle-from-dialog compatibility
-
-**Decision**: Remove `toggleSlot()` from the page. Replace dialog "Disable Slot"/"Enable Slot" buttons with draft mutations (`toggleDraft`), close dialog, show unsaved banner.
+**Decision**: Batch action calls `toggleDraft(dayOfWeek, time, value)` in a loop for each selected cell — no changes to `useScheduleDraft` needed.
 
 **Findings**:
-- Current `toggleSlot` writes immediately to DB then calls `fetchSchedule()` (full reload).
-- After refactor: clicking "Disable Slot" in dialog calls `toggleDraft(dayOfWeek, time, false)`, sets `isDirty = true`, closes dialog. The grid cell updates optimistically. DB write deferred to Save.
+- `toggleDraft` updates `draft` state via `setDraft(prev => ({ ...prev, key: value }))`. Calling it N times in a `forEach` loop will batch in React 18's automatic batching, resulting in a single re-render.
+- Only `available` and `disabled` slots are actionable. Booked/upcoming are visually highlighted but skipped.
+- `dayOfWeek` for a selection key `"YYYY-MM-DD:HH:MM"` can be computed as `new Date(dateKey).getDay()`.
 
-**Rationale**: Consistency — all grid mutations go through the same draft → save path.
+---
+
+## R5 — Compact layout approach
+
+**Decision**: Adjust individual cell sizes in Tailwind (not CSS `transform: scale()`).
+
+**Findings**:
+- CSS `transform: scale(0.8)` on the table container would scale the scroll container too, causing incorrect overflow calculations and broken sticky headers. Not viable.
+- Target density: `h-5` (20px) rows with `py-0` padding gives ~24 visible rows at 1080p (24 × 20px = 480px, fits in ~600px visible area with headers).
+- At 20px row height, showing two lines of text (topic + student) is impossible. Solution: show only a colored indicator (thin bar or dot). Full text still visible in the detail dialog on click.
+- Time labels at `text-[10px]` (10px) are readable on desktop; on mobile (375px) the time column collapses naturally via the existing `min-w-[900px]` table constraint.
+- Day headers reduce from `py-2` to `py-1.5` — saves ~14px per render.
+
+**Slot content at compact size**:
+- Available: `w-1.5 h-1.5 rounded-full bg-white/40 mx-auto` dot
+- Disabled: `w-1.5 h-1.5 rounded-full bg-red-500/50 mx-auto` dot
+- Upcoming/Booked: `w-full h-2 rounded-sm bg-[#3B82F6]/70` bar
+- Completed: `w-full h-2 rounded-sm bg-emerald-500/70` bar
+- Empty (outside availability): nothing rendered
+
+**Alternatives considered**:
+- CSS `zoom`: browser inconsistency (not supported in Firefox until 2024).
+- Collapsible time groups (e.g., show only hours, expand on click): adds interaction complexity without the clean "bird's-eye" feel requested.
+
+---
+
+## R6 — Settings button removal strategy
+
+**Decision**: Remove the "Slot Settings" `<Button>` from the page header. Add a small `<Settings>` icon button in the slot detail dialog for empty/outside-availability slots.
+
+**Findings**:
+- The header button (`settingsBtn` i18n key, value "Slot Settings") currently opens the `AvailabilityCalendar` dialog.
+- The `AvailabilityCalendar` manages recurring weekly availability patterns (not individual slot overrides). Teachers configure it infrequently (once when setting up their schedule).
+- Moving it to the slot detail dialog for empty slots makes it contextually discoverable: "This slot is outside your availability — configure availability here → [⚙ Settings]".
+- The dialog close button already exists; no additional UI scaffolding needed.
 
 ---
 
@@ -122,7 +95,8 @@ interface UseScheduleDraftReturn {
 
 | Unknown | Resolution |
 |---------|-----------|
-| Does Supabase SDK support bulk upsert with conflict resolution? | Yes — `.upsert(rows, { onConflict: '...' })` already used in `AvailabilityCalendar.save()` |
-| Is `beforeunload` reliable in Next.js App Router? | Yes for hard navigation; soft nav requires sticky banner |
-| Any existing draft/dirty state pattern in codebase? | `AvailabilityCalendar` uses `saved` boolean — extended here with `isDirty` |
-| RLS on `teacher_slot_overrides`? | Already scoped to `teacher_id = auth.uid()` per T235 audit |
+| Can pointer events handle fast drag without missing cells? | Yes — `onPointerEnter` per `<td>` fires reliably; Pointer Capture on initial cell ensures drag start is captured |
+| Does React 18 batch multiple `toggleDraft` calls? | Yes — automatic batching in React 18 groups synchronous state updates in event handlers |
+| Can `text-[10px]` be used in Tailwind without config? | Yes — arbitrary values work out of the box |
+| Will compact rows break the existing `h-8` slot detail button logic? | No — buttons inside cells use their own sizing; only the `<tr>` height changes |
+| Is `useRef` for anchor safe with concurrent rendering? | Yes — refs are mutable and not part of the render cycle; anchor doesn't need to trigger renders |

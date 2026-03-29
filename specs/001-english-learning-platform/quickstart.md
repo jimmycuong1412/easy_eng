@@ -1,306 +1,370 @@
-# Quickstart: Teacher Schedule UX & Save-Button Refactor
+# Quickstart: Teacher Schedule Multi-Select, UI Cleanup & Compact Layout
 
 **Last Updated**: 2026-03-30
-**Target Audience**: Developer implementing the changes
-**Branch**: `001-english-learning-platform`
+**Branch**: `claude/angry-moser`
+**Files to change**: `page.tsx`, `useSlotSelection.ts` (new), `en.json`, `vi.json`
 
 ---
 
-## What's changing
+## Step 1 — Create `useSlotSelection` hook
 
-1. **New hook** `frontend/src/hooks/useScheduleDraft.ts` — encapsulates draft slot overrides and batch save.
-2. **Modified page** `frontend/src/app/[locale]/teacher/schedule/page.tsx` — removes `toggleSlot`, adds draft mutations, unsaved banner, stats bar, Save button.
-3. **Modified component** `frontend/src/components/teacher/AvailabilityCalendar.tsx` — add optional `onSaved?: () => void` prop.
-4. **i18n keys** added to `en.json` and `vi.json`.
-5. **Tests** — unit for hook, e2e for save flow.
-
----
-
-## Step 1 — Create `useScheduleDraft` hook
-
-File: `frontend/src/hooks/useScheduleDraft.ts`
+Create `frontend/src/hooks/useSlotSelection.ts`:
 
 ```ts
 'use client';
 
-import { useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useState, useRef, useCallback } from 'react';
 
-type DraftOverrides = Record<string, boolean>; // "dayOfWeek:HH:MM" → enabled
+export interface CellCoord {
+  dateKey: string;
+  time: string;
+  rowIdx: number;
+  colIdx: number;
+}
 
-export function useScheduleDraft() {
-  const [draft, setDraft] = useState<DraftOverrides>({});
-  const [isDirty, setIsDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const supabase = createClient();
+export interface UseSlotSelectionReturn {
+  selected: Set<string>;
+  isDragging: boolean;
+  isSelected: (dateKey: string, time: string) => boolean;
+  selectionCount: number;
+  startSelect: (cell: CellCoord) => void;
+  extendSelect: (cell: CellCoord) => void;
+  endSelect: () => void;
+  shiftSelect: (cell: CellCoord, allCells: CellCoord[]) => void;
+  clearSelection: () => void;
+}
 
-  const toggleDraft = useCallback((dayOfWeek: number, slotTime: string, newValue: boolean) => {
-    setDraft((prev) => ({ ...prev, [`${dayOfWeek}:${slotTime}`]: newValue }));
-    setIsDirty(true);
-    setSaveError(null);
-  }, []);
+function cellKey(dateKey: string, time: string) {
+  return `${dateKey}:${time}`;
+}
 
-  const saveDraft = useCallback(async (teacherId: string) => {
-    if (!isDirty) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      const rows = Object.entries(draft).map(([key, isEnabled]) => {
-        const colonIdx = key.indexOf(':');
-        const day = parseInt(key.slice(0, colonIdx));
-        const hm = key.slice(colonIdx + 1);
-        return {
-          teacher_id: teacherId,
-          day_of_week: day,
-          slot_time: hm + ':00',
-          is_enabled: isEnabled,
-        };
-      });
-      if (rows.length > 0) {
-        const { error } = await supabase
-          .from('teacher_slot_overrides')
-          .upsert(rows, { onConflict: 'teacher_id,day_of_week,slot_time' });
-        if (error) throw error;
-      }
-      setDraft({});
-      setIsDirty(false);
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Save failed');
-    } finally {
-      setSaving(false);
+function computeRectangle(a: CellCoord, b: CellCoord, all: CellCoord[]): Set<string> {
+  const minRow = Math.min(a.rowIdx, b.rowIdx);
+  const maxRow = Math.max(a.rowIdx, b.rowIdx);
+  const minCol = Math.min(a.colIdx, b.colIdx);
+  const maxCol = Math.max(a.colIdx, b.colIdx);
+  const result = new Set<string>();
+  for (const c of all) {
+    if (c.rowIdx >= minRow && c.rowIdx <= maxRow && c.colIdx >= minCol && c.colIdx <= maxCol) {
+      result.add(cellKey(c.dateKey, c.time));
     }
-  }, [draft, isDirty, supabase]);
+  }
+  return result;
+}
 
-  const discardDraft = useCallback(() => {
-    setDraft({});
-    setIsDirty(false);
-    setSaveError(null);
+export function useSlotSelection(): UseSlotSelectionReturn {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isDragging, setIsDragging] = useState(false);
+  const anchorRef = useRef<CellCoord | null>(null);
+  const dragCurrentRef = useRef<CellCoord | null>(null);
+  const allCellsRef = useRef<CellCoord[]>([]);
+
+  const startSelect = useCallback((cell: CellCoord) => {
+    anchorRef.current = cell;
+    dragCurrentRef.current = cell;
+    setIsDragging(true);
+    setSelected(new Set([cellKey(cell.dateKey, cell.time)]));
   }, []);
 
-  return { draft, isDirty, saving, saveError, toggleDraft, saveDraft, discardDraft };
+  const extendSelect = useCallback((cell: CellCoord) => {
+    if (!anchorRef.current) return;
+    dragCurrentRef.current = cell;
+    setSelected(computeRectangle(anchorRef.current, cell, allCellsRef.current));
+  }, []);
+
+  const endSelect = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const shiftSelect = useCallback((cell: CellCoord, allCells: CellCoord[]) => {
+    allCellsRef.current = allCells;
+    if (!anchorRef.current) {
+      anchorRef.current = cell;
+      setSelected(new Set([cellKey(cell.dateKey, cell.time)]));
+      return;
+    }
+    setSelected(computeRectangle(anchorRef.current, cell, allCells));
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelected(new Set());
+    anchorRef.current = null;
+  }, []);
+
+  return {
+    selected,
+    isDragging,
+    isSelected: (dateKey, time) => selected.has(cellKey(dateKey, time)),
+    selectionCount: selected.size,
+    startSelect,
+    extendSelect,
+    endSelect,
+    shiftSelect,
+    clearSelection,
+  };
 }
 ```
 
 ---
 
-## Step 2 — Update `page.tsx`
+## Step 2 — Add i18n keys
 
-Key changes to `frontend/src/app/[locale]/teacher/schedule/page.tsx`:
-
-### 2a. Remove `toggleSlot`, add hook
-
-```ts
-// Remove: const [togglingSlot, setTogglingSlot] = React.useState(false);
-// Remove: const toggleSlot = async (...) => { ... };
-
-// Add:
-import { useScheduleDraft } from '@/hooks/useScheduleDraft';
-// ...
-const { draft, isDirty, saving, saveError, toggleDraft, saveDraft, discardDraft } = useScheduleDraft();
+Add to `frontend/messages/en.json` under `teacherSchedule`:
+```json
+"batchAction": {
+  "label": "{{count}} slot selected",
+  "label_plural": "{{count}} slots selected",
+  "enableSelected": "Enable Selected",
+  "disableSelected": "Disable Selected",
+  "clear": "Clear Selection"
+},
+"settingsHint": "Configure availability"
 ```
 
-### 2b. Compute effective slot status (merge draft over loaded schedule)
+Add matching Vietnamese translation to `frontend/messages/vi.json`.
 
-```ts
-// Helper used in getSlotForTime — apply draft overrides on top of DB state
-const getEffectiveStatus = (slot: ScheduleSlot, date: Date): ScheduleSlot['status'] => {
-  const dayOfWeek = date.getDay();
-  const key = `${dayOfWeek}:${slot.time}`;
-  if (key in draft) return draft[key] ? 'available' : 'disabled';
-  return slot.status;
-};
+---
+
+## Step 3 — Wire `useSlotSelection` into `page.tsx`
+
+### 3a. Import and instantiate
+```tsx
+import { useSlotSelection, CellCoord } from '@/hooks/useSlotSelection';
+
+// Inside component:
+const { selected, isDragging, isSelected, selectionCount, startSelect, extendSelect, endSelect, shiftSelect, clearSelection } = useSlotSelection();
 ```
 
-### 2c. Add unsaved banner (above schedule grid)
+### 3b. Build `allCells` memo
+```tsx
+const allCells = React.useMemo<CellCoord[]>(() => {
+  return timeSlots.flatMap((time, rowIdx) =>
+    weekDays.map((day, colIdx) => ({
+      dateKey: formatDate(day),
+      time,
+      rowIdx,
+      colIdx,
+    }))
+  );
+}, [weekDays]);
+```
+
+### 3c. Add global pointer-up listener for drag end
+```tsx
+useEffect(() => {
+  const handleUp = () => endSelect();
+  document.addEventListener('pointerup', handleUp);
+  return () => document.removeEventListener('pointerup', handleUp);
+}, [endSelect]);
+```
+
+### 3d. Update `<table>` element
+```tsx
+<table
+  className={`w-full min-w-[900px] ${isDragging ? 'select-none' : ''}`}
+  style={isDragging ? { touchAction: 'none' } : undefined}
+>
+```
+
+### 3e. Update each `<td>` and inner `<button>`
+
+Replace current cell render logic with:
+```tsx
+{weekDays.map((day, colIdx) => {
+  const dateKey = formatDate(day);
+  const slot = getSlotForTime(day, time);
+  const effectiveStatus = slot ? getEffectiveStatus(slot, day.getDay()) : null;
+  const cellSelected = isSelected(dateKey, time);
+
+  return (
+    <td
+      key={`${day.toISOString()}-${time}`}
+      className={`px-0.5 py-0 ${isToday(day) ? 'bg-[#3B82F6]/5' : ''}`}
+      onPointerDown={(e) => {
+        if (e.shiftKey) return; // handled by button onClick
+        e.preventDefault();
+        startSelect({ dateKey, time, rowIdx, colIdx });
+      }}
+      onPointerEnter={() => {
+        if (isDragging) extendSelect({ dateKey, time, rowIdx, colIdx });
+      }}
+    >
+      {slot ? (
+        <button
+          onClick={(e) => {
+            if (e.shiftKey) {
+              shiftSelect({ dateKey, time, rowIdx, colIdx }, allCells);
+              return;
+            }
+            if (selectionCount > 0) {
+              // In selection mode: toggle this cell
+              if (cellSelected) {
+                // deselect single — clear and reset anchor to this cell
+                clearSelection();
+              } else {
+                startSelect({ dateKey, time, rowIdx, colIdx });
+              }
+              return;
+            }
+            setSelectedSlot(slot);
+          }}
+          className={`w-full h-3.5 rounded border text-left transition-all
+            ${getStatusColor(effectiveStatus!)}
+            ${cellSelected ? 'ring-2 ring-white/60 ring-offset-1 ring-offset-transparent' : ''}
+          `}
+        >
+          <CompactSlotContent status={effectiveStatus!} slot={slot} />
+        </button>
+      ) : (
+        // Empty cell — selectable but no action
+        <button
+          onClick={() => { clearSelection(); }}
+          className={`w-full h-3.5 rounded border border-white/10
+            ${cellSelected ? 'ring-2 ring-white/60' : ''}
+          `}
+        />
+      )}
+    </td>
+  );
+})}
+```
+
+### 3f. Add `CompactSlotContent` helper component
+```tsx
+function CompactSlotContent({ status, slot }: { status: string; slot: ScheduleSlot }) {
+  if (status === 'available') return <span className="block w-1.5 h-1.5 rounded-full bg-white/40 mx-auto" />;
+  if (status === 'disabled') return <span className="block w-1.5 h-1.5 rounded-full bg-red-500/50 mx-auto" />;
+  if (status === 'upcoming' || status === 'booked') return <span className="block w-full h-1.5 rounded-sm bg-[#3B82F6]/70" />;
+  if (status === 'completed') return <span className="block w-full h-1.5 rounded-sm bg-emerald-500/70" />;
+  return null;
+}
+```
+
+---
+
+## Step 4 — Add Batch Action Bar
+
+Add immediately after the closing `</div>` of the `<Card>` wrapper around the schedule grid (inside the card, after `</div>` that wraps `<table>`):
 
 ```tsx
-{isDirty && (
+{selectionCount > 0 && (
   <motion.div
-    initial={{ opacity: 0, y: -8 }}
+    initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
-    className="mb-4 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5"
+    className="flex items-center justify-between gap-3 px-4 py-2 border-t border-white/10 bg-white/5"
   >
-    <span className="text-sm text-amber-300">{t('saveBar.unsavedChanges')}</span>
+    <button
+      onClick={clearSelection}
+      className="flex items-center gap-1 text-xs text-slate-400 hover:text-white"
+    >
+      <X className="w-3 h-3" />
+      {t('batchAction.clear')}
+    </button>
+    <span className="text-xs text-slate-400">
+      {t('batchAction.label', { count: selectionCount })}
+    </span>
     <div className="flex gap-2">
-      <Button variant="ghost" size="sm" onClick={discardDraft} className="text-slate-400 hover:text-white">
-        {t('saveBar.discard')}
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 text-xs border-red-500/40 text-red-400 hover:bg-red-500/10"
+        onClick={() => {
+          selected.forEach((key) => {
+            const [dateKey, time] = key.split(':').slice(0, 2).join(':').split(':').reduce<[string, string]>(
+              (acc, part, i) => i < 3 ? [acc[0] + (acc[0] ? '-' : '') + part, acc[1]] : [acc[0], acc[1] + (acc[1] ? ':' : '') + part],
+              ['', '']
+            );
+            // simpler: key is "YYYY-MM-DD:HH:MM", split at index 10
+            const dk = key.slice(0, 10);
+            const t2 = key.slice(11);
+            const dow = new Date(dk).getDay();
+            const slot = getSlotForTime(weekDays.find(d => formatDate(d) === dk)!, t2);
+            if (slot && ['available', 'disabled'].includes(getEffectiveStatus(slot, dow))) {
+              toggleDraft(dow, t2, false);
+            }
+          });
+          clearSelection();
+        }}
+      >
+        {t('batchAction.disableSelected')}
       </Button>
       <Button
         size="sm"
-        onClick={() => saveDraft(user!.id)}
-        disabled={saving}
-        className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
+        className="h-7 text-xs bg-[#3B82F6] hover:bg-[#3B82F6]/90"
+        onClick={() => {
+          selected.forEach((key) => {
+            const dk = key.slice(0, 10);
+            const t2 = key.slice(11);
+            const dow = new Date(dk).getDay();
+            const slot = getSlotForTime(weekDays.find(d => formatDate(d) === dk)!, t2);
+            if (slot && ['available', 'disabled'].includes(getEffectiveStatus(slot, dow))) {
+              toggleDraft(dow, t2, true);
+            }
+          });
+          clearSelection();
+        }}
       >
-        {saving ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />{t('saveBar.saving')}</> : t('saveBar.save')}
+        {t('batchAction.enableSelected')}
       </Button>
     </div>
   </motion.div>
 )}
 ```
 
-### 2d. Add stats bar (below week navigation, above grid)
+---
 
+## Step 5 — Remove Settings button from header, add to slot detail dialog
+
+### 5a. Remove from header
+Delete the `<Button>` block in the header that calls `setShowAvailabilityDialog(true)`.
+
+### 5b. Add Settings hint in slot detail dialog for empty slots
+In the empty slot section (outside availability hours), add:
 ```tsx
-// Compute stats from schedule (memoised)
-const stats = React.useMemo(() => {
-  const slots = Object.values(schedule).flat();
-  return {
-    total: slots.length,
-    available: slots.filter(s => s.status === 'available').length,
-    booked: slots.filter(s => s.status === 'upcoming' || s.status === 'booked').length,
-    disabled: slots.filter(s => s.status === 'disabled').length,
-  };
-}, [schedule]);
-
-// JSX — place between week navigation and grid
-<motion.div className="mb-4 grid grid-cols-4 gap-3" ...>
-  {([
-    { label: t('stats.total'),     value: stats.total,     color: 'text-white' },
-    { label: t('stats.available'), value: stats.available, color: 'text-emerald-400' },
-    { label: t('stats.booked'),    value: stats.booked,    color: 'text-[#3B82F6]' },
-    { label: t('stats.disabled'),  value: stats.disabled,  color: 'text-red-400' },
-  ]).map(({ label, value, color }) => (
-    <Card key={label} className="bg-white/5 border-white/10">
-      <CardContent className="p-3 text-center">
-        <p className={`text-2xl font-bold ${color}`}>{value}</p>
-        <p className="text-xs text-slate-400 mt-0.5">{label}</p>
-      </CardContent>
-    </Card>
-  ))}
-</motion.div>
-```
-
-### 2e. Update dialog buttons to use draft
-
-```tsx
-// Replace toggleSlot(selectedSlot, false) with:
-onClick={() => {
-  const dayOfWeek = /* extract from slot.id as before */;
-  toggleDraft(dayOfWeek, selectedSlot.time, false);
-  setSelectedSlot(null);
-}}
-
-// Replace toggleSlot(selectedSlot, true) with:
-onClick={() => {
-  const dayOfWeek = /* extract from slot.id as before */;
-  toggleDraft(dayOfWeek, selectedSlot.time, true);
-  setSelectedSlot(null);
-}}
-```
-
-### 2f. Add `beforeunload` guard
-
-```ts
-React.useEffect(() => {
-  if (!isDirty) return;
-  const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
-  window.addEventListener('beforeunload', handler);
-  return () => window.removeEventListener('beforeunload', handler);
-}, [isDirty]);
-```
-
-### 2g. Add Settings button to header
-
-The header currently has no buttons. Add:
-
-```tsx
-<Button
-  variant="outline"
-  size="sm"
-  className="border-white/20 text-white hover:bg-white/10"
-  onClick={() => setShowAvailabilityDialog(true)}
+<button
+  className="mt-3 flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300"
+  onClick={() => { setSelectedSlot(null); setShowAvailabilityDialog(true); }}
 >
-  <Settings className="w-4 h-4 mr-2" />
-  {t('settingsBtn')}
-</Button>
+  <Settings className="w-3 h-3" />
+  {t('settingsHint')}
+</button>
 ```
 
 ---
 
-## Step 3 — Update i18n files
+## Step 6 — Apply compact layout
 
-### `frontend/messages/en.json` — add under `teacherSchedule`:
+Update row height and cell sizing in the grid:
 
-```json
-"saveBar": {
-  "unsavedChanges": "You have unsaved changes",
-  "save": "Save",
-  "discard": "Discard",
-  "saving": "Saving...",
-  "saved": "Saved!"
-},
-"stats": {
-  "total": "Total",
-  "available": "Open",
-  "booked": "Booked",
-  "disabled": "Disabled"
-},
-"legend": {
-  "upcoming": "Upcoming",
-  "booked": "Booked",
-  "completed": "Completed",
-  "available": "Available",
-  "disabled": "Disabled"
-}
-```
+```tsx
+// <tr> — change h-8 to h-5
+<tr key={time} className="border-b border-white/5 h-5">
 
-### `frontend/messages/vi.json` — add under `teacherSchedule`:
+// Time <td>
+<td className="px-1 py-0 text-slate-400 text-[10px] font-medium w-14 leading-none">{time}</td>
 
-```json
-"saveBar": {
-  "unsavedChanges": "Bạn có thay đổi chưa lưu",
-  "save": "Lưu",
-  "discard": "Huỷ",
-  "saving": "Đang lưu...",
-  "saved": "Đã lưu!"
-},
-"stats": {
-  "total": "Tổng",
-  "available": "Trống",
-  "booked": "Đã đặt",
-  "disabled": "Đã tắt"
-},
-"legend": {
-  "disabled": "Đã tắt"
-}
+// Day header <th>
+<th className="w-[12.5%] px-2 py-1.5 text-center font-medium ...">
+
+// Stats cards — reduce padding
+<CardContent className="p-2 text-center">
+  <p className={`text-xl font-bold ${color}`}>{value}</p>
+  <p className="text-[10px] text-slate-400 mt-0.5">{label}</p>
 ```
 
 ---
 
-## Step 4 — Write tests
+## Step 7 — Tests
 
-### Unit: `frontend/src/hooks/useScheduleDraft.test.ts`
+### Unit tests (`useSlotSelection.test.ts`)
+1. `startSelect` sets `isDragging=true` and adds cell to selection
+2. `extendSelect` from anchor to target selects 2×2 rectangle
+3. `shiftSelect` from anchor to target selects rectangle
+4. `clearSelection` empties selection and resets anchor
+5. `endSelect` sets `isDragging=false` but preserves selection
 
-Test cases:
-1. `toggleDraft` sets `isDirty = true` and adds entry to draft
-2. `discardDraft` clears draft and sets `isDirty = false`
-3. `saveDraft` calls supabase upsert with correct rows and clears draft on success
-4. `saveDraft` sets `saveError` on failure
-
-### E2E: `frontend/tests/e2e/teacher-schedule-save.spec.ts`
-
-Scenario:
-1. Log in as teacher
-2. Navigate to `/en/teacher/schedule`
-3. Click a slot to open dialog
-4. Click "Disable Slot"
-5. Assert unsaved banner is visible
-6. Click "Save"
-7. Assert banner disappears
-8. Reload page — assert slot is still disabled
-
----
-
-## Dev setup reminder
-
-```bash
-# Kill stale Next.js server
-powershell -Command "Get-Process node | Stop-Process -Force"
-Remove-Item -Recurse -Force frontend/.next
-
-# Start dev server
-cd frontend && npm run dev
-```
-
-Login: jimmycuong1414@gmail.com / 12345678 (teacher account)
+### E2e tests (`teacher-schedule-multiselect.spec.ts`)
+1. Login → shift-click two available slots → batch action bar appears with count
+2. Click "Disable Selected" → unsaved banner appears, slots show disabled style
+3. Drag across 3 cells → 3 cells selected
+4. Click "Clear Selection" → batch action bar disappears
