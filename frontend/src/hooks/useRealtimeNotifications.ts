@@ -28,7 +28,7 @@ export interface Notification {
   metadata?: Record<string, any>;
   icon?: string;
   color?: string;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   read: boolean;
   read_at?: string;
   expires_at?: string;
@@ -250,9 +250,11 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error: updateError } = await (supabase as any).rpc('mark_all_notifications_read', {
-        p_user_id: user.id,
-      });
+      const { error: updateError } = await (supabase as any)
+        .from('notifications')
+        .update({ read: true, read_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .eq('read', false);
 
       if (updateError) throw updateError;
 

@@ -724,7 +724,18 @@
       "inApp": "In-app",
       "email": "Email",
       "push": "Push"
-    }
+    },
+    "types": {
+      "booking_confirmed": "Booking Confirmed",
+      "booking_cancelled": "Booking Cancelled",
+      "new_booking": "New Booking",
+      "class_reminder": "Class Starting Soon",
+      "gems_earned": "Gems Earned",
+      "system_announcement": "New User Registered",
+      "payment_received": "Payout Request"
+    },
+    "viewAll": "View all",
+    "empty": "No notifications"
   },
   "preCheck": {
     "badge": "Getting Ready",
@@ -1012,5 +1023,14 @@
     "minutes": "{count} min",
     "bookingFailed": "Booking failed. Please try again.",
     "needGemsMsg": "You need {needed} Gems to book this class. Your balance: {balance} Gems."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "classes": "Classes",
+    "bookings": "Bookings",
+    "gems": "Gems",
+    "leaderboard": "Leaderboard",
+    "users": "Users",
+    "notifications": "Notifications"
   }
 }
