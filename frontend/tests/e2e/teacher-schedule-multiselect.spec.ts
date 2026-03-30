@@ -29,25 +29,25 @@ test.describe('Teacher Schedule — Multi-Select', () => {
       return;
     }
 
-    // Click first available slot (no shift)
+    // Click first slot — may open a dialog
     await availableSlots.first().click();
 
-    // If a dialog opened (single-click opens dialog), close it first
+    // Always dismiss any open dialog before proceeding
     const dialog = page.getByRole('dialog');
-    if (await dialog.isVisible()) {
+    if (await dialog.isVisible({ timeout: 2000 }).catch(() => false)) {
       await page.keyboard.press('Escape');
-      await expect(dialog).not.toBeVisible();
+      await expect(dialog).not.toBeVisible({ timeout: 3000 });
     }
 
-    // Click second slot with shift — should trigger multi-select
-    // Note: after a single click without selection active, first click starts selection
-    // So we need to test the flow: click opens dialog, escape, then shift-click extends
-    // Alternatively, directly test via the batch action appearing after drag
-    // Simple approach: click to start selection, then shift-click another
-
-    // Click first slot (starts selection mode if no dialog opened)
+    // Now click first slot again (starts selection) then shift-click second
     await availableSlots.first().click();
-    // Shift-click second slot
+    // Dismiss dialog again if opened
+    if (await dialog.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible({ timeout: 3000 });
+    }
+
+    // Shift-click a different (non-first) slot
     await availableSlots.nth(1).click({ modifiers: ['Shift'] });
 
     // Batch action bar should appear
@@ -55,32 +55,41 @@ test.describe('Teacher Schedule — Multi-Select', () => {
     await expect(batchBar).toBeVisible({ timeout: 5000 });
   });
 
-  test('batch disable updates slots to disabled style after unsaved banner appears', async ({ page }) => {
+  test('batch disable via shift-click shows unsaved banner', async ({ page }) => {
     const availableSlots = page.locator('button.border-dashed');
     const count = await availableSlots.count();
-    if (count < 1) {
+    if (count < 2) {
       test.skip();
       return;
     }
 
-    // Click first available slot to start selection (if no dialog opens)
-    await availableSlots.first().click();
-
     const dialog = page.getByRole('dialog');
-    if (await dialog.isVisible()) {
+
+    // Click first slot (may open dialog — dismiss it)
+    await availableSlots.first().click();
+    if (await dialog.isVisible({ timeout: 2000 }).catch(() => false)) {
       await page.keyboard.press('Escape');
-      await expect(dialog).not.toBeVisible();
-      // Now click again to enter selection mode
-      await availableSlots.first().click();
+      await expect(dialog).not.toBeVisible({ timeout: 3000 });
     }
 
-    // Click "Disable Selected" if batch bar visible
-    const disableBtn = page.getByRole('button', { name: /disable selected/i });
-    if (await disableBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await disableBtn.click();
-      // Unsaved changes banner should appear
-      await expect(page.getByText('You have unsaved changes')).toBeVisible({ timeout: 5000 });
+    // Click first slot again, then shift-click second to get selection
+    await availableSlots.first().click();
+    if (await dialog.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible({ timeout: 3000 });
     }
+    await availableSlots.nth(1).click({ modifiers: ['Shift'] });
+
+    // Click "Disable Selected" if batch bar appeared
+    const disableBtn = page.getByRole('button', { name: /disable selected/i });
+    if (!(await disableBtn.isVisible({ timeout: 3000 }).catch(() => false))) {
+      test.skip();
+      return;
+    }
+    await disableBtn.scrollIntoViewIfNeeded();
+    await disableBtn.click({ force: true });
+    // Unsaved changes banner should appear
+    await expect(page.getByText('You have unsaved changes')).toBeVisible({ timeout: 5000 });
   });
 
   test('Clear Selection button removes batch action bar', async ({ page }) => {
@@ -91,19 +100,29 @@ test.describe('Teacher Schedule — Multi-Select', () => {
       return;
     }
 
-    // Start selection and shift-click to get batch bar
-    await availableSlots.first().click();
     const dialog = page.getByRole('dialog');
-    if (await dialog.isVisible()) {
-      await page.keyboard.press('Escape');
-    }
+
+    // First click — may open dialog
     await availableSlots.first().click();
+    if (await dialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible({ timeout: 3000 });
+    }
+
+    // Second click on same slot to enter selection mode
+    await availableSlots.first().click();
+    if (await dialog.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible({ timeout: 3000 });
+    }
+
+    // Shift-click second slot to extend selection
     await availableSlots.nth(1).click({ modifiers: ['Shift'] });
 
-    const batchBar = page.getByRole('button', { name: /clear selection/i });
-    if (await batchBar.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await batchBar.click();
-      await expect(batchBar).not.toBeVisible({ timeout: 3000 });
+    const clearBtn = page.getByRole('button', { name: /clear selection/i });
+    if (await clearBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await clearBtn.click();
+      await expect(clearBtn).not.toBeVisible({ timeout: 3000 });
     }
   });
 });

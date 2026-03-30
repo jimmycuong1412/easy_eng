@@ -214,19 +214,6 @@ export default function TeacherSchedulePage() {
     return slot.status;
   };
 
-  // All grid cells as CellCoord — used for rectangle selection computation
-  const allCells = React.useMemo<CellCoord[]>(() => {
-    return timeSlots.flatMap((time, rowIdx) =>
-      weekDays.map((day, colIdx) => ({
-        dateKey: formatDate(day),
-        time,
-        rowIdx,
-        colIdx,
-      }))
-    );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekDays]);
-
   // Stats derived from persisted schedule (no extra DB query)
   const stats = React.useMemo(() => {
     const slots = Object.values(schedule).flat();
@@ -256,6 +243,19 @@ export default function TeacherSchedulePage() {
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   };
+
+  // All grid cells as CellCoord — used for rectangle selection computation
+  const allCells = React.useMemo<CellCoord[]>(() => {
+    return timeSlots.flatMap((time, rowIdx) =>
+      weekDays.map((day, colIdx) => ({
+        dateKey: formatDate(day),
+        time,
+        rowIdx,
+        colIdx,
+      }))
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekDays]);
 
   // Day abbreviations from translations (index 0=Sun…6=Sat)
   const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
