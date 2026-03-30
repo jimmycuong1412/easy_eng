@@ -11,7 +11,7 @@ interface GemImageProps {
 export function GemImage({ size = 16, className = '', alt = 'Gem' }: GemImageProps) {
   return (
     <img
-      src="/images/gem.png"
+      src="/gem.svg"
       alt={alt}
       width={size}
       height={size}

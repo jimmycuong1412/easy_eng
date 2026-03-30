@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import * as React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   Plus,
   FileText,
@@ -49,12 +50,6 @@ interface Question {
   points: number;
 }
 
-const questionTypes = [
-  { value: 'multiple-choice', label: 'Trắc nghiệm', icon: CheckCircle },
-  { value: 'true-false', label: 'Đúng/Sai', icon: HelpCircle },
-  { value: 'fill-blank', label: 'Điền từ', icon: FileText },
-];
-
 const categories = [
   'Grammar',
   'Vocabulary',
@@ -66,13 +61,21 @@ const categories = [
   'Business English',
 ];
 
-const difficultyLevels = [
-  { value: 'beginner', label: 'Cơ bản', color: 'bg-emerald-500' },
-  { value: 'intermediate', label: 'Trung cấp', color: 'bg-amber-500' },
-  { value: 'advanced', label: 'Nâng cao', color: 'bg-red-500' },
-];
-
 export default function QuizCreatorPage() {
+  const t = useTranslations('teacherQuizCreate');
+
+  const questionTypes = [
+    { value: 'multiple-choice', label: t('typeMultipleChoice'), icon: CheckCircle },
+    { value: 'true-false', label: t('typeTrueFalse'), icon: HelpCircle },
+    { value: 'fill-blank', label: t('typeFillBlank'), icon: FileText },
+  ];
+
+  const difficultyLevels = [
+    { value: 'beginner', label: t('diffBeginner'), color: 'bg-emerald-500' },
+    { value: 'intermediate', label: t('diffIntermediate'), color: 'bg-amber-500' },
+    { value: 'advanced', label: t('diffAdvanced'), color: 'bg-red-500' },
+  ];
+
   const [quizTitle, setQuizTitle] = React.useState('');
   const [quizDescription, setQuizDescription] = React.useState('');
   const [category, setCategory] = React.useState('');
@@ -86,7 +89,6 @@ export default function QuizCreatorPage() {
   const [_editingQuestion, _setEditingQuestion] = React.useState<Question | null>(null);
   const [_showPreview, setShowPreview] = React.useState(false);
 
-  // New question form state
   const [newQuestion, setNewQuestion] = React.useState<Partial<Question>>({
     type: 'multiple-choice',
     question: '',
@@ -138,12 +140,12 @@ export default function QuizCreatorPage() {
             <Link href="/teacher/dashboard">
               <Button variant="ghost" className="text-slate-400 hover:text-white">
                 <ChevronLeft className="w-4 h-4 mr-1" />
-                Quay lại
+                {t('backBtn')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-white">Tạo Quiz mới</h1>
-              <p className="text-slate-400">Tạo bài kiểm tra cho học viên</p>
+              <h1 className="text-2xl font-bold text-white">{t('pageTitle')}</h1>
+              <p className="text-slate-400">{t('pageSubtitle')}</p>
             </div>
           </div>
 
@@ -155,14 +157,14 @@ export default function QuizCreatorPage() {
               disabled={questions.length === 0}
             >
               <Eye className="w-4 h-4 mr-2" />
-              Xem trước
+              {t('previewBtn')}
             </Button>
             <Button
               className="bg-emerald-500 hover:bg-emerald-500/90"
               disabled={!quizTitle || questions.length === 0}
             >
               <Save className="w-4 h-4 mr-2" />
-              Lưu Quiz
+              {t('saveBtn')}
             </Button>
           </div>
         </motion.div>
@@ -178,35 +180,35 @@ export default function QuizCreatorPage() {
             {/* Basic Info */}
             <Card className="bg-white/5 border-white/10">
               <CardHeader>
-                <CardTitle className="text-white text-lg">Thông tin cơ bản</CardTitle>
+                <CardTitle className="text-white text-lg">{t('basicInfoTitle')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-slate-300">Tiêu đề Quiz *</Label>
+                  <Label className="text-slate-300">{t('titleLabel')}</Label>
                   <Input
                     value={quizTitle}
                     onChange={(e) => setQuizTitle(e.target.value)}
-                    placeholder="VD: Grammar Review: Past Tenses"
+                    placeholder={t('titlePlaceholder')}
                     className="mt-1 bg-white/5 border-white/10 text-white"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-slate-300">Mô tả</Label>
+                  <Label className="text-slate-300">{t('descLabel')}</Label>
                   <Textarea
                     value={quizDescription}
                     onChange={(e) => setQuizDescription(e.target.value)}
-                    placeholder="Mô tả ngắn về quiz..."
+                    placeholder={t('descPlaceholder')}
                     className="mt-1 bg-white/5 border-white/10 text-white resize-none"
                     rows={3}
                   />
                 </div>
 
                 <div>
-                  <Label className="text-slate-300">Danh mục</Label>
+                  <Label className="text-slate-300">{t('categoryLabel')}</Label>
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger className="mt-1 bg-white/5 border-white/10 text-white">
-                      <SelectValue placeholder="Chọn danh mục" />
+                      <SelectValue placeholder={t('categoryPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((cat) => (
@@ -219,7 +221,7 @@ export default function QuizCreatorPage() {
                 </div>
 
                 <div>
-                  <Label className="text-slate-300">Độ khó</Label>
+                  <Label className="text-slate-300">{t('difficultyLabel')}</Label>
                   <RadioGroup
                     value={difficulty}
                     onValueChange={setDifficulty}
@@ -252,11 +254,11 @@ export default function QuizCreatorPage() {
             {/* Quiz Settings */}
             <Card className="bg-white/5 border-white/10">
               <CardHeader>
-                <CardTitle className="text-white text-lg">Cài đặt</CardTitle>
+                <CardTitle className="text-white text-lg">{t('settingsTitle')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-slate-300">Thời gian (phút)</Label>
+                  <Label className="text-slate-300">{t('timeLimitLabel')}</Label>
                   <Input
                     type="number"
                     value={timeLimit}
@@ -268,7 +270,7 @@ export default function QuizCreatorPage() {
                 </div>
 
                 <div>
-                  <Label className="text-slate-300">Điểm đạt (%)</Label>
+                  <Label className="text-slate-300">{t('passingScoreLabel')}</Label>
                   <Input
                     type="number"
                     value={passingScore}
@@ -280,7 +282,7 @@ export default function QuizCreatorPage() {
                 </div>
 
                 <div className="pt-2 border-t border-white/10">
-                  <Label className="text-slate-300">Phần thưởng khi đạt</Label>
+                  <Label className="text-slate-300">{t('rewardLabel')}</Label>
                   <div className="grid grid-cols-2 gap-3 mt-2">
                     <div>
                       <Label className="text-xs text-slate-500">XP</Label>
@@ -308,19 +310,19 @@ export default function QuizCreatorPage() {
             {/* Summary */}
             <Card className="bg-[#3B82F6]/10 border-[#3B82F6]/30">
               <CardContent className="p-4">
-                <h4 className="font-semibold text-white mb-3">Tổng quan</h4>
+                <h4 className="font-semibold text-white mb-3">{t('summaryTitle')}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Số câu hỏi</span>
+                    <span className="text-slate-400">{t('summaryQuestions')}</span>
                     <span className="text-white font-medium">{questions.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Tổng điểm</span>
+                    <span className="text-slate-400">{t('summaryPoints')}</span>
                     <span className="text-white font-medium">{totalPoints}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Thời gian</span>
-                    <span className="text-white font-medium">{timeLimit} phút</span>
+                    <span className="text-slate-400">{t('summaryTime')}</span>
+                    <span className="text-white font-medium">{timeLimit} {t('summaryMinutes')}</span>
                   </div>
                 </div>
               </CardContent>
@@ -337,24 +339,22 @@ export default function QuizCreatorPage() {
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-white">
-                  Danh sách câu hỏi ({questions.length})
+                  {t('questionListTitle', { count: questions.length })}
                 </CardTitle>
                 <Button
                   onClick={() => setShowAddQuestion(true)}
                   className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Thêm câu hỏi
+                  {t('addQuestionBtn')}
                 </Button>
               </CardHeader>
               <CardContent>
                 {questions.length === 0 ? (
                   <div className="text-center py-12">
                     <HelpCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-400 mb-2">Chưa có câu hỏi nào</p>
-                    <p className="text-sm text-slate-500">
-                      Bấm "Thêm câu hỏi" để bắt đầu tạo quiz
-                    </p>
+                    <p className="text-slate-400 mb-2">{t('emptyTitle')}</p>
+                    <p className="text-sm text-slate-500">{t('emptyDesc')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -383,13 +383,13 @@ export default function QuizCreatorPage() {
                                 }`}
                               >
                                 {question.type === 'multiple-choice'
-                                  ? 'Trắc nghiệm'
+                                  ? t('typeMultipleChoice')
                                   : question.type === 'true-false'
-                                  ? 'Đúng/Sai'
-                                  : 'Điền từ'}
+                                  ? t('typeTrueFalse')
+                                  : t('typeFillBlank')}
                               </Badge>
                               <span className="text-xs text-slate-500">
-                                {question.points} điểm
+                                {question.points} {t('pointsLabel')}
                               </span>
                             </div>
                             <p className="text-white">{question.question}</p>
@@ -429,19 +429,19 @@ export default function QuizCreatorPage() {
         <Dialog open={showAddQuestion} onOpenChange={setShowAddQuestion}>
           <DialogContent className="bg-[#0A1628] border-white/10 max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="text-white">Thêm câu hỏi mới</DialogTitle>
+              <DialogTitle className="text-white">{t('dialogTitle')}</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4">
               {/* Question Type */}
               <div>
-                <Label className="text-slate-300">Loại câu hỏi</Label>
+                <Label className="text-slate-300">{t('questionTypeLabel')}</Label>
                 <div className="flex gap-3 mt-2">
                   {questionTypes.map((type) => (
                     <button
                       key={type.value}
                       onClick={() =>
-                        setNewQuestion({ ...newQuestion, type: type.value as any })
+                        setNewQuestion({ ...newQuestion, type: type.value as Question['type'] })
                       }
                       className={`flex-1 p-3 rounded-lg border transition-all ${
                         newQuestion.type === type.value
@@ -458,13 +458,13 @@ export default function QuizCreatorPage() {
 
               {/* Question Text */}
               <div>
-                <Label className="text-slate-300">Câu hỏi *</Label>
+                <Label className="text-slate-300">{t('questionTextLabel')}</Label>
                 <Textarea
                   value={newQuestion.question}
                   onChange={(e) =>
                     setNewQuestion({ ...newQuestion, question: e.target.value })
                   }
-                  placeholder="Nhập nội dung câu hỏi..."
+                  placeholder={t('questionTextPlaceholder')}
                   className="mt-1 bg-white/5 border-white/10 text-white resize-none"
                   rows={3}
                 />
@@ -473,7 +473,7 @@ export default function QuizCreatorPage() {
               {/* Options for Multiple Choice */}
               {newQuestion.type === 'multiple-choice' && (
                 <div>
-                  <Label className="text-slate-300">Các đáp án</Label>
+                  <Label className="text-slate-300">{t('optionsLabel')}</Label>
                   <div className="space-y-2 mt-2">
                     {newQuestion.options?.map((option, index) => (
                       <div key={index} className="flex items-center gap-2">
@@ -496,22 +496,20 @@ export default function QuizCreatorPage() {
                             newOptions[index] = e.target.value;
                             setNewQuestion({ ...newQuestion, options: newOptions });
                           }}
-                          placeholder={`Đáp án ${String.fromCharCode(65 + index)}`}
+                          placeholder={t('optionPlaceholder', { letter: String.fromCharCode(65 + index) })}
                           className="flex-1 bg-white/5 border-white/10 text-white"
                         />
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Click vào chữ cái để chọn đáp án đúng
-                  </p>
+                  <p className="text-xs text-slate-500 mt-2">{t('selectCorrectHint')}</p>
                 </div>
               )}
 
               {/* True/False Options */}
               {newQuestion.type === 'true-false' && (
                 <div>
-                  <Label className="text-slate-300">Đáp án đúng</Label>
+                  <Label className="text-slate-300">{t('correctAnswerLabel')}</Label>
                   <RadioGroup
                     value={newQuestion.correctAnswer?.toString()}
                     onValueChange={(v) =>
@@ -529,7 +527,7 @@ export default function QuizCreatorPage() {
                             : 'bg-white/5 border-white/10 text-slate-300'
                         }`}
                       >
-                        Đúng (True)
+                        {t('trueOption')}
                       </Label>
                     </div>
                     <div className="flex items-center">
@@ -542,7 +540,7 @@ export default function QuizCreatorPage() {
                             : 'bg-white/5 border-white/10 text-slate-300'
                         }`}
                       >
-                        Sai (False)
+                        {t('falseOption')}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -552,30 +550,28 @@ export default function QuizCreatorPage() {
               {/* Fill Blank Answer */}
               {newQuestion.type === 'fill-blank' && (
                 <div>
-                  <Label className="text-slate-300">Đáp án đúng</Label>
+                  <Label className="text-slate-300">{t('fillAnswerLabel')}</Label>
                   <Input
                     value={newQuestion.correctAnswer?.toString() || ''}
                     onChange={(e) =>
                       setNewQuestion({ ...newQuestion, correctAnswer: e.target.value })
                     }
-                    placeholder="Nhập đáp án đúng..."
+                    placeholder={t('fillAnswerPlaceholder')}
                     className="mt-1 bg-white/5 border-white/10 text-white"
                   />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Đánh dấu chỗ trống trong câu hỏi bằng ___
-                  </p>
+                  <p className="text-xs text-slate-500 mt-1">{t('fillBlankHint')}</p>
                 </div>
               )}
 
               {/* Explanation */}
               <div>
-                <Label className="text-slate-300">Giải thích (tùy chọn)</Label>
+                <Label className="text-slate-300">{t('explanationLabel')}</Label>
                 <Textarea
                   value={newQuestion.explanation}
                   onChange={(e) =>
                     setNewQuestion({ ...newQuestion, explanation: e.target.value })
                   }
-                  placeholder="Giải thích đáp án đúng..."
+                  placeholder={t('explanationPlaceholder')}
                   className="mt-1 bg-white/5 border-white/10 text-white resize-none"
                   rows={2}
                 />
@@ -583,7 +579,7 @@ export default function QuizCreatorPage() {
 
               {/* Points */}
               <div>
-                <Label className="text-slate-300">Điểm</Label>
+                <Label className="text-slate-300">{t('pointsFieldLabel')}</Label>
                 <Input
                   type="number"
                   value={newQuestion.points}
@@ -603,7 +599,7 @@ export default function QuizCreatorPage() {
                 className="border-white/20 text-white"
                 onClick={() => setShowAddQuestion(false)}
               >
-                Hủy
+                {t('cancelBtn')}
               </Button>
               <Button
                 className="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
@@ -611,7 +607,7 @@ export default function QuizCreatorPage() {
                 disabled={!newQuestion.question}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Thêm câu hỏi
+                {t('addBtn')}
               </Button>
             </DialogFooter>
           </DialogContent>

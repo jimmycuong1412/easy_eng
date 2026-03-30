@@ -1,177 +1,130 @@
-# Implementation Plan: Notification System — Admin, Students & Teachers
+# Implementation Plan: Teacher Dashboard Bug Fixes
 
-**Branch**: `001-english-learning-platform` | **Date**: 2026-03-30 | **Spec**: specs/001-english-learning-platform/spec.md
-**Input**: Wire up the existing notification infrastructure so all three roles receive real-time in-app notifications for key platform events.
+**Branch**: `001-english-learning-platform` | **Date**: 2026-03-30 | **Spec**: `specs/001-english-learning-platform/spec.md`
+**Research**: `specs/001-english-learning-platform/research-dashboard-bugs.md`
 
 ## Summary
 
-The notification system is **partially built** — the DB table, Realtime hook, UI components, and Edge Functions all exist in the codebase but nothing is connected:
-- `NotificationBell` is not rendered in any nav/layout
-- `useRealtimeNotifications` expects 9 extra DB columns missing from the live `notifications` table
-- No DB triggers fire `INSERT INTO notifications` on any platform event  
-- Edge functions (`create-notification`, `send-booking-confirmation`, `send-class-reminder`) are not deployed
-
-This plan wires all four layers together: DB schema → DB triggers → realtime hook → UI bell.
+Fix 9 bugs found during live Playwright testing of the teacher dashboard at `easyeng-dev.vercel.app`. Bugs span broken navigation links (404s), wrong button routing, missing settings pages, missing i18n on two pages, a role badge display bug, invisible notification toggles, a missing static asset, and an unapplied DB migration.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.4, Next.js 14.2 App Router, Deno (Edge Functions)
-**Primary Dependencies**: `@supabase/supabase-js` v2, Zustand 4.5, Framer Motion 11, lucide-react, next-intl
-**Storage**: Supabase PostgreSQL — `notifications` table (exists, needs 9 additional columns via migration)
-**Testing**: Playwright e2e
-**Target Platform**: Web — all three role dashboards
-**Performance Goals**: Realtime delivery ≤500ms p95; unread count query <50ms
-**Constraints**: No new npm packages; notification logic lives in DB triggers + edge functions
-**Scale/Scope**: 2 DB migrations + 4 edge function deployments + nav integration + i18n keys
+**Language/Version**: TypeScript 5.4, Next.js 14.2
+**Primary Dependencies**: next-intl (i18n), Radix UI (Switch component), Tailwind CSS, Supabase JS
+**Storage**: PostgreSQL via Supabase (migration needed for Bug 9)
+**Testing**: Playwright (e2e), Jest (unit)
+**Target Platform**: Web (Vercel deployment)
+**Project Type**: Web application
+**Performance Goals**: No regression to existing page load times
+**Constraints**: All fixes must pass lint + type-check
+**Scale/Scope**: 8 code fixes + 1 deployment task
 
 ## Constitution Check
 
-| Principle | Gate | Status |
-|-----------|------|--------|
-| I. Code Quality | Hook/components already written; only wiring needed | ✅ |
-| III. UX Consistency | Role-specific types; unified bell UI across all roles | ✅ |
-| V. Role-Based Access | RLS on notifications table (users see only their own) | ✅ |
-| VI. Currency Integrity | gems_earned notification uses existing gem_transactions | ✅ |
-| VII. UI Design Excellence | Bell dropdown matches dark theme; animated badge | ✅ |
+| Principle | Status | Notes |
+|-----------|--------|-------|
+| I. Code Quality | ✅ PASS | All fixes are targeted; no new abstractions needed |
+| II. Testing Discipline | ✅ PASS | Existing e2e tests cover navigation; new stubs need basic smoke tests |
+| III. UX Consistency | ⚠️ VIOLATIONS FIXED | Broken nav links, wrong routing, invisible toggles all violate this |
+| IV. Performance | ✅ PASS | No performance impact expected |
+| V. Role-Based Access | ⚠️ VIOLATION FIXED | Teacher showing "Student" badge violates role clarity |
+| VI. Currency Integrity | ✅ N/A | No currency code changes |
+| VII. UI Design Excellence | ⚠️ VIOLATION FIXED | Invisible switches, 404 asset, hardcoded strings violate this |
 
 ## Project Structure
 
-### Source Code (affected files)
+### Source files affected
 
 ```text
-supabase/
-├── migrations/
-│   ├── 034_notifications_schema_fix.sql   ← NEW: add 9 missing columns
-│   └── 035_notification_triggers.sql      ← NEW: DB triggers for events
-└── functions/
-    ├── create-notification/               ← EXISTING: deploy
-    ├── send-booking-confirmation/         ← EXISTING: deploy
-    ├── send-class-reminder/               ← EXISTING: deploy
-    └── notify-gem-expiration/             ← EXISTING: deploy
-
 frontend/src/
-├── components/layout/
-│   ├── NotificationBell.tsx              ← EXISTING: minor userId prop fix
-│   └── RoleBasedNav.tsx                  ← MODIFY: add <NotificationBell />
-├── hooks/
-│   └── useRealtimeNotifications.ts       ← MODIFY: align type with actual DB schema
-├── app/[locale]/notifications/page.tsx   ← EXISTING: add nav link from dashboards
+├── app/[locale]/
+│   ├── dashboard/teacher/page.tsx          # Bug 1, 2: fix hrefs + Create Class route
+│   ├── settings/
+│   │   ├── notifications/page.tsx          # Bug 3: CREATE (stub/redirect)
+│   │   ├── billing/page.tsx                # Bug 3: CREATE (stub)
+│   │   └── profile/page.tsx               # Bug 6: fix role badge fallback
+│   └── teacher/
+│       └── quiz/create/page.tsx            # Bug 4: add useTranslations
+├── components/common/
+│   └── GemImage.tsx                        # Bug 8: fix asset path
 └── messages/
-    ├── en.json                            ← ADD: notifications.* i18n keys
-    └── vi.json                            ← ADD: matching Vietnamese keys
+    ├── en.json                             # Bug 4, 5: add i18n keys
+    └── vi.json                             # Bug 4, 5: add i18n keys
+
+# Bug 5: settings/referral/page.tsx - add useTranslations
+# Bug 7: notifications page Switch styling fix
+# Bug 9: DB migration deployment (no code change)
 ```
 
-## Phase 0: Research
+## Fixes — Detailed
 
-### Decision 1 — Schema alignment
+### Fix 1 & 2: Teacher Dashboard broken links + Create Class routing
+**File**: `frontend/src/app/[locale]/dashboard/teacher/page.tsx`
 
-**Decision**: Migrate live DB to add 9 missing columns rather than downgrade the hook type.
-**Rationale**: Hook, NotificationBell, NotificationList, and the notifications page all rely on the richer schema (`action_url`, `priority`, `metadata`, etc). Migrating the DB is 1 SQL file; simplifying the hook requires rewriting 4 files.
-**Missing columns**: `action_url`, `action_label`, `related_id`, `related_type`, `metadata`, `icon`, `color`, `priority`, `expires_at`
+| Line | Current | Fix |
+|------|---------|-----|
+| 209 | `router.push('/teacher/schedule')` | `router.push('/teacher/classes/new')` |
+| 297 | `<Link href="/dashboard/schedule">` | `<Link href="/teacher/schedule">` |
+| 431 | `<Link href="/dashboard/reviews">` | Remove link (no reviews page exists) or hide button |
 
-### Decision 2 — Trigger strategy
+### Fix 3: Missing settings pages
+**Create**: `frontend/src/app/[locale]/settings/notifications/page.tsx`
+- Redirect to `/notifications` or render the same notification settings UI (reuse the Settings tab from the notifications page)
 
-**Decision**: PostgreSQL triggers for synchronous events; Edge Functions for scheduled/async.
+**Create**: `frontend/src/app/[locale]/settings/billing/page.tsx`
+- Stub page: "Billing — Coming Soon" card with payment method placeholder
 
-| Event | Mechanism | Recipients |
-|-------|-----------|-----------|
-| `bookings` INSERT (confirmed) | DB trigger | Student (`booking_confirmed`) + Teacher (`new_booking`) |
-| `bookings` UPDATE → cancelled | DB trigger | Other party (`booking_cancelled`) |
-| `gem_transactions` INSERT (amount > 0) | DB trigger | Student (`gems_earned`) |
-| Class starting in 15 min | Edge Function cron | Student + Teacher (`class_reminder`) |
-| `profiles` INSERT (new user) | DB trigger | All admins (`system_announcement`) |
-| `payout_requests` INSERT | DB trigger | All admins (`payment_received`) |
+### Fix 4: Quiz Create page — add i18n
+**File**: `frontend/src/app/[locale]/teacher/quiz/create/page.tsx`
+- Add `import { useTranslations } from 'next-intl'`
+- Replace all hardcoded Vietnamese strings with `t('key')` calls
+- Add keys to `messages/en.json` under `teacher.quiz.create`
+- Add Vietnamese translations to `messages/vi.json`
 
-### Decision 3 — Bell placement
+### Fix 5: Referral page — add i18n
+**File**: `frontend/src/app/[locale]/settings/referral/page.tsx`
+- Same approach as Fix 4
+- Add keys under `settings.referral` in both message files
 
-**Decision**: Add `<NotificationBell />` inside `RoleBasedNav.tsx` — shared nav across all role dashboards.
-**Rationale**: Single integration point; all roles already use `RoleBasedNav`.
+### Fix 6: Profile role badge fallback
+**File**: `frontend/src/app/[locale]/settings/profile/page.tsx` line 127
+```tsx
+// Before:
+return t('roleStudent');
+// After:
+return '';
+```
+Also: render role badge only when `profile` is loaded (guard with `profile &&`).
 
-### Decision 4 — Admin fan-out
+### Fix 7: Notification toggle switches invisible
+**File**: Whichever component renders the Settings tab in `/en/notifications`
+- Inspect `Switch` component — add explicit `bg-slate-600 data-[state=checked]:bg-blue-500` classes to the track, and `bg-white` to the thumb
+- Alternatively verify the Radix UI Switch CSS variables are present in the dark theme context
 
-**Decision**: DB function `notify_all_admins()` loops over `profiles WHERE role = 'admin'`.
-**Rationale**: Multiple admins may exist; all need platform-level alerts.
-
-### Decision 5 — i18n
-
-**Decision**: Store English title/message in DB; translate notification `type` in the UI using `t('notifications.types.{type}')`.
-**Rationale**: Notification created at server time (no locale); translated at read time in browser.
-
-## Phase 1: Design
-
-### Migration 034 — Schema fix
-
-```sql
-ALTER TABLE notifications
-  ADD COLUMN IF NOT EXISTS action_url     TEXT,
-  ADD COLUMN IF NOT EXISTS action_label   TEXT,
-  ADD COLUMN IF NOT EXISTS related_id     UUID,
-  ADD COLUMN IF NOT EXISTS related_type   TEXT,
-  ADD COLUMN IF NOT EXISTS metadata       JSONB DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS icon           TEXT,
-  ADD COLUMN IF NOT EXISTS color          TEXT,
-  ADD COLUMN IF NOT EXISTS priority       TEXT DEFAULT 'normal'
-    CHECK (priority IN ('low','normal','high','urgent')),
-  ADD COLUMN IF NOT EXISTS expires_at     TIMESTAMPTZ;
-
-CREATE INDEX IF NOT EXISTS idx_notifications_related
-  ON notifications(related_type, related_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_expires
-  ON notifications(expires_at) WHERE expires_at IS NOT NULL;
+### Fix 8: GemImage asset path
+**File**: `frontend/src/components/common/GemImage.tsx` line 14
+```tsx
+// Before:
+src="/images/gem.png"
+// After:
+src="/gem.svg"
 ```
 
-### Migration 035 — Triggers
+### Fix 9: DB migration (deployment only)
+- Run `supabase db push` or apply migration `040_teacher_earnings.sql` against production project `evrcwtsexlamacawofxo`
+- No code change required
 
-```sql
--- Helper: insert one notification
-CREATE OR REPLACE FUNCTION notify_user(
-  p_user_id UUID, p_type TEXT, p_title TEXT, p_message TEXT,
-  p_action_url TEXT DEFAULT NULL, p_related_id UUID DEFAULT NULL,
-  p_related_type TEXT DEFAULT NULL, p_priority TEXT DEFAULT 'normal',
-  p_metadata JSONB DEFAULT '{}'
-) RETURNS VOID AS $$ ... $$;
+## Complexity Tracking
 
--- Helper: notify all admins
-CREATE OR REPLACE FUNCTION notify_all_admins(
-  p_type TEXT, p_title TEXT, p_message TEXT, ...
-) RETURNS VOID AS $$ ... $$;
+No constitution violations that need justification — all fixes reduce violations, none introduce new ones.
 
--- Triggers: booking_confirmed, booking_cancelled,
---           gems_earned, new_user, payout_request
-```
+## Implementation Order
 
-### i18n contract (`en.json` additions)
-
-```json
-{
-  "notifications": {
-    "title": "Notifications",
-    "empty": "No notifications yet",
-    "markAllRead": "Mark all as read",
-    "viewAll": "View all",
-    "unreadCount": "{{count}} unread",
-    "types": {
-      "booking_confirmed": "Booking Confirmed",
-      "booking_cancelled": "Booking Cancelled",
-      "new_booking": "New Booking",
-      "class_reminder": "Class Starting Soon",
-      "gems_earned": "Gems Earned! 💎",
-      "system_announcement": "New User Registered",
-      "payment_received": "Payout Request Received"
-    }
-  }
-}
-```
-
-### Quickstart test checklist
-
-- [ ] NotificationBell renders in nav for all 3 roles
-- [ ] Unread count badge shows; disappears when all read
-- [ ] Student gets `booking_confirmed` after booking
-- [ ] Teacher gets `new_booking` when student books
-- [ ] Both get `booking_cancelled` on cancellation
-- [ ] Student gets `gems_earned` after gem transaction
-- [ ] Admin gets notification on new user registration
-- [ ] Admin gets notification on payout request
-- [ ] Realtime: notification appears in <2s without page refresh
-- [ ] `/en/notifications` page shows full paginated history
+1. **Fix 8** (GemImage) — 1 line, zero risk, fixes 404 on every page
+2. **Fix 1 & 2** (dashboard links + Create Class) — 3 line changes, high user impact
+3. **Fix 6** (role badge) — 1 line + loading guard
+4. **Fix 3** (missing settings pages) — create 2 new stub files
+5. **Fix 7** (Switch visibility) — CSS fix, needs visual verification
+6. **Fix 4** (quiz create i18n) — larger change, many strings
+7. **Fix 5** (referral i18n) — same pattern as Fix 4
+8. **Fix 9** (DB migration) — run in Supabase CLI, verify earnings page

@@ -124,7 +124,7 @@ export default function ProfileSettingsPage() {
     if (role === 'student') return t('roleStudent');
     if (role === 'teacher') return t('roleTeacher');
     if (role === 'admin') return t('roleAdmin');
-    return t('roleStudent');
+    return '';
   };
 
   return (
@@ -154,9 +154,11 @@ export default function ProfileSettingsPage() {
               <div className="text-center sm:text-left flex-1">
                 <div className="flex items-center gap-2 justify-center sm:justify-start">
                   <h2 className="text-xl font-bold text-white">{displayName}</h2>
-                  <Badge className="bg-[#3B82F6]/20 text-[#3B82F6] border-0">
-                    {getRoleLabel(profile?.role)}
-                  </Badge>
+                  {getRoleLabel(profile?.role) && (
+                    <Badge className="bg-[#3B82F6]/20 text-[#3B82F6] border-0">
+                      {getRoleLabel(profile?.role)}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-slate-400 mt-1">{profile?.email}</p>
                 <p className="text-sm text-slate-500 mt-2">

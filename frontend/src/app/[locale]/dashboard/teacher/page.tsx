@@ -206,7 +206,7 @@ export default function TeacherDashboardPage() {
             {t('notifications')}
             <Badge className="ml-2 bg-red-500 text-white text-xs">3</Badge>
           </Button>
-          <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90" onClick={() => router.push('/teacher/schedule')}>
+          <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90" onClick={() => router.push('/teacher/classes/new')}>
             <Plus className="w-4 h-4 mr-2" />
             {t('createClass')}
           </Button>
@@ -294,7 +294,7 @@ export default function TeacherDashboardPage() {
                 <Calendar className="w-5 h-5 text-[#3B82F6]" />
                 {t('todaySchedule')}
               </CardTitle>
-              <Link href="/dashboard/schedule">
+              <Link href="/teacher/schedule">
                 <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
                   {t('viewAll')}
                   <ChevronRight className="w-4 h-4 ml-1" />
@@ -428,12 +428,10 @@ export default function TeacherDashboardPage() {
               <Star className="w-5 h-5 text-amber-400" />
               {t('recentReviews')}
             </CardTitle>
-            <Link href="/dashboard/reviews">
-              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                {t('viewAll')}
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" disabled>
+              {t('viewAll')}
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
           </CardHeader>
           <CardContent>
             {recentReviews.length === 0 && (
