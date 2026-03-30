@@ -1,102 +1,131 @@
-# Research: Teacher Schedule — Multi-Select, UI Cleanup & Compact Layout
+# Research: Teacher Schedule — Compact General View
 
-**Phase 0 output** | Branch: `claude/angry-moser` | Date: 2026-03-30
+## Cell Density
+
+**Decision**: `h-3` (12px) cells
+- 32 rows × 12px = 384px grid body — fits a 900px screen with header/nav
+- Minimum comfortable click target on desktop mouse: ~10px
+- Mobile: handled by `overflow-x-auto` scroll, density acceptable
+
+## Hour-only Label Strategy
+
+**Decision**: Show label only on `:00` rows
+- Pattern: `time.endsWith(':00') ? time.slice(0,2) : ''`
+- `:30` rows still receive a transparent row-select button for range selection
+- Visual anchor spacing: 1 label per 24px (2 × 12px rows) — readable
+
+## Toolbar Consolidation
+
+**Decision**: Swap presets row ↔ bulk-action row (mutually exclusive display)
+- `selected.size > 0` → show bulk-action bar, hide presets
+- `selected.size === 0` → show presets row
+- Saves ~36px when no selection active (no double-row)
+
+## Layout Consolidation
+
+**Decision**: Single `Card` for nav + calendar
+- Week nav becomes the `CardContent` header section (border-bottom separator)
+- Calendar grid directly below, no extra Card wrapper
+- Net saving: ~32px padding + ~2px double border
 
 ---
 
-## R1 — Multi-select drag implementation (no external library)
+# Research: Teacher Schedule Polish — Past Slot Locking + i18n
 
-**Decision**: Pure React pointer events — `onPointerDown` / `onPointerEnter` / `onPointerUp` on `<td>` elements, using the Pointer Capture API.
+---
 
-**Findings**:
-- The Pointer Capture API (`e.currentTarget.setPointerCapture(e.pointerId)`) ensures `onPointerMove` / `onPointerEnter` events continue firing even when the cursor leaves the element, preventing "stuck" drag states.
-- `onPointerEnter` on each cell fires reliably during a drag when pointer capture is NOT set on the table container (if we set capture on the container, `pointerenter` won't fire on children). So we skip container capture and rely on `onPointerEnter` per cell.
-- Rectangle selection: store `(rowIdx, colIdx)` of anchor and current hover cell; compute selection as all cells where `min(anchor.row, curr.row) ≤ row ≤ max(anchor.row, curr.row)` AND same for col.
-- Text selection prevention: add `select-none` class to the `<table>` while `isDragging` is true.
-- Mobile: the table already has `overflow-x-auto` scroll. Adding `touch-action: none` during drag prevents accidental scroll-while-selecting; restore `touch-action: auto` on drag end.
+## Decision 1: Past Slot Detection Approach
+
+**Decision**: Compute `pastSlots` inside `AvailabilityCalendar` from the existing `weekStart` prop using `useMemo`.
+
+**Rationale**:
+- `weekStart` prop is already passed from schedule page but was previously ignored.
+- With `weekStart` we can compute the actual calendar date for each column: `offset = d === 0 ? 6 : d - 1`.
+- Reuses the same `isSlotPast(date, time)` logic already on the student booking page.
+- No new props or API changes needed.
 
 **Alternatives considered**:
-- `react-selecto` library: feature-complete but adds ~15kB; overkill for a simple rectangular selection.
-- CSS `user-select: none` + mousemove: pointer events are more reliable than mouse events on touch devices and with pointer capture.
+- Pass `pastSlots: Set<string>` from parent — adds complexity without benefit; parent has no reason to know about time semantics.
+- Block at API save-time — better as server-side defence but UX fix belongs in the UI.
+
+**Implementation sketch**:
+```typescript
+const pastSlots = useMemo<Set<string>>(() => {
+  const now = new Date();
+  const today = new Date(now); today.setHours(0, 0, 0, 0);
+  const past = new Set<string>();
+  for (const d of ORDERED_DAYS) {
+    const offset = d === 0 ? 6 : d - 1;
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + offset);
+    if (date < today) {
+      VISIBLE_SLOTS.forEach(t => past.add(`${d}:${t}`));
+    } else if (date.toDateString() === now.toDateString()) {
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      VISIBLE_SLOTS.forEach(t => {
+        const [h, m] = t.split(':').map(Number);
+        if (h * 60 + m <= nowMins) past.add(`${d}:${t}`);
+      });
+    }
+  }
+  return past;
+}, [weekStart]);
+```
+
+Past slots: distinct visual (dimmed/striped), cannot be toggled or selected.
 
 ---
 
-## R2 — Selection key format
+## Decision 2: i18n Strategy for AvailabilityCalendar
 
-**Decision**: Use `"YYYY-MM-DD:HH:MM"` (e.g., `"2026-03-31:08:00"`) as the selection key.
+**Decision**: Use `useTranslations('teacherSchedule')` directly inside `AvailabilityCalendar`. Add a `calendar` sub-key.
 
-**Findings**:
-- The grid already identifies cells by `(dateKey, time)` — the `dateKey` is `YYYY-MM-DD` and `time` is `HH:MM`.
-- This format is already used for `scheduleMap` lookups in `page.tsx`, so no format conversion needed.
-- A `Set<string>` is the correct data structure: O(1) add/has/delete, fast for 57×7 = 399 max cells.
+**Rationale**: Component is `'use client'`, so `useTranslations` works. Precedent: `teacher/quiz/page.tsx`. Existing `teacherSchedule.days` keys reused for column headers.
 
----
-
-## R3 — Shift-click range selection
-
-**Decision**: Store anchor in a `useRef` (not state), recompute selection on each shift-click.
-
-**Findings**:
-- `useRef` avoids re-renders on anchor update; the selection `Set<string>` in state drives renders.
-- Algorithm: on shift+click, compute rectangle from `anchorRef.current` to clicked cell and set `selected = new Set(computeRectangle(anchor, target, allCells))`.
-- `allCells` is the sorted list of `{dateKey, time, rowIdx, colIdx}` — derived from `timeSlots × weekDays` (same arrays used to render the grid, so indices are stable).
-- On non-shift click: clear selection, set anchor to clicked cell, add to selection.
-
----
-
-## R4 — Batch action integration with `useScheduleDraft`
-
-**Decision**: Batch action calls `toggleDraft(dayOfWeek, time, value)` in a loop for each selected cell — no changes to `useScheduleDraft` needed.
-
-**Findings**:
-- `toggleDraft` updates `draft` state via `setDraft(prev => ({ ...prev, key: value }))`. Calling it N times in a `forEach` loop will batch in React 18's automatic batching, resulting in a single re-render.
-- Only `available` and `disabled` slots are actionable. Booked/upcoming are visually highlighted but skipped.
-- `dayOfWeek` for a selection key `"YYYY-MM-DD:HH:MM"` can be computed as `new Date(dateKey).getDay()`.
+**New keys needed** under `teacherSchedule.calendar`:
+```json
+{
+  "presets": { "workHours": "...", "morning": "...", "evening": "..." },
+  "selectedCount": "{count} slots selected",
+  "bulkOpen": "Open selected",
+  "bulkClose": "Close selected",
+  "deselect": "Deselect",
+  "legend": { "open": "Open", "closed": "Closed", "booked": "Booked", "selected": "Selected", "past": "Past" },
+  "saving": "Saving...",
+  "shiftHint": "Shift+click to select range — click column/row header to select full day/time",
+  "bookedTooltip": "Already booked",
+  "pastTooltip": "Cannot modify past slots",
+  "openTooltip": "Open — click to close",
+  "closedTooltip": "Closed — click to open",
+  "colSelectTitle": "Select full day",
+  "rowSelectTitle": "Select this time across all days"
+}
+```
 
 ---
 
-## R5 — Compact layout approach
+## Decision 3: PRESETS Refactor
 
-**Decision**: Adjust individual cell sizes in Tailwind (not CSS `transform: scale()`).
+**Decision**: Change PRESETS to use fixed English keys (`workHours`, `morning`, `evening`); display labels come from `t('teacherSchedule.calendar.presets.workHours')` etc.
 
-**Findings**:
-- CSS `transform: scale(0.8)` on the table container would scale the scroll container too, causing incorrect overflow calculations and broken sticky headers. Not viable.
-- Target density: `h-5` (20px) rows with `py-0` padding gives ~24 visible rows at 1080p (24 × 20px = 480px, fits in ~600px visible area with headers).
-- At 20px row height, showing two lines of text (topic + student) is impossible. Solution: show only a colored indicator (thin bar or dot). Full text still visible in the detail dialog on click.
-- Time labels at `text-[10px]` (10px) are readable on desktop; on mobile (375px) the time column collapses naturally via the existing `min-w-[900px]` table constraint.
-- Day headers reduce from `py-2` to `py-1.5` — saves ~14px per render.
-
-**Slot content at compact size**:
-- Available: `w-1.5 h-1.5 rounded-full bg-white/40 mx-auto` dot
-- Disabled: `w-1.5 h-1.5 rounded-full bg-red-500/50 mx-auto` dot
-- Upcoming/Booked: `w-full h-2 rounded-sm bg-[#3B82F6]/70` bar
-- Completed: `w-full h-2 rounded-sm bg-emerald-500/70` bar
-- Empty (outside availability): nothing rendered
-
-**Alternatives considered**:
-- CSS `zoom`: browser inconsistency (not supported in Firefox until 2024).
-- Collapsible time groups (e.g., show only hours, expand on click): adds interaction complexity without the clean "bird's-eye" feel requested.
+**Rationale**: Current code uses Vietnamese strings as both object keys and display labels — prevents translation and is type-unsafe.
 
 ---
 
-## R6 — Settings button removal strategy
+## Decision 4: Date Locale for Week Range Display
 
-**Decision**: Remove the "Slot Settings" `<Button>` from the page header. Add a small `<Settings>` icon button in the slot detail dialog for empty/outside-availability slots.
+**Decision**: Use `useLocale()` in `schedule/page.tsx`; map `vi` → `vi-VN`, `en` → `en-US` for `toLocaleDateString`.
 
-**Findings**:
-- The header button (`settingsBtn` i18n key, value "Slot Settings") currently opens the `AvailabilityCalendar` dialog.
-- The `AvailabilityCalendar` manages recurring weekly availability patterns (not individual slot overrides). Teachers configure it infrequently (once when setting up their schedule).
-- Moving it to the slot detail dialog for empty slots makes it contextually discoverable: "This slot is outside your availability — configure availability here → [⚙ Settings]".
-- The dialog close button already exists; no additional UI scaffolding needed.
+**Rationale**: Precedent in `recordings/page.tsx` uses the same pattern.
 
 ---
 
-## Resolved unknowns
+## Decision 5: Scope of Other Pages
 
-| Unknown | Resolution |
-|---------|-----------|
-| Can pointer events handle fast drag without missing cells? | Yes — `onPointerEnter` per `<td>` fires reliably; Pointer Capture on initial cell ensures drag start is captured |
-| Does React 18 batch multiple `toggleDraft` calls? | Yes — automatic batching in React 18 groups synchronous state updates in event handlers |
-| Can `text-[10px]` be used in Tailwind without config? | Yes — arbitrary values work out of the box |
-| Will compact rows break the existing `h-8` slot detail button logic? | No — buttons inside cells use their own sizing; only the `<tr>` height changes |
-| Is `useRef` for anchor safe with concurrent rendering? | Yes — refs are mutable and not part of the render cycle; anchor doesn't need to trigger renders |
+**Finding**: Scanned all teacher page files:
+- `teacher/quiz/page.tsx` — already uses `useTranslations('teacherQuiz')` ✓
+- `teacher/dashboard/page.tsx` — English hardcoded, no Vietnamese ✓
+- `teacher/classes/page.tsx`, `classes/new/page.tsx`, `classes/[id]/page.tsx` — English ✓
+- `teacher/earnings/page.tsx` — English ✓
+
+**Decision**: Only `schedule/page.tsx` and `AvailabilityCalendar.tsx` need i18n changes.

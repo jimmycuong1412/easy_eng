@@ -134,7 +134,7 @@ export default function CreateClassForm({ onSuccess, onCancel }: CreateClassForm
       }
 
       // Verify user is a teacher
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('role')
         .eq('id', user.id)
@@ -149,7 +149,7 @@ export default function CreateClassForm({ onSuccess, onCancel }: CreateClassForm
       const endTime = new Date(startTime.getTime() + formData.duration_minutes * 60 * 1000);
 
       // Create class
-      const { data: newClass, error: createError } = await supabase
+      const { data: newClass, error: createError } = await (supabase as any)
         .from('classes')
         .insert({
           teacher_id: user.id,

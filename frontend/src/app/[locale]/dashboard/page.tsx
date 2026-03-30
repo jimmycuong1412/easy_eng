@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import * as React from 'react';
 import { Link } from '@/i18n/routing';
 import { motion } from 'framer-motion';
@@ -82,7 +84,7 @@ export default function StudentDashboardPage() {
       getDashboardData(user.id).catch(() => ({ upcomingClasses: [], recentActivity: [], gemsBalance: 0 })),
       getTeachers({ limit: 3 }).catch(() => []),
       getStudentProgress(user.id).catch(() => null),
-      createClient().from('attendance_streaks').select('current_streak').eq('student_id', user.id).maybeSingle().then(r => r.data, () => null),
+      (createClient() as any).from('attendance_streaks').select('current_streak').eq('student_id', user.id).maybeSingle().then((r: any) => r.data, () => null),
     ]).then(([dashboard, teachers, progress, streak]) => {
       // Map upcoming classes from bookings
       const mapped = (dashboard.upcomingClasses || [])
@@ -114,11 +116,11 @@ export default function StudentDashboardPage() {
 
       // Set progress data
       if (progress) {
-        setTotalXp(progress.total_xp_earned || 0);
+        setTotalXp(Number(progress.total_xp_earned) || 0);
         setStudentCareer({
-          current_level: progress.current_level || 1,
-          character_name: progress.character_name,
-          career_paths: progress.career_paths,
+          current_level: (progress.current_level as number) || 1,
+          character_name: progress.character_name as string | null,
+          career_paths: progress.career_paths as { name: string } | null,
         });
       }
 

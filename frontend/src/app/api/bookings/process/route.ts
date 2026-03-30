@@ -7,7 +7,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
   const supabase = await createClient();
 
   // Verify authenticated user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await (supabase as any).auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -21,7 +21,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
 
   try {
     // Check idempotency
-    const { data: existing } = await supabase
+    const { data: existing } = await (supabase as any)
       .from('bookings')
       .select('*')
       .eq('idempotency_key', idempotencyKey)
@@ -32,7 +32,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
     }
 
     // Get class details
-    const { data: classData, error: classError } = await supabase
+    const { data: classData, error: classError } = await (supabase as any)
       .from('classes')
       .select('*')
       .eq('id', classId)
@@ -58,7 +58,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
     }
 
     // Create booking
-    const { data: booking, error: bookingError } = await supabase
+    const { data: booking, error: bookingError } = await (supabase as any)
       .from('bookings')
       .insert({
         user_id: user.id,
@@ -80,7 +80,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
 
     // Deduct gems if used
     if (gemsToUse > 0) {
-      const { error: gemsError } = await supabase.from('gem_transactions').insert({
+      const { error: gemsError } = await (supabase as any).from('gem_transactions').insert({
         user_id: user.id,
         amount: -gemsToUse,
         transaction_type: 'booking_discount',
@@ -91,13 +91,13 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
 
       if (gemsError) {
         // Rollback booking
-        await supabase.from('bookings').delete().eq('id', booking.id);
+        await (supabase as any).from('bookings').delete().eq('id', booking.id);
         return NextResponse.json({ error: 'Failed to deduct gems' }, { status: 500 });
       }
     }
 
     // Confirm booking
-    const { data: confirmed, error: updateError } = await supabase
+    const { data: confirmed, error: updateError } = await (supabase as any)
       .from('bookings')
       .update({
         payment_status: finalPrice === 0 ? 'completed' : 'processing',

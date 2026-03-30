@@ -9,18 +9,20 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
-import { 
-  BookOpen, 
-  Calendar, 
-  LayoutDashboard, 
-  Settings, 
-  Users, 
-  Trophy, 
+import {
+  BookOpen,
+  Bell,
+  Calendar,
+  LayoutDashboard,
+  Settings,
+  Users,
+  Trophy,
   Coins,
   LogOut,
   Menu,
   X,
 } from 'lucide-react';
+import NotificationBell from '@/components/layout/NotificationBell';
 
 import { Link } from '@/i18n/routing';
 import { useAuth } from '@/hooks/useAuth';
@@ -84,6 +86,12 @@ export default function RoleBasedNav() {
       icon: Users,
       roles: ['admin', 'teacher'],
     },
+    {
+      label: t('notifications'),
+      href: '/notifications',
+      icon: Bell,
+      roles: ['student', 'teacher', 'admin', 'parent'],
+    },
   ];
 
   const userRole = profile?.role || 'student';
@@ -122,7 +130,10 @@ export default function RoleBasedNav() {
         </div>
 
         {/* User Menu */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          {/* Notification Bell — all roles */}
+          <NotificationBell />
+
           {/* Gems Balance (Students only) */}
           {userRole === 'student' && (
             <Link

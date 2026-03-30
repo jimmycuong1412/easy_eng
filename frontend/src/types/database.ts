@@ -25,6 +25,8 @@ export type Database = {
           role: UserRole;
           timezone: string;
           locale: string;
+          /** User's preferred display currency. One of: 'VND', 'USD', 'EUR'. */
+          currency: string;
           phone: string | null;
           date_of_birth: string | null;
           bio: string | null;
@@ -41,6 +43,7 @@ export type Database = {
           role?: UserRole;
           timezone?: string;
           locale?: string;
+          currency?: string;
           phone?: string | null;
           date_of_birth?: string | null;
           bio?: string | null;
@@ -57,6 +60,7 @@ export type Database = {
           role?: UserRole;
           timezone?: string;
           locale?: string;
+          currency?: string;
           phone?: string | null;
           date_of_birth?: string | null;
           bio?: string | null;
@@ -1232,6 +1236,13 @@ export type Database = {
         Update: {
           verified?: boolean;
         };
+        Relationships: [];
+      };
+
+      gem_transaction_audit_log: {
+        Row: { id: string; user_id: string; amount: number; action: string; description: string | null; created_at: string; metadata: Json | null };
+        Insert: { id?: string; user_id: string; amount: number; action: string; description?: string | null; created_at?: string; metadata?: Json | null };
+        Update: { description?: string | null; metadata?: Json | null };
         Relationships: [];
       };
     };

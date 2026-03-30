@@ -5,7 +5,7 @@
  * Task: T112 [P] Create CometChat configuration
  */
 
-import { CometChat } from '@cometchat-pro/chat';
+import { CometChat } from '@cometchat/chat-sdk-javascript';
 import type { CometChatConfig, CometChatUser, CometChatError } from '@/types/cometchat.types';
 import { env } from '@/lib/env';
 
@@ -81,16 +81,16 @@ export async function createCometChatUser(
   metadata?: Record<string, any>
 ): Promise<boolean> {
   try {
-    const user = new CometChat.User(uid);
-    user.setName(name);
+    const user = new (CometChat as any).User(uid);
+    (user as any).setName(name);
     if (avatar) {
-      user.setAvatar(avatar);
+      (user as any).setAvatar(avatar);
     }
     if (metadata) {
-      user.setMetadata(metadata);
+      (user as any).setMetadata(metadata);
     }
 
-    await CometChat.createUser(user, COMETCHAT_CONFIG.authKey);
+    await (CometChat as any).createUser(user, COMETCHAT_CONFIG.authKey);
     // CometChat user created
     return true;
   } catch (error: any) {
@@ -114,12 +114,12 @@ export async function updateCometChatUser(
   metadata?: Record<string, any>
 ): Promise<boolean> {
   try {
-    const user = new CometChat.User(uid);
-    if (name) user.setName(name);
-    if (avatar) user.setAvatar(avatar);
-    if (metadata) user.setMetadata(metadata);
+    const user = new (CometChat as any).User(uid);
+    if (name) (user as any).setName(name);
+    if (avatar) (user as any).setAvatar(avatar);
+    if (metadata) (user as any).setMetadata(metadata);
 
-    await CometChat.updateUser(user, COMETCHAT_CONFIG.authKey);
+    await (CometChat as any).updateUser(user, COMETCHAT_CONFIG.authKey);
     // CometChat user updated
     return true;
   } catch (error) {
@@ -140,7 +140,7 @@ export async function loginToCometChat(uid: string): Promise<CometChatUser | nul
       uid: user.getUid(),
       name: user.getName(),
       avatar: user.getAvatar(),
-      metadata: user.getMetadata(),
+      metadata: (user as any).getMetadata() as Record<string, unknown>,
     };
   } catch (error) {
     console.error('CometChat login failed:', error);
@@ -174,7 +174,7 @@ export async function getLoggedInUser(): Promise<CometChatUser | null> {
       uid: user.getUid(),
       name: user.getName(),
       avatar: user.getAvatar(),
-      metadata: user.getMetadata(),
+      metadata: (user as any).getMetadata() as Record<string, unknown>,
     };
   } catch (error) {
     console.error('Failed to get logged in user:', error);
@@ -197,17 +197,17 @@ export async function createClassGroup(
   metadata?: Record<string, any>
 ): Promise<boolean> {
   try {
-    const group = new CometChat.Group(
+    const group = new (CometChat as any).Group(
       groupId,
       groupName,
-      CometChat.GROUP_TYPE.PUBLIC
+      (CometChat as any).GROUP_TYPE.PUBLIC
     );
 
     if (description) group.setDescription(description);
     if (icon) group.setIcon(icon);
     if (metadata) group.setMetadata(metadata);
 
-    await CometChat.createGroup(group);
+    await (CometChat as any).createGroup(group);
     // CometChat group created
     return true;
   } catch (error: any) {
@@ -226,11 +226,11 @@ export async function createClassGroup(
  */
 export async function joinClassGroup(
   groupId: string,
-  groupType: string = CometChat.GROUP_TYPE.PUBLIC,
+  groupType: string = (CometChat as any).GROUP_TYPE.PUBLIC,
   password?: string
 ): Promise<boolean> {
   try {
-    await CometChat.joinGroup(groupId, groupType, password);
+    await (CometChat as any).joinGroup(groupId, groupType as any, password);
     // Joined CometChat group
     return true;
   } catch (error) {
@@ -244,7 +244,7 @@ export async function joinClassGroup(
  */
 export async function leaveClassGroup(groupId: string): Promise<boolean> {
   try {
-    await CometChat.leaveGroup(groupId);
+    await (CometChat as any).leaveGroup(groupId);
     // Left CometChat group
     return true;
   } catch (error) {
@@ -258,7 +258,7 @@ export async function leaveClassGroup(groupId: string): Promise<boolean> {
  */
 export async function deleteClassGroup(groupId: string): Promise<boolean> {
   try {
-    await CometChat.deleteGroup(groupId);
+    await (CometChat as any).deleteGroup(groupId);
     // Deleted CometChat group
     return true;
   } catch (error) {
@@ -272,7 +272,7 @@ export async function deleteClassGroup(groupId: string): Promise<boolean> {
  */
 export async function getGroupMembers(groupId: string, limit: number = 30): Promise<any[]> {
   try {
-    const membersRequest = new CometChat.GroupMembersRequestBuilder(groupId)
+    const membersRequest = new (CometChat as any).GroupMembersRequestBuilder(groupId)
       .setLimit(limit)
       .build();
 
@@ -316,7 +316,7 @@ export async function startVideoCall(
  */
 export async function acceptCall(sessionId: string): Promise<any> {
   try {
-    const call = await CometChat.acceptCall(sessionId);
+    const call = await (CometChat as any).acceptCall(sessionId);
     // Call accepted
     return call;
   } catch (error) {
@@ -330,10 +330,10 @@ export async function acceptCall(sessionId: string): Promise<any> {
  */
 export async function rejectCall(
   sessionId: string,
-  status: string = CometChat.CALL_STATUS.REJECTED
+  status: string = (CometChat as any).CALL_STATUS.REJECTED
 ): Promise<any> {
   try {
-    const call = await CometChat.rejectCall(sessionId, status);
+    const call = await (CometChat as any).rejectCall(sessionId, status);
     // Call rejected
     return call;
   } catch (error) {
@@ -347,7 +347,7 @@ export async function rejectCall(
  */
 export async function endCall(sessionId: string): Promise<boolean> {
   try {
-    await CometChat.endCall(sessionId);
+    await (CometChat as any).endCall(sessionId);
     // Call ended
     return true;
   } catch (error) {

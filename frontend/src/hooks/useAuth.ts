@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -18,6 +18,8 @@ interface UseAuthReturn {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
+  /** Re-fetch the user profile from the database (e.g. after updating preferences). */
+  refetchProfile: () => Promise<void>;
 }
 
 /**
@@ -31,42 +33,66 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<AuthError | null>(null);
 
-  const supabaseRef = useRef<ReturnType<typeof getSupabaseClient> | null>(null);
-  if (!supabaseRef.current) {
-    supabaseRef.current = getSupabaseClient();
-  }
-  const supabase = supabaseRef.current;
+  const supabase = getSupabaseClient();
 
   // Fetch user profile
   const fetchProfile = useCallback(
     async (userId: string) => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
+      const { data, error } = await (supabase as any)
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-        if (error) {
-          return null;
-        }
-
-        return data as Profile;
-      } catch {
+      if (error) {
+        console.error('Error fetching profile:', error);
         return null;
       }
+
+      return data as Profile;
     },
     [supabase]
   );
 
   // Initialize auth state
   useEffect(() => {
-    // Subscribe to auth changes first — Supabase fires this immediately with current session
+    const initializeAuth = async () => {
+      try {
+        // Race getSession() against a 5-second timeout so the UI never stays
+        // locked if the Supabase auth lock hangs (observed on some deployments).
+        const timeoutResult = { data: { session: null as null } };
+        const timeoutPromise = new Promise<typeof timeoutResult>((resolve) =>
+          setTimeout(() => resolve(timeoutResult), 5000)
+        );
+        const {
+          data: { session },
+        } = await Promise.race([supabase.auth.getSession(), timeoutPromise]);
+
+        setSession(session);
+        setUser(session?.user ?? null);
+        // Resolve loading as soon as auth state is known — don't block on profile fetch
+        setIsLoading(false);
+
+        if (session?.user) {
+          const profile = await fetchProfile(session.user.id);
+          setProfile(profile);
+        }
+      } catch (err) {
+        console.error('Error initializing auth:', err);
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Subscribe to auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      // Resolve loading immediately — profile loads independently
+      setIsLoading(false);
 
       if (session?.user) {
         const profile = await fetchProfile(session.user.id);
@@ -74,8 +100,6 @@ export function useAuth(): UseAuthReturn {
       } else {
         setProfile(null);
       }
-
-      setIsLoading(false);
     });
 
     return () => {
@@ -155,16 +179,25 @@ export function useAuth(): UseAuthReturn {
   const signOut = useCallback(async () => {
     setError(null);
 
-    // 1. Clear server-side HttpOnly cookies FIRST — must happen before
-    //    supabase.auth.signOut() because that fires onAuthStateChange(SIGNED_OUT)
-    //    which triggers a React re-render/unmount that can abort this async fn
-    //    before the fetch completes.
-    await fetch('/api/auth/logout', { method: 'POST' });
+    // Attempt network sign-out with a 3 s timeout; ignore any error so we
+    // always reach the cookie-clearing + redirect below.
+    try {
+      const timeout = new Promise<void>((resolve) => setTimeout(resolve, 3000));
+      await Promise.race([supabase.auth.signOut(), timeout]);
+    } catch {
+      // swallow — we still need to clear cookies and redirect
+    }
 
-    // 2. Clear client-side Supabase session (in-memory + localStorage).
-    await supabase.auth.signOut();
+    // Always clear Supabase auth cookies so the middleware doesn't see a
+    // stale session and bounce the user back to the dashboard.
+    document.cookie.split(';').forEach((cookie) => {
+      const name = cookie.split('=')[0].trim();
+      if (name.startsWith('sb-')) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      }
+    });
 
-    window.location.href = '/auth/login';
+    window.location.href = '/en/auth/login';
   }, [supabase]);
 
   // Reset password
@@ -201,6 +234,14 @@ export function useAuth(): UseAuthReturn {
     [supabase]
   );
 
+  // Manually re-fetch the profile (e.g. after updating language/timezone preferences)
+  const refetchProfile = useCallback(async () => {
+    const currentUser = user;
+    if (!currentUser) return;
+    const updated = await fetchProfile(currentUser.id);
+    if (updated) setProfile(updated);
+  }, [user, fetchProfile]);
+
   return {
     user,
     profile,
@@ -213,5 +254,6 @@ export function useAuth(): UseAuthReturn {
     signOut,
     resetPassword,
     updatePassword,
+    refetchProfile,
   };
 }

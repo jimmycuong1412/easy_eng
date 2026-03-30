@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic';
+
 // Page: Career Onboarding
 // Description: Guides new students through career path selection
 // Related to: Phase 10 - Character & Gamification System (T144)

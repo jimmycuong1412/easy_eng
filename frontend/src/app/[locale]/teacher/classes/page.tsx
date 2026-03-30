@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Teacher Classes Page
  *
@@ -40,7 +42,7 @@ export default function TeacherClassesPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('classes')
         .select('id, title, start_time, duration_minutes, max_students, current_enrollments, price, level, status, tags')
         .eq('teacher_id', user.id)

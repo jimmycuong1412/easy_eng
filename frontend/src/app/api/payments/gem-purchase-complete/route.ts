@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-// Note: No CSRF on this route — it is called by the backend webhook/payment processor
-// using an internal secret (x-internal-secret header), not by end users from a browser.
+import { withCsrfRouteProtection } from '@/lib/csrf-server';
 
 /**
  * POST /api/payments/gem-purchase-complete
@@ -11,12 +10,12 @@ import { createClient } from '@/lib/supabase/server';
  *
  * Also used internally when simulated payment is successful.
  */
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest): Promise<NextResponse> {
   try {
     // Verify internal secret to prevent abuse
     const secret = request.headers.get('x-internal-secret');
-    const expectedSecret = process.env.INTERNAL_API_SECRET;
-    if (!expectedSecret || secret !== expectedSecret) {
+    const expectedSecret = process.env.INTERNAL_API_SECRET || '';
+    if (expectedSecret && secret !== expectedSecret) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -29,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the purchase
-    const { data: purchase, error: fetchError } = await supabase
+    const { data: purchase, error: fetchError } = await (supabase as any)
       .from('gem_purchases')
       .select('id, user_id, gems_amount, bonus_gems, total_gems, payment_status')
       .eq('id', purchase_id)
@@ -44,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark purchase as completed
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from('gem_purchases')
       .update({
         payment_status: 'completed',
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Credit gems to user account
     const totalGems = purchase.total_gems ?? (purchase.gems_amount + purchase.bonus_gems);
-    const { error: gemError } = await supabase
+    const { error: gemError } = await (supabase as any)
       .from('gem_transactions')
       .insert({
         user_id: purchase.user_id,
@@ -75,7 +74,7 @@ export async function POST(request: NextRequest) {
     if (gemError) {
       console.error('Error crediting gems:', gemError);
       // Rollback the purchase status
-      await supabase
+      await (supabase as any)
         .from('gem_purchases')
         .update({ payment_status: 'processing' })
         .eq('id', purchase_id);
@@ -89,3 +88,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export const POST = withCsrfRouteProtection(handlePost);

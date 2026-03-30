@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * CometChat Type Definitions
  *
@@ -11,15 +10,19 @@ export type CallType = 'audio' | 'video';
 export type CallStatus = 'initiated' | 'ongoing' | 'ended' | 'rejected' | 'busy' | 'cancelled' | 'unanswered';
 
 export interface CallSession {
-  [key: string]: any;
   sessionId?: string;
+  id?: string;
+  callId?: string;
   initiator?: string;
   receiver?: string;
   callType?: CallType;
-  status?: CallStatus | string;
+  type?: string;
+  status: CallStatus | string;
   startedAt?: Date;
+  startTime?: Date;
   endedAt?: Date;
   duration?: number;
+  [key: string]: unknown;
 }
 
 export interface MediaDevice {
@@ -51,7 +54,6 @@ export interface CometChatUser extends CometChat.User {
 export interface CometChatMessage extends CometChat.BaseMessage {
   // Extended properties
   isRead?: boolean;
-  readAt?: Date;
 }
 
 export interface CallMetadata {
@@ -69,7 +71,7 @@ export interface UseCometChatReturn {
   currentUser: CometChat.User | null;
   isLoading: boolean;
   error: Error | null;
-  login: (userId: string, authToken?: string, targetUserId?: string) => Promise<void>;
+  login: (userId: string, authToken?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -91,10 +93,13 @@ export interface UseVideoCallReturn {
 export interface UseCometChatMessagesReturn {
   messages: CometChat.BaseMessage[];
   isLoading: boolean;
-  isSending: boolean;
+  isSending?: boolean;
   error: Error | null;
-  sendMessage: (text: string, receiverId: string) => Promise<void>;
-  markAsRead: (message: CometChat.BaseMessage) => Promise<void>;
+  typingIndicator?: string | null;
+  sendMessage: (text: string, receiverId?: string) => Promise<void>;
+  sendTypingIndicator?: () => Promise<void>;
+  clearMessages?: () => void;
+  markAsRead?: (message: CometChat.BaseMessage) => Promise<void>;
 }
 
 // Event types

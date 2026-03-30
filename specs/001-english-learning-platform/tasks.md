@@ -1,114 +1,250 @@
-# Tasks: Teacher Schedule — Multi-Select, UI Cleanup & Compact Layout
+# Tasks: Notification System — Admin, Students & Teachers
 
-**Input**: Design documents from `/specs/001-english-learning-platform/`
-**Prerequisites**: plan.md, data-model.md, research.md, quickstart.md
+**Feature**: Notification System — Admin, Students & Teachers
+**Branch**: `001-english-learning-platform`
+**Plan**: plan.md | **Total tasks**: 22
 
-**Organization**: Tasks grouped by user story to enable independent implementation and testing.
+---
+
+## Phase 1 — Setup / Schema
+
+- [x] T001 Verify which of the 9 columns are missing from live `notifications` table by querying `information_schema.columns` for project `evrcwtsexlamacawofxo`
+- [x] T002 Create `supabase/migrations/034_notifications_schema_fix.sql` — ALTER TABLE notifications ADD COLUMN IF NOT EXISTS for: `action_url TEXT`, `action_label TEXT`, `related_id UUID`, `related_type TEXT`, `metadata JSONB DEFAULT '{}'`, `icon TEXT`, `color TEXT`, `priority TEXT DEFAULT 'normal' CHECK (priority IN ('low','normal','high','urgent'))`, `expires_at TIMESTAMPTZ`; add indexes `idx_notifications_related` and `idx_notifications_expires`
+- [x] T003 Apply migration 034 to live Supabase project `evrcwtsexlamacawofxo` via Supabase MCP `apply_migration` and confirm all 9 columns exist
+
+---
+
+## Phase 2 — DB Triggers
+
+- [x] T004 Create `supabase/migrations/035_notification_triggers.sql` with helper function `notify_user(p_user_id UUID, p_type TEXT, p_title TEXT, p_message TEXT, p_action_url TEXT DEFAULT NULL, p_related_id UUID DEFAULT NULL, p_related_type TEXT DEFAULT NULL, p_priority TEXT DEFAULT 'normal', p_metadata JSONB DEFAULT '{}')` that inserts one row into `notifications`
+- [x] T005 Add `notify_all_admins(p_type, p_title, p_message, p_action_url, p_related_id, p_related_type, p_priority)` in `supabase/migrations/035_notification_triggers.sql` — selects all `profiles.id WHERE role = 'admin'` and calls `notify_user` for each
+- [x] T006 Add trigger function `trg_booking_notifications()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER INSERT on `bookings`: notifies student with `booking_confirmed` AND teacher with `new_booking`
+- [x] T007 Add trigger function `trg_booking_cancelled()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER UPDATE OF status on `bookings` WHEN NEW.status='cancelled' AND OLD.status!='cancelled': notifies both student and teacher with `booking_cancelled`
+- [x] T008 Add trigger function `trg_gems_earned()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER INSERT on `gem_transactions` WHEN NEW.amount > 0: calls `notify_user(NEW.student_id, 'gems_earned', 'Gems Earned!', 'You earned ' || NEW.amount || ' gems')`
+- [x] T009 Add trigger function `trg_new_user_notify_admins()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER INSERT on `profiles`: calls `notify_all_admins` with type `system_announcement`
+- [x] T010 Add trigger function `trg_payout_request_notify_admins()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER INSERT on `payout_requests`: calls `notify_all_admins` with type `payment_received` and priority `high`
+- [x] T011 Wire all trigger functions to their tables in `supabase/migrations/035_notification_triggers.sql` with CREATE TRIGGER for: bookings INSERT, bookings UPDATE OF status, gem_transactions INSERT, profiles INSERT, payout_requests INSERT
+- [x] T012 Apply migration 035 to live Supabase project `evrcwtsexlamacawofxo` via Supabase MCP `apply_migration` and verify via SQL `SELECT trigger_name, event_object_table FROM information_schema.triggers WHERE trigger_schema = 'public'`
+
+---
+
+## Phase 3 — Hook and Realtime
+
+- [x] T013 [US2] Update `Notification` interface in `frontend/src/hooks/useRealtimeNotifications.ts` — make all 9 new columns optional; keep `priority` required; ensure `unreadCount` filters expired notifications
+- [x] T014 [US2] Verify realtime subscription block in `frontend/src/hooks/useRealtimeNotifications.ts` handles INSERT (prepend + increment unreadCount), UPDATE (patch read status), DELETE (filter out); ensure cleanup calls `supabase.removeChannel`
+
+---
+
+## Phase 4 — UI Integration
+
+- [x] T015 [US2] Import and render `NotificationBell` in `frontend/src/components/layout/RoleBasedNav.tsx` — place it in the desktop header row right of the user avatar dropdown trigger
+- [x] T016 [US2] Add Bell icon and notifications nav item in `frontend/src/components/layout/RoleBasedNav.tsx` mobile menu — href `/notifications`, roles: all
+- [x] T017 [US2] Add `notifications` i18n keys to `frontend/messages/en.json`: `nav.notifications`, top-level `notifications` object with `title`, `empty`, `markAllRead`, `viewAll`, `unreadCount`, and `types` object covering all 7 notification types
+- [x] T018 [US2] Add matching Vietnamese translations to `frontend/messages/vi.json` for all keys added in T017
+
+---
+
+## Phase 5 — Edge Function Deploy
+
+- [x] T019 [P] Deploy `supabase/functions/create-notification` to project `evrcwtsexlamacawofxo` using Supabase MCP `deploy_edge_function`
+- [x] T020 [P] Deploy `supabase/functions/send-booking-confirmation` to project `evrcwtsexlamacawofxo` using Supabase MCP `deploy_edge_function`
+- [x] T021 [P] Deploy `supabase/functions/send-class-reminder` to project `evrcwtsexlamacawofxo` using Supabase MCP `deploy_edge_function`
+
+---
+
+## Phase 6 — Smoke Test
+
+- [x] T022 Smoke test on `https://easyeng-dev.vercel.app`: book a class as student → bell shows badge for student AND teacher; cancel → both get cancelled notification; gem transaction → student gets gems_earned; admin sees system_announcement; click notification → marks read; mark all read → badge clears
+
+---
+
+## Dependencies
+
+```
+T001 -> T002 -> T003
+T003 -> T004 -> T005 -> T006 -> T007 -> T008 -> T009 -> T010 -> T011 -> T012
+T003 -> T013 -> T014
+T014 -> T015 -> T016
+T017 -> T018
+T019, T020, T021 [parallel]
+T012 + T016 + T021 -> T022
+```
+
+## Parallel opportunities
+
+- T019, T020, T021 — deploy 3 edge functions simultaneously
+- T013-T014 can run in parallel with T017-T018
+
+## MVP scope
+
+Phases 1-4 only (T001-T018): DB schema + triggers + hook fix + UI bell
+All three roles get real-time in-app notifications without edge function deploys.
+Edge functions (T019-T021) add email/push as a separate increment.
+**Prerequisites**: plan.md ✅, research.md ✅, quickstart.md ✅
+**Tests**: Not requested — manual test checklist in quickstart.md
+
+**Organization**: UI-only refactor across 2 files. No backend changes, no new packages.
 
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to
-- Exact file paths included in every description
+- Include exact file paths in every description
 
 ---
 
-## Phase 1: Setup
+## Phase 1: Setup (Verify baseline)
 
-**Purpose**: Confirm prerequisites and dev environment before modifying production code.
+**Purpose**: Confirm current files are correct before making changes.
 
-- [ ] T001 Verify dev server runs at `http://localhost:3001/en/teacher/schedule` and current page renders with stats bar and Settings button visible
-- [ ] T002 [P] Confirm `frontend/src/hooks/useScheduleDraft.ts` exists and exports `toggleDraft`, `saveDraft`, `discardDraft` interface unchanged
-- [ ] T003 [P] Read `frontend/messages/en.json` and `frontend/messages/vi.json` to confirm `teacherSchedule` namespace before adding keys
-
----
-
-## Phase 2: Foundational (Blocking Prerequisites)
-
-**Purpose**: New hook and i18n keys must exist before the page can use them.
-
-**⚠️ CRITICAL**: All user story phases depend on these tasks.
-
-- [ ] T004 Create `frontend/src/hooks/useSlotSelection.ts` with full interface: `selected`, `isDragging`, `isSelected`, `selectionCount`, `startSelect`, `extendSelect`, `endSelect`, `shiftSelect`, `clearSelection` — using pure pointer events and rectangle range computation (see `quickstart.md` Step 1)
-- [ ] T005 [P] Add `batchAction` and `settingsHint` keys to `frontend/messages/en.json` under `teacherSchedule`: `batchAction.label`, `batchAction.label_plural`, `batchAction.enableSelected`, `batchAction.disableSelected`, `batchAction.clear`, `settingsHint` (see `data-model.md` i18n section)
-- [ ] T006 [P] Add matching Vietnamese translations to `frontend/messages/vi.json` under `teacherSchedule.batchAction` and `teacherSchedule.settingsHint`
-
-**Checkpoint**: Hook compiles, i18n keys exist — page modifications can begin
+- [x] T001 Verify `frontend/src/components/teacher/AvailabilityCalendar.tsx` exports `AvailabilityCalendar` and contains `pastSlots` useMemo + `PRESET_CONFIG` + `useTranslations`
+- [x] T002 Verify `frontend/src/app/[locale]/teacher/schedule/page.tsx` imports `AvailabilityCalendar` and contains `isCurrentWeek` guard + `useTranslations`
 
 ---
 
-## Phase 3: User Story 1 — Multi-Select & Batch Action (Priority: P1) 🎯 MVP
+## Phase 2: Compact Grid — AvailabilityCalendar.tsx [US1] 🎯 Core
 
-**Goal**: Teacher can click-drag or shift-click to select multiple availability cells simultaneously, then Enable or Disable all selected slots at once via a batch action bar — all feeding into the existing `useScheduleDraft` save pipeline.
+**Goal**: Shrink the 32-row × 7-col grid so the full week fits on screen without vertical scrolling.
 
-**Independent Test**: Login as teacher → shift-click two available slots → batch action bar appears showing "2 slots selected" → click "Disable Selected" → both slots update to disabled style → unsaved banner appears → click Save → reload → slots are still disabled.
+**Independent Test**: Open `/en/teacher/schedule` — entire grid visible without scrolling on a 1080p screen. All slot interactions still work.
 
-### Implementation for User Story 1
-
-- [ ] T007 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: import `useSlotSelection` and `CellCoord` from `@/hooks/useSlotSelection`; instantiate hook: `const { selected, isDragging, isSelected, selectionCount, startSelect, extendSelect, endSelect, shiftSelect, clearSelection } = useSlotSelection();`
-- [ ] T008 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `allCells` useMemo that maps `timeSlots × weekDays` to `CellCoord[]` with `rowIdx` and `colIdx` (see `quickstart.md` Step 3b)
-- [ ] T009 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `useEffect` that attaches `pointerup` to `document` calling `endSelect` on unmount-safe cleanup (see `quickstart.md` Step 3c)
-- [ ] T010 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `select-none` class and `touch-action: none` style to `<table>` element conditionally when `isDragging === true` (see `quickstart.md` Step 3d)
-- [ ] T011 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update each `<td>` in the schedule grid to add `onPointerDown` (calls `startSelect`) and `onPointerEnter` (calls `extendSelect` when `isDragging`) handlers — passing `{ dateKey, time, rowIdx, colIdx }` (see `quickstart.md` Step 3e)
-- [ ] T012 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update each slot `<button>` click handler to: (a) if `e.shiftKey` → call `shiftSelect`; (b) if `selectionCount > 0` → toggle cell in selection instead of opening dialog; (c) otherwise open dialog as before (see `quickstart.md` Step 3e)
-- [ ] T013 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `ring-2 ring-white/60 ring-offset-1` classes to slot buttons when `isSelected(dateKey, time)` is true
-- [ ] T014 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add the Batch Action Bar — a `motion.div` inside the schedule `<Card>` after the `</div>` wrapping the table, shown only when `selectionCount > 0`, containing: Clear button, count label using `t('batchAction.label', { count: selectionCount })`, "Disable Selected" button, "Enable Selected" button (see `quickstart.md` Step 4)
-- [ ] T015 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: implement batch action handlers — loop over `selected`, parse `dateKey` and `time` from key (`key.slice(0, 10)` and `key.slice(11)`), compute `dayOfWeek`, call `toggleDraft(dow, time, value)` for slots with `available` or `disabled` effective status, then call `clearSelection()`
-
-**Checkpoint**: Multi-select works, batch action bar appears/disappears, draft is updated after batch action
+- [x] T003 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — change all slot cell buttons from `h-6` to `h-3` and cell padding from `p-0.5` to `p-px`
+- [x] T004 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — change time column `<th>` width from `w-14` to `w-8`
+- [x] T005 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — update row header time labels: show only `time.slice(0, 2)` (hour number) when `time.endsWith(':00')`, empty invisible button for `:30` rows so range-select still works; update row `<td>` to `text-right pr-1`
+- [x] T006 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — change table `min-w-[560px]` to `min-w-[420px]`
+- [x] T007 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — change column header `<th>` padding from `p-1` to `p-0.5` and inner button `py-1` to `py-0.5`
 
 ---
 
-## Phase 4: User Story 2 — UI Cleanup: Remove Settings Button (Priority: P2)
+## Phase 3: Toolbar Consolidation — AvailabilityCalendar.tsx [US1]
 
-**Goal**: Remove the redundant "Slot Settings" button from the page header. Settings dialog becomes accessible via a contextual link in the slot detail dialog for empty/outside-availability slots, reducing header clutter.
+**Goal**: Swap preset buttons ↔ bulk-action bar (mutually exclusive) to save vertical space above the grid.
 
-**Independent Test**: Load schedule page → confirm NO "Slot Settings" / "Settings" button visible in page header → open slot detail dialog for an empty slot (outside availability) → confirm a "Configure availability" or settings icon link is present → click it → `AvailabilityCalendar` dialog opens.
+**Independent Test**: When no slots selected — only presets row visible. When slots selected — presets hidden, bulk-action bar appears.
 
-### Implementation for User Story 2
-
-- [ ] T016 [US2] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: delete the entire `<Button>` block in the page header `<motion.div>` that calls `setShowAvailabilityDialog(true)` (the button with `<Settings className="w-4 h-4 mr-2" />` and `{t('settingsBtn')}`)
-- [ ] T017 [US2] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: in the slot detail dialog's empty slot section (the `effectiveStatus === 'empty'` branch showing "Outside your availability hours"), add a small `<button>` with `<Settings className="w-3 h-3" />` icon and `{t('settingsHint')}` text that calls `setSelectedSlot(null); setShowAvailabilityDialog(true)` (see `quickstart.md` Step 5b)
-
-**Checkpoint**: Header is clean (no Settings button), dialog still accessible from empty slot detail
+- [x] T008 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — wrap the presets row in `{selected.size === 0 && ( ... )}` so it hides during active selection
+- [x] T009 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — remove the `{selected.size > 0 && ( ... )}` guard from the bulk-action bar (mutual-exclusive swap now handles visibility)
+- [x] T010 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — consolidate legend + saving indicator to a single flex row using `gap-3` (was `gap-4`), shrink colour swatches from `w-3 h-3` to `w-2.5 h-2.5`
 
 ---
 
-## Phase 5: User Story 3 — Compact Layout: Bird's-Eye Grid (Priority: P2)
+## Phase 4: Page Layout Consolidation — page.tsx [US1]
 
-**Goal**: Reduce schedule grid row height from 32px to 20px, condense fonts and padding, replace text content with colored visual indicators — allowing ~24 rows to be visible without scrolling on a 1080p screen.
+**Goal**: Merge week navigation card and calendar card into a single `Card` with an internal `border-b` divider.
 
-**Independent Test**: Load schedule page on 1080p viewport → scroll to verify ~20+ time-slot rows are visible without scrolling → confirm each cell shows a colored dot (available/disabled) or colored bar (booked/upcoming) → confirm time labels are still readable → confirm hovering a slot still works → confirm clicking a slot still opens the detail dialog.
+**Independent Test**: Page renders with one visible card; week nav is the top section; grid below a thin divider. `max-w-4xl` constrains the column.
 
-### Implementation for User Story 3
-
-- [ ] T018 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: add `CompactSlotContent` helper component above the main component — renders `w-1.5 h-1.5 rounded-full` dot for available/disabled and `w-full h-1.5 rounded-sm` bar for upcoming/booked/completed, using same colors as `getStatusColor` (see `quickstart.md` Step 3f)
-- [ ] T019 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: change schedule grid `<tr>` height from `h-8` to `h-5`
-- [ ] T020 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update time `<td>` — change `px-2 py-0.5 text-xs` to `px-1 py-0 text-[10px]` and `w-16` to `w-14`
-- [ ] T021 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update slot cell `<td>` padding from `px-1 py-0.5` to `px-0.5 py-0`
-- [ ] T022 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: replace the slot button content (the `{slot.student ? (...) : (...)}` render block inside the button) with `<CompactSlotContent status={effectiveStatus!} />` — removing the current 2-line text and Plus icon (see `quickstart.md` Step 3e)
-- [ ] T023 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: reduce slot button inner height from `h-5` to `h-3.5` and remove `hover:scale-[1.02]` (replace with `hover:opacity-80` to avoid layout shift at compact size)
-- [ ] T024 [US3] In `frontend/src/app/[locale]/teacher/schedule/page.tsx`: update day header `<th>` padding from `py-2` to `py-1.5` and stats `<CardContent>` padding from `p-3` to `p-2`; reduce stats value font from `text-2xl` to `text-xl` and label font from `text-xs` to `text-[10px]`
-
-**Checkpoint**: Grid shows ~24 rows at 1080p, colored indicators visible, clicks still work
+- [x] T011 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx` — change `max-w-5xl` to `max-w-4xl`
+- [x] T012 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx` — merge the two separate `<Card>` blocks (week-nav + calendar) into a single `<Card className="bg-white/5 border-white/10">` — week-nav section uses `border-b border-white/10 px-4 py-3`, calendar section uses `<CardContent className="p-3 md:p-4">`
+- [x] T013 [US1] In `frontend/src/app/[locale]/teacher/schedule/page.tsx` — remove the second `<motion.div>` wrapper that previously wrapped only the calendar `<Card>` (the week-nav motion wrapper remains)
 
 ---
 
-## Phase 6: Tests
+## Phase 5: Polish & Validation
 
-**Purpose**: Unit and e2e coverage for the new hook and multi-select flow.
-
-- [ ] T025 [P] Create `frontend/src/hooks/useSlotSelection.test.ts` with 5 unit tests: (1) `startSelect` sets `isDragging=true` and adds key to selected, (2) `extendSelect` from anchor to target selects 2×2 rectangle, (3) `shiftSelect` from anchor to target selects rectangle without `isDragging`, (4) `clearSelection` empties selection and resets anchor, (5) `endSelect` sets `isDragging=false` but preserves selection (see `quickstart.md` Step 7)
-- [ ] T026 [P] Create `frontend/tests/e2e/teacher-schedule-multiselect.spec.ts` with 4 e2e tests: (1) shift-click two available slots → batch action bar shows correct count, (2) click "Disable Selected" → unsaved banner appears, (3) drag across 3 cells → 3 cells selected, (4) "Clear Selection" → batch bar disappears (see `quickstart.md` Step 7)
+- [x] T014 In `frontend/src/components/teacher/AvailabilityCalendar.tsx` — final read-through: confirm `pastSlots` logic intact, all `t()` calls unchanged, `bulkOpen`/`bulkClose`/`applyPreset` unchanged, `bookedSlots` guards intact
+- [x] T015 In `frontend/src/app/[locale]/teacher/schedule/page.tsx` — confirm `isCurrentWeek` disabled prop still on prev-week button, `bookedSlots` still passed to `<AvailabilityCalendar>`, `weekStart={currentWeekStart}` still passed
+- [x] T016 Run `cd frontend && npm run build` to verify TypeScript compiles with no errors
 
 ---
 
-## Phase 7: Polish & Cross-Cutting Concerns
+## Dependencies
 
-- [ ] T027 [P] Run `npm run type-check` in `frontend/` and fix any TypeScript errors introduced by the new hook and page changes
-- [ ] T028 [P] Run `npm run lint` in `frontend/` and fix any lint warnings
-- [ ] T029 Smoke-test on mobile viewport (375px) — confirm compact grid still scrolls horizontally, batch action bar stacks vertically, no horizontal overflow from new ring styles
-- [ ] T030 [P] Verify the existing e2e suite still passes: `PLAYWRIGHT_BASE_URL="https://easyeng-dev.vercel.app/en" npx playwright test tests/e2e/teacher-schedule-save.spec.ts --project=chromium` — no regressions from layout changes
+```
+T001–T002 (verify baseline)
+    ↓
+T003–T007 (compact grid cells) + T011–T013 (page layout) ← parallel
+    ↓
+T008–T010 (toolbar swap)
+    ↓
+T014–T016 (polish + build check)
+```
+
+## Summary
+
+| Phase | Tasks | File |
+|-------|-------|------|
+| 1 – Baseline verify | T001–T002 | Both |
+| 2 – Compact grid | T003–T007 | AvailabilityCalendar.tsx |
+| 3 – Toolbar swap | T008–T010 | AvailabilityCalendar.tsx |
+| 4 – Page layout | T011–T013 | page.tsx |
+| 5 – Polish + build | T014–T016 | Both |
+| **Total** | **16 tasks** | |
+
+**MVP scope**: All 16 tasks — small, low-risk UI-only changes with no backend impact.
+
+---
+
+
+---
+
+## Phase 1: Setup (Read Existing Code)
+
+**Purpose**: Understand current state of all files before modifying.
+
+- [x] T001 Read `frontend/src/components/teacher/AvailabilityCalendar.tsx` to map current hardcoded strings and slot rendering logic
+- [x] T002 [P] Read `frontend/src/app/[locale]/teacher/schedule/page.tsx` to map current hardcoded strings and week navigation
+- [x] T003 [P] Read `frontend/messages/en.json` to find the existing `teacherSchedule` key structure
+- [x] T004 [P] Read `frontend/messages/vi.json` to find the existing `teacherSchedule` key structure
+
+---
+
+## Phase 2: Foundational (Blocking — Complete Before User Stories)
+
+**Purpose**: Add i18n keys to both message files before any component work begins.
+
+- [x] T005 Add `teacherSchedule.calendar` keys to `frontend/messages/en.json`: presets (workHours/morning/evening), selectedCount, bulkOpen, bulkClose, deselect, legend (open/closed/booked/selected/past), saving, shiftHint, bookedTooltip, pastTooltip, openTooltip, closedTooltip, colSelectTitle, rowSelectTitle
+- [x] T006 [P] Add `teacherSchedule.calendar` keys to `frontend/messages/vi.json` with Vietnamese translations matching the exact key structure added in T005
+
+**Checkpoint**: Both message files updated — component work can begin.
+
+---
+
+## Phase 3: User Story 1 — Past Slot Locking (Priority: P1) — MVP
+
+**Goal**: Teachers cannot toggle or select slots that are in the past (past days of the current week, or past/current times on today). Past slots render as dimmed/striped, distinct from intentionally-closed future slots. Prev-week navigation disabled when already on current week.
+
+**User Story**: FR-037 + FR-038
+**Depends on**: Phase 2 complete
+
+**Independent Test**: Log in as teacher, navigate to `/teacher/schedule`. Yesterday's slots are dimmed/locked. Today's past time slots (before now) are dimmed/locked. Clicking a past slot does nothing. "Previous week" button is disabled.
+
+- [x] T007 [US1] Add `pastSlots` derived state using `useMemo` in `frontend/src/components/teacher/AvailabilityCalendar.tsx`: compute `Set<string>` of `"dayOfWeek:HH:MM"` keys for all past days and past/current times on today, based on `weekStart` prop and `Date.now()`
+- [x] T008 [US1] Update slot click handler in `frontend/src/components/teacher/AvailabilityCalendar.tsx` to early-return (no-op) when the clicked key is in `pastSlots` or `bookedSlots`
+- [x] T009 [US1] Update shift-click range handler in `frontend/src/components/teacher/AvailabilityCalendar.tsx` to exclude past slot keys from the resulting selected set
+- [x] T010 [US1] Update grid cell rendering in `frontend/src/components/teacher/AvailabilityCalendar.tsx`: past slots render with dimmed/striped style (e.g. `opacity-40 cursor-not-allowed bg-slate-700 bg-stripes`) and `title={t('calendar.pastTooltip')}`; use distinct visual from booked (blue) and closed (grey)
+- [x] T011 [US1] Disable "previous week" button in `frontend/src/app/[locale]/teacher/schedule/page.tsx` when `weekStart <= startOfCurrentWeek` (compare Monday dates), so teachers cannot navigate to past weeks
+
+**Checkpoint**: Past slots locked and prev-week button correctly disabled.
+
+---
+
+## Phase 4: User Story 2 — i18n for Teacher Schedule (Priority: P2)
+
+**Goal**: All hardcoded Vietnamese strings in `AvailabilityCalendar.tsx` and `schedule/page.tsx` replaced with `useTranslations` calls. Switching locale to English renders the schedule page fully in English.
+
+**User Story**: FR-039 (scoped to teacher schedule — research confirmed only these two files need changes)
+**Depends on**: Phase 2 complete (message keys must exist before `t()` calls are added)
+
+**Independent Test**: Log in as teacher, switch language to English, navigate to `/en/teacher/schedule`. All labels (day names, preset buttons, bulk action buttons, legend, week range) display in English. Switch back to Vietnamese — all display in Vietnamese.
+
+- [x] T012 [US2] Replace `DAY_NAMES` hardcoded Vietnamese array with `t('days.sun')`, `t('days.mon')`, ..., `t('days.sat')` calls in `frontend/src/components/teacher/AvailabilityCalendar.tsx`; add `useTranslations('teacherSchedule')` at component top
+- [x] T013 [US2] Rename `PRESETS` to `PRESET_CONFIG` with fixed English keys (`workHours`, `morning`, `evening`) and derive display labels using `t('calendar.presets.workHours')` etc. in `frontend/src/components/teacher/AvailabilityCalendar.tsx`
+- [x] T014 [US2] Replace all remaining hardcoded strings in `frontend/src/components/teacher/AvailabilityCalendar.tsx`: bulk action buttons (`bulkOpen`, `bulkClose`, `deselect`), selected count (`selectedCount`), legend labels, saving indicator (`saving`), shift hint, all slot button `title` attributes
+- [x] T015 [US2] Add `useTranslations('teacherSchedule')` and `useLocale()` to `frontend/src/app/[locale]/teacher/schedule/page.tsx`; replace hardcoded `"Lịch dạy"`, `"Mở hoặc đóng..."`, `"Tuần trước"`, `"Tuần sau"` with `t(...)` calls
+- [x] T016 [US2] Fix `toLocaleDateString('vi-VN', ...)` in `frontend/src/app/[locale]/teacher/schedule/page.tsx` to use dynamic locale: `locale === 'vi' ? 'vi-VN' : 'en-US'`
+
+**Checkpoint**: Switching to `/en/teacher/schedule` shows all English labels.
+
+---
+
+## Phase 5: Polish and Deploy
+
+**Purpose**: Type safety, smoke-test, commit, deploy.
+
+- [x] T017 Run `npx tsc --noEmit` in `frontend/` and fix any TypeScript errors from Phases 3 and 4
+- [x] T018 [P] Smoke-test on local dev server (`localhost:3000`): verify past slots locked, prev-week disabled, English labels correct, Vietnamese labels correct, preset buttons work
+- [x] T019 Commit: `git add frontend/src/components/teacher/AvailabilityCalendar.tsx frontend/src/app/[locale]/teacher/schedule/page.tsx frontend/messages/en.json frontend/messages/vi.json` and push to `001-english-learning-platform`
+- [x] T020 [P] Deploy to Vercel (`vercel --prod` from `frontend/`) and verify on easyeng-dev.vercel.app/en/teacher/schedule and /vi/teacher/schedule
 
 ---
 
@@ -116,81 +252,48 @@
 
 ### Phase Dependencies
 
-- **Phase 1 (Setup)**: No dependencies — start immediately
-- **Phase 2 (Foundational)**: Depends on Phase 1 — blocks Phases 3–5
-- **Phases 3, 4, 5**: All depend on Phase 2; can run in parallel after Phase 2 (touch different sections of page.tsx)
-- **Phase 6 (Tests)**: T025 can begin after T004; T026 can begin after T014 (batch action complete)
-- **Phase 7 (Polish)**: Depends on Phases 3–5 complete
+- **Setup (Phase 1)**: No deps — read files first
+- **Foundational (Phase 2)**: Depends on Phase 1 (must know key structure before adding new keys)
+- **User Story 1 — Past Slot Locking (Phase 3)**: Depends on Phase 2 (needs `t('calendar.pastTooltip')`)
+- **User Story 2 — i18n (Phase 4)**: Depends on Phase 2 (all `t(...)` calls need the keys to exist first)
+- **Polish (Phase 5)**: Depends on Phases 3 and 4 both complete
 
-### User Story Dependencies
+### Parallel Opportunities
 
-- **US1 (Multi-select)**: Depends on T004 (hook) + T005/T006 (i18n)
-- **US2 (UI Cleanup)**: Depends on T004/T005/T006 — independent of US1
-- **US3 (Compact Layout)**: Depends on T004/T005/T006 — independent of US1 and US2
+- T001, T002, T003, T004 — all reads, no deps between them
+- T005 and T006 — different files (en.json vs vi.json)
+- T007–T011 (US1) and T012–T016 (US2) can run sequentially within their phases
+- T017 and T018 (polish) — independent (typecheck vs smoke-test)
+- T019 and T020 — sequential (must commit before deploy)
 
-### Within Each User Story
+### US1 vs US2 Parallelism
 
-- T007 → T008 → T009 → T010 → T011 → T012 → T013 → T014 → T015 (sequential, same file)
-- T016 → T017 (sequential, same file)
-- T018 → T019 → T020 → T021 → T022 → T023 → T024 (sequential, same file)
-
----
-
-## Parallel Opportunities
-
-### Phase 2 (after T001–T003)
-```
-T004: Create useSlotSelection hook
-T005: Add en.json i18n keys          (different file → parallel)
-T006: Add vi.json i18n keys          (different file → parallel)
-```
-
-### Phase 3+4+5 (after Phase 2)
-```
-T007–T015: US1 (multi-select)        → developer A
-T016–T017: US2 (Settings cleanup)    → developer B (10 min task)
-T018–T024: US3 (compact layout)      → developer C
-```
-
-### Phase 6 (after T004 and T014)
-```
-T025: Unit tests for hook
-T026: E2e tests for batch action
-```
-
-### Phase 7 (after Phases 3–5)
-```
-T027: Type-check
-T028: Lint
-T030: Regression e2e
-```
+US1 (past slot locking) and US2 (i18n) both modify `AvailabilityCalendar.tsx`. They MUST run sequentially to avoid merge conflicts. Recommended order: US1 first (simpler, affects rendering only), then US2 (replaces all string literals).
 
 ---
 
 ## Implementation Strategy
 
-### MVP (User Story 1 only — highest value)
+### MVP First (US1 Only)
 
-1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (T004–T006)
-3. Complete Phase 3: US1 Multi-Select (T007–T015)
-4. **STOP and VALIDATE**: Shift-click 3 slots → batch disable → save → reload → slots still disabled
-5. Ship — teachers can now configure large ranges in seconds instead of clicking one at a time
+1. Phase 1: Read existing code
+2. Phase 2: Add message keys (required for T010 tooltip)
+3. Phase 3: Implement past slot locking + prev-week disable
+4. **STOP and VALIDATE**: Smoke-test locked slots on local dev
+5. Proceed to US2 once US1 confirmed working
 
-### Full Delivery
+### Incremental Delivery
 
-1. MVP above
-2. Phase 4: UI Cleanup (T016–T017) — quick win, removes header clutter
-3. Phase 5: Compact Layout (T018–T024) — bird's-eye view
-4. Phase 6: Tests (T025–T026) — required for merge
-5. Phase 7: Polish (T027–T030)
+1. Phase 2 → message keys ready
+2. Phase 3 → past slots locked (purely visual + click guard)
+3. Phase 4 → all Vietnamese strings replaced with translations
+4. Phase 5 → typecheck, commit, deploy
 
 ---
 
 ## Notes
 
-- All changes are in `frontend/` only — no DB migrations, no new API routes
-- `useSlotSelection` is purely ephemeral state — no Supabase calls, no side effects
-- Batch action reuses existing `toggleDraft` and `saveDraft` — no hook changes needed
-- Compact layout is non-breaking: slot detail dialog still shows full text on click
-- `[P]` tasks touch different files and have no blocking dependencies on each other
+- Past slot key format: `"dayOfWeek:HH:MM"` — same convention as `bookedSlots` and `slotState`
+- `ORDERED_DAYS` used to compute `weekStart + offset` per column (Mon=0 offset, ..., Sun=6 offset)
+- No DB changes. No new npm packages. Only message files and two component files change.
+- research.md Decision 5 confirmed: only `schedule/page.tsx` and `AvailabilityCalendar.tsx` need i18n changes; all other teacher pages already use English or `useTranslations`

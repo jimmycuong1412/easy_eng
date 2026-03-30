@@ -352,6 +352,32 @@
       "thu": "Thứ 5",
       "fri": "Thứ 6",
       "sat": "Thứ 7"
+    },
+    "calendar": {
+      "presets": {
+        "workHours": "Giờ hành chính (8–17)",
+        "morning": "Buổi sáng (6–12)",
+        "evening": "Buổi tối (18–22)"
+      },
+      "selectedCount": "Đã chọn {count} slot",
+      "bulkOpen": "Mở đã chọn",
+      "bulkClose": "Đóng đã chọn",
+      "deselect": "Bỏ chọn",
+      "legend": {
+        "open": "Mở",
+        "closed": "Đóng",
+        "booked": "Đã đặt",
+        "selected": "Đã chọn",
+        "past": "Đã qua"
+      },
+      "saving": "Đang lưu...",
+      "shiftHint": "Shift+click để chọn dải — nhấn tiêu đề cột/hàng để chọn cả ngày/giờ",
+      "bookedTooltip": "Đã có học viên đặt",
+      "pastTooltip": "Không thể sửa slot đã qua",
+      "openTooltip": "Đang mở — nhấn để đóng",
+      "closedTooltip": "Đang đóng — nhấn để mở",
+      "colSelectTitle": "Chọn cả ngày",
+      "rowSelectTitle": "Chọn giờ này tất cả các ngày"
     }
   },
   "adminUsers": {
@@ -720,7 +746,18 @@
       "inApp": "Trong ứng dụng",
       "email": "Email",
       "push": "Push"
-    }
+    },
+    "types": {
+      "booking_confirmed": "Xác nhận đặt lịch",
+      "booking_cancelled": "Hủy đặt lịch",
+      "new_booking": "Đặt lịch mới",
+      "class_reminder": "Lớp học sắp bắt đầu",
+      "gems_earned": "Nhận được Gems",
+      "system_announcement": "Người dùng mới đăng ký",
+      "payment_received": "Yêu cầu thanh toán"
+    },
+    "viewAll": "Xem tất cả",
+    "empty": "Không có thông báo"
   },
   "preCheck": {
     "badge": "Chuẩn bị",
@@ -1008,5 +1045,14 @@
     "minutes": "{count} phút",
     "bookingFailed": "Đặt lớp thất bại. Vui lòng thử lại.",
     "needGemsMsg": "Bạn cần {needed} Gems để đặt lớp này. Số dư hiện tại: {balance} Gems."
+  },
+  "nav": {
+    "dashboard": "Bảng điều khiển",
+    "classes": "Lớp học",
+    "bookings": "Đặt lịch",
+    "gems": "Gems",
+    "leaderboard": "Bảng xếp hạng",
+    "users": "Người dùng",
+    "notifications": "Thông báo"
   }
 }

@@ -157,7 +157,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Fetch from DB (single query)
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('role, locale')
       .eq('id', user!.id)

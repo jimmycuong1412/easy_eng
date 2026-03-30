@@ -352,6 +352,32 @@
       "thu": "Thu",
       "fri": "Fri",
       "sat": "Sat"
+    },
+    "calendar": {
+      "presets": {
+        "workHours": "Work hours (8–17)",
+        "morning": "Morning (6–12)",
+        "evening": "Evening (18–22)"
+      },
+      "selectedCount": "{count} slots selected",
+      "bulkOpen": "Open selected",
+      "bulkClose": "Close selected",
+      "deselect": "Deselect",
+      "legend": {
+        "open": "Open",
+        "closed": "Closed",
+        "booked": "Booked",
+        "selected": "Selected",
+        "past": "Past"
+      },
+      "saving": "Saving...",
+      "shiftHint": "Shift+click to select range — click column/row header to select full day/time",
+      "bookedTooltip": "Already booked by a student",
+      "pastTooltip": "Cannot modify past slots",
+      "openTooltip": "Open — click to close",
+      "closedTooltip": "Closed — click to open",
+      "colSelectTitle": "Select full day",
+      "rowSelectTitle": "Select this time across all days"
     }
   },
   "adminUsers": {
@@ -720,7 +746,18 @@
       "inApp": "In-app",
       "email": "Email",
       "push": "Push"
-    }
+    },
+    "types": {
+      "booking_confirmed": "Booking Confirmed",
+      "booking_cancelled": "Booking Cancelled",
+      "new_booking": "New Booking",
+      "class_reminder": "Class Starting Soon",
+      "gems_earned": "Gems Earned",
+      "system_announcement": "New User Registered",
+      "payment_received": "Payout Request"
+    },
+    "viewAll": "View all",
+    "empty": "No notifications"
   },
   "preCheck": {
     "badge": "Getting Ready",
@@ -1008,5 +1045,14 @@
     "minutes": "{count} min",
     "bookingFailed": "Booking failed. Please try again.",
     "needGemsMsg": "You need {needed} Gems to book this class. Your balance: {balance} Gems."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "classes": "Classes",
+    "bookings": "Bookings",
+    "gems": "Gems",
+    "leaderboard": "Leaderboard",
+    "users": "Users",
+    "notifications": "Notifications"
   }
 }

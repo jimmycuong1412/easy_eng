@@ -19,7 +19,7 @@ import * as fs from 'fs';
   await page.fill('input[type="email"], input[name="email"]', 'jimmycuong1413@gmail.com');
 
   console.log('Step 4: Filling password...');
-  await page.fill('input[type="password"], input[name="password"]', '123456');
+  await page.fill('input[type="password"], input[name="password"]', '12345678');
 
   console.log('Step 5: Clicking submit...');
   await page.click('button[type="submit"]');

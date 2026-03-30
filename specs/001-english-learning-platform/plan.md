@@ -1,181 +1,177 @@
-# Implementation Plan: Teacher Schedule — Multi-Select, UI Cleanup & Compact Layout
+# Implementation Plan: Notification System — Admin, Students & Teachers
 
-**Branch**: `claude/angry-moser` | **Date**: 2026-03-30 | **Spec**: specs/001-english-learning-platform/spec.md
-**Input**: Teacher schedule UX improvements — multi-slot selection, Settings button removal, compact bird's-eye grid
+**Branch**: `001-english-learning-platform` | **Date**: 2026-03-30 | **Spec**: specs/001-english-learning-platform/spec.md
+**Input**: Wire up the existing notification infrastructure so all three roles receive real-time in-app notifications for key platform events.
 
 ## Summary
 
-Enhance the teacher schedule page (`/en/teacher/schedule`) with three improvements:
-1. **Multi-select**: Click-drag or shift-click to select multiple availability cells; batch Enable/Disable via a footer action bar — feeds directly into the existing `useScheduleDraft` → batch upsert pipeline.
-2. **UI Cleanup**: Remove the redundant "Slot Settings" header button; Settings/Availability dialog remains accessible via a compact icon in the slot detail dialog.
-3. **Compact Layout**: Reduce row height from 32px → 20px, condense padding/fonts so ~24 rows are visible without scrolling on 1080p.
+The notification system is **partially built** — the DB table, Realtime hook, UI components, and Edge Functions all exist in the codebase but nothing is connected:
+- `NotificationBell` is not rendered in any nav/layout
+- `useRealtimeNotifications` expects 9 extra DB columns missing from the live `notifications` table
+- No DB triggers fire `INSERT INTO notifications` on any platform event  
+- Edge functions (`create-notification`, `send-booking-confirmation`, `send-class-reminder`) are not deployed
 
-All changes are frontend-only (`frontend/src/`), no DB migrations.
+This plan wires all four layers together: DB schema → DB triggers → realtime hook → UI bell.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.4, Next.js 14.2 App Router
-**Primary Dependencies**: React 18, Framer Motion, Tailwind CSS, shadcn/ui (Radix), lucide-react, next-intl
-**Storage**: Supabase `teacher_slot_overrides` (existing) — no new tables
-**Testing**: Jest (unit), Playwright (e2e)
-**Target Platform**: Web — desktop-first (1080p), responsive down to 375px
-**Performance Goals**: Selection interaction ≤16ms (60fps), no layout thrash during drag
-**Constraints**: No new npm packages; pure React pointer events for drag-select
-**Scale/Scope**: Single page (~660 LOC) — targeted edits, no full rewrite
+**Language/Version**: TypeScript 5.4, Next.js 14.2 App Router, Deno (Edge Functions)
+**Primary Dependencies**: `@supabase/supabase-js` v2, Zustand 4.5, Framer Motion 11, lucide-react, next-intl
+**Storage**: Supabase PostgreSQL — `notifications` table (exists, needs 9 additional columns via migration)
+**Testing**: Playwright e2e
+**Target Platform**: Web — all three role dashboards
+**Performance Goals**: Realtime delivery ≤500ms p95; unread count query <50ms
+**Constraints**: No new npm packages; notification logic lives in DB triggers + edge functions
+**Scale/Scope**: 2 DB migrations + 4 edge function deployments + nav integration + i18n keys
 
 ## Constitution Check
 
-| Gate | Status | Notes |
-|------|--------|-------|
-| Code Quality (I) | ✅ PASS | TypeScript strict, single-responsibility hook for selection |
-| Testing (II) | ✅ PASS | Unit tests for `useSlotSelection`; e2e for batch action flow |
-| UX Consistency (III) | ✅ PASS | Follows existing dark theme, amber banner pattern |
-| Role-Based Access (V) | ✅ PASS | Teacher-only page, existing auth guard unchanged |
-| UI Design Excellence (VII) | ✅ PASS | Reduces clutter, improves information density |
+| Principle | Gate | Status |
+|-----------|------|--------|
+| I. Code Quality | Hook/components already written; only wiring needed | ✅ |
+| III. UX Consistency | Role-specific types; unified bell UI across all roles | ✅ |
+| V. Role-Based Access | RLS on notifications table (users see only their own) | ✅ |
+| VI. Currency Integrity | gems_earned notification uses existing gem_transactions | ✅ |
+| VII. UI Design Excellence | Bell dropdown matches dark theme; animated badge | ✅ |
 
 ## Project Structure
 
-### Documentation (this feature)
+### Source Code (affected files)
 
 ```text
-specs/001-english-learning-platform/
-├── plan.md              ← This file
-├── research.md          ← Phase 0 output
-├── data-model.md        ← Phase 1 output
-├── quickstart.md        ← Phase 1 output
-├── contracts/
-│   └── schedule-draft.md   (existing, no changes)
-└── tasks.md             ← Phase 2 output (/speckit.tasks)
-```
+supabase/
+├── migrations/
+│   ├── 034_notifications_schema_fix.sql   ← NEW: add 9 missing columns
+│   └── 035_notification_triggers.sql      ← NEW: DB triggers for events
+└── functions/
+    ├── create-notification/               ← EXISTING: deploy
+    ├── send-booking-confirmation/         ← EXISTING: deploy
+    ├── send-class-reminder/               ← EXISTING: deploy
+    └── notify-gem-expiration/             ← EXISTING: deploy
 
-### Source Code (affected files only)
-
-```text
 frontend/src/
-├── app/[locale]/teacher/schedule/
-│   └── page.tsx                          # Primary — multi-select wiring, layout, Settings removal
+├── components/layout/
+│   ├── NotificationBell.tsx              ← EXISTING: minor userId prop fix
+│   └── RoleBasedNav.tsx                  ← MODIFY: add <NotificationBell />
 ├── hooks/
-│   ├── useScheduleDraft.ts               # Existing — no changes needed
-│   └── useSlotSelection.ts               # NEW — multi-select state hook
-├── messages/
-│   ├── en.json                           # Add batchAction.* keys
-│   └── vi.json                           # Add matching Vietnamese keys
-└── hooks/
-    └── useSlotSelection.test.ts          # NEW — unit tests
-frontend/tests/e2e/
-└── teacher-schedule-multiselect.spec.ts  # NEW — e2e tests
+│   └── useRealtimeNotifications.ts       ← MODIFY: align type with actual DB schema
+├── app/[locale]/notifications/page.tsx   ← EXISTING: add nav link from dashboards
+└── messages/
+    ├── en.json                            ← ADD: notifications.* i18n keys
+    └── vi.json                            ← ADD: matching Vietnamese keys
 ```
 
-## Key Design Decisions
+## Phase 0: Research
 
-### 1. Multi-Select State: `useSlotSelection` Hook
+### Decision 1 — Schema alignment
 
-Separate hook keeps selection logic out of the 660-LOC page.
+**Decision**: Migrate live DB to add 9 missing columns rather than downgrade the hook type.
+**Rationale**: Hook, NotificationBell, NotificationList, and the notifications page all rely on the richer schema (`action_url`, `priority`, `metadata`, etc). Migrating the DB is 1 SQL file; simplifying the hook requires rewriting 4 files.
+**Missing columns**: `action_url`, `action_label`, `related_id`, `related_type`, `metadata`, `icon`, `color`, `priority`, `expires_at`
 
-```ts
-// frontend/src/hooks/useSlotSelection.ts
-interface UseSlotSelectionReturn {
-  selected: Set<string>;        // "YYYY-MM-DD:HH:MM" keys
-  isSelected: (dateKey: string, time: string) => boolean;
-  selectionCount: number;
-  isDragging: boolean;
-  anchorRef: React.MutableRefObject<{dateKey: string; time: string; rowIdx: number; colIdx: number} | null>;
-  startSelect: (dateKey: string, time: string, rowIdx: number, colIdx: number) => void;
-  extendSelect: (dateKey: string, time: string, rowIdx: number, colIdx: number) => void;
-  endSelect: () => void;
-  shiftSelect: (dateKey: string, time: string, rowIdx: number, colIdx: number, allCells: CellCoord[]) => void;
-  clearSelection: () => void;
+### Decision 2 — Trigger strategy
+
+**Decision**: PostgreSQL triggers for synchronous events; Edge Functions for scheduled/async.
+
+| Event | Mechanism | Recipients |
+|-------|-----------|-----------|
+| `bookings` INSERT (confirmed) | DB trigger | Student (`booking_confirmed`) + Teacher (`new_booking`) |
+| `bookings` UPDATE → cancelled | DB trigger | Other party (`booking_cancelled`) |
+| `gem_transactions` INSERT (amount > 0) | DB trigger | Student (`gems_earned`) |
+| Class starting in 15 min | Edge Function cron | Student + Teacher (`class_reminder`) |
+| `profiles` INSERT (new user) | DB trigger | All admins (`system_announcement`) |
+| `payout_requests` INSERT | DB trigger | All admins (`payment_received`) |
+
+### Decision 3 — Bell placement
+
+**Decision**: Add `<NotificationBell />` inside `RoleBasedNav.tsx` — shared nav across all role dashboards.
+**Rationale**: Single integration point; all roles already use `RoleBasedNav`.
+
+### Decision 4 — Admin fan-out
+
+**Decision**: DB function `notify_all_admins()` loops over `profiles WHERE role = 'admin'`.
+**Rationale**: Multiple admins may exist; all need platform-level alerts.
+
+### Decision 5 — i18n
+
+**Decision**: Store English title/message in DB; translate notification `type` in the UI using `t('notifications.types.{type}')`.
+**Rationale**: Notification created at server time (no locale); translated at read time in browser.
+
+## Phase 1: Design
+
+### Migration 034 — Schema fix
+
+```sql
+ALTER TABLE notifications
+  ADD COLUMN IF NOT EXISTS action_url     TEXT,
+  ADD COLUMN IF NOT EXISTS action_label   TEXT,
+  ADD COLUMN IF NOT EXISTS related_id     UUID,
+  ADD COLUMN IF NOT EXISTS related_type   TEXT,
+  ADD COLUMN IF NOT EXISTS metadata       JSONB DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS icon           TEXT,
+  ADD COLUMN IF NOT EXISTS color          TEXT,
+  ADD COLUMN IF NOT EXISTS priority       TEXT DEFAULT 'normal'
+    CHECK (priority IN ('low','normal','high','urgent')),
+  ADD COLUMN IF NOT EXISTS expires_at     TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_notifications_related
+  ON notifications(related_type, related_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_expires
+  ON notifications(expires_at) WHERE expires_at IS NOT NULL;
+```
+
+### Migration 035 — Triggers
+
+```sql
+-- Helper: insert one notification
+CREATE OR REPLACE FUNCTION notify_user(
+  p_user_id UUID, p_type TEXT, p_title TEXT, p_message TEXT,
+  p_action_url TEXT DEFAULT NULL, p_related_id UUID DEFAULT NULL,
+  p_related_type TEXT DEFAULT NULL, p_priority TEXT DEFAULT 'normal',
+  p_metadata JSONB DEFAULT '{}'
+) RETURNS VOID AS $$ ... $$;
+
+-- Helper: notify all admins
+CREATE OR REPLACE FUNCTION notify_all_admins(
+  p_type TEXT, p_title TEXT, p_message TEXT, ...
+) RETURNS VOID AS $$ ... $$;
+
+-- Triggers: booking_confirmed, booking_cancelled,
+--           gems_earned, new_user, payout_request
+```
+
+### i18n contract (`en.json` additions)
+
+```json
+{
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all as read",
+    "viewAll": "View all",
+    "unreadCount": "{{count}} unread",
+    "types": {
+      "booking_confirmed": "Booking Confirmed",
+      "booking_cancelled": "Booking Cancelled",
+      "new_booking": "New Booking",
+      "class_reminder": "Class Starting Soon",
+      "gems_earned": "Gems Earned! 💎",
+      "system_announcement": "New User Registered",
+      "payment_received": "Payout Request Received"
+    }
+  }
 }
 ```
 
-Selection key format: `"YYYY-MM-DD:HH:MM"` — unique per cell in the grid.
+### Quickstart test checklist
 
-### 2. Drag-Select Pattern (pure pointer events)
-
-```tsx
-// On each <td> cell:
-onPointerDown={(e) => {
-  e.currentTarget.setPointerCapture(e.pointerId);
-  startSelect(dateKey, time, rowIdx, colIdx);
-}}
-onPointerEnter={() => {
-  if (isDragging) extendSelect(dateKey, time, rowIdx, colIdx);
-}}
-// Document-level: endSelect on pointerup
-```
-
-- Rectangle selection: all cells where `rowIdx` is between anchor.row and current.row AND `colIdx` is between anchor.col and current.col
-- `touch-action: none` on the table during drag, `user-select: none` on body during drag
-- Pointer capture prevents losing drag when cursor moves fast
-
-### 3. Shift-Click Pattern
-
-- First click (no Shift): sets anchor, selects single cell
-- Shift+click: selects rectangle from anchor to clicked cell
-- Anchor preserved in a `useRef` until a non-shift click
-
-### 4. Batch Action Bar
-
-Sticky bar at the bottom of the schedule grid card, shown only when `selectionCount > 0`:
-
-```
-[×] Clear  ·  3 slots selected  ·  [☒ Disable Selected]  [☑ Enable Selected]
-```
-
-- "Enable Selected": calls `toggleDraft(dow, time, true)` for each selected cell with status `available` or `disabled`
-- "Disable Selected": calls `toggleDraft(dow, time, false)` for each selected cell with status `available` or `disabled`
-- Booked/upcoming cells are visually selected (highlight) but skipped in batch action
-- After batch action: selection clears, unsaved banner appears (existing `isDirty` flow)
-- Single-cell click on a slot still opens the detail dialog (only if NOT in selection mode / `selectionCount === 0`)
-
-**Interaction rule**: If selection is active (`selectionCount > 0`), clicking a cell adds/removes it from selection instead of opening the dialog.
-
-### 5. Remove "Slot Settings" Header Button
-
-Remove the `<Button>` in the page header that opens `AvailabilityCalendar`. Access to availability settings moves to:
-- A small `<Settings className="w-3 h-3" />` icon link in the slot detail dialog for empty/outside-availability slots
-- This keeps the feature accessible without cluttering the header
-
-### 6. Compact Grid Layout
-
-Target: ~24 visible rows at 1080p (currently ~10).
-
-| Element | Current | New |
-|---------|---------|-----|
-| Row height | `h-8` (32px) | `h-5` (20px) |
-| Time label font | `text-xs` | `text-[10px]` |
-| Time cell padding | `px-2 py-0.5` | `px-1 py-0` |
-| Slot cell padding | `px-1 py-0.5` | `px-0.5 py-0` |
-| Slot inner content height | `h-5` | `h-3.5` |
-| Booked/upcoming content | topic + student (2 lines) | colored bar (no text at this density) |
-| Available/disabled | `+ icon` | colored dot `w-1.5 h-1.5 rounded-full` |
-| Header row padding | `py-2` | `py-1.5` |
-| Stats cards | `p-3` | `p-2` |
-
-At compact density, slot cells show only a solid colored indicator (dot or thin bar):
-- Available: `bg-white/30` dot
-- Disabled: `bg-red-500/40` dot
-- Upcoming/booked: `bg-[#3B82F6]` full-width thin bar
-- Completed: `bg-emerald-500` full-width thin bar
-
-## Data Model
-
-No new database entities. Selection state is ephemeral (React only).
-
-State additions via `useSlotSelection`:
-- `selected: Set<string>` — selected cell keys
-- `isDragging: boolean` — pointer drag in progress
-- `anchorRef` — anchor cell for shift-click/drag range
-
-## Phase 0 Research Summary
-
-See `research.md` for full details. Key resolved decisions:
-
-| Topic | Decision |
-|-------|---------|
-| Drag-select implementation | Pure `onPointerDown/Enter/Up` — no library, pointer capture API |
-| Selection key format | `"YYYY-MM-DD:HH:MM"` — already unique in the grid |
-| Shift-click 2D range | Anchor stored in `useRef`, rectangle via min/max of rowIdx/colIdx |
-| Compact row density | `h-5` rows, `text-[10px]` labels, dot-only content for availability |
-| Settings button removal | Remove from header; keep dialog accessible via slot detail dialog |
-| Batch action integration | Calls existing `toggleDraft()` in loop — no hook changes needed |
+- [ ] NotificationBell renders in nav for all 3 roles
+- [ ] Unread count badge shows; disappears when all read
+- [ ] Student gets `booking_confirmed` after booking
+- [ ] Teacher gets `new_booking` when student books
+- [ ] Both get `booking_cancelled` on cancellation
+- [ ] Student gets `gems_earned` after gem transaction
+- [ ] Admin gets notification on new user registration
+- [ ] Admin gets notification on payout request
+- [ ] Realtime: notification appears in <2s without page refresh
+- [ ] `/en/notifications` page shows full paginated history

@@ -1,10 +1,6 @@
-/**
- * Book Classes Page
- * 
- * Browse and book classes with Gems discount
- */
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { ClassCatalog } from '@/components/booking/ClassCatalog';

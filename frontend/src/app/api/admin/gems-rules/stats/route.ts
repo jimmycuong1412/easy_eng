@@ -15,39 +15,39 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (profile?.role !== 'admin') {
+    if ((profile as any)?.role !== 'admin') {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
     // Get all rules for counts and averages
-    const { data: rules, error: rulesError } = await supabase
+    const { data: rules, error: rulesError } = await (supabase as any)
       .from('gem_earning_rules')
       .select('gem_amount, is_active');
 
     if (rulesError) throw rulesError;
 
-    const totalRules = rules?.length ?? 0;
-    const activeRules = rules?.filter((r) => r.is_active).length ?? 0;
+    const totalRules = (rules as any[])?.length ?? 0;
+    const activeRules = (rules as any[])?.filter((r: any) => r.is_active).length ?? 0;
     const averageReward =
       totalRules > 0
-        ? (rules ?? []).reduce((sum, r) => sum + (r.gem_amount ?? 0), 0) / totalRules
+        ? ((rules as any[]) ?? []).reduce((sum: number, r: any) => sum + (r.gem_amount ?? 0), 0) / totalRules
         : 0;
 
     // Get total gems issued (positive transactions = minted/earned)
-    const { data: txData, error: txError } = await supabase
+    const { data: txData, error: txError } = await (supabase as any)
       .from('gem_transactions')
       .select('amount')
       .gt('amount', 0);
 
     if (txError) throw txError;
 
-    const totalGemsIssued = (txData ?? []).reduce((sum, t) => sum + (t.amount ?? 0), 0);
+    const totalGemsIssued = ((txData as any[]) ?? []).reduce((sum: number, t: any) => sum + (t.amount ?? 0), 0);
 
     return NextResponse.json({
       data: {

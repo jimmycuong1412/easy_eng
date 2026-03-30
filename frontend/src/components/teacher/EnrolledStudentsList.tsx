@@ -49,7 +49,7 @@ export default function EnrolledStudentsList({ classId }: EnrolledStudentsListPr
 
   const loadStudents = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('bookings')
         .select(
           `

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { Metadata } from 'next';
 import { GemBalanceWidget } from '@/components/dashboard/GemBalanceWidget';
 import { UpcomingClassesWidget } from '@/components/dashboard/UpcomingClassesWidget';

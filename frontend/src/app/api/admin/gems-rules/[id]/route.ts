@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { verifyCsrfToken } from '@/lib/csrf.server';
+import { verifyCsrfToken } from '@/lib/csrf-server';
 
 const CSRF_HEADER = 'x-csrf-token';
 const CSRF_COOKIE = 'csrf_token';
@@ -35,7 +35,7 @@ export async function PUT(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -55,7 +55,7 @@ export async function PUT(
     if (is_active != null) updateData.is_active = is_active;
     updateData.daily_limit = rate_limit?.max_per_day ?? null;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('gem_earning_rules')
       .update(updateData)
       .eq('id', params.id)
@@ -99,7 +99,7 @@ export async function DELETE(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -110,7 +110,7 @@ export async function DELETE(
     }
 
     void request; // consumed by checkCsrf above
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('gem_earning_rules')
       .delete()
       .eq('id', params.id);

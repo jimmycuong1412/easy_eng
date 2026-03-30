@@ -4,11 +4,13 @@ import * as React from 'react';
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft } from 'lucide-react';
 
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
 import { Button } from '@/components/ui/button';
@@ -68,14 +70,26 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user: _user, profile: liveProfile, isLoading, signOut } = useAuth();
+  const { user: _user, profile: liveProfile, isLoading } = useAuth();
   const { profile: storedProfile, setProfile: storeProfile } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const { balance: gemCount } = useGemsBalance();
 
   React.useEffect(() => {
     setMounted(true);
+    // Restore persisted collapsed state after mount to avoid hydration mismatch
+    const stored = localStorage.getItem('sidebar-collapsed');
+    if (stored === 'true') setSidebarCollapsed(true);
+  }, []);
+
+  const toggleCollapsed = React.useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('sidebar-collapsed', String(next));
+      return next;
+    });
   }, []);
 
   // Keep the store in sync with the live profile
@@ -138,52 +152,104 @@ export default function DashboardLayout({
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside
+      <motion.aside
+        animate={{ width: sidebarCollapsed ? 64 : 256 }}
+        transition={{ duration: 0.3, ease: [0.33, 1, 0.68, 1] }}
         className={cn(
-          'fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-bg-surface border-r border-border-default',
+          'fixed lg:sticky top-0 left-0 z-50 h-screen bg-bg-surface border-r border-border-default overflow-hidden',
           'transform transition-transform duration-300 ease-out-expo',
           'lg:transform-none',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="p-4 border-b border-border-default">
-            <Link href="/" className="flex items-center gap-2">
-              <GemImage size={28} alt="Gem" />
-              <span className="text-xl font-bold text-gradient">EasyEng</span>
+          {/* Logo + collapse toggle */}
+          <div className="p-4 border-b border-border-default flex items-center justify-between min-h-[65px]">
+            <Link
+              href="/"
+              className={cn(
+                'flex items-center gap-2',
+                sidebarCollapsed && 'justify-center w-full'
+              )}
+              title={sidebarCollapsed ? 'EasyEng Home' : undefined}
+            >
+              <GemImage size={28} alt="Gem" className="flex-shrink-0" />
+              {!sidebarCollapsed && (
+                <span className="text-xl font-bold text-gradient whitespace-nowrap">EasyEng</span>
+              )}
             </Link>
+
+            {/* Desktop-only collapse toggle */}
+            {!sidebarCollapsed && (
+              <button
+                onClick={toggleCollapsed}
+                className="hidden lg:flex items-center justify-center w-7 h-7 rounded-full bg-bg-elevated hover:bg-border-default text-text-muted hover:text-text-primary transition-colors flex-shrink-0 ml-1"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
+          {/* Expand button — shown at top when collapsed (desktop only) */}
+          {sidebarCollapsed && (
+            <div className="hidden lg:flex justify-center py-2 border-b border-border-default">
+              <button
+                onClick={toggleCollapsed}
+                className="flex items-center justify-center w-7 h-7 rounded-full bg-bg-elevated hover:bg-border-default text-text-muted hover:text-text-primary transition-colors"
+                title="Expand sidebar"
+                aria-label="Expand sidebar"
+              >
+                <motion.span
+                  animate={{ rotate: 180 }}
+                  className="flex items-center justify-center"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </motion.span>
+              </button>
+            </div>
+          )}
+
           {/* User info */}
-          <div className="p-4 border-b border-border-default">
+          <div className={cn(
+            'p-4 border-b border-border-default',
+            sidebarCollapsed && 'flex justify-center px-2'
+          )}>
             {isLoading ? (
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
+              <div className={cn('flex items-center gap-3', sidebarCollapsed && 'justify-center')}>
+                <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                {!sidebarCollapsed && (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="flex items-center gap-3">
-                <Avatar>
+              <div className={cn('flex items-center gap-3', sidebarCollapsed && 'justify-center')}>
+                <Avatar
+                  title={sidebarCollapsed ? (profile?.full_name || 'User') : undefined}
+                  className="flex-shrink-0"
+                >
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
+                  <AvatarFallback>{getInitials(profile?.full_name ?? null)}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-text-primary truncate">
-                    {profile?.full_name || 'User'}
-                  </p>
-                  <p className="text-xs text-text-muted capitalize">
-                    {profile?.role || 'student'}
-                  </p>
-                </div>
+                {!sidebarCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-text-primary truncate">
+                      {profile?.full_name || 'User'}
+                    </p>
+                    <p className="text-xs text-text-muted capitalize">
+                      {profile?.role || 'student'}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Gem balance (for students) */}
-            {profile?.role === 'student' && (
+            {/* Gem balance (for students) — hidden when collapsed */}
+            {!sidebarCollapsed && profile?.role === 'student' && (
               <div className="mt-3">
                 <GemBadge count={gemCount} size="sm" />
               </div>
@@ -191,7 +257,7 @@ export default function DashboardLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <nav className={cn('flex-1 p-4 space-y-1 overflow-y-auto', sidebarCollapsed && 'px-2')}>
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -199,49 +265,71 @@ export default function DashboardLayout({
                   key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
+                  title={sidebarCollapsed ? tNav(item.labelKey) : undefined}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
+                    'flex items-center rounded-lg transition-all',
+                    sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5',
                     'hover:bg-bg-elevated',
                     isActive
                       ? 'bg-accent-primary/10 text-accent-primary font-medium'
                       : 'text-text-secondary hover:text-text-primary'
                   )}
                 >
-                  <span className="text-xl">{item.icon}</span>
-                  <span>{tNav(item.labelKey)}</span>
+                  <span className="text-xl flex-shrink-0">{item.icon}</span>
+                  {!sidebarCollapsed && (
+                    <span className="whitespace-nowrap">{tNav(item.labelKey)}</span>
+                  )}
                 </Link>
               );
             })}
           </nav>
 
           {/* Bottom section */}
-          <div className="p-4 border-t border-border-default space-y-2">
+          <div className={cn('p-4 border-t border-border-default space-y-2', sidebarCollapsed && 'px-2')}>
             <Link
               href="/settings"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-all"
+              title={sidebarCollapsed ? tCommon('settings') : undefined}
+              className={cn(
+                'flex items-center rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-all',
+                sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
+              )}
             >
-              <span className="text-xl">⚙️</span>
-              <span>{tCommon('settings')}</span>
+              <span className="text-xl flex-shrink-0">⚙️</span>
+              {!sidebarCollapsed && (
+                <span className="whitespace-nowrap">{tCommon('settings')}</span>
+              )}
             </Link>
             <button
-              onClick={async () => {
-                try {
-                  await signOut();
-                } catch (error) {
-                  console.error('Logout error:', error);
-                }
+              onClick={() => {
+                // Clear Supabase auth cookies immediately so the middleware
+                // won't bounce the user back to the dashboard.
+                document.cookie.split(';').forEach((c) => {
+                  const name = c.split('=')[0].trim();
+                  if (name.startsWith('sb-')) {
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+                  }
+                });
+                // Fire-and-forget network sign-out to invalidate the server session.
+                getSupabaseClient().auth.signOut().catch(() => {});
+                window.location.href = '/en/auth/login';
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-all"
+              title={sidebarCollapsed ? tCommon('logout') : undefined}
+              className={cn(
+                'w-full flex items-center rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-all',
+                sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
+              )}
             >
-              <span className="text-xl">🚪</span>
-              <span>{tCommon('logout')}</span>
+              <span className="text-xl flex-shrink-0">🚪</span>
+              {!sidebarCollapsed && (
+                <span className="whitespace-nowrap">{tCommon('logout')}</span>
+              )}
             </button>
           </div>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen min-w-0">
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-bg-primary/80 backdrop-blur-lg border-b border-border-default">
           <div className="flex items-center justify-between px-4 h-16">

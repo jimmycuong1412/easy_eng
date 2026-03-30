@@ -1,8 +1,9 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Calendar, Filter, Download, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
-import { GemImage } from '@/components/common/GemImage';
 
 interface GemTransaction {
   id: string;
@@ -29,7 +29,6 @@ interface GemSummary {
 }
 
 export default function GemHistoryPage() {
-  const t = useTranslations('gemHistory');
   const [transactions, setTransactions] = useState<GemTransaction[]>([]);
   const [summary, setSummary] = useState<GemSummary>({
     total_earned: 0,
@@ -48,7 +47,6 @@ export default function GemHistoryPage() {
   useEffect(() => {
     fetchGemHistory();
     fetchGemSummary();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, page]);
 
   const fetchGemHistory = async () => {
@@ -61,14 +59,14 @@ export default function GemHistoryPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setError(t('mustBeLoggedIn'));
+        setError('You must be logged in to view your gem history');
         return;
       }
 
       let query = supabase
         .from('gem_transactions')
         .select('*', { count: 'exact' })
-        .eq('user_id', user.id)
+        .eq('student_id', user.id)
         .order('created_at', { ascending: false })
         .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
 
@@ -89,7 +87,7 @@ export default function GemHistoryPage() {
       setHasMore(count ? count > page * ITEMS_PER_PAGE : false);
     } catch (err) {
       console.error('Error fetching gem history:', err);
-      setError(err instanceof Error ? err.message : t('failedToLoad'));
+      setError(err instanceof Error ? err.message : 'Failed to load gem history');
     } finally {
       setIsLoading(false);
     }
@@ -104,24 +102,24 @@ export default function GemHistoryPage() {
       if (!user) return;
 
       // Get current balance
-      const { data: balance } = await supabase.rpc('get_gems_balance', {
-        p_user_id: user.id,
+      const { data: balance } = await (supabase as any).rpc('get_student_gem_balance', {
+        student_id: user.id,
       });
 
       // Calculate totals
-      const { data: allTransactions } = await supabase
+      const { data: allTransactions } = await (supabase as any)
         .from('gem_transactions')
         .select('amount')
-        .eq('user_id', user.id);
+        .eq('student_id', user.id);
 
-      const totalEarned = allTransactions
-        ?.filter((t) => t.amount > 0)
-        .reduce((sum, t) => sum + t.amount, 0) || 0;
+      const totalEarned = (allTransactions as any[])
+        ?.filter((t: any) => t.amount > 0)
+        .reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
 
       const totalSpent = Math.abs(
-        allTransactions
-          ?.filter((t) => t.amount < 0)
-          .reduce((sum, t) => sum + t.amount, 0) || 0
+        (allTransactions as any[])
+          ?.filter((t: any) => t.amount < 0)
+          .reduce((sum: number, t: any) => sum + t.amount, 0) || 0
       );
 
       setSummary({
@@ -184,12 +182,14 @@ export default function GemHistoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
+          <h1 className="text-3xl font-bold tracking-tight">Gem History</h1>
+          <p className="text-muted-foreground mt-1">
+            Track all your gem earnings and spending
+          </p>
         </div>
         <Button onClick={exportHistory} variant="outline" className="gap-2">
           <Download className="h-4 w-4" />
-          {t('exportCSV')}
+          Export CSV
         </Button>
       </div>
 
@@ -198,12 +198,12 @@ export default function GemHistoryPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('currentBalance')}
+              Current Balance
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary">
-              <span className="inline-flex items-center gap-1">{summary.current_balance} <GemImage size={24} /></span>
+              {summary.current_balance} 💎
             </div>
           </CardContent>
         </Card>
@@ -211,12 +211,12 @@ export default function GemHistoryPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('totalEarned')}
+              Total Earned
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-              <span className="inline-flex items-center gap-1">+{summary.total_earned} <GemImage size={22} /></span>
+              +{summary.total_earned} 💎
             </div>
           </CardContent>
         </Card>
@@ -224,12 +224,12 @@ export default function GemHistoryPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t('totalSpent')}
+              Total Spent
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-red-600 dark:text-red-400">
-              <span className="inline-flex items-center gap-1">-{summary.total_spent} <GemImage size={22} /></span>
+              -{summary.total_spent} 💎
             </div>
           </CardContent>
         </Card>
@@ -239,7 +239,7 @@ export default function GemHistoryPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>{t('transactionHistory')}</CardTitle>
+            <CardTitle>Transaction History</CardTitle>
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={filter} onValueChange={setFilter}>
@@ -247,9 +247,9 @@ export default function GemHistoryPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('allTransactions')}</SelectItem>
-                  <SelectItem value="earned">{t('earnedOnly')}</SelectItem>
-                  <SelectItem value="spent">{t('spentOnly')}</SelectItem>
+                  <SelectItem value="all">All Transactions</SelectItem>
+                  <SelectItem value="earned">Earned Only</SelectItem>
+                  <SelectItem value="spent">Spent Only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -287,8 +287,10 @@ export default function GemHistoryPage() {
               {transactions.length === 0 ? (
                 <div className="text-center py-12">
                   <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">{t('noTransactions')}</h3>
-                  <p className="text-muted-foreground">{t('noTransactionsDesc')}</p>
+                  <h3 className="text-lg font-medium mb-2">No transactions yet</h3>
+                  <p className="text-muted-foreground">
+                    Complete activities to start earning gems!
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -319,7 +321,7 @@ export default function GemHistoryPage() {
                           }`}
                         >
                           {transaction.amount > 0 ? '+' : ''}
-                          <span className="inline-flex items-center gap-1">{transaction.amount} <GemImage size={16} /></span>
+                          {transaction.amount} 💎
                         </div>
                       </div>
                     </div>
@@ -335,15 +337,15 @@ export default function GemHistoryPage() {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                   >
-                    {t('previous')}
+                    Previous
                   </Button>
-                  <span className="text-sm text-muted-foreground">{t('page', { n: page })}</span>
+                  <span className="text-sm text-muted-foreground">Page {page}</span>
                   <Button
                     variant="outline"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={!hasMore}
                   >
-                    {t('next')}
+                    Next
                   </Button>
                 </div>
               )}

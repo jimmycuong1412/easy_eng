@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { withCsrfRouteProtection } from '@/lib/csrf.server';
+import { withCsrfRouteProtection } from '@/lib/csrf-server';
 
 // Map DB row → frontend GemRule shape
 function toFrontend(row: Record<string, unknown>) {
@@ -34,7 +34,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -44,7 +44,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('gem_earning_rules')
       .select('*')
       .order('activity_type');
@@ -68,7 +68,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -92,7 +92,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
       daily_limit: rate_limit?.max_per_day ?? null,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('gem_earning_rules')
       .insert(insertData)
       .select()

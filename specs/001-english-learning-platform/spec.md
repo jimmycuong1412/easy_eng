@@ -222,6 +222,9 @@ Administrators can view comprehensive platform metrics including user growth, cl
 - **FR-005**: System MUST prevent students from using more Gems than they have
 - **FR-006**: System MUST award Gems automatically when students complete qualifying activities
 - **FR-007**: System MUST allow teachers to create, update, and manage their class schedules
+- **FR-037**: Teacher slot availability calendar MUST prevent navigation to past weeks; the "previous week" button MUST be disabled when the currently displayed week is the current week (no past-week viewing or editing)
+- **FR-038**: Within the current week, teacher slot calendar MUST lock past time slots (slots on past days of the week, and slots at or before the current time on today) — locked slots are dimmed and uneditable, distinct from intentionally-closed future slots
+- **FR-039**: All user-facing pages across the entire platform MUST render in the user's selected language (English or Vietnamese) with no hardcoded strings — every page under `/[locale]/` and all shared components must use `useTranslations` with keys in `messages/en.json` and `messages/vi.json`
 - **FR-008**: System MUST enforce class capacity limits and prevent overbooking
 - **FR-009**: System MUST provide role-specific dashboards with appropriate features for each user type
 - **FR-010**: System MUST track and display booking history with price breakdowns (original price, Gem discount, final price)
@@ -298,7 +301,7 @@ Administrators can view comprehensive platform metrics including user growth, cl
 - Teachers are verified before being granted access to create and manage classes
 - Gem-to-dollar conversion rate (1 Gem = $0.50) is set by business team and may be adjusted in future
 - Students understand basic gamification concepts (earning rewards, spending currency)
-- Platform launches with Vietnamese UI (primary) and English (secondary)
+- Platform supports two languages: Vietnamese (`vi`, primary/default) and English (`en`, secondary). All user-facing strings must be translated in both `messages/vi.json` and `messages/en.json`.
 - Standard class duration is **25 minutes** (optimized for focus and scheduling flexibility)
 - Class scheduling assumes teachers set their own availability in their declared timezone
 - Users declare their timezone in profile settings (default: Asia/Ho_Chi_Minh UTC+7)
@@ -361,7 +364,6 @@ This feature specification explicitly **excludes**:
 - Content creation tools for teachers (teachers provide their own materials)
 - Automated grading or assessment systems
 - Social networking features (friend connections, messaging between students)
-- Multi-language support (English only for initial release)
 - Gem trading or gifting between students
 - Marketplace for third-party course content
 - Integration with external learning management systems (LMS)
@@ -478,6 +480,16 @@ To achieve the "stunning student UI" goal, the platform must embody these princi
 - **Clear contrast**: Text readable for users with visual impairments
 - **Flexible text sizing**: UI adapts to user's preferred text size settings
 - **Descriptive labels**: Form fields and buttons clearly labeled for assistive technologies
+
+## Clarifications
+
+### Session 2026-03-23
+
+- Q: When a teacher navigates to the availability calendar, should past weeks be shown as locked/dimmed, or should backward week navigation be blocked entirely? → A: Block navigation to past weeks entirely; the "previous week" button is disabled when the current week is already the present week.
+- Q: How wide should the i18n language audit sweep be? → A: Full app audit — every page under `/[locale]/` including student, admin, teacher, and shared components.
+- Q: Should "Multi-language support" be removed from the Out of Scope section given the app already ships Vietnamese + English? → A: Yes — remove it; i18n with vi/en is in scope.
+
+---
 
 ## Glossary *(optional)*
 

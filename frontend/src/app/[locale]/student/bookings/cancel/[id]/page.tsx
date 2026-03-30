@@ -1,9 +1,6 @@
-/**
- * Booking Cancellation Page
- * Task: T214 - Create cancellation confirmation page
- */
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -34,7 +31,7 @@ export default function CancelBookingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('bookings')
         .select('*, class:classes(*)')
         .eq('id', bookingId)
@@ -44,11 +41,12 @@ export default function CancelBookingPage() {
       setBooking(data);
 
       // Calculate refund
-      const { data: refundPercentage } = await supabase.rpc('get_refund_percentage', {
-        p_class_scheduled_at: data.class.scheduled_at,
+      const bookingData = data as any;
+      const { data: refundPercentage } = await (supabase as any).rpc('get_refund_percentage', {
+        p_class_scheduled_at: bookingData.class?.scheduled_at,
       });
 
-      const { data: amounts } = await supabase.rpc('calculate_refund_amounts', {
+      const { data: amounts } = await (supabase as any).rpc('calculate_refund_amounts', {
         p_booking_id: bookingId,
         p_refund_percentage: refundPercentage,
       });

@@ -102,38 +102,35 @@ export async function getTeachers(filters?: { limit?: number; offset?: number })
 export async function getTeacherById(teacherId: string) {
   const db = supabase();
 
-  // Three separate queries — reviews and availability reference auth.users,
-  // not profiles, so PostgREST cannot join them directly from profiles.
-  const [profileResult, classesResult, reviewsResult, availabilityResult, overridesResult] = await Promise.all([
-    db.from('profiles')
-      .select('id, full_name, avatar_url, bio, average_rating, total_reviews, role, created_at')
-      .eq('id', teacherId)
-      .eq('role', 'teacher')
-      .single(),
-    db.from('classes')
-      .select('id, title, level, price, start_time, status, current_enrollments, max_students')
-      .eq('teacher_id', teacherId)
-      .eq('status', 'scheduled'),
-    db.from('reviews')
-      .select('id, rating, comment, is_anonymous, created_at, student_id')
-      .eq('teacher_id', teacherId)
-      .order('created_at', { ascending: false })
-      .limit(20),
-    db.from('teacher_availability')
-      .select('day_of_week, start_time, end_time, is_active')
-      .eq('teacher_id', teacherId)
-      .eq('is_active', true),
-    db.from('teacher_slot_overrides')
-      .select('day_of_week, slot_time, is_enabled')
-      .eq('teacher_id', teacherId),
-  ]);
+  // Sequential queries to avoid navigator.locks contention on the singleton client
+  const profileResult = await db.from('profiles')
+    .select('id, full_name, avatar_url, bio, average_rating, total_reviews, role, created_at')
+    .eq('id', teacherId)
+    .eq('role', 'teacher')
+    .single();
+  const classesResult = await db.from('classes')
+    .select('id, title, level, price, start_time, status, current_enrollments, max_students')
+    .eq('teacher_id', teacherId)
+    .eq('status', 'scheduled');
+  const reviewsResult = await (db as any).from('reviews')
+    .select('id, rating, comment, is_anonymous, created_at, student_id')
+    .eq('teacher_id', teacherId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  const availabilityResult = await db.from('teacher_availability')
+    .select('day_of_week, start_time, end_time, is_active')
+    .eq('teacher_id', teacherId)
+    .eq('is_active', true);
+  const overridesResult = await db.from('teacher_slot_overrides')
+    .select('day_of_week, slot_time, is_enabled')
+    .eq('teacher_id', teacherId);
 
   if (profileResult.error) throw profileResult.error;
 
   // Fetch student names for non-anonymous reviews
   const reviews = reviewsResult.data ?? [];
   const studentIds = Array.from(new Set(
-    reviews.filter((r) => !r.is_anonymous).map((r) => r.student_id)
+    reviews.filter((r: any) => !r.is_anonymous).map((r: any) => r.student_id)
   ));
   let studentNames: Record<string, string> = {};
   if (studentIds.length > 0) {
@@ -142,24 +139,24 @@ export async function getTeacherById(teacherId: string) {
       .select('id, full_name')
       .in('id', studentIds);
     if (students) {
-      studentNames = Object.fromEntries(students.map((s) => [s.id, s.full_name ?? 'Student']));
+      studentNames = Object.fromEntries((students as any[]).map((s: any) => [s.id, s.full_name ?? 'Student']));
     }
   }
 
   // Build disabled slot set: "dayOfWeek:HH:MM"
   const disabledSlots = new Set<string>();
-  (overridesResult.data ?? []).forEach((o) => {
+  ((overridesResult.data ?? []) as any[]).forEach((o: any) => {
     if (!o.is_enabled) disabledSlots.add(`${o.day_of_week}:${(o.slot_time as string).slice(0, 5)}`);
   });
 
   return {
-    ...profileResult.data,
-    classes: classesResult.data ?? [],
-    reviews: reviews.map((r) => ({
+    ...(profileResult.data as Record<string, unknown> | null),
+    classes: (classesResult.data ?? []) as any[],
+    reviews: reviews.map((r: any) => ({
       ...r,
       profiles: r.is_anonymous ? null : { full_name: studentNames[r.student_id] ?? 'Student', avatar_url: null },
     })),
-    teacher_availability: availabilityResult.data ?? [],
+    teacher_availability: (availabilityResult.data ?? []) as any[],
     disabled_slots: Array.from(disabledSlots), // "dayOfWeek:HH:MM"
   };
 }
@@ -180,7 +177,7 @@ export async function getUserNotifications(userId: string, limit = 50) {
 }
 
 export async function markNotificationRead(notificationId: string) {
-  const { error } = await supabase()
+  const { error } = await (supabase() as any)
     .from('notifications')
     .update({ read: true, read_at: new Date().toISOString() })
     .eq('id', notificationId);
@@ -246,14 +243,14 @@ export async function getLeaderboard(limit = 50) {
 }
 
 export async function getStudentProgress(studentId: string) {
-  const { data, error } = await supabase()
+  const { data, error } = await (supabase() as any)
     .from('student_careers')
     .select('*, career_paths(*)')
     .eq('student_id', studentId)
     .eq('is_active', true)
     .maybeSingle();
   if (error) throw error;
-  return data;
+  return data as Record<string, unknown> | null;
 }
 
 // ============================================================================
@@ -313,7 +310,7 @@ export async function getTeacherSchedule(teacherId: string) {
 
   // Build a Set of disabled slots: "dayOfWeek:HH:MM"
   const disabledSlots = new Set<string>();
-  (overridesResult.data ?? []).forEach((o) => {
+  ((overridesResult.data ?? []) as any[]).forEach((o: any) => {
     if (!o.is_enabled) {
       disabledSlots.add(`${o.day_of_week}:${(o.slot_time as string).slice(0, 5)}`);
     }
@@ -327,14 +324,14 @@ export async function getTeacherSchedule(teacherId: string) {
 }
 
 export async function getTeacherSlotOverrides(teacherId: string) {
-  const { data, error } = await supabase()
+  const { data, error } = await (supabase() as any)
     .from('teacher_slot_overrides')
     .select('day_of_week, slot_time, is_enabled')
     .eq('teacher_id', teacherId);
   if (error) throw error;
   // Return as map: "dayOfWeek:HH:MM" -> is_enabled
   const map: Record<string, boolean> = {};
-  (data ?? []).forEach((o) => {
+  ((data ?? []) as any[]).forEach((o: any) => {
     map[`${o.day_of_week}:${(o.slot_time as string).slice(0, 5)}`] = o.is_enabled;
   });
   return map;
@@ -346,7 +343,7 @@ export async function upsertTeacherSlotOverride(
   slotTime: string, // "HH:MM"
   isEnabled: boolean
 ) {
-  const { error } = await supabase()
+  const { error } = await (supabase() as any)
     .from('teacher_slot_overrides')
     .upsert(
       { teacher_id: teacherId, day_of_week: dayOfWeek, slot_time: slotTime, is_enabled: isEnabled },
@@ -374,7 +371,7 @@ export async function getDashboardData(userId: string) {
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(10),
-    supabase().rpc('get_gems_balance', { p_user_id: userId }),
+    (supabase() as any).rpc('get_gems_balance', { p_user_id: userId }),
   ]);
 
   return {
@@ -399,7 +396,7 @@ export async function getUserProfile(userId: string) {
 }
 
 export async function updateUserProfile(userId: string, updates: Partial<Profile>) {
-  const { data, error } = await supabase()
+  const { data, error } = await (supabase() as any)
     .from('profiles')
     .update(updates)
     .eq('id', userId)

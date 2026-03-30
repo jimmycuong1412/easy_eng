@@ -78,7 +78,7 @@ export async function startClassSession(
     }
 
     // Check if session already exists
-    const { data: existingSession } = await supabase
+    const { data: existingSession } = await (supabase as any)
       .from('class_sessions')
       .select('*')
       .eq('class_id', options.classId)
@@ -102,7 +102,7 @@ export async function startClassSession(
 
     if (existingSession) {
       // Update existing session
-      const { data: updatedSession, error: updateError } = await supabase
+      const { data: updatedSession, error: updateError } = await (supabase as any)
         .from('class_sessions')
         .update({
           status: 'live',
@@ -116,7 +116,7 @@ export async function startClassSession(
       session = updatedSession;
     } else {
       // Create new session
-      const { data: newSession, error: createError } = await supabase
+      const { data: newSession, error: createError } = await (supabase as any)
         .from('class_sessions')
         .insert({
           class_id: options.classId,
@@ -139,7 +139,7 @@ export async function startClassSession(
     }
 
     // Log session start event
-    await supabase.from('session_events').insert({
+    await (supabase as any).from('session_events').insert({
       session_id: session.id,
       user_id: options.teacherId,
       event_type: 'session_started',
@@ -150,7 +150,7 @@ export async function startClassSession(
     });
 
     // Add teacher as participant
-    await supabase.from('session_participants').upsert(
+    await (supabase as any).from('session_participants').upsert(
       {
         session_id: session.id,
         user_id: options.teacherId,
@@ -183,7 +183,7 @@ export async function endClassSession(sessionId: string, teacherId: string): Pro
 
   try {
     // Validate teacher permissions
-    const { data: session } = await supabase
+    const { data: session } = await (supabase as any)
       .from('class_sessions')
       .select('*')
       .eq('id', sessionId)
@@ -204,7 +204,7 @@ export async function endClassSession(sessionId: string, teacherId: string): Pro
     const durationMinutes = Math.floor((endTime.getTime() - actualStart.getTime()) / 60000);
 
     // Update session status
-    const { data: updatedSession, error: updateError } = await supabase
+    const { data: updatedSession, error: updateError } = await (supabase as any)
       .from('class_sessions')
       .update({
         status: 'ended',
@@ -218,7 +218,7 @@ export async function endClassSession(sessionId: string, teacherId: string): Pro
     if (updateError) throw updateError;
 
     // Update all participants' left_at time if not set
-    await supabase
+    await (supabase as any)
       .from('session_participants')
       .update({
         left_at: endTime.toISOString(),
@@ -227,7 +227,7 @@ export async function endClassSession(sessionId: string, teacherId: string): Pro
       .is('left_at', null);
 
     // Log session end event
-    await supabase.from('session_events').insert({
+    await (supabase as any).from('session_events').insert({
       session_id: sessionId,
       user_id: teacherId,
       event_type: 'session_ended',
@@ -267,7 +267,7 @@ export async function joinClassSession(options: JoinClassOptions): Promise<Sessi
 
   try {
     // Validate student has a confirmed booking
-    const { data: booking, error: bookingError } = await supabase
+    const { data: booking, error: bookingError } = await (supabase as any)
       .from('bookings')
       .select('*')
       .eq('student_id', options.studentId)
@@ -283,7 +283,7 @@ export async function joinClassSession(options: JoinClassOptions): Promise<Sessi
     }
 
     // Get session details
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await (supabase as any)
       .from('class_sessions')
       .select('*')
       .eq('id', options.sessionId)
@@ -323,7 +323,7 @@ export async function joinClassSession(options: JoinClassOptions): Promise<Sessi
     }
 
     // Add student as participant
-    const { error: participantError } = await supabase
+    const { error: participantError } = await (supabase as any)
       .from('session_participants')
       .upsert(
         {
@@ -341,12 +341,12 @@ export async function joinClassSession(options: JoinClassOptions): Promise<Sessi
     if (participantError) throw participantError;
 
     // Increment participant count
-    await supabase.rpc('increment_session_participants', {
+    await (supabase as any).rpc('increment_session_participants', {
       session_id: options.sessionId,
     });
 
     // Log join event
-    await supabase.from('session_events').insert({
+    await (supabase as any).from('session_events').insert({
       session_id: options.sessionId,
       user_id: options.studentId,
       event_type: 'participant_joined',
@@ -380,7 +380,7 @@ export async function leaveClassSession(
 
   try {
     // Get participant record
-    const { data: participant } = await supabase
+    const { data: participant } = await (supabase as any)
       .from('session_participants')
       .select('*')
       .eq('session_id', sessionId)
@@ -397,7 +397,7 @@ export async function leaveClassSession(
     const durationSeconds = Math.floor((leftAt.getTime() - joinedAt.getTime()) / 1000);
 
     // Update participant record
-    await supabase
+    await (supabase as any)
       .from('session_participants')
       .update({
         left_at: leftAt.toISOString(),
@@ -407,12 +407,12 @@ export async function leaveClassSession(
       .eq('user_id', studentId);
 
     // Decrement participant count
-    await supabase.rpc('decrement_session_participants', {
+    await (supabase as any).rpc('decrement_session_participants', {
       session_id: sessionId,
     });
 
     // Log leave event
-    await supabase.from('session_events').insert({
+    await (supabase as any).from('session_events').insert({
       session_id: sessionId,
       user_id: studentId,
       event_type: 'participant_left',
@@ -443,7 +443,7 @@ export async function getSessionStatus(sessionId: string): Promise<ClassSession 
   const supabase = createClient();
 
   try {
-    const { data: session, error } = await supabase
+    const { data: session, error } = await (supabase as any)
       .from('class_sessions')
       .select('*')
       .eq('id', sessionId)
@@ -468,7 +468,7 @@ export async function canJoinSession(
   const supabase = createClient();
 
   try {
-    const { data: session } = await supabase
+    const { data: session } = await (supabase as any)
       .from('class_sessions')
       .select('*')
       .eq('id', sessionId)
@@ -495,7 +495,7 @@ export async function canJoinSession(
 
     // For students, check booking
     if (userRole === 'student') {
-      const { data: booking } = await supabase
+      const { data: booking } = await (supabase as any)
         .from('bookings')
         .select('*')
         .eq('student_id', userId)

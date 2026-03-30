@@ -7,8 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-// Note: No CSRF on this route — it is called programmatically (not from a form/user action)
-// and already requires Supabase authentication (getUser()) which provides equivalent protection.
+import { withCsrfRouteProtection } from '@/lib/csrf-server';
 
 const COMETCHAT_API_URL = 'https://{{COMETCHAT_APP_ID}}.api-{{COMETCHAT_REGION}}.cometchat.io/v3';
 const APP_ID = process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '';
@@ -54,7 +53,7 @@ async function ensureCometChatUser(
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest): Promise<NextResponse> {
   try {
     // Verify user is authenticated with Supabase
     const supabase = await createClient();
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user profile for name
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('full_name')
       .eq('id', user.id)
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     if (targetUserId && targetUserId !== user.id) {
       // Fetch target user's profile to get their name
-      const { data: targetProfile } = await supabase
+      const { data: targetProfile } = await (supabase as any)
         .from('profiles')
         .select('full_name')
         .eq('id', targetUserId)
@@ -140,3 +139,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export const POST = withCsrfRouteProtection(handlePost);

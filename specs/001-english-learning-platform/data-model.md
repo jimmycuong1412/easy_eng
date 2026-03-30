@@ -1,103 +1,74 @@
-# Data Model: Teacher Schedule Multi-Select, UI Cleanup & Compact Layout
+# Data Model: Teacher Schedule Simplification
 
-**Feature**: Teacher Schedule Multi-Select & Compact View
-**Date**: 2026-03-30
-**Branch**: `claude/angry-moser`
+**No schema changes required.** All data lives in existing tables.
 
 ---
 
-## No new database entities
+## Entities Used
 
-All changes are ephemeral client-side state. The existing `teacher_slot_overrides` table (from the previous feature) handles persistence.
+### teacher_slot_overrides (existing — read/write)
 
----
+| Column | Type | Notes |
+|--------|------|-------|
+| teacher_id | UUID | FK → auth.users |
+| day_of_week | INT | 0=Sun, 1=Mon … 6=Sat |
+| slot_time | TIME | "HH:MM:00" (30-min intervals) |
+| is_enabled | BOOL | true = open for student booking |
 
-## New Client-Side State Entities
+**Unique constraint**: `(teacher_id, day_of_week, slot_time)`
 
-### `SlotSelectionState` (via `useSlotSelection` hook)
-
-```ts
-interface SlotSelectionState {
-  // Primary selection set — keys are "YYYY-MM-DD:HH:MM"
-  selected: Set<string>;
-
-  // True while pointer button is held down and dragging
-  isDragging: boolean;
-
-  // Anchor cell for drag/shift-click range (stored in useRef, not state)
-  anchor: {
-    dateKey: string;   // "YYYY-MM-DD"
-    time: string;      // "HH:MM"
-    rowIdx: number;    // Index in timeSlots array (0–56)
-    colIdx: number;    // Index in weekDays array (0–6)
-  } | null;
-}
-```
-
-### `CellCoord` (used in `shiftSelect` calculation)
-
-```ts
-interface CellCoord {
-  dateKey: string;   // "YYYY-MM-DD"
-  time: string;      // "HH:MM"
-  rowIdx: number;    // 0–56
-  colIdx: number;    // 0–6
-}
-```
+**Read**: `SELECT * FROM teacher_slot_overrides WHERE teacher_id = $1`
+**Write**: DELETE all for teacher → INSERT only enabled slots (existing pattern, unchanged)
 
 ---
 
-## Existing DB Entity: `teacher_slot_overrides` (unchanged)
+### bookings (read-only — derive locked slots)
 
-```sql
-CREATE TABLE teacher_slot_overrides (
-  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  teacher_id    uuid NOT NULL REFERENCES profiles(id),
-  day_of_week   integer NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
-  slot_time     time NOT NULL,    -- "HH:MM:00"
-  is_enabled    boolean NOT NULL,
-  UNIQUE (teacher_id, day_of_week, slot_time)
-);
-```
+| Column | Type | Notes |
+|--------|------|-------|
+| teacher_id | UUID | FK |
+| scheduled_date | DATE | specific calendar date |
+| start_time | TIME | slot start |
+| status | TEXT | 'confirmed' / 'pending' |
 
-Batch action writes flow: `selected Set<string>` → loop → `toggleDraft(dayOfWeek, time, value)` → existing `saveDraft(teacherId)` → single upsert.
+**Derived key format**: `"dayOfWeek:HH:MM"` computed from `scheduled_date.getDay()` + `start_time.slice(0,5)`.
 
 ---
 
-## i18n Key Additions (`teacherSchedule` namespace)
+## Component State Model
 
-### New keys in `en.json`:
-```json
-"batchAction": {
-  "label": "{{count}} slot selected",
-  "label_plural": "{{count}} slots selected",
-  "enableSelected": "Enable Selected",
-  "disableSelected": "Disable Selected",
-  "clear": "Clear Selection"
-},
-"settingsHint": "Configure availability"
-```
+```typescript
+// AvailabilityCalendar internal state
+slotState: Record<string, boolean>   // "dayOfWeek:HH:MM" → is_enabled
+selected: Set<string>                // multi-select: highlighted keys (not yet saved)
+anchorKey: string | null             // shift-click range anchor
+pendingChanges: Set<string>          // changed since last save (drives debounce)
+saving: boolean
+error: string | null
 
-### Same keys in `vi.json`:
-```json
-"batchAction": {
-  "label": "{{count}} ô đã chọn",
-  "label_plural": "{{count}} ô đã chọn",
-  "enableSelected": "Bật các ô đã chọn",
-  "disableSelected": "Tắt các ô đã chọn",
-  "clear": "Bỏ chọn"
-},
-"settingsHint": "Cấu hình thời gian rảnh"
+// Props from parent page
+bookedSlots: Set<string>             // locked — cannot toggle
+weekStart: Date                      // display only; keys are day_of_week-based
 ```
 
 ---
 
-## State Transitions
+## Slot Key Convention
 
 ```
-No selection  →  (pointer down on cell)  →  Selecting (isDragging=true)
-Selecting     →  (pointer up)            →  Selection active (isDragging=false, selected.size > 0)
-Selection active → (batch action click)  →  draft updated, selection cleared
-Selection active → (clear button)        →  No selection
-Selection active → (non-shift click)     →  New single selection (anchor reset)
+key = `${dayOfWeek}:${HH:MM}`
+
+Examples:
+  "1:08:00"  → Monday 08:00
+  "0:14:30"  → Sunday 14:30
+  "6:20:00"  → Saturday 20:00
 ```
+
+Matches the existing key format — no migration needed.
+
+---
+
+## Visible Slot Range
+
+Default: **06:00 – 22:00** = 32 slots per day × 7 days = 224 cells per grid.
+(Down from 48 slots × 7 = 336 in current implementation.)

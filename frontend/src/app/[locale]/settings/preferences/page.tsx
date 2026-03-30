@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import * as React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -16,6 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/hooks/useAuth';
 import { usePreferences } from '@/hooks/usePreferences';
 
 // Animation variants
@@ -57,13 +60,17 @@ export default function PreferencesSettingsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const currentLocale = useLocale();
+
+  // Single useAuth() call — pass its values into usePreferences so we don't
+  // create a second auth lock (which would cause the spinner to hang on Vercel).
+  const { profile, isLoading: authLoading, refetchProfile } = useAuth();
   const {
     preferences: savedPreferences,
     isLoading: prefsLoading,
     error: prefsError,
     updatePreferences,
     isPending,
-  } = usePreferences();
+  } = usePreferences({ profile, isLoading: authLoading, refetchProfile });
 
   const [isSaved, setIsSaved] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState<string | null>(null);
@@ -120,13 +127,8 @@ export default function PreferencesSettingsPage() {
     }
   };
 
-  if (prefsLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-[#3B82F6]" />
-      </div>
-    );
-  }
+  // Don't block rendering on auth loading — the form shows defaults immediately
+  // and updates via useEffect when savedPreferences arrives.
 
   return (
     <motion.div

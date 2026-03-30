@@ -1,284 +1,179 @@
-import { Metadata } from 'next';
-import Link from 'next/link';
-import { CheckCircle, Calendar, Clock, User, Gem, ArrowRight, Home } from 'lucide-react';
+'use client';
+
+export const dynamic = 'force-dynamic';
+
+import * as React from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { Calendar, Clock, User, Loader2, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/lib/supabase/server';
+import { GemImage } from '@/components/common/GemImage';
+import { getSupabaseClient } from '@/lib/supabase/client';
+import { useGemsBalance } from '@/hooks/useGemsBalance';
 
-export const metadata: Metadata = {
-  title: 'Booking Confirmed | Easy English',
-  description: 'Your class booking has been confirmed',
-};
+const GEMS_PER_SESSION = 200;
 
-interface ConfirmationPageProps {
-  searchParams: {
-    booking_id?: string;
-  };
+function formatDateViVN(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-export default async function BookingConfirmationPage({
-  searchParams,
-}: ConfirmationPageProps) {
-  const { booking_id } = searchParams;
+function addMinutes(time: string, mins: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const total = h * 60 + m + mins;
+  return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
+}
 
-  // Fetch booking from Supabase
-  let booking = {
-    id: booking_id || '',
-    class: {
-      id: '',
-      title: 'Class',
-      teacher_name: 'Teacher',
-      scheduled_at: new Date(),
-      duration: 25,
-    },
-    payment: {
-      original_price: 0,
-      gems_used: 0,
-      discount_amount: 0,
-      final_price: 0,
-    },
-    confirmation_code: 'EC' + (booking_id?.slice(0, 6) || '000000').toUpperCase(),
-    booking_date: new Date(),
+export default function BookingConfirmPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const teacherId = searchParams.get('teacher') ?? '';
+  const date      = searchParams.get('date') ?? '';
+  const time      = searchParams.get('time') ?? '';
+
+  const [teacherName, setTeacherName] = React.useState<string | null>(null);
+  const [isBooking, setIsBooking]     = React.useState(false);
+  const [error, setError]             = React.useState<string | null>(null);
+  const [done, setDone]               = React.useState(false);
+  const { balance: gemsBalance }      = useGemsBalance();
+
+  // Fetch teacher name
+  React.useEffect(() => {
+    if (!teacherId) return;
+    getSupabaseClient()
+      .from('profiles')
+      .select('full_name')
+      .eq('id', teacherId)
+      .single()
+      .then(({ data }) => setTeacherName((data as { full_name: string } | null)?.full_name ?? 'Teacher'));
+  }, [teacherId]);
+
+  const handleConfirm = async () => {
+    setIsBooking(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/bookings/book-slot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherId, date, time }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? 'Booking failed');
+      }
+      setDone(true);
+      setTimeout(() => router.push('/student/bookings'), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Booking failed');
+      setIsBooking(false);
+    }
   };
 
-  if (booking_id) {
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase
-        .from('bookings')
-        .select('*, classes(id, title, start_time, duration_minutes, profiles!classes_teacher_id_profiles_fkey(full_name))')
-        .eq('id', booking_id)
-        .single();
+  const hasEnoughGems = gemsBalance >= GEMS_PER_SESSION;
 
-      if (data) {
-        const cls = data.classes as Record<string, unknown> | undefined;
-        const teacher = cls?.profiles as Record<string, unknown> | undefined;
-        booking = {
-          id: data.id,
-          class: {
-            id: (cls?.id as string) || '',
-            title: (cls?.title as string) || 'Class',
-            teacher_name: (teacher?.full_name as string) || 'Teacher',
-            scheduled_at: new Date((cls?.start_time as string) || Date.now()),
-            duration: (cls?.duration_minutes as number) || 25,
-          },
-          payment: {
-            original_price: Number(data.original_price) || 0,
-            gems_used: data.gems_used || 0,
-            discount_amount: Number(data.gems_discount_amount) || 0,
-            final_price: Number(data.final_price) || 0,
-          },
-          confirmation_code: 'EC' + data.id.slice(0, 6).toUpperCase(),
-          booking_date: new Date(data.created_at),
-        };
-      }
-    } catch (err) {
-      console.error('Error fetching booking:', err);
-    }
+  if (done) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <CheckCircle className="w-16 h-16 text-success" />
+        <h2 className="text-2xl font-bold text-text-primary">Đặt lịch thành công!</h2>
+        <p className="text-text-muted">Đang chuyển đến trang lịch học...</p>
+      </div>
+    );
   }
 
-  const savings = booking.payment.discount_amount;
-  const savingsPercentage = (
-    (savings / booking.payment.original_price) *
-    100
-  ).toFixed(0);
-
   return (
-    <div className="container mx-auto py-12 px-4 max-w-3xl">
-      {/* Success Icon */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-green-500/20 rounded-full mb-4">
-          <CheckCircle className="h-12 w-12 text-green-400" />
-        </div>
-        <h1 className="text-3xl font-bold text-white mb-2">Booking Confirmed!</h1>
-        <p className="text-gray-400">
-          Your class has been successfully booked. We've sent a confirmation email to your
-          inbox.
-        </p>
-      </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-lg mx-auto py-10 px-4 space-y-6"
+    >
+      <h1 className="text-2xl font-bold text-text-primary">Xác nhận đặt lịch</h1>
 
-      {/* Confirmation Details */}
-      <Card className="mb-6">
-        <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-b border-gray-700/50">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Booking Details</CardTitle>
-            <div className="text-sm text-gray-400">
-              Confirmation: <span className="font-mono font-semibold text-purple-400">{booking.confirmation_code}</span>
+      <Card>
+        <CardHeader><CardTitle>Chi tiết buổi học</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-accent-primary/10 flex items-center justify-center flex-shrink-0">
+              <User className="w-5 h-5 text-accent-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-text-muted">Giáo viên</p>
+              <p className="font-semibold text-text-primary">
+                {teacherName ?? <span className="text-text-muted">Đang tải...</span>}
+              </p>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-6">
-          {/* Class Info */}
-          <div>
-            <h3 className="font-semibold text-xl mb-4">{booking.class.title}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                  <User className="h-5 w-5 text-purple-400" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">Teacher</div>
-                  <div className="font-medium">{booking.class.teacher_name}</div>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-blue-400" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">Date</div>
-                  <div className="font-medium">
-                    {booking.class.scheduled_at.toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </div>
-                </div>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-accent-primary/10 flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-5 h-5 text-accent-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-text-muted">Ngày học</p>
+              <p className="font-semibold text-text-primary">{date ? formatDateViVN(date) : '—'}</p>
+            </div>
+          </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-green-400" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">Time</div>
-                  <div className="font-medium">
-                    {booking.class.scheduled_at.toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                </div>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-accent-primary/10 flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5 text-accent-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-text-muted">Giờ học (25 phút)</p>
+              <p className="font-semibold text-text-primary">
+                {time} – {time ? addMinutes(time, 25) : '—'}
+              </p>
+            </div>
+          </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-yellow-400" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">Duration</div>
-                  <div className="font-medium">{booking.class.duration} minutes</div>
-                </div>
+          <div className="pt-2 border-t border-border-default flex items-center justify-between">
+            <div>
+              <p className="text-xs text-text-muted">Chi phí</p>
+              <div className="flex items-center gap-2 text-2xl font-bold text-accent-gem">
+                {GEMS_PER_SESSION} <GemImage size={24} />
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-text-muted">Số dư của bạn</p>
+              <div className="flex items-center gap-1 text-sm font-medium text-text-primary">
+                {gemsBalance} <GemImage size={14} />
               </div>
             </div>
           </div>
 
-          {/* Payment Summary */}
-          <div className="pt-6 border-t border-gray-700/50">
-            <h4 className="font-semibold mb-4">Payment Summary</h4>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Original Price</span>
-                <span className="font-medium">${booking.payment.original_price.toFixed(2)}</span>
-              </div>
-
-              {booking.payment.gems_used > 0 && (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400 flex items-center gap-1">
-                      <Gem className="h-4 w-4 text-purple-400" />
-                      Gems Used ({booking.payment.gems_used} gems)
-                    </span>
-                    <span className="text-purple-400 font-medium">
-                      -${booking.payment.discount_amount.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-green-400 font-medium">
-                        You saved {savingsPercentage}%
-                      </span>
-                      <span className="text-lg font-bold text-green-400">
-                        ${savings.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="flex justify-between pt-3 border-t border-gray-700/50">
-                <span className="font-semibold">Total Paid</span>
-                <span className="text-2xl font-bold text-green-400">
-                  ${booking.payment.final_price.toFixed(2)}
-                </span>
-              </div>
+          {!hasEnoughGems && (
+            <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-error text-sm">
+              Bạn không đủ gems. Cần {GEMS_PER_SESSION} gems, hiện có {gemsBalance}.
             </div>
-          </div>
+          )}
+
+          {error && (
+            <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-error text-sm">
+              {error}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Next Steps */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">What's Next?</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-3">
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-xs font-bold">1</span>
-              </div>
-              <div>
-                <div className="font-medium">Check Your Email</div>
-                <div className="text-sm text-gray-400">
-                  We've sent a confirmation email with your class details and meeting link.
-                </div>
-              </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-xs font-bold">2</span>
-              </div>
-              <div>
-                <div className="font-medium">Prepare for Class</div>
-                <div className="text-sm text-gray-400">
-                  Test your microphone and camera. Find a quiet space with good internet.
-                </div>
-              </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-xs font-bold">3</span>
-              </div>
-              <div>
-                <div className="font-medium">Join Your Class</div>
-                <div className="text-sm text-gray-400">
-                  You'll receive a reminder 15 minutes before class starts. Click the join
-                  button in your email or dashboard.
-                </div>
-              </div>
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Link href="/student/dashboard" className="flex-1">
-          <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-            <Home className="h-4 w-4" />
-            Go to Dashboard
-          </Button>
-        </Link>
-        <Link href={`/student/bookings/${booking.id}`} className="flex-1">
-          <Button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
-            View Booking Details
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
+      <div className="flex gap-3">
+        <Button variant="outline" className="flex-1" onClick={() => router.back()} disabled={isBooking}>
+          Quay lại
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={handleConfirm}
+          disabled={isBooking || !hasEnoughGems || !teacherId || !date || !time}
+        >
+          {isBooking ? (
+            <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Đang đặt...</>
+          ) : (
+            'Xác nhận & Đặt lịch'
+          )}
+        </Button>
       </div>
-
-      {/* Cancellation Policy */}
-      <div className="mt-8 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-        <h4 className="font-semibold text-yellow-400 mb-2">Cancellation Policy</h4>
-        <p className="text-sm text-gray-400">
-          You can cancel this booking up to 24 hours before the class starts for a full
-          refund. Cancellations made less than 24 hours before will receive a 50% refund.
-        </p>
-      </div>
-    </div>
+    </motion.div>
   );
 }

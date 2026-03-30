@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { withCsrfRouteProtection } from '@/lib/csrf.server';
+import { withCsrfRouteProtection } from '@/lib/csrf-server';
 
 /**
  * POST /api/payments/gem-purchase
@@ -27,7 +27,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
     }
 
     // Verify the purchase belongs to this user
-    const { data: purchase, error: purchaseError } = await supabase
+    const { data: purchase, error: purchaseError } = await (supabase as any)
       .from('gem_purchases')
       .select('id, user_id, gems_amount, bonus_gems, payment_status')
       .eq('id', purchase_id)
@@ -67,7 +67,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
       // Backend unavailable — create a simulated pending payment for dev/demo
       const simulatedUrl = `${return_url}&purchase_id=${purchase_id}&simulated=true`;
 
-      await supabase
+      await (supabase as any)
         .from('gem_purchases')
         .update({
           payment_status: 'processing',
@@ -89,7 +89,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
     }
 
     // Save payment URL to the purchase record
-    await supabase
+    await (supabase as any)
       .from('gem_purchases')
       .update({
         payment_status: 'processing',

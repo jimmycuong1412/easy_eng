@@ -49,7 +49,7 @@ export default function ClassEditor({ classId, onSuccess, onCancel }: ClassEdito
 
   const loadClassData = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('classes')
         .select('*')
         .eq('id', classId)
@@ -126,7 +126,7 @@ export default function ClassEditor({ classId, onSuccess, onCancel }: ClassEdito
         return;
       }
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('classes')
         .update(updates)
         .eq('id', classId);

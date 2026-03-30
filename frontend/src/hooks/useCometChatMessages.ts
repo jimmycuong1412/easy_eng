@@ -111,8 +111,9 @@ export function useCometChatMessages(userId: string): UseCometChatMessagesReturn
 
             logger.logMessageEvent({
               type: 'message_received',
-              messageId: message.getId(),
-              senderId: message.getSender().getUid(),
+              userId: message.getSender().getUid(),
+              messageType: 'text',
+              timestamp: new Date().toISOString(),
             });
           }
         },
@@ -188,8 +189,9 @@ export function useCometChatMessages(userId: string): UseCometChatMessagesReturn
 
         logger.logMessageEvent({
           type: 'message_sent',
-          messageId: sentMessage.getId(),
-          recipientId: userId,
+          userId,
+          messageType: 'text',
+          timestamp: new Date().toISOString(),
         });
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Failed to send message');
@@ -217,7 +219,7 @@ export function useCometChatMessages(userId: string): UseCometChatMessagesReturn
         CometChat.RECEIVER_TYPE.USER
       );
 
-      await CometChat.sendTypingIndicator(typingIndicator);
+      await (CometChat as any).sendTypingIndicator(typingIndicator);
     } catch (err) {
       logger.logError('useCometChatMessages sendTypingIndicator', err as Error);
     }
@@ -229,7 +231,7 @@ export function useCometChatMessages(userId: string): UseCometChatMessagesReturn
   }, []);
 
   return {
-    messages,
+    messages: messages as unknown as any[],
     isLoading,
     isSending,
     error,
