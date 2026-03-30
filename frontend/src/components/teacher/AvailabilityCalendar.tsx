@@ -92,6 +92,7 @@ export default function AvailabilityCalendar({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // ---- Past slots (derived from weekStart + current time) ----
 
@@ -286,6 +287,16 @@ export default function AvailabilityCalendar({
 
   // ---- Presets ----
 
+  const scrollToTime = useCallback((time: string) => {
+    if (!tableContainerRef.current) return;
+    const row = tableContainerRef.current.querySelector<HTMLElement>(
+      `button[data-time="${time}"]`
+    )?.closest('tr');
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
   const applyPreset = (presetName: keyof typeof PRESET_CONFIG) => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     const preset = PRESET_CONFIG[presetName];
@@ -301,6 +312,8 @@ export default function AvailabilityCalendar({
     }
     setSlotState(next);
     saveToDb(next);
+    // Scroll to the start of the preset time range
+    setTimeout(() => scrollToTime(preset.from), 50);
   };
 
   // ---- Render ----
@@ -395,7 +408,7 @@ export default function AvailabilityCalendar({
       <p className="text-xs text-slate-600">{t('calendar.shiftHint')}</p>
 
       {/* Grid */}
-      <div className="overflow-x-auto rounded-lg border border-white/10">
+      <div ref={tableContainerRef} className="overflow-x-auto rounded-lg border border-white/10">
         <table className="w-full min-w-[420px] border-collapse table-fixed">
           <thead>
             <tr>
@@ -419,6 +432,7 @@ export default function AvailabilityCalendar({
                 <td className="p-px text-right">
                   <button
                     onClick={() => handleRowHeader(time)}
+                    data-time={time}
                     className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors w-full leading-none"
                     title={t('calendar.rowSelectTitle')}
                   >
