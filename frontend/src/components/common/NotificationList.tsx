@@ -74,7 +74,7 @@ function getColorClasses(color?: string): string {
 /**
  * Get priority indicator
  */
-function getPriorityIndicator(priority: string): React.ReactNode {
+function getPriorityIndicator(priority: string | undefined): React.ReactNode {
   if (priority === 'urgent') {
     return <span className="absolute top-0 right-0 flex h-3 w-3">
       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
