@@ -1,6 +1,85 @@
-# Tasks: Teacher Schedule — Compact General View
+# Tasks: Notification System — Admin, Students & Teachers
 
-**Input**: Design documents from `/specs/001-english-learning-platform/`
+**Feature**: Notification System — Admin, Students & Teachers
+**Branch**: `001-english-learning-platform`
+**Plan**: plan.md | **Total tasks**: 22
+
+---
+
+## Phase 1 — Setup / Schema
+
+- [x] T001 Verify which of the 9 columns are missing from live `notifications` table by querying `information_schema.columns` for project `evrcwtsexlamacawofxo`
+- [x] T002 Create `supabase/migrations/034_notifications_schema_fix.sql` — ALTER TABLE notifications ADD COLUMN IF NOT EXISTS for: `action_url TEXT`, `action_label TEXT`, `related_id UUID`, `related_type TEXT`, `metadata JSONB DEFAULT '{}'`, `icon TEXT`, `color TEXT`, `priority TEXT DEFAULT 'normal' CHECK (priority IN ('low','normal','high','urgent'))`, `expires_at TIMESTAMPTZ`; add indexes `idx_notifications_related` and `idx_notifications_expires`
+- [x] T003 Apply migration 034 to live Supabase project `evrcwtsexlamacawofxo` via Supabase MCP `apply_migration` and confirm all 9 columns exist
+
+---
+
+## Phase 2 — DB Triggers
+
+- [x] T004 Create `supabase/migrations/035_notification_triggers.sql` with helper function `notify_user(p_user_id UUID, p_type TEXT, p_title TEXT, p_message TEXT, p_action_url TEXT DEFAULT NULL, p_related_id UUID DEFAULT NULL, p_related_type TEXT DEFAULT NULL, p_priority TEXT DEFAULT 'normal', p_metadata JSONB DEFAULT '{}')` that inserts one row into `notifications`
+- [x] T005 Add `notify_all_admins(p_type, p_title, p_message, p_action_url, p_related_id, p_related_type, p_priority)` in `supabase/migrations/035_notification_triggers.sql` — selects all `profiles.id WHERE role = 'admin'` and calls `notify_user` for each
+- [x] T006 Add trigger function `trg_booking_notifications()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER INSERT on `bookings`: notifies student with `booking_confirmed` AND teacher with `new_booking`
+- [x] T007 Add trigger function `trg_booking_cancelled()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER UPDATE OF status on `bookings` WHEN NEW.status='cancelled' AND OLD.status!='cancelled': notifies both student and teacher with `booking_cancelled`
+- [x] T008 Add trigger function `trg_gems_earned()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER INSERT on `gem_transactions` WHEN NEW.amount > 0: calls `notify_user(NEW.student_id, 'gems_earned', 'Gems Earned!', 'You earned ' || NEW.amount || ' gems')`
+- [x] T009 Add trigger function `trg_new_user_notify_admins()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER INSERT on `profiles`: calls `notify_all_admins` with type `system_announcement`
+- [x] T010 Add trigger function `trg_payout_request_notify_admins()` in `supabase/migrations/035_notification_triggers.sql` — fires AFTER INSERT on `payout_requests`: calls `notify_all_admins` with type `payment_received` and priority `high`
+- [x] T011 Wire all trigger functions to their tables in `supabase/migrations/035_notification_triggers.sql` with CREATE TRIGGER for: bookings INSERT, bookings UPDATE OF status, gem_transactions INSERT, profiles INSERT, payout_requests INSERT
+- [x] T012 Apply migration 035 to live Supabase project `evrcwtsexlamacawofxo` via Supabase MCP `apply_migration` and verify via SQL `SELECT trigger_name, event_object_table FROM information_schema.triggers WHERE trigger_schema = 'public'`
+
+---
+
+## Phase 3 — Hook and Realtime
+
+- [x] T013 [US2] Update `Notification` interface in `frontend/src/hooks/useRealtimeNotifications.ts` — make all 9 new columns optional; keep `priority` required; ensure `unreadCount` filters expired notifications
+- [x] T014 [US2] Verify realtime subscription block in `frontend/src/hooks/useRealtimeNotifications.ts` handles INSERT (prepend + increment unreadCount), UPDATE (patch read status), DELETE (filter out); ensure cleanup calls `supabase.removeChannel`
+
+---
+
+## Phase 4 — UI Integration
+
+- [x] T015 [US2] Import and render `NotificationBell` in `frontend/src/components/layout/RoleBasedNav.tsx` — place it in the desktop header row right of the user avatar dropdown trigger
+- [x] T016 [US2] Add Bell icon and notifications nav item in `frontend/src/components/layout/RoleBasedNav.tsx` mobile menu — href `/notifications`, roles: all
+- [x] T017 [US2] Add `notifications` i18n keys to `frontend/messages/en.json`: `nav.notifications`, top-level `notifications` object with `title`, `empty`, `markAllRead`, `viewAll`, `unreadCount`, and `types` object covering all 7 notification types
+- [x] T018 [US2] Add matching Vietnamese translations to `frontend/messages/vi.json` for all keys added in T017
+
+---
+
+## Phase 5 — Edge Function Deploy
+
+- [x] T019 [P] Deploy `supabase/functions/create-notification` to project `evrcwtsexlamacawofxo` using Supabase MCP `deploy_edge_function`
+- [x] T020 [P] Deploy `supabase/functions/send-booking-confirmation` to project `evrcwtsexlamacawofxo` using Supabase MCP `deploy_edge_function`
+- [x] T021 [P] Deploy `supabase/functions/send-class-reminder` to project `evrcwtsexlamacawofxo` using Supabase MCP `deploy_edge_function`
+
+---
+
+## Phase 6 — Smoke Test
+
+- [x] T022 Smoke test on `https://easyeng-dev.vercel.app`: book a class as student → bell shows badge for student AND teacher; cancel → both get cancelled notification; gem transaction → student gets gems_earned; admin sees system_announcement; click notification → marks read; mark all read → badge clears
+
+---
+
+## Dependencies
+
+```
+T001 -> T002 -> T003
+T003 -> T004 -> T005 -> T006 -> T007 -> T008 -> T009 -> T010 -> T011 -> T012
+T003 -> T013 -> T014
+T014 -> T015 -> T016
+T017 -> T018
+T019, T020, T021 [parallel]
+T012 + T016 + T021 -> T022
+```
+
+## Parallel opportunities
+
+- T019, T020, T021 — deploy 3 edge functions simultaneously
+- T013-T014 can run in parallel with T017-T018
+
+## MVP scope
+
+Phases 1-4 only (T001-T018): DB schema + triggers + hook fix + UI bell
+All three roles get real-time in-app notifications without edge function deploys.
+Edge functions (T019-T021) add email/push as a separate increment.
 **Prerequisites**: plan.md ✅, research.md ✅, quickstart.md ✅
 **Tests**: Not requested — manual test checklist in quickstart.md
 
@@ -165,7 +244,7 @@ T014–T016 (polish + build check)
 - [x] T017 Run `npx tsc --noEmit` in `frontend/` and fix any TypeScript errors from Phases 3 and 4
 - [x] T018 [P] Smoke-test on local dev server (`localhost:3000`): verify past slots locked, prev-week disabled, English labels correct, Vietnamese labels correct, preset buttons work
 - [x] T019 Commit: `git add frontend/src/components/teacher/AvailabilityCalendar.tsx frontend/src/app/[locale]/teacher/schedule/page.tsx frontend/messages/en.json frontend/messages/vi.json` and push to `001-english-learning-platform`
-- [x] T020 [P] Deploy to Vercel (`vercel --prod` from `frontend/`) and verify on easyeng-test.vercel.app/en/teacher/schedule and /vi/teacher/schedule
+- [x] T020 [P] Deploy to Vercel (`vercel --prod` from `frontend/`) and verify on easyeng-dev.vercel.app/en/teacher/schedule and /vi/teacher/schedule
 
 ---
 

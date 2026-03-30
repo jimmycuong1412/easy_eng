@@ -1,137 +1,177 @@
-# Implementation Plan: Teacher Schedule — Compact General View
+# Implementation Plan: Notification System — Admin, Students & Teachers
 
-**Branch**: `001-english-learning-platform` | **Date**: 2026-03-25 | **Spec**: specs/001-english-learning-platform/spec.md
-**Input**: Feature specification from `/specs/001-english-learning-platform/spec.md`
+**Branch**: `001-english-learning-platform` | **Date**: 2026-03-30 | **Spec**: specs/001-english-learning-platform/spec.md
+**Input**: Wire up the existing notification infrastructure so all three roles receive real-time in-app notifications for key platform events.
 
 ## Summary
 
-Redesign the teacher availability calendar (`AvailabilityCalendar` component + `TeacherSchedulePage`) to use a compact, dense grid layout so the full 06:00–22:00 × 7-day week fits on a single screen without vertical scrolling. Slots become small, colour-coded squares; hour labels appear only on the `:00` row; controls are tightened into a single toolbar row. No backend changes required.
+The notification system is **partially built** — the DB table, Realtime hook, UI components, and Edge Functions all exist in the codebase but nothing is connected:
+- `NotificationBell` is not rendered in any nav/layout
+- `useRealtimeNotifications` expects 9 extra DB columns missing from the live `notifications` table
+- No DB triggers fire `INSERT INTO notifications` on any platform event  
+- Edge functions (`create-notification`, `send-booking-confirmation`, `send-class-reminder`) are not deployed
+
+This plan wires all four layers together: DB schema → DB triggers → realtime hook → UI bell.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.4, Next.js 14.2
-**Primary Dependencies**: React 18, Tailwind CSS, next-intl, framer-motion, lucide-react
-**Storage**: N/A (UI-only change)
-**Testing**: Vitest + React Testing Library
-**Target Platform**: Web (desktop-first, responsive)
-**Project Type**: Web application — teacher-facing schedule management page
-**Performance Goals**: 60 fps interactions, no layout shift on render
-**Constraints**: Must preserve all existing functionality (past-slot locking, i18n, shift-click range, bulk actions, presets, auto-save). Must not break mobile view.
-**Scale/Scope**: Single component + single page file
+**Language/Version**: TypeScript 5.4, Next.js 14.2 App Router, Deno (Edge Functions)
+**Primary Dependencies**: `@supabase/supabase-js` v2, Zustand 4.5, Framer Motion 11, lucide-react, next-intl
+**Storage**: Supabase PostgreSQL — `notifications` table (exists, needs 9 additional columns via migration)
+**Testing**: Playwright e2e
+**Target Platform**: Web — all three role dashboards
+**Performance Goals**: Realtime delivery ≤500ms p95; unread count query <50ms
+**Constraints**: No new npm packages; notification logic lives in DB triggers + edge functions
+**Scale/Scope**: 2 DB migrations + 4 edge function deployments + nav integration + i18n keys
 
 ## Constitution Check
 
 | Principle | Gate | Status |
 |-----------|------|--------|
-| I. Code Quality | Functions ≤50 lines, no duplication | ✅ Refactoring only |
-| III. UX Consistency | Role-specific dashboard, clear feedback | ✅ Improves density while preserving all states |
-| IV. Performance | 60fps, no N+1 queries | ✅ Same data layer, fewer DOM nodes |
-| VII. UI Design Excellence | Clean layouts, visual hierarchy, responsive | ✅ Core goal of this feature |
+| I. Code Quality | Hook/components already written; only wiring needed | ✅ |
+| III. UX Consistency | Role-specific types; unified bell UI across all roles | ✅ |
+| V. Role-Based Access | RLS on notifications table (users see only their own) | ✅ |
+| VI. Currency Integrity | gems_earned notification uses existing gem_transactions | ✅ |
+| VII. UI Design Excellence | Bell dropdown matches dark theme; animated badge | ✅ |
 
 ## Project Structure
 
-### Documentation (this feature)
+### Source Code (affected files)
 
 ```text
-specs/001-english-learning-platform/
-├── plan.md              ← this file
-├── research.md          ← Phase 0 output
-├── data-model.md        ← N/A (no DB changes)
-├── quickstart.md        ← Phase 1 output
-└── tasks.md             ← Phase 2 output (/speckit.tasks)
-```
+supabase/
+├── migrations/
+│   ├── 034_notifications_schema_fix.sql   ← NEW: add 9 missing columns
+│   └── 035_notification_triggers.sql      ← NEW: DB triggers for events
+└── functions/
+    ├── create-notification/               ← EXISTING: deploy
+    ├── send-booking-confirmation/         ← EXISTING: deploy
+    ├── send-class-reminder/               ← EXISTING: deploy
+    └── notify-gem-expiration/             ← EXISTING: deploy
 
-### Source Code
-
-```text
 frontend/src/
-├── components/teacher/
-│   └── AvailabilityCalendar.tsx   ← PRIMARY: compact grid redesign
-└── app/[locale]/teacher/schedule/
-    └── page.tsx                   ← SECONDARY: consolidate cards, tighten layout
+├── components/layout/
+│   ├── NotificationBell.tsx              ← EXISTING: minor userId prop fix
+│   └── RoleBasedNav.tsx                  ← MODIFY: add <NotificationBell />
+├── hooks/
+│   └── useRealtimeNotifications.ts       ← MODIFY: align type with actual DB schema
+├── app/[locale]/notifications/page.tsx   ← EXISTING: add nav link from dashboards
+└── messages/
+    ├── en.json                            ← ADD: notifications.* i18n keys
+    └── vi.json                            ← ADD: matching Vietnamese keys
 ```
 
 ## Phase 0: Research
 
-### Decision 1 — Cell density target
+### Decision 1 — Schema alignment
 
-**Decision**: 12px tall cells (`h-3`, `py-px`) — smallest touch-able size on desktop without losing click accuracy.
-**Rationale**: 32 rows × 12px + borders = ~416px — fits comfortably inside a 1080p screen with header and nav. Current `h-6` (24px) renders at ~800px requiring scroll.
-**Alternatives considered**: 16px (`h-4`) — still fits but leaves unused space; 8px — too small to click accurately.
+**Decision**: Migrate live DB to add 9 missing columns rather than downgrade the hook type.
+**Rationale**: Hook, NotificationBell, NotificationList, and the notifications page all rely on the richer schema (`action_url`, `priority`, `metadata`, etc). Migrating the DB is 1 SQL file; simplifying the hook requires rewriting 4 files.
+**Missing columns**: `action_url`, `action_label`, `related_id`, `related_type`, `metadata`, `icon`, `color`, `priority`, `expires_at`
 
-### Decision 2 — Time label strategy
+### Decision 2 — Trigger strategy
 
-**Decision**: Show the hour label only on `:00` rows (e.g., "06", "07"). The `:30` row shows no label (empty `td`).
-**Rationale**: Halves the visual noise in the time column while still giving enough anchoring context. Teachers scan by hour, not by half-hour.
-**Alternatives considered**: Full "06:30" labels on every row — current approach, too noisy; no labels at all — hard to orient.
+**Decision**: PostgreSQL triggers for synchronous events; Edge Functions for scheduled/async.
 
-### Decision 3 — Controls layout
+| Event | Mechanism | Recipients |
+|-------|-----------|-----------|
+| `bookings` INSERT (confirmed) | DB trigger | Student (`booking_confirmed`) + Teacher (`new_booking`) |
+| `bookings` UPDATE → cancelled | DB trigger | Other party (`booking_cancelled`) |
+| `gem_transactions` INSERT (amount > 0) | DB trigger | Student (`gems_earned`) |
+| Class starting in 15 min | Edge Function cron | Student + Teacher (`class_reminder`) |
+| `profiles` INSERT (new user) | DB trigger | All admins (`system_announcement`) |
+| `payout_requests` INSERT | DB trigger | All admins (`payment_received`) |
 
-**Decision**: Consolidate preset buttons + bulk-action bar + legend into a 2-row compact toolbar above the grid. Presets and bulk actions share the same row (presets hidden when bulk bar is active).
-**Rationale**: Reduces vertical space above grid from ~100px to ~50px.
-**Alternatives considered**: Sidebar layout — adds horizontal complexity; Collapsible panel — adds cognitive load.
+### Decision 3 — Bell placement
 
-### Decision 4 — Page layout
+**Decision**: Add `<NotificationBell />` inside `RoleBasedNav.tsx` — shared nav across all role dashboards.
+**Rationale**: Single integration point; all roles already use `RoleBasedNav`.
 
-**Decision**: Merge week navigation bar and calendar into a single `Card`. Remove separate `Card` wrapper from `AvailabilityCalendar` section.
-**Rationale**: Eliminates double-border and double-padding. The nav + grid form a single cohesive widget.
-**Alternatives considered**: Keep separate cards — more vertical space wasted.
+### Decision 4 — Admin fan-out
+
+**Decision**: DB function `notify_all_admins()` loops over `profiles WHERE role = 'admin'`.
+**Rationale**: Multiple admins may exist; all need platform-level alerts.
+
+### Decision 5 — i18n
+
+**Decision**: Store English title/message in DB; translate notification `type` in the UI using `t('notifications.types.{type}')`.
+**Rationale**: Notification created at server time (no locale); translated at read time in browser.
 
 ## Phase 1: Design
 
-### Component Changes — `AvailabilityCalendar.tsx`
+### Migration 034 — Schema fix
 
-#### Grid cells
+```sql
+ALTER TABLE notifications
+  ADD COLUMN IF NOT EXISTS action_url     TEXT,
+  ADD COLUMN IF NOT EXISTS action_label   TEXT,
+  ADD COLUMN IF NOT EXISTS related_id     UUID,
+  ADD COLUMN IF NOT EXISTS related_type   TEXT,
+  ADD COLUMN IF NOT EXISTS metadata       JSONB DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS icon           TEXT,
+  ADD COLUMN IF NOT EXISTS color          TEXT,
+  ADD COLUMN IF NOT EXISTS priority       TEXT DEFAULT 'normal'
+    CHECK (priority IN ('low','normal','high','urgent')),
+  ADD COLUMN IF NOT EXISTS expires_at     TIMESTAMPTZ;
 
-```
-Before: h-6 p-0.5  (24px tall cell)
-After:  h-3 p-px   (12px tall cell)
-```
-
-#### Time column
-
-- Width: `w-14` → `w-8`
-- Show label only when `time.endsWith(':00')` — display just the hour number (`"06"`, `"07"`, …)
-- `:30` rows: empty `<td>` (no button, no label)
-- Row header click still works for `:30` rows (invisible hit area via `w-full h-full`)
-
-#### Header row
-
-- Day name cells: `p-1` → `p-0.5`, `text-xs` unchanged
-- Column header button: `py-1` → `py-0.5`
-
-#### Toolbar layout
-
-```
-Row 1: [Preset buttons] ── OR ── [Bulk action bar when selection active]
-Row 2: [Legend + saving indicator]   (compact inline)
-Row 3: [Shift-click hint]            (xs text, single line)
+CREATE INDEX IF NOT EXISTS idx_notifications_related
+  ON notifications(related_type, related_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_expires
+  ON notifications(expires_at) WHERE expires_at IS NOT NULL;
 ```
 
-All three rows use `text-xs`, tight `gap-1.5`.
+### Migration 035 — Triggers
 
-#### Table wrapper
+```sql
+-- Helper: insert one notification
+CREATE OR REPLACE FUNCTION notify_user(
+  p_user_id UUID, p_type TEXT, p_title TEXT, p_message TEXT,
+  p_action_url TEXT DEFAULT NULL, p_related_id UUID DEFAULT NULL,
+  p_related_type TEXT DEFAULT NULL, p_priority TEXT DEFAULT 'normal',
+  p_metadata JSONB DEFAULT '{}'
+) RETURNS VOID AS $$ ... $$;
 
+-- Helper: notify all admins
+CREATE OR REPLACE FUNCTION notify_all_admins(
+  p_type TEXT, p_title TEXT, p_message TEXT, ...
+) RETURNS VOID AS $$ ... $$;
+
+-- Triggers: booking_confirmed, booking_cancelled,
+--           gems_earned, new_user, payout_request
 ```
-Before: overflow-x-auto rounded-lg border border-white/10
-        min-w-[560px]
-After:  overflow-x-auto rounded-lg border border-white/10
-        min-w-[420px]
+
+### i18n contract (`en.json` additions)
+
+```json
+{
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all as read",
+    "viewAll": "View all",
+    "unreadCount": "{{count}} unread",
+    "types": {
+      "booking_confirmed": "Booking Confirmed",
+      "booking_cancelled": "Booking Cancelled",
+      "new_booking": "New Booking",
+      "class_reminder": "Class Starting Soon",
+      "gems_earned": "Gems Earned! 💎",
+      "system_announcement": "New User Registered",
+      "payment_received": "Payout Request Received"
+    }
+  }
+}
 ```
 
-### Page Changes — `page.tsx`
+### Quickstart test checklist
 
-- Remove the separate `<Card>` that wraps only `<AvailabilityCalendar>` — the calendar's own table border provides visual containment.
-- Week navigation card: `p-4` → `p-3`, remove `motion.div` delay on calendar (0.2 → 0).
-- `max-w-5xl` → `max-w-4xl` (tighter column focus).
-
-### Unchanged
-
-- All logic: `pastSlots`, `handleSlotClick`, `bulkOpen/Close`, `applyPreset`, `saveToDb`, `scheduleSave`
-- All i18n: `t()` calls and translation keys
-- All styling variables: colour palette, border colours, hover states
-- Booked/past/selected/open cell classes — only height/padding change
-
-## quickstart.md
-
-See `quickstart.md` for before/after visual reference and manual test checklist.
+- [ ] NotificationBell renders in nav for all 3 roles
+- [ ] Unread count badge shows; disappears when all read
+- [ ] Student gets `booking_confirmed` after booking
+- [ ] Teacher gets `new_booking` when student books
+- [ ] Both get `booking_cancelled` on cancellation
+- [ ] Student gets `gems_earned` after gem transaction
+- [ ] Admin gets notification on new user registration
+- [ ] Admin gets notification on payout request
+- [ ] Realtime: notification appears in <2s without page refresh
+- [ ] `/en/notifications` page shows full paginated history

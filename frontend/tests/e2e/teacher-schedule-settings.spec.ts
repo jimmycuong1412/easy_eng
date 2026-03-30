@@ -7,11 +7,11 @@ import { test, expect } from '@playwright/test';
  * grid of 25-min time slots from 00:00 to 23:45. Teachers can click any cell
  * to open a Class Details dialog and manage their availability.
  *
- * Production URL: https://easyeng-test.vercel.app
+ * Production URL: https://easyeng-dev.vercel.app
  * Teacher account: jimmycuong1414@gmail.com
  */
 
-const BASE_URL = 'https://easyeng-test.vercel.app';
+const BASE_URL = 'https://easyeng-dev.vercel.app';
 const TEACHER_EMAIL = 'jimmycuong1414@gmail.com';
 const TEACHER_PASSWORD = '12345678';
 
