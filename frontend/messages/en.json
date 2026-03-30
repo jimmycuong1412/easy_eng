@@ -298,7 +298,21 @@
       "upcoming": "Upcoming",
       "booked": "Booked",
       "completed": "Completed",
-      "available": "Available"
+      "available": "Available",
+      "disabled": "Disabled"
+    },
+    "saveBar": {
+      "unsavedChanges": "You have unsaved changes",
+      "save": "Save",
+      "discard": "Discard",
+      "saving": "Saving...",
+      "saved": "Saved!"
+    },
+    "stats": {
+      "total": "Total",
+      "available": "Open",
+      "booked": "Booked",
+      "disabled": "Disabled"
     },
     "slotDetail": {
       "title": "Class Details",
@@ -322,6 +336,14 @@
       "saved": "Saved",
       "saveBtn": "Save Slot Settings"
     },
+    "batchAction": {
+      "label": "{count} slot selected",
+      "label_plural": "{count} slots selected",
+      "enableSelected": "Enable Selected",
+      "disableSelected": "Disable Selected",
+      "clear": "Clear Selection"
+    },
+    "settingsHint": "Configure availability",
     "days": {
       "sun": "Sun",
       "mon": "Mon",
