@@ -83,6 +83,15 @@ function getTimeRange(anchorKey: string, clickedKey: string): string[] {
   return VISIBLE_SLOTS.slice(start, end + 1).map((t) => `${anchorDay}:${t}`);
 }
 
+/** Convert "HH:MM" to 12-hour AM/PM label parts */
+function formatSlotLabel(hhmm: string): { time: string; period: 'AM' | 'PM' } {
+  const hour = parseInt(hhmm.slice(0, 2), 10);
+  const minute = hhmm.slice(3, 5);
+  const period = hour < 12 ? 'AM' : 'PM';
+  const h = hour % 12 === 0 ? 12 : hour % 12;
+  return { time: `${h}:${minute}`, period };
+}
+
 // ---- Component ----
 
 interface AvailabilityCalendarProps {
@@ -518,23 +527,22 @@ export default function AvailabilityCalendar({
                       : 'border-t border-dashed border-white/[0.06]'
                   }
                 >
-                  {/* Time label — only show on :00 rows */}
-                  <td className="p-px text-right">
-                    {time.endsWith(':00') ? (
-                      <button
-                        onClick={() => handleRowHeader(time)}
-                        className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors w-full leading-none"
-                        title={t('calendar.rowSelectTitle')}
-                      >
-                        {time.slice(0, 2)}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleRowHeader(time)}
-                        className="w-full h-full opacity-0 cursor-pointer"
-                        aria-label={time}
-                      />
-                    )}
+                  {/* Time label — every row, 12-hour AM/PM */}
+                  <td className="p-px">
+                    {(() => {
+                      const { time: t12, period } = formatSlotLabel(time);
+                      return (
+                        <button
+                          onClick={() => handleRowHeader(time)}
+                          className="flex flex-col items-end justify-center w-full h-full gap-px text-slate-500 hover:text-slate-300 transition-colors"
+                          title={t('calendar.rowSelectTitle')}
+                          aria-label={`${t12} ${period}`}
+                        >
+                          <span className="text-[7px] font-mono leading-none">{t12}</span>
+                          <span className="text-[6px] leading-none opacity-70">{period}</span>
+                        </button>
+                      );
+                    })()}
                   </td>
 
                   {/* Slot cells */}

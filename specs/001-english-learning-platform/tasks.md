@@ -1,63 +1,58 @@
-# Tasks: UI Cleanup & Scaling — AvailabilityCalendar
+# Tasks: Time Column AM/PM Labels — AvailabilityCalendar
 
-**Feature**: Teacher Schedule — compact grid, dashed half-hour borders, dead i18n key removal
+**Feature**: Show 12-hour AM/PM label on every slot row in the teacher schedule grid
 **Branch**: `001-english-learning-platform`
 **Plan**: `specs/001-english-learning-platform/plan.md`
 **Research**: `specs/001-english-learning-platform/research.md`
-**Total tasks**: 10
+**Total tasks**: 5
 
 ## Format: `[ID] [P?] [Story?] Description`
 
 - **[P]**: Can run in parallel (different files, no shared dependencies)
-- **[US1]**: UI Cleanup & Scaling story
+- **[US1]**: AM/PM labels story
 
 ---
 
-## Phase 1: Setup (No-dependency pre-checks)
+## Phase 1: Setup (Pre-check)
 
-**Purpose**: Confirm current state before touching files — prevents editing the wrong values.
+**Purpose**: Confirm exact current code before editing — prevents editing the wrong section.
 
-- [X] T001 [P] Read `frontend/messages/en.json` lines 288–360 and confirm exact keys under `teacherSchedule.settingsBtn` and `teacherSchedule.availSettings` exist and are unreferenced
-- [X] T002 [P] Read `frontend/src/components/teacher/AvailabilityCalendar.tsx` lines 488–560 and confirm current values: `max-h-[400px] overflow-y-auto` on grid container, `h-3` on cell class, border ternary `border-t border-white/10` / `border-b border-white/5`
+- [X] T001 Read `frontend/src/components/teacher/AvailabilityCalendar.tsx` lines 519–540 and confirm: (a) the `{/* Time label */}` comment, (b) the `time.endsWith(':00')` branch showing `{time.slice(0, 2)}`, (c) the `opacity-0` button on `:30` rows
 
-**Checkpoint**: Both tasks confirm the exact strings to replace — proceed to Phase 2 only after both read tasks confirm expected values.
-
----
-
-## Phase 2: Foundational (i18n cleanup — unblocks type-check)
-
-**Purpose**: Remove dead translation keys from both message files.
-
-- [X] T003 [P] [US1] Remove `"settingsBtn": "Slot Settings"` line and the entire `"availSettings": { ... }` block from `frontend/messages/en.json`
-- [X] T004 [P] [US1] Remove `"settingsBtn"` line and the entire `"availSettings"` block from `frontend/messages/vi.json`
-
-**Checkpoint**: Run `npm run type-check` from `frontend/` — should still pass (keys were unused).
+**Checkpoint**: Values confirmed — proceed to Phase 2.
 
 ---
 
-## Phase 3: User Story 1 — Grid Compaction & Border Styles (Priority: P1) 🎯 MVP
+## Phase 2: Foundational (Helper function — must exist before rendering change)
 
-**Goal**: Compact the 48-row grid from `h-3` (12px) to `h-2` (8px) cells so the full week is visible without vertical scrolling; add solid/dashed border distinction between `:00` hour rows and `:30` half-hour rows; remove the now-unnecessary `max-h` scroll cap.
+**Purpose**: Add `formatSlotLabel` pure helper. This must be in place before the render change in Phase 3.
 
-**Independent Test**: Navigate to `/en/teacher/schedule` at 1080p — all 48 rows from `12:00 AM` to `11:30 PM` are visible without scrolling. `:00` rows have a solid top border; `:30` rows have a dashed top border. Clicking/dragging cells and Save/Discard still work.
+- [X] T002 [US1] Add `formatSlotLabel` helper function to `frontend/src/components/teacher/AvailabilityCalendar.tsx` just above the `// ---- Component ----` comment (after the existing `getTimeRange` function). The function signature and body are: `function formatSlotLabel(hhmm: string): { time: string; period: 'AM' | 'PM' } { const hour = parseInt(hhmm.slice(0, 2), 10); const minute = hhmm.slice(3, 5); const period = hour < 12 ? 'AM' : 'PM'; const h = hour % 12 === 0 ? 12 : hour % 12; return { time: \`${h}:${minute}\`, period }; }`
+
+**Checkpoint**: File saves with no TypeScript error — `formatSlotLabel('00:00')` would return `{ time: '12:00', period: 'AM' }`.
+
+---
+
+## Phase 3: User Story 1 — Render AM/PM labels on every row (Priority: P1) 🎯 MVP
+
+**Goal**: Replace the conditional `opacity-0` time label with a visible two-line stacked AM/PM label (`"12:00"` / `"AM"`) on every row — both `:00` and `:30` — right-aligned within the `w-8` time column.
+
+**Independent Test**: Open `/en/teacher/schedule` — every one of the 48 rows has a readable label. `:00` rows show e.g. `12:00 / AM`; `:30` rows show e.g. `12:30 / AM`. Labels are right-aligned and visually flush with their grid row boundary. Clicking a label still selects the entire time row across all days.
 
 ### Implementation for User Story 1
 
-- [X] T005 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` ~line 492: change `<div ref={tableContainerRef} className="max-h-[400px] overflow-y-auto">` → `<div ref={tableContainerRef}>` (removes scroll cap; outer wrapper keeps horizontal scroll)
-- [X] T006 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` ~lines 514–519: update `<tr>` className ternary from `time.endsWith(':00') ? 'border-t border-white/10' : 'border-b border-white/5 last:border-0'` → `time.endsWith(':00') ? 'border-t border-white/15' : 'border-t border-dashed border-white/[0.06]'` (solid hour boundary, dashed half-hour subdivision)
-- [X] T007 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` ~line 548: change `let cellClass = 'w-full h-3 rounded-sm transition-colors border ';` → `let cellClass = 'w-full h-2 rounded-sm transition-colors border ';` (8px cell height fits 48 rows in one viewport)
+- [X] T003 [US1] In `frontend/src/components/teacher/AvailabilityCalendar.tsx` replace the entire time column `<td>` block (the `{/* Time label — only show on :00 rows */}` section, lines ~521–538) with the new rendering that calls `formatSlotLabel(time)` and renders a `<button>` with two stacked `<span>` elements: top span `className="text-[7px] font-mono leading-none"` showing `t12`, bottom span `className="text-[6px] leading-none opacity-70"` showing `period`. The button itself: `className="flex flex-col items-end justify-center w-full h-full gap-px text-slate-500 hover:text-slate-300 transition-colors"`, `onClick={() => handleRowHeader(time)}`, `title={t('calendar.rowSelectTitle')}`, `aria-label={\`${t12} ${period}\`}`. Wrap the `<td>` in `className="p-px"` (remove `text-right` since flexbox handles alignment).
 
-**Checkpoint**: Full 48-row grid visible without scrolling; solid/dashed borders visible; cells still clickable and saveable.
+**Checkpoint**: Every row in the grid has a visible two-line label; clicking the label selects the row.
 
 ---
 
 ## Phase 4: Polish & Validation
 
-**Purpose**: Verify type safety, lint cleanliness, and visual correctness after all edits.
+**Purpose**: Verify type safety and visual correctness.
 
-- [X] T008 From `frontend/`, run `npm run type-check` — must exit 0 with no errors
-- [X] T009 From `frontend/`, run `npm run lint` — must exit 0 with no warnings or errors
-- [ ] T010 Visual check: open `/en/teacher/schedule`, log in as teacher (`jimmycuong1414@gmail.com / 12345678`), confirm: (a) full 48-row grid visible without vertical scroll at 1080p, (b) `:00` rows have solid top border, (c) `:30` rows have dashed top border, (d) clicking a cell toggles open/closed, (e) drag-select works, (f) Save/Discard buttons appear after changes and save correctly
+- [X] T004 From `frontend/`, run `npm run type-check` — must exit 0 with no errors
+- [ ] T005 Visual check in browser at `/en/teacher/schedule`: (a) all 48 rows show a label, (b) labels read `12:00`/`AM`, `12:30`/`AM`, …, `12:00`/`PM`, …, `11:30`/`PM`, (c) labels right-aligned to time column, (d) clicking a label still highlights full row across all days
 
 ---
 
@@ -65,44 +60,34 @@
 
 ### Phase Dependencies
 
-- **Phase 1** (T001–T002): No dependencies — run in parallel immediately
-- **Phase 2** (T003–T004): No dependency on Phase 1 — can run in parallel with Phase 1 (different files)
-- **Phase 3** (T005–T007): Depends on Phase 1 confirmation; T006 depends on T005, T007 depends on T006 (same file — sequential edits)
-- **Phase 4** (T008–T010): Depends on Phase 2 + Phase 3 complete
+- **Phase 1** (T001): Immediate — read-only confirmation
+- **Phase 2** (T002): No blocker — can start alongside T001 (same file but read-only T001 doesn't block T002)
+- **Phase 3** (T003): Depends on T002 complete (`formatSlotLabel` must exist before the render calls it)
+- **Phase 4** (T004–T005): Depends on T003 complete
 
-### Parallel Opportunities
+### Execution sequence
 
 ```
-Immediately parallelizable (different files, zero risk):
-  T001 (read en.json)
-  T002 (read AvailabilityCalendar.tsx)
-  T003 (edit en.json)
-  T004 (edit vi.json)
-
-Sequential within Phase 3 (same file):
-  T005 → T006 → T007
-
-Sequential validation (depends on all edits complete):
-  T008 → T009 → T010
+T001 (confirm current code)
+T002 (add formatSlotLabel helper)       ← can start while T001 is reading
+T003 (update <td> render)               ← must follow T002
+T004 (type-check)                       ← must follow T003
+T005 (visual verify)                    ← must follow T004
 ```
-
-**Note**: T005, T006, T007 all edit `AvailabilityCalendar.tsx` — batch into one edit session to avoid conflicts.
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (all tasks — this is a small, self-contained feature)
+### MVP (all tasks — tiny single-file change)
 
-1. Complete Phase 1 (T001–T002) — confirm current values
-2. Complete Phase 2 (T003–T004) — clean dead i18n keys in parallel
-3. Complete Phase 3 (T005–T007) — compact grid + dashed borders (batch into one edit)
-4. **STOP and VALIDATE** Phase 4 (T008–T010)
-5. Commit and push
+1. T001 — read and confirm
+2. T002 — add helper
+3. T003 — update render (depends on T002)
+4. T004–T005 — validate
 
 ### Notes
 
-- T005, T006, T007 touch the same file — batch them in one edit session to avoid conflicts
-- Phase 1 read tasks can be skipped if you have confirmed the values from a recent file read
-- After T007, the `scrollToTime` preset scroll logic works harmlessly (scroll distance will be near-zero on a fully-visible grid)
-- No DB migrations, no Supabase changes, no API changes required
+- T002 and T003 both edit `AvailabilityCalendar.tsx` — batch into one edit session
+- No i18n keys, no DB migrations, no API changes
+- `formatSlotLabel` is module-private (not exported) — no impact analysis needed
