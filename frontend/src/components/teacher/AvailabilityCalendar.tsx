@@ -336,6 +336,7 @@ export default function AvailabilityCalendar({
     }
     setSlotState(next);
     checkUnsaved(next);
+    setTimeout(() => scrollToTime(preset.from), 50);
   };
 
   // ---- Unsaved change count (for display) ----
@@ -346,6 +347,19 @@ export default function AvailabilityCalendar({
     }
     return count;
   }, [slotState]);
+
+  // ---- Grid container ref (for scroll-to-time) ----
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTime = useCallback((time: string) => {
+    const container = tableContainerRef.current;
+    if (!container) return;
+    const row = container.querySelector<HTMLElement>(`[data-time="${time}"]`);
+    if (!row) return;
+    const containerTop = container.getBoundingClientRect().top;
+    const rowTop = row.getBoundingClientRect().top;
+    container.scrollTop += rowTop - containerTop - 16; // 16px top padding
+  }, []);
 
   // ---- Render ----
   if (loading) {
@@ -475,7 +489,7 @@ export default function AvailabilityCalendar({
 
       {/* Grid — scrollable with sticky header */}
       <div className="overflow-x-auto rounded-lg border border-white/10">
-        <div className="max-h-[400px] overflow-y-auto">
+        <div ref={tableContainerRef} className="max-h-[400px] overflow-y-auto">
           <table className="w-full min-w-[420px] border-collapse table-fixed select-none">
             <thead className="sticky top-0 z-10 bg-[#0d1f3c]">
               <tr>
@@ -497,6 +511,7 @@ export default function AvailabilityCalendar({
               {VISIBLE_SLOTS.map((time) => (
                 <tr
                   key={time}
+                  data-time={time}
                   className={
                     time.endsWith(':00')
                       ? 'border-t border-white/10'
