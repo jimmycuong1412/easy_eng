@@ -534,7 +534,7 @@ export default function AvailabilityCalendar({
                       return (
                         <button
                           onClick={() => handleRowHeader(time)}
-                          className="flex flex-col items-end justify-center w-full h-full gap-px text-slate-500 hover:text-slate-300 transition-colors"
+                          className="flex flex-col items-end justify-center w-full h-full gap-px text-white/70 hover:text-white transition-colors"
                           title={t('calendar.rowSelectTitle')}
                           aria-label={`${t12} ${period}`}
                         >
