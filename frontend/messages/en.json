@@ -371,7 +371,12 @@
         "past": "Past"
       },
       "saving": "Saving...",
-      "shiftHint": "Shift+click to select range — click column/row header to select full day/time",
+      "shiftHint": "Click and drag or Shift+click to select multiple slots",
+      "saveChanges": "Save Changes",
+      "discardChanges": "Discard",
+      "unsavedChanges": "{count} unsaved change(s)",
+      "saved": "Saved!",
+      "saveError": "Failed to save. Please try again.",
       "bookedTooltip": "Already booked by a student",
       "pastTooltip": "Cannot modify past slots",
       "openTooltip": "Open — click to close",

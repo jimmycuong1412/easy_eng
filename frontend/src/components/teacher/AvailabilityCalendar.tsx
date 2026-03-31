@@ -1,17 +1,28 @@
 'use client';
 
 /**
- * AvailabilityCalendar — Teacher slot management (simplified)
+ * AvailabilityCalendar — Teacher slot management
  *
- * 06:00–22:00 × Mon–Sun grid (32 slots × 7 days = 224 cells).
- * Features: multi-select, shift-click range, row/col header select,
- * bulk open/close, quick presets, 800ms debounce auto-save.
+ * Full 00:00–23:30 × Mon–Sun grid (48 slots × 7 days = 336 cells).
+ *
+ * Features:
+ *  - Batch save: explicit "Save Changes" / "Discard" — no auto-save debounce
+ *  - Click-and-drag OR Shift+click multi-select
+ *  - Scrollable grid (max-h-400) with sticky day-header row
+ *  - High-contrast state colours: emerald open, slate closed, blue booked,
+ *    amber selected, diagonal-stripe past
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
 
 // ---- Constants ----
 
@@ -19,7 +30,7 @@ import { Loader2 } from 'lucide-react';
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const ORDERED_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun display order
 
-/** Visible slots: 06:00–21:30 (32 slots, 30-min intervals) */
+/** Full 24-hour slots at 30-min intervals (48 total) */
 const VISIBLE_SLOTS: string[] = (() => {
   const slots: string[] = [];
   for (let mins = 0; mins < 24 * 60; mins += 30) {
@@ -32,9 +43,9 @@ const VISIBLE_SLOTS: string[] = (() => {
 
 /** Preset config — keys are fixed English identifiers; labels come from translations */
 const PRESET_CONFIG = {
-  workHours: { days: [1, 2, 3, 4, 5],          from: '08:00', to: '17:00' },
-  morning:   { days: [0, 1, 2, 3, 4, 5, 6],    from: '06:00', to: '12:00' },
-  evening:   { days: [0, 1, 2, 3, 4, 5, 6],    from: '18:00', to: '22:00' },
+  workHours: { days: [1, 2, 3, 4, 5],       from: '08:00', to: '17:00' },
+  morning:   { days: [0, 1, 2, 3, 4, 5, 6], from: '06:00', to: '12:00' },
+  evening:   { days: [0, 1, 2, 3, 4, 5, 6], from: '18:00', to: '22:00' },
 } as const;
 
 // ---- Helpers ----
@@ -85,17 +96,27 @@ export default function AvailabilityCalendar({
 }: AvailabilityCalendarProps) {
   const t = useTranslations('teacherSchedule');
   const supabase = createClient();
+
+  // ---- Core slot state ----
   const [slotState, setSlotState] = useState<Record<string, boolean>>({});
+  const savedStateRef = useRef<Record<string, boolean>>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // ---- Selection state ----
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [anchorKey, setAnchorKey] = useState<string | null>(null);
+
+  // ---- Drag state ----
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartKeyRef = useRef<string | null>(null);
+
+  // ---- Loading / saving / error ----
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // ---- Past slots (derived from weekStart + current time) ----
-
   const pastSlots = useMemo<Set<string>>(() => {
     if (!_weekStart) return new Set<string>();
     const now = new Date();
@@ -104,28 +125,31 @@ export default function AvailabilityCalendar({
     const past = new Set<string>();
 
     for (const d of ORDERED_DAYS) {
-      // Mon=offset 0, Tue=1, ..., Sun=6
-      const offset = d === 0 ? 6 : d - 1;
+      const offset = d === 0 ? 6 : d - 1; // Mon=0 offset … Sun=6 offset
       const date = new Date(_weekStart);
       date.setDate(_weekStart.getDate() + offset);
       const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
       if (dateStart < todayStart) {
-        // Entire past day — all slots locked
-        VISIBLE_SLOTS.forEach((t) => past.add(`${d}:${t}`));
+        VISIBLE_SLOTS.forEach((slot) => past.add(`${d}:${slot}`));
       } else if (dateStart.getTime() === todayStart.getTime()) {
-        // Today — lock slots at or before current time
-        VISIBLE_SLOTS.forEach((t) => {
-          const [h, m] = t.split(':').map(Number);
-          if (h * 60 + m <= nowMins) past.add(`${d}:${t}`);
+        VISIBLE_SLOTS.forEach((slot) => {
+          const [h, m] = slot.split(':').map(Number);
+          if (h * 60 + m <= nowMins) past.add(`${d}:${slot}`);
         });
       }
     }
     return past;
   }, [_weekStart]);
 
-  // ---- Load ----
+  // ---- Unsaved change detection ----
+  const checkUnsaved = useCallback((s: Record<string, boolean>) => {
+    setHasUnsavedChanges(
+      JSON.stringify(s) !== JSON.stringify(savedStateRef.current)
+    );
+  }, []);
 
+  // ---- Load ----
   const load = useCallback(async () => {
     try {
       const {
@@ -139,7 +163,9 @@ export default function AvailabilityCalendar({
         .eq('teacher_id', user.id);
 
       if (overridesError) throw overridesError;
-      setSlotState(buildDefaultState(overrides ?? []));
+      const built = buildDefaultState(overrides ?? []);
+      savedStateRef.current = built;
+      setSlotState(built);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
@@ -151,8 +177,14 @@ export default function AvailabilityCalendar({
     load();
   }, [load]);
 
-  // ---- Save ----
+  // ---- Document-level mouseup to end drag ----
+  useEffect(() => {
+    const onMouseUp = () => setIsDragging(false);
+    document.addEventListener('mouseup', onMouseUp);
+    return () => document.removeEventListener('mouseup', onMouseUp);
+  }, []);
 
+  // ---- Save / Discard ----
   const saveToDb = useCallback(
     async (state: Record<string, boolean>) => {
       setSaving(true);
@@ -187,50 +219,57 @@ export default function AvailabilityCalendar({
             .insert(rows);
           if (insertErr) throw insertErr;
         }
+
+        // On success — update saved reference
+        savedStateRef.current = { ...state };
+        setHasUnsavedChanges(false);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Failed to save');
+        setError(
+          err instanceof Error ? err.message : t('calendar.saveError')
+        );
       } finally {
         setSaving(false);
       }
     },
-    [supabase]
+    [supabase, t]
   );
 
-  const scheduleSave = useCallback(
-    (newState: Record<string, boolean>) => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(() => {
-        saveToDb(newState);
-      }, 800);
-    },
-    [saveToDb]
-  );
+  const handleSave = useCallback(() => {
+    saveToDb(slotState);
+  }, [saveToDb, slotState]);
 
-  // ---- Slot click ----
+  const handleDiscard = useCallback(() => {
+    setSlotState({ ...savedStateRef.current });
+    setHasUnsavedChanges(false);
+    setSelected(new Set());
+  }, []);
 
+  // ---- Slot click (single toggle + shift-click range) ----
   const handleSlotClick = (key: string, e: React.MouseEvent) => {
-    if (bookedSlots.has(key)) return;
-    if (pastSlots.has(key)) return;
+    if (bookedSlots.has(key) || pastSlots.has(key)) return;
 
     if (e.shiftKey && anchorKey) {
-      // Range selection — add to selected (excluding past), do not save yet
-      const range = getTimeRange(anchorKey, key).filter((k) => !pastSlots.has(k));
+      // Shift+click range selection
+      const range = getTimeRange(anchorKey, key).filter(
+        (k) => !pastSlots.has(k) && !bookedSlots.has(k)
+      );
       setSelected((prev) => new Set(Array.from(prev).concat(range)));
       return;
     }
 
-    // Single toggle with debounce save
+    // Single toggle
     const newState = { ...slotState, [key]: !slotState[key] };
     setSlotState(newState);
-    scheduleSave(newState);
+    checkUnsaved(newState);
     setAnchorKey(key);
     setSelected(new Set());
   };
 
-  // ---- Column / Row headers ----
-
+  // ---- Column / Row header selection ----
   const handleColumnHeader = (dayIndex: number) => {
-    const dayKeys = VISIBLE_SLOTS.map((t) => `${dayIndex}:${t}`).filter(
+    const dayKeys = VISIBLE_SLOTS.map((slot) => `${dayIndex}:${slot}`).filter(
       (k) => !bookedSlots.has(k) && !pastSlots.has(k)
     );
     setSelected((prev) => {
@@ -259,65 +298,56 @@ export default function AvailabilityCalendar({
     });
   };
 
-  // ---- Bulk actions ----
-
+  // ---- Bulk actions (defer to explicit Save) ----
   const bulkOpen = () => {
     if (selected.size === 0) return;
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     const next = { ...slotState };
     selected.forEach((k) => {
       if (!bookedSlots.has(k) && !pastSlots.has(k)) next[k] = true;
     });
     setSlotState(next);
+    checkUnsaved(next);
     setSelected(new Set());
-    saveToDb(next);
   };
 
   const bulkClose = () => {
     if (selected.size === 0) return;
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     const next = { ...slotState };
     selected.forEach((k) => {
       if (!bookedSlots.has(k) && !pastSlots.has(k)) next[k] = false;
     });
     setSlotState(next);
+    checkUnsaved(next);
     setSelected(new Set());
-    saveToDb(next);
   };
 
-  // ---- Presets ----
-
-  const scrollToTime = useCallback((time: string) => {
-    if (!tableContainerRef.current) return;
-    const row = tableContainerRef.current.querySelector<HTMLElement>(
-      `button[data-time="${time}"]`
-    )?.closest('tr');
-    if (row) {
-      row.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
-
+  // ---- Presets (defer to explicit Save) ----
   const applyPreset = (presetName: keyof typeof PRESET_CONFIG) => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     const preset = PRESET_CONFIG[presetName];
     const presetSlots = VISIBLE_SLOTS.filter(
-      (t) => t >= preset.from && t < preset.to
+      (slot) => slot >= preset.from && slot < preset.to
     );
     const next = { ...slotState };
     for (const day of preset.days) {
-      for (const t of presetSlots) {
-        const key = `${day}:${t}`;
+      for (const slot of presetSlots) {
+        const key = `${day}:${slot}`;
         if (!bookedSlots.has(key)) next[key] = true;
       }
     }
     setSlotState(next);
-    saveToDb(next);
-    // Scroll to the start of the preset time range
-    setTimeout(() => scrollToTime(preset.from), 50);
+    checkUnsaved(next);
   };
 
-  // ---- Render ----
+  // ---- Unsaved change count (for display) ----
+  const unsavedCount = useMemo(() => {
+    let count = 0;
+    for (const key of Object.keys(slotState)) {
+      if (slotState[key] !== savedStateRef.current[key]) count++;
+    }
+    return count;
+  }, [slotState]);
 
+  // ---- Render ----
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -328,6 +358,7 @@ export default function AvailabilityCalendar({
 
   return (
     <div className="space-y-3">
+
       {/* Quick presets — hidden when slots are selected (swaps with bulk bar) */}
       {selected.size === 0 && (
         <div className="flex flex-wrap gap-2">
@@ -335,7 +366,7 @@ export default function AvailabilityCalendar({
             <button
               key={key}
               onClick={() => applyPreset(key)}
-              className="px-2.5 py-1 rounded-md text-xs border border-white/20 text-slate-300 hover:border-[#3B82F6]/60 hover:text-[#3B82F6] transition-colors"
+              className="px-2.5 py-1 rounded-md text-xs border border-white/20 text-slate-300 hover:border-blue-500/60 hover:text-blue-400 transition-colors"
             >
               {t(`calendar.presets.${key}`)}
             </button>
@@ -351,7 +382,7 @@ export default function AvailabilityCalendar({
           </span>
           <button
             onClick={bulkOpen}
-            className="px-2.5 py-0.5 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30"
+            className="px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30"
           >
             {t('calendar.bulkOpen')}
           </button>
@@ -370,33 +401,68 @@ export default function AvailabilityCalendar({
         </div>
       )}
 
-      {/* Legend + saving indicator */}
+      {/* Legend */}
       <div className="flex flex-wrap gap-3 text-xs text-slate-500">
         <span className="flex items-center gap-1">
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-green-500/30 border border-green-500/50" />
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500/70 border border-emerald-400" />
           {t('calendar.legend.open')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-white/5 border border-white/20" />
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-slate-700/50 border border-slate-600/40" />
           {t('calendar.legend.closed')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#3B82F6]/30 border border-[#3B82F6]/50" />
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-blue-500/70 border border-blue-400" />
           {t('calendar.legend.booked')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-yellow-400/20 border border-yellow-400/50" />
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-amber-400/80 border border-amber-300" />
           {t('calendar.legend.selected')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-slate-800/60 border border-slate-700/30 opacity-40" />
+          <span
+            className="inline-block w-2.5 h-2.5 rounded-sm border border-slate-700/20 opacity-60"
+            style={{
+              background:
+                'repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,0.06) 3px,rgba(255,255,255,0.06) 6px)',
+            }}
+          />
           {t('calendar.legend.past')}
         </span>
-        {saving && (
-          <span className="flex items-center gap-1 text-blue-400">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            {t('calendar.saving')}
+      </div>
+
+      {/* Save / Discard bar */}
+      <div className="flex items-center gap-2 min-h-[28px]">
+        {saveSuccess && !hasUnsavedChanges && (
+          <span className="text-xs text-emerald-400 font-medium">
+            ✓ {t('calendar.saved')}
           </span>
+        )}
+        {hasUnsavedChanges && (
+          <>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-medium transition-colors"
+            >
+              {saving ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Save className="h-3 w-3" />
+              )}
+              {t('calendar.saveChanges')}
+            </button>
+            <button
+              onClick={handleDiscard}
+              disabled={saving}
+              className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-60 text-slate-300 text-xs transition-colors"
+            >
+              {t('calendar.discardChanges')}
+            </button>
+            <span className="text-xs text-slate-500">
+              {t('calendar.unsavedChanges', { count: unsavedCount })}
+            </span>
+          </>
         )}
       </div>
 
@@ -407,87 +473,132 @@ export default function AvailabilityCalendar({
       {/* Tip */}
       <p className="text-xs text-slate-600">{t('calendar.shiftHint')}</p>
 
-      {/* Grid */}
-      <div ref={tableContainerRef} className="overflow-x-auto rounded-lg border border-white/10">
-        <table className="w-full min-w-[420px] border-collapse table-fixed">
-          <thead>
-            <tr>
-              <th className="w-8 p-1 border-b border-white/10" />
-              {ORDERED_DAYS.map((d) => (
-                <th key={d} className="p-0.5 border-b border-white/10">
-                  <button
-                    onClick={() => handleColumnHeader(d)}
-                    className="w-full text-xs font-medium text-slate-400 hover:text-white transition-colors py-0.5"
-                    title={t('calendar.colSelectTitle')}
-                  >
-                    {t(`days.${DAY_KEYS[d]}`)}
-                  </button>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {VISIBLE_SLOTS.map((time) => (
-              <tr key={time} className="border-b border-white/5 last:border-0">
-                <td className="p-px text-right">
-                  <button
-                    onClick={() => handleRowHeader(time)}
-                    data-time={time}
-                    className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors w-full leading-none"
-                    title={t('calendar.rowSelectTitle')}
-                  >
-                    {time}
-                  </button>
-                </td>
-                {ORDERED_DAYS.map((d) => {
-                  const key = `${d}:${time}`;
-                  const isBooked = bookedSlots.has(key);
-                  const isPast = pastSlots.has(key);
-                  const isOpen = slotState[key] ?? false;
-                  const isSelected = selected.has(key);
-
-                  let cellClass =
-                    'w-full h-3 rounded-sm transition-colors border ';
-                  if (isPast) {
-                    cellClass +=
-                      'bg-slate-800/60 border-slate-700/30 cursor-not-allowed opacity-40';
-                  } else if (isBooked) {
-                    cellClass +=
-                      'bg-[#3B82F6]/30 border-[#3B82F6]/50 cursor-not-allowed';
-                  } else if (isSelected) {
-                    cellClass +=
-                      'bg-yellow-400/20 border-yellow-400/50 cursor-pointer';
-                  } else if (isOpen) {
-                    cellClass +=
-                      'bg-green-500/20 border-green-500/40 hover:bg-green-500/30 cursor-pointer';
-                  } else {
-                    cellClass +=
-                      'bg-white/5 border-white/10 hover:border-white/25 cursor-pointer';
-                  }
-
-                  return (
-                    <td key={d} className="p-px">
-                      <button
-                        className={cellClass}
-                        onClick={(e) => handleSlotClick(key, e)}
-                        disabled={isBooked || isPast}
-                        title={
-                          isPast
-                            ? t('calendar.pastTooltip')
-                            : isBooked
-                            ? t('calendar.bookedTooltip')
-                            : isOpen
-                            ? t('calendar.openTooltip')
-                            : t('calendar.closedTooltip')
-                        }
-                      />
-                    </td>
-                  );
-                })}
+      {/* Grid — scrollable with sticky header */}
+      <div className="overflow-x-auto rounded-lg border border-white/10">
+        <div className="max-h-[400px] overflow-y-auto">
+          <table className="w-full min-w-[420px] border-collapse table-fixed select-none">
+            <thead className="sticky top-0 z-10 bg-[#0d1f3c]">
+              <tr>
+                <th className="w-8 p-1 border-b border-white/10" />
+                {ORDERED_DAYS.map((d) => (
+                  <th key={d} className="p-0.5 border-b border-white/10">
+                    <button
+                      onClick={() => handleColumnHeader(d)}
+                      className="w-full text-xs font-medium text-slate-400 hover:text-white transition-colors py-0.5"
+                      title={t('calendar.colSelectTitle')}
+                    >
+                      {t(`days.${DAY_KEYS[d]}`)}
+                    </button>
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {VISIBLE_SLOTS.map((time) => (
+                <tr
+                  key={time}
+                  className={
+                    time.endsWith(':00')
+                      ? 'border-t border-white/10'
+                      : 'border-b border-white/5 last:border-0'
+                  }
+                >
+                  {/* Time label — only show on :00 rows */}
+                  <td className="p-px text-right">
+                    {time.endsWith(':00') ? (
+                      <button
+                        onClick={() => handleRowHeader(time)}
+                        className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors w-full leading-none"
+                        title={t('calendar.rowSelectTitle')}
+                      >
+                        {time.slice(0, 2)}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRowHeader(time)}
+                        className="w-full h-full opacity-0 cursor-pointer"
+                        aria-label={time}
+                      />
+                    )}
+                  </td>
+
+                  {/* Slot cells */}
+                  {ORDERED_DAYS.map((d) => {
+                    const key = `${d}:${time}`;
+                    const isBooked = bookedSlots.has(key);
+                    const isPast = pastSlots.has(key);
+                    const isOpen = slotState[key] ?? false;
+                    const isSelected = selected.has(key);
+
+                    let cellClass = 'w-full h-3 rounded-sm transition-colors border ';
+                    if (isPast) {
+                      cellClass +=
+                        'border-slate-700/20 cursor-not-allowed opacity-60';
+                    } else if (isBooked) {
+                      cellClass +=
+                        'bg-blue-500/70 border-blue-400 cursor-not-allowed';
+                    } else if (isSelected) {
+                      cellClass +=
+                        'bg-amber-400/80 border-amber-300 cursor-pointer';
+                    } else if (isOpen) {
+                      cellClass +=
+                        'bg-emerald-500/70 border-emerald-400 hover:bg-emerald-500/80 cursor-pointer';
+                    } else {
+                      cellClass +=
+                        'bg-slate-700/50 border-slate-600/40 hover:bg-slate-600/60 cursor-pointer';
+                    }
+
+                    return (
+                      <td key={d} className="p-px">
+                        <button
+                          className={cellClass}
+                          style={
+                            isPast
+                              ? {
+                                  background:
+                                    'repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,0.06) 3px,rgba(255,255,255,0.06) 6px)',
+                                }
+                              : undefined
+                          }
+                          onClick={(e) => handleSlotClick(key, e)}
+                          onMouseDown={(e) => {
+                            if (isBooked || isPast) return;
+                            e.preventDefault(); // prevent text selection
+                            setIsDragging(true);
+                            dragStartKeyRef.current = key;
+                            setSelected((prev) => new Set(Array.from(prev).concat([key])));
+                            setAnchorKey(key);
+                          }}
+                          onMouseEnter={() => {
+                            if (!isDragging || !dragStartKeyRef.current) return;
+                            if (isBooked || isPast) return;
+                            const range = getTimeRange(
+                              dragStartKeyRef.current,
+                              key
+                            ).filter(
+                              (k) => !pastSlots.has(k) && !bookedSlots.has(k)
+                            );
+                            setSelected(new Set(range));
+                          }}
+                          disabled={isBooked || isPast}
+                          title={
+                            isPast
+                              ? t('calendar.pastTooltip')
+                              : isBooked
+                              ? t('calendar.bookedTooltip')
+                              : isOpen
+                              ? t('calendar.openTooltip')
+                              : t('calendar.closedTooltip')
+                          }
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

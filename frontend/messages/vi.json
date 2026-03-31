@@ -371,7 +371,12 @@
         "past": "Đã qua"
       },
       "saving": "Đang lưu...",
-      "shiftHint": "Shift+click để chọn dải — nhấn tiêu đề cột/hàng để chọn cả ngày/giờ",
+      "shiftHint": "Kéo chuột hoặc Shift+nhấp để chọn nhiều ô",
+      "saveChanges": "Lưu thay đổi",
+      "discardChanges": "Huỷ",
+      "unsavedChanges": "{count} thay đổi chưa lưu",
+      "saved": "Đã lưu!",
+      "saveError": "Lưu thất bại. Vui lòng thử lại.",
       "bookedTooltip": "Đã có học viên đặt",
       "pastTooltip": "Không thể sửa slot đã qua",
       "openTooltip": "Đang mở — nhấn để đóng",
