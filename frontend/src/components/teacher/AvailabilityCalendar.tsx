@@ -538,7 +538,7 @@ export default function AvailabilityCalendar({
                           title={t('calendar.rowSelectTitle')}
                           aria-label={`${t12} ${period}`}
                         >
-                          <span className="text-[9px] font-mono leading-none">{t12}</span>
+                          <span className="text-[11px] font-mono leading-none">{t12}</span>
                           <span className="text-[8px] leading-none opacity-70">{period}</span>
                         </button>
                       );
