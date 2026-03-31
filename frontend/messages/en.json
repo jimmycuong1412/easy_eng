@@ -288,7 +288,6 @@
   "teacherSchedule": {
     "title": "Teaching Schedule",
     "subtitle": "Manage your schedule and teaching hours",
-    "settingsBtn": "Slot Settings",
     "addSlotBtn": "Add Slot",
     "prevWeek": "Prev week",
     "nextWeek": "Next week",
@@ -324,17 +323,6 @@
       "emptySlot": "Empty Slot",
       "emptySlotDesc": "Students can book this time slot",
       "deleteSlot": "Delete Slot"
-    },
-    "availSettings": {
-      "title": "Availability Settings",
-      "subtitle": "Toggle 30-minute slots. Students only see enabled slots.",
-      "close": "Close",
-      "noSlots": "No slots yet. Add an availability range first.",
-      "enableAll": "Enable all",
-      "disableAll": "Disable all",
-      "saving": "Saving...",
-      "saved": "Saved",
-      "saveBtn": "Save Slot Settings"
     },
     "batchAction": {
       "label": "{count} slot selected",

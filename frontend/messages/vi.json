@@ -288,7 +288,6 @@
   "teacherSchedule": {
     "title": "Lịch dạy",
     "subtitle": "Quản lý lịch trình và thời gian dạy của bạn",
-    "settingsBtn": "Cài đặt khung giờ",
     "addSlotBtn": "Thêm khung giờ",
     "prevWeek": "Tuần trước",
     "nextWeek": "Tuần sau",
@@ -324,17 +323,6 @@
       "emptySlot": "Khung giờ trống",
       "emptySlotDesc": "Học viên có thể đặt lịch học vào khung giờ này",
       "deleteSlot": "Xóa khung giờ"
-    },
-    "availSettings": {
-      "title": "Cài đặt khung giờ dạy",
-      "subtitle": "Bật/tắt từng khung giờ 30 phút. Học viên chỉ thấy các slot đang bật.",
-      "close": "Đóng",
-      "noSlots": "Chưa có khung giờ. Thêm availability range trước.",
-      "enableAll": "Bật tất cả",
-      "disableAll": "Tắt tất cả",
-      "saving": "Đang lưu...",
-      "saved": "✓ Đã lưu",
-      "saveBtn": "Lưu cài đặt slot"
     },
     "batchAction": {
       "label": "{count} ô đã chọn",

@@ -489,7 +489,7 @@ export default function AvailabilityCalendar({
 
       {/* Grid — scrollable with sticky header */}
       <div className="overflow-x-auto rounded-lg border border-white/10">
-        <div ref={tableContainerRef} className="max-h-[400px] overflow-y-auto">
+        <div ref={tableContainerRef}>
           <table className="w-full min-w-[420px] border-collapse table-fixed select-none">
             <thead className="sticky top-0 z-10 bg-[#0d1f3c]">
               <tr>
@@ -514,8 +514,8 @@ export default function AvailabilityCalendar({
                   data-time={time}
                   className={
                     time.endsWith(':00')
-                      ? 'border-t border-white/10'
-                      : 'border-b border-white/5 last:border-0'
+                      ? 'border-t border-white/15'
+                      : 'border-t border-dashed border-white/[0.06]'
                   }
                 >
                   {/* Time label — only show on :00 rows */}
@@ -545,7 +545,7 @@ export default function AvailabilityCalendar({
                     const isOpen = slotState[key] ?? false;
                     const isSelected = selected.has(key);
 
-                    let cellClass = 'w-full h-3 rounded-sm transition-colors border ';
+                    let cellClass = 'w-full h-2 rounded-sm transition-colors border ';
                     if (isPast) {
                       cellClass +=
                         'border-slate-700/20 cursor-not-allowed opacity-60';
