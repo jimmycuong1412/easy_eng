@@ -502,7 +502,7 @@ export default function AvailabilityCalendar({
           <table className="w-full min-w-[420px] border-collapse table-fixed select-none">
             <thead className="sticky top-0 z-10 bg-[#0d1f3c]">
               <tr>
-                <th className="w-8 p-1 border-b border-white/10" />
+                <th className="w-14 p-1 border-b border-white/10" />
                 {ORDERED_DAYS.map((d) => (
                   <th key={d} className="p-0.5 border-b border-white/10">
                     <button
@@ -538,8 +538,8 @@ export default function AvailabilityCalendar({
                           title={t('calendar.rowSelectTitle')}
                           aria-label={`${t12} ${period}`}
                         >
-                          <span className="text-[7px] font-mono leading-none">{t12}</span>
-                          <span className="text-[6px] leading-none opacity-70">{period}</span>
+                          <span className="text-[9px] font-mono leading-none">{t12}</span>
+                          <span className="text-[8px] leading-none opacity-70">{period}</span>
                         </button>
                       );
                     })()}
