@@ -1,131 +1,118 @@
-# Research: Teacher Schedule — Compact General View
+# Research: Multi-Role Notification System
 
-## Cell Density
-
-**Decision**: `h-3` (12px) cells
-- 32 rows × 12px = 384px grid body — fits a 900px screen with header/nav
-- Minimum comfortable click target on desktop mouse: ~10px
-- Mobile: handled by `overflow-x-auto` scroll, density acceptable
-
-## Hour-only Label Strategy
-
-**Decision**: Show label only on `:00` rows
-- Pattern: `time.endsWith(':00') ? time.slice(0,2) : ''`
-- `:30` rows still receive a transparent row-select button for range selection
-- Visual anchor spacing: 1 label per 24px (2 × 12px rows) — readable
-
-## Toolbar Consolidation
-
-**Decision**: Swap presets row ↔ bulk-action row (mutually exclusive display)
-- `selected.size > 0` → show bulk-action bar, hide presets
-- `selected.size === 0` → show presets row
-- Saves ~36px when no selection active (no double-row)
-
-## Layout Consolidation
-
-**Decision**: Single `Card` for nav + calendar
-- Week nav becomes the `CardContent` header section (border-bottom separator)
-- Calendar grid directly below, no extra Card wrapper
-- Net saving: ~32px padding + ~2px double border
+**Feature**: Robust multi-role notification system (bell, realtime, email, favorites, batching, preferences, admin broadcast, toast)
+**Branch**: `001-english-learning-platform`
 
 ---
 
-# Research: Teacher Schedule Polish — Past Slot Locking + i18n
+## Summary of Existing Infrastructure
+
+### What Already Exists (DO NOT RE-IMPLEMENT)
+
+| Component | Location | Status |
+|-----------|----------|--------|
+| `notifications` table (full schema) | `supabase/migrations/033_notifications.sql` | Complete |
+| Schema fix migration | `supabase/migrations/034_notifications_schema_fix.sql` | Applied |
+| DB triggers: booking created/cancelled, gems earned, new user, payout | `supabase/migrations/035_notification_triggers.sql` | Complete |
+| `useRealtimeNotifications` hook | `frontend/src/hooks/useRealtimeNotifications.ts` | Complete |
+| `NotificationBell` component | `frontend/src/components/layout/NotificationBell.tsx` | In RoleBasedNav |
+| `NotificationList` component | `frontend/src/components/common/NotificationList.tsx` | Complete |
+| `NotificationCenter` (Zustand toast system) | `frontend/src/components/common/NotificationCenter.tsx` | Complete |
+| Notifications page | `frontend/src/app/[locale]/notifications/page.tsx` | Complete |
+| `send-email` Edge Function | `supabase/functions/send-email/` | Complete |
+| `create-notification` Edge Function | `supabase/functions/create-notification/` | Complete |
+| `send-booking-confirmation` Edge Function | `supabase/functions/send-booking-confirmation/` | Complete |
+| `send-class-reminder` Edge Function | `supabase/functions/send-class-reminder/` | Complete |
+| Local notification preference toggles (UI only) | `frontend/src/app/[locale]/notifications/page.tsx` | localStorage only |
+
+### What Is Missing (MUST BUILD)
+
+| Gap | Description | Priority |
+|-----|-------------|----------|
+| `teacher_favorites` table | No DB table or triggers for student-to-teacher favorites | P1 |
+| `slot_opened` notification type | Alert subscribed students when favorite teacher opens new slots | P1 |
+| `teacher_favorited` notification type | Alert teacher when a student favorites them | P1 |
+| `new_booking` type in CHECK constraint | Used in trigger but missing from schema CHECK — schema bug | P1 (bug) |
+| Batching / anti-fatigue logic | Multiple `slot_opened` events in short window group into one notification | P1 |
+| `notification_preferences` DB table | Currently only localStorage toggles; preferences not persisted server-side | P2 |
+| Admin "System Broadcast" UI | Admin composes and sends `system_announcement` to all users or segments | P2 |
+| High-frequency cancellation alerts | Admin notified when cancellations exceed threshold | P3 |
 
 ---
 
-## Decision 1: Past Slot Detection Approach
+## Decision Log
 
-**Decision**: Compute `pastSlots` inside `AvailabilityCalendar` from the existing `weekStart` prop using `useMemo`.
+### Decision 1: Realtime Transport — Supabase Realtime (Keep)
+- **Decision**: Keep Supabase Realtime (`postgres_changes` on `notifications` table)
+- **Rationale**: Zero additional infrastructure; already deployed; sub-200ms latency for inserts; already in `useRealtimeNotifications`
+- **Alternatives considered**: Socket.io server, Pusher Channels
+- **Why rejected**: Would require separate WS server or paid Pusher plan; Supabase Realtime already solves the problem
 
-**Rationale**:
-- `weekStart` prop is already passed from schedule page but was previously ignored.
-- With `weekStart` we can compute the actual calendar date for each column: `offset = d === 0 ? 6 : d - 1`.
-- Reuses the same `isSlotPast(date, time)` logic already on the student booking page.
-- No new props or API changes needed.
+### Decision 2: Batching — DB-Level Deduplication Window
+- **Decision**: PostgreSQL upsert with `last_batched_at` + `count` stored in `metadata`, using a 15-minute window keyed on `(user_id, type, related_id)` via a new `notify_user_batched()` helper
+- **Rationale**: Pure server-side; no separate job queue; Supabase Realtime fires UPDATE events (handled by existing hook) when a batch record is updated
+- **Alternatives considered**: Client-side coalescing, cron-job batching, Redis deduplication
+- **Why rejected**: Client-side loses state on page reload; cron too slow; no Redis on Supabase
 
-**Alternatives considered**:
-- Pass `pastSlots: Set<string>` from parent — adds complexity without benefit; parent has no reason to know about time semantics.
-- Block at API save-time — better as server-side defence but UX fix belongs in the UI.
+### Decision 3: Notification Preferences — New DB Table
+- **Decision**: New `notification_preferences` table with one row per user and a JSONB `settings` column
+- **Rationale**: Preferences must survive across devices and sessions; localStorage breaks multi-device usage
+- **Alternatives considered**: `profiles.notification_settings JSONB` column
+- **Why rejected**: Wider `profiles` row; separate table is cleaner and independently RLS-gated
 
-**Implementation sketch**:
-```typescript
-const pastSlots = useMemo<Set<string>>(() => {
-  const now = new Date();
-  const today = new Date(now); today.setHours(0, 0, 0, 0);
-  const past = new Set<string>();
-  for (const d of ORDERED_DAYS) {
-    const offset = d === 0 ? 6 : d - 1;
-    const date = new Date(weekStart);
-    date.setDate(weekStart.getDate() + offset);
-    if (date < today) {
-      VISIBLE_SLOTS.forEach(t => past.add(`${d}:${t}`));
-    } else if (date.toDateString() === now.toDateString()) {
-      const nowMins = now.getHours() * 60 + now.getMinutes();
-      VISIBLE_SLOTS.forEach(t => {
-        const [h, m] = t.split(':').map(Number);
-        if (h * 60 + m <= nowMins) past.add(`${d}:${t}`);
-      });
-    }
-  }
-  return past;
-}, [weekStart]);
+### Decision 4: Admin Broadcast UI — New Admin Page
+- **Decision**: New page at `frontend/src/app/[locale]/admin/notifications/page.tsx` with a form calling the existing `create-notification` Edge Function with `target: "all" | "students" | "teachers"`
+- **Rationale**: Re-uses existing Edge Function; admin-only route; follows existing admin page patterns
+- **Alternatives considered**: Supabase Dashboard SQL editor, new dedicated Edge Function
+- **Why rejected**: SQL editor not user-friendly; new Edge Function unnecessary
+
+### Decision 5: Favorites — New `teacher_favorites` Table
+- **Decision**: New `teacher_favorites (id, student_id, teacher_id, created_at)` table with RLS
+- **Rationale**: No existing favorites infrastructure; clean separation from bookings; efficient reverse-direction queries (who favorited this teacher?)
+- **Alternatives considered**: `profiles.favorite_teachers UUID[]` array column
+- **Why rejected**: Array column makes reverse queries expensive
+
+### Decision 6: `slot_opened` Trigger — On Teacher Availability Insert
+- **Decision**: DB trigger on `teacher_availability INSERT` that calls `notify_user_batched()` for all students with that teacher in their favorites
+- **Rationale**: Fully server-side; fires immediately when teacher saves slots
+- **Alternatives considered**: Edge Function polling, application-layer dispatch
+- **Why rejected**: Polling introduces latency; application layer misses direct DB inserts
+
+---
+
+## Architecture Overview (New Work Only)
+
 ```
+[Student] favorites teacher → teacher_favorites INSERT
+                              └→ trg_teacher_favorited() → notify teacher (teacher_favorited)
 
-Past slots: distinct visual (dimmed/striped), cannot be toggled or selected.
+[Teacher] saves availability → teacher_availability INSERT
+                               └→ trg_slot_opened() → query teacher_favorites
+                                    └→ notify_user_batched() for each subscribed student (slot_opened)
 
----
+[Admin Dashboard /admin/notifications]
+  → compose broadcast form → POST create-notification Edge Function (service role)
+                             └→ INSERT notifications for all / segment
 
-## Decision 2: i18n Strategy for AvailabilityCalendar
-
-**Decision**: Use `useTranslations('teacherSchedule')` directly inside `AvailabilityCalendar`. Add a `calendar` sub-key.
-
-**Rationale**: Component is `'use client'`, so `useTranslations` works. Precedent: `teacher/quiz/page.tsx`. Existing `teacherSchedule.days` keys reused for column headers.
-
-**New keys needed** under `teacherSchedule.calendar`:
-```json
-{
-  "presets": { "workHours": "...", "morning": "...", "evening": "..." },
-  "selectedCount": "{count} slots selected",
-  "bulkOpen": "Open selected",
-  "bulkClose": "Close selected",
-  "deselect": "Deselect",
-  "legend": { "open": "Open", "closed": "Closed", "booked": "Booked", "selected": "Selected", "past": "Past" },
-  "saving": "Saving...",
-  "shiftHint": "Shift+click to select range — click column/row header to select full day/time",
-  "bookedTooltip": "Already booked",
-  "pastTooltip": "Cannot modify past slots",
-  "openTooltip": "Open — click to close",
-  "closedTooltip": "Closed — click to open",
-  "colSelectTitle": "Select full day",
-  "rowSelectTitle": "Select this time across all days"
-}
+[Settings page /notifications]
+  → toggle switch → UPSERT notification_preferences (server-side)
+                    notify_user_batched() checks preferences before inserting
 ```
 
 ---
 
-## Decision 3: PRESETS Refactor
+## Existing Notification Types in Schema CHECK Constraint
 
-**Decision**: Change PRESETS to use fixed English keys (`workHours`, `morning`, `evening`); display labels come from `t('teacherSchedule.calendar.presets.workHours')` etc.
+From `033_notifications.sql`:
+```
+'booking_confirmed', 'booking_cancelled', 'class_reminder', 'gems_earned',
+'xp_earned', 'achievement_unlocked', 'level_up', 'class_started', 'class_ended',
+'payment_received', 'system_announcement', 'friend_request', 'message_received'
+```
 
-**Rationale**: Current code uses Vietnamese strings as both object keys and display labels — prevents translation and is type-unsafe.
-
----
-
-## Decision 4: Date Locale for Week Range Display
-
-**Decision**: Use `useLocale()` in `schedule/page.tsx`; map `vi` → `vi-VN`, `en` → `en-US` for `toLocaleDateString`.
-
-**Rationale**: Precedent in `recordings/page.tsx` uses the same pattern.
-
----
-
-## Decision 5: Scope of Other Pages
-
-**Finding**: Scanned all teacher page files:
-- `teacher/quiz/page.tsx` — already uses `useTranslations('teacherQuiz')` ✓
-- `teacher/dashboard/page.tsx` — English hardcoded, no Vietnamese ✓
-- `teacher/classes/page.tsx`, `classes/new/page.tsx`, `classes/[id]/page.tsx` — English ✓
-- `teacher/earnings/page.tsx` — English ✓
-
-**Decision**: Only `schedule/page.tsx` and `AvailabilityCalendar.tsx` need i18n changes.
+Missing types that need to be added in new migration:
+- `new_booking` (used in trigger T006 but not in CHECK)
+- `slot_opened` (new — favorite teacher opened availability)
+- `teacher_favorited` (new — student added teacher to favorites)
+- `booking_payment` (new — payment receipt for student)
+- `cancellation_alert` (new — admin high-frequency cancellation alert)

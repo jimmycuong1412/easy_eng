@@ -1,138 +1,49 @@
-# Quickstart: Teacher Schedule — Compact General View
+# Quickstart: Multi-Role Notification System (Gaps Only)
 
-## What Changes
+## What Already Works
 
-The teacher availability calendar is redesigned to fit the full 06:00–22:00 × Mon–Sun grid on one screen without vertical scrolling.
+The core notification infrastructure is fully deployed:
+- Bell icon in nav with real-time unread count
+- Supabase Realtime subscription (INSERT/UPDATE/DELETE on `notifications`)
+- Notifications page at `/en/notifications` with preference toggles
+- DB triggers for: booking created, booking cancelled, gems earned, new user, payout request
 
-### Before vs After
+## What This Feature Adds
 
-| Property | Before | After |
-|----------|--------|-------|
-| Cell height | `h-6` (24px) | `h-3` (12px) |
-| Cell padding | `p-0.5` | `p-px` |
-| Grid height | ~800px (requires scroll) | ~420px (fits on screen) |
-| Time labels | "06:00", "06:30" on every row | "06", "07" — hour only, on `:00` rows |
-| Time column width | `w-14` | `w-8` |
-| Table min-width | 560px | 420px |
-| Controls | Presets + Bulk always stacked | Mutually exclusive (swaps on selection) |
-| Cards | 2 cards (nav + calendar) | 1 card with internal divider |
-| Page max-width | `max-w-5xl` | `max-w-4xl` |
+| New Capability | How |
+|----------------|-----|
+| Student favorites a teacher | `teacher_favorites` table + trigger → notifies teacher |
+| Teacher opens slots → fans notified | Trigger on `teacher_availability` INSERT → notifies each student fan |
+| Anti-fatigue batching | `notify_user_batched()` groups same-type notifications in a 15-min window |
+| Preferences persist server-side | `notification_preferences` table; settings page upserts instead of localStorage |
+| Admin broadcasts | New admin page `/admin/notifications` → calls `create-notification` Edge Function |
+| Cancellation alerts | DB trigger fires admin alert when a teacher hits 3+ cancellations/24h |
 
-## Manual Test Checklist
-
-- [ ] Full week visible without scrolling on 1080p desktop
-- [ ] All 7 day columns visible, hour labels "06"…"21" on `:00` rows
-- [ ] Past slots dimmed/locked (Phase 3 still working)
-- [ ] Click a slot → toggles open/closed
-- [ ] Shift-click → range selection works
-- [ ] Bulk action bar swaps with presets on selection
-- [ ] Auto-save fires (saving indicator visible)
-- [ ] Prev-week disabled on current week
-- [ ] Mobile: grid horizontally scrollable
-- [ ] Vietnamese locale: all labels translated
-
----
-
-# Quickstart: Teacher Schedule — Past Slot Locking + i18n
-
-**Target**: Developer implementing past-slot blocking and English i18n on the teacher schedule page.
-
----
-
-## What Changes
+## Files Changed / Created
 
 | File | Change |
 |------|--------|
-| `frontend/src/components/teacher/AvailabilityCalendar.tsx` | Add pastSlots locking; replace all hardcoded Vietnamese with `useTranslations`; refactor PRESETS keys |
-| `frontend/src/app/[locale]/teacher/schedule/page.tsx` | Add `useTranslations` + `useLocale`; remove hardcoded Vietnamese; fix date locale |
-| `frontend/messages/en.json` | Add `teacherSchedule.calendar` sub-keys |
-| `frontend/messages/vi.json` | Add `teacherSchedule.calendar` sub-keys (Vietnamese) |
+| `supabase/migrations/036_notification_gaps.sql` | New migration: fix CHECK constraint, add tables, add functions, add triggers |
+| `supabase/functions/create-notification/index.ts` | Extend to support broadcast `target: 'all' | 'students' | 'teachers'` |
+| `frontend/src/app/[locale]/admin/notifications/page.tsx` | New admin broadcast UI page |
+| `frontend/src/app/[locale]/notifications/page.tsx` | Update toggles to upsert `notification_preferences` instead of localStorage |
+| `frontend/src/components/teacher/TeacherCard.tsx` (or similar) | Add "Favorite" button that inserts/deletes `teacher_favorites` row |
 
-No DB schema changes. No new npm packages.
+## Dev Setup
 
----
-
-## Past Slot Logic
-
-```
-Today (e.g. Wednesday 14:30):
-  Monday     → ALL slots locked (past day)
-  Tuesday    → ALL slots locked (past day)
-  Wednesday  → slots 06:00–14:30 locked (past time today), 15:00+ open/closed normally
-  Thursday+  → normal (future)
-
-Past week (weekStart < this Monday):
-  ALL slots locked
-
-Future week (weekStart > this Monday):
-  NO slots locked (all can be opened/closed freely)
+```bash
+cd frontend
+npm run dev   # :3001
+# /en/teacher/schedule — jimmycuong1414@gmail.com / 12345678
+# /en/admin/notifications — admin account
 ```
 
-Slot key mapping to actual date:
-```typescript
-const offset = d === 0 ? 6 : d - 1;  // dayOfWeek → days since Monday
-const date = new Date(weekStart);
-date.setDate(weekStart.getDate() + offset);
-```
+## Verify
 
-Past slots: dimmed grey visual, `cursor-not-allowed`, click suppressed.
-
----
-
-## PRESETS Refactor
-
-```typescript
-// Before (broken — Vietnamese keys)
-const PRESETS = { 'Giờ hành chính': ... };
-
-// After (i18n-safe)
-const PRESET_CONFIG = {
-  workHours: { days: [1,2,3,4,5], from: '08:00', to: '17:00' },
-  morning:   { days: [0,1,2,3,4,5,6], from: '06:00', to: '12:00' },
-  evening:   { days: [0,1,2,3,4,5,6], from: '18:00', to: '22:00' },
-} as const;
-type PresetKey = keyof typeof PRESET_CONFIG;
-// Display: t(`calendar.presets.${key}`)
-```
-
----
-
-## Test Checklist
-
-### Past Slot Locking
-- [ ] Open `/en/teacher/schedule` — past days this week show as dimmed/locked
-- [ ] Current day: slots before current time are locked; slots after current time are togglable
-- [ ] Cannot click/toggle a past slot (click has no effect)
-- [ ] Shift+click range stops at past slots (they are excluded from selection)
-- [ ] Navigate to a past week → all slots locked
-- [ ] Navigate to a future week → no slots locked
-
-### i18n — English (`/en/teacher/schedule`)
-- [ ] Page title shows "Teaching Schedule" (not "Lịch dạy")
-- [ ] Subtitle is in English
-- [ ] "Prev week" / "Next week" buttons are in English
-- [ ] Week date range uses English date format (e.g. "March 23 – March 29, 2026")
-- [ ] Day column headers show "Mon", "Tue", etc. (not "Thứ 2")
-- [ ] Preset buttons show "Work hours (8–17)", "Morning (6–12)", "Evening (18–22)"
-- [ ] Bulk action bar shows "Open selected", "Close selected", "Deselect"
-- [ ] Legend shows "Open", "Closed", "Booked", "Selected", "Past"
-- [ ] Saving indicator shows "Saving..."
-- [ ] Shift hint is in English
-
-### i18n — Vietnamese (`/vi/teacher/schedule`)
-- [ ] Page title shows "Lịch dạy"
-- [ ] Day column headers show "Thứ 2", "CN", etc.
-- [ ] Preset buttons show Vietnamese names
-- [ ] Bulk actions in Vietnamese
-- [ ] All other labels in Vietnamese
-
-### Existing Functionality (regression)
-- [ ] Single click toggles one slot open/closed
-- [ ] Auto-save fires ~800ms after last toggle (network tab)
-- [ ] Shift+click selects a range on the same day
-- [ ] "Open selected" opens all highlighted + saves immediately
-- [ ] Column header selects entire day
-- [ ] Row header selects same time across all 7 days
-- [ ] Booked slot shows as locked blue
-- [ ] Preset opens correct slots additively
-- [ ] Week navigation works; booked slots update per week
+1. Student favorites a teacher → teacher receives `teacher_favorited` notification in bell
+2. Teacher opens availability → each student fan receives `slot_opened` notification
+3. Multiple slot inserts in 15 min → fan receives ONE batched notification, not many
+4. Toggle a preference off on settings page → refresh page → toggle still off (persisted)
+5. Admin broadcasts message → all users see `system_announcement` in bell
+6. Teacher cancels 3+ bookings in 24h → admin receives `cancellation_alert`
+7. `npm run type-check` exits 0

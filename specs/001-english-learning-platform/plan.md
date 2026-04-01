@@ -1,130 +1,127 @@
-# Implementation Plan: Teacher Dashboard Bug Fixes
+# Implementation Plan: Multi-Role Notification System
 
-**Branch**: `001-english-learning-platform` | **Date**: 2026-03-30 | **Spec**: `specs/001-english-learning-platform/spec.md`
-**Research**: `specs/001-english-learning-platform/research-dashboard-bugs.md`
+**Branch**: `001-english-learning-platform` | **Date**: 2026-03-31 | **Spec**: `specs/001-english-learning-platform/spec.md`
+**Input**: Full notification system spec — bell icon, realtime, email fallback, booking/payment/cancellation/favorites triggers, batching, preferences, admin broadcast, toast
 
 ## Summary
 
-Fix 9 bugs found during live Playwright testing of the teacher dashboard at `easyeng-dev.vercel.app`. Bugs span broken navigation links (404s), wrong button routing, missing settings pages, missing i18n on two pages, a role badge display bug, invisible notification toggles, a missing static asset, and an unapplied DB migration.
+EasyEng already has a solid notification foundation (migrations 033–035, `useRealtimeNotifications`, `NotificationBell`, `NotificationCenter`, notifications page). This plan closes the 6 gaps: favorites tracking with bidirectional notifications, anti-fatigue batching, server-side preference persistence, admin broadcast UI, and high-frequency cancellation alerts.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.4, Next.js 14.2
-**Primary Dependencies**: next-intl (i18n), Radix UI (Switch component), Tailwind CSS, Supabase JS
-**Storage**: PostgreSQL via Supabase (migration needed for Bug 9)
-**Testing**: Playwright (e2e), Jest (unit)
-**Target Platform**: Web (Vercel deployment)
-**Project Type**: Web application
-**Performance Goals**: No regression to existing page load times
-**Constraints**: All fixes must pass lint + type-check
-**Scale/Scope**: 8 code fixes + 1 deployment task
+**Language/Version**: TypeScript 5.4 (Next.js 14.2), PostgreSQL 15 (Supabase), Deno (Edge Functions)
+**Primary Dependencies**: Supabase JS v2, Supabase Realtime (`postgres_changes`), Tailwind CSS, Radix UI, Framer Motion, Zustand
+**Storage**: Supabase PostgreSQL — new `teacher_favorites` and `notification_preferences` tables; ALTER on `notifications` CHECK constraint
+**Testing**: Jest (unit), Playwright (e2e)
+**Target Platform**: Web (Next.js 14 App Router), Supabase Edge Runtime
+**Project Type**: Web application (frontend + Supabase backend)
+**Performance Goals**: Notification delivery < 500ms p95 via Realtime; broadcast to 10k users < 10s
+**Constraints**: Batching window 15 min for `slot_opened`; preferences check before every DB insert; no N+1 on broadcast (batch INSERT)
+**Scale/Scope**: 3 roles, ~8 notification types active, ~10k users target
 
 ## Constitution Check
 
+*GATE: Must pass before Phase 0 research. Re-checked post-design.*
+
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| I. Code Quality | ✅ PASS | All fixes are targeted; no new abstractions needed |
-| II. Testing Discipline | ✅ PASS | Existing e2e tests cover navigation; new stubs need basic smoke tests |
-| III. UX Consistency | ⚠️ VIOLATIONS FIXED | Broken nav links, wrong routing, invisible toggles all violate this |
-| IV. Performance | ✅ PASS | No performance impact expected |
-| V. Role-Based Access | ⚠️ VIOLATION FIXED | Teacher showing "Student" badge violates role clarity |
-| VI. Currency Integrity | ✅ N/A | No currency code changes |
-| VII. UI Design Excellence | ⚠️ VIOLATION FIXED | Invisible switches, 404 asset, hardcoded strings violate this |
+| I. Code Quality | PASS | Helpers < 50 lines; single responsibility; typed |
+| II. Testing Discipline | PASS | Unit tests for `notify_user_batched()`; integration for trigger→notification flow |
+| III. UX Consistency | PASS | Bell + realtime already consistent across roles; preferences page updated |
+| IV. Performance | PASS | Realtime < 200ms; batch INSERT for broadcast |
+| V. Role-Based Access | PASS | RLS on all new tables; broadcast admin-only via service role |
+| VI. Currency Integrity | N/A | No currency changes |
+| VII. UI Design Excellence | PASS | Admin broadcast form follows existing admin page patterns |
+
+No violations. Proceed.
 
 ## Project Structure
 
-### Source files affected
+### Documentation (this feature)
 
 ```text
+specs/001-english-learning-platform/
+├── plan.md              # This file
+├── research.md          # Gap analysis + decisions
+├── data-model.md        # New tables, functions, triggers
+├── quickstart.md        # Dev setup + verify checklist
+├── contracts/
+│   └── notification-system.md   # REST + Edge Function contracts
+└── tasks.md             # Phase 2 output (/speckit.tasks)
+```
+
+### Source Code (affected files)
+
+```text
+supabase/
+└── migrations/
+    └── 036_notification_gaps.sql    # NEW — schema fix + favorites + preferences + batching + triggers
+supabase/
+└── functions/
+    └── create-notification/
+        └── index.ts                 # MODIFIED — add broadcast mode
+
 frontend/src/
 ├── app/[locale]/
-│   ├── dashboard/teacher/page.tsx          # Bug 1, 2: fix hrefs + Create Class route
-│   ├── settings/
-│   │   ├── notifications/page.tsx          # Bug 3: CREATE (stub/redirect)
-│   │   ├── billing/page.tsx                # Bug 3: CREATE (stub)
-│   │   └── profile/page.tsx               # Bug 6: fix role badge fallback
-│   └── teacher/
-│       └── quiz/create/page.tsx            # Bug 4: add useTranslations
-├── components/common/
-│   └── GemImage.tsx                        # Bug 8: fix asset path
-└── messages/
-    ├── en.json                             # Bug 4, 5: add i18n keys
-    └── vi.json                             # Bug 4, 5: add i18n keys
-
-# Bug 5: settings/referral/page.tsx - add useTranslations
-# Bug 7: notifications page Switch styling fix
-# Bug 9: DB migration deployment (no code change)
+│   ├── admin/notifications/
+│   │   └── page.tsx                 # NEW — admin system broadcast UI
+│   └── notifications/
+│       └── page.tsx                 # MODIFIED — preferences upsert to DB instead of localStorage
+└── components/
+    └── teacher/
+        └── TeacherCard.tsx          # MODIFIED — add Favorite toggle button (or equivalent browse page)
 ```
 
-## Fixes — Detailed
+**Structure Decision**: Web application (existing Option 2 structure). All changes are additions to the existing frontend + Supabase layout. No new services or packages required.
 
-### Fix 1 & 2: Teacher Dashboard broken links + Create Class routing
-**File**: `frontend/src/app/[locale]/dashboard/teacher/page.tsx`
+---
 
-| Line | Current | Fix |
-|------|---------|-----|
-| 209 | `router.push('/teacher/schedule')` | `router.push('/teacher/classes/new')` |
-| 297 | `<Link href="/dashboard/schedule">` | `<Link href="/teacher/schedule">` |
-| 431 | `<Link href="/dashboard/reviews">` | Remove link (no reviews page exists) or hide button |
+## Phase 0: Research (Complete)
 
-### Fix 3: Missing settings pages
-**Create**: `frontend/src/app/[locale]/settings/notifications/page.tsx`
-- Redirect to `/notifications` or render the same notification settings UI (reuse the Settings tab from the notifications page)
+See `research.md` for full findings.
 
-**Create**: `frontend/src/app/[locale]/settings/billing/page.tsx`
-- Stub page: "Billing — Coming Soon" card with payment method placeholder
+**Key findings**:
+- Notifications table, triggers (booking/cancellation/gems/user/payout), realtime hook, bell, list, page: all complete
+- Missing: `teacher_favorites` table, `slot_opened`/`teacher_favorited`/`new_booking` types, batching helper, `notification_preferences` table, admin broadcast page, cancellation frequency alerts
+- `new_booking` type used in existing trigger but missing from CHECK constraint (schema bug)
 
-### Fix 4: Quiz Create page — add i18n
-**File**: `frontend/src/app/[locale]/teacher/quiz/create/page.tsx`
-- Add `import { useTranslations } from 'next-intl'`
-- Replace all hardcoded Vietnamese strings with `t('key')` calls
-- Add keys to `messages/en.json` under `teacher.quiz.create`
-- Add Vietnamese translations to `messages/vi.json`
+---
 
-### Fix 5: Referral page — add i18n
-**File**: `frontend/src/app/[locale]/settings/referral/page.tsx`
-- Same approach as Fix 4
-- Add keys under `settings.referral` in both message files
+## Phase 1: Design (Complete)
 
-### Fix 6: Profile role badge fallback
-**File**: `frontend/src/app/[locale]/settings/profile/page.tsx` line 127
-```tsx
-// Before:
-return t('roleStudent');
-// After:
-return '';
+### New Entities
+
+1. **`teacher_favorites`** — student-to-teacher favorites with RLS (student owns, teacher reads)
+2. **`notification_preferences`** — per-user JSONB settings with upsert pattern
+3. **`notify_user_batched()`** — PostgreSQL function for deduplication within configurable time window
+4. **Extended `notifications` CHECK constraint** — adds `new_booking`, `slot_opened`, `teacher_favorited`, `booking_payment`, `cancellation_alert`
+
+### New Triggers
+
+| Trigger | Table | Event | Notification |
+|---------|-------|-------|--------------|
+| `trg_teacher_favorited` | `teacher_favorites` | INSERT | `teacher_favorited` → teacher |
+| `trg_slot_opened` | `teacher_availability` | INSERT | `slot_opened` → each student fan (batched per teacher, 15-min window) |
+| `trg_cancellation_alert` | `bookings` | UPDATE (status→cancelled) | `cancellation_alert` → all admins (fires at 3, 6, 9... per teacher per 24h) |
+
+### Admin Broadcast Flow
+
 ```
-Also: render role badge only when `profile` is loaded (guard with `profile &&`).
-
-### Fix 7: Notification toggle switches invisible
-**File**: Whichever component renders the Settings tab in `/en/notifications`
-- Inspect `Switch` component — add explicit `bg-slate-600 data-[state=checked]:bg-blue-500` classes to the track, and `bg-white` to the thumb
-- Alternatively verify the Radix UI Switch CSS variables are present in the dark theme context
-
-### Fix 8: GemImage asset path
-**File**: `frontend/src/components/common/GemImage.tsx` line 14
-```tsx
-// Before:
-src="/images/gem.png"
-// After:
-src="/gem.svg"
+Admin fills form at /en/admin/notifications
+  → Next.js Server Action (uses SUPABASE_SERVICE_KEY)
+    → POST supabase/functions/create-notification { broadcast: { target: "all" } }
+      → Edge Function queries profiles by role
+        → batch INSERT notifications
+          → Supabase Realtime pushes to all connected clients
 ```
 
-### Fix 9: DB migration (deployment only)
-- Run `supabase db push` or apply migration `040_teacher_earnings.sql` against production project `evrcwtsexlamacawofxo`
-- No code change required
+### Preferences Migration Path
+
+Current: `notifications/page.tsx` stores toggle state in component state only (lost on refresh)
+New: On toggle change → `UPSERT notification_preferences` → all devices see same preferences
+
+---
 
 ## Complexity Tracking
 
-No constitution violations that need justification — all fixes reduce violations, none introduce new ones.
-
-## Implementation Order
-
-1. **Fix 8** (GemImage) — 1 line, zero risk, fixes 404 on every page
-2. **Fix 1 & 2** (dashboard links + Create Class) — 3 line changes, high user impact
-3. **Fix 6** (role badge) — 1 line + loading guard
-4. **Fix 3** (missing settings pages) — create 2 new stub files
-5. **Fix 7** (Switch visibility) — CSS fix, needs visual verification
-6. **Fix 4** (quiz create i18n) — larger change, many strings
-7. **Fix 5** (referral i18n) — same pattern as Fix 4
-8. **Fix 9** (DB migration) — run in Supabase CLI, verify earnings page
+No constitution violations. Standard additions within existing architecture.
