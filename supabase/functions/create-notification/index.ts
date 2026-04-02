@@ -35,12 +35,27 @@ type NotificationType =
   | 'payment_received'
   | 'system_announcement'
   | 'friend_request'
-  | 'message_received';
+  | 'message_received'
+  | 'new_booking'
+  | 'slot_opened'
+  | 'teacher_favorited'
+  | 'booking_payment'
+  | 'cancellation_alert';
 
 type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
 
+type BroadcastTarget = 'all' | 'students' | 'teachers';
+
+interface BroadcastConfig {
+  target: BroadcastTarget;
+  exclude_user_ids?: string[];
+}
+
 interface CreateNotificationRequest {
-  user_id: string | string[]; // Can send to multiple users
+  // Single or multi-user mode (existing)
+  user_id?: string | string[];
+  // Broadcast mode (new): send to all users or a role segment
+  broadcast?: BroadcastConfig;
   type: NotificationType;
   title: string;
   message: string;
@@ -58,6 +73,7 @@ interface CreateNotificationRequest {
 interface NotificationResult {
   success: boolean;
   notification_ids?: string[];
+  sent_count?: number;
   error?: string;
 }
 
@@ -185,6 +201,61 @@ async function createBulkNotifications(request: CreateNotificationRequest): Prom
   }
 }
 
+/**
+ * Broadcast a notification to all users in a role segment
+ */
+async function broadcastNotification(request: CreateNotificationRequest): Promise<NotificationResult> {
+  const { broadcast } = request;
+  if (!broadcast) throw new Error('No broadcast config');
+
+  // Fetch target user IDs from profiles
+  let query = supabase.from('profiles').select('id');
+  if (broadcast.target === 'students') {
+    query = query.eq('role', 'student');
+  } else if (broadcast.target === 'teachers') {
+    query = query.eq('role', 'teacher');
+  }
+  // 'all' → no role filter
+
+  const { data: profiles, error: profilesError } = await query;
+  if (profilesError) throw new Error(`Failed to fetch profiles: ${profilesError.message}`);
+
+  let userIds = (profiles || []).map((p: { id: string }) => p.id);
+
+  // Apply exclusion list
+  if (broadcast.exclude_user_ids?.length) {
+    const excluded = new Set(broadcast.exclude_user_ids);
+    userIds = userIds.filter((id) => !excluded.has(id));
+  }
+
+  if (userIds.length === 0) {
+    return { success: true, sent_count: 0, notification_ids: [] };
+  }
+
+  // Batch INSERT all notifications in a single call
+  const rows = userIds.map((userId) => ({
+    user_id: userId,
+    type: request.type,
+    title: request.title,
+    message: request.message,
+    action_url: request.action_url || null,
+    action_label: request.action_label || null,
+    related_id: request.related_id || null,
+    related_type: request.related_type || null,
+    metadata: request.metadata || {},
+    icon: request.icon || getDefaultIcon(request.type),
+    color: request.color || getDefaultColor(request.type),
+    priority: request.priority || 'normal',
+    expires_at: request.expires_at || null,
+  }));
+
+  const { error: insertError } = await supabase.from('notifications').insert(rows);
+  if (insertError) throw new Error(`Broadcast insert failed: ${insertError.message}`);
+
+  console.log(`Broadcast sent to ${userIds.length} users (target: ${broadcast.target})`);
+  return { success: true, sent_count: userIds.length };
+}
+
 // ============================================================================
 // HTTP Handler
 // ============================================================================
@@ -203,7 +274,15 @@ serve(async (req: Request) => {
     const request: CreateNotificationRequest = await req.json();
 
     // Validate required fields
-    if (!request.user_id || !request.type || !request.title || !request.message) {
+    if (!request.user_id && !request.broadcast) {
+      return new Response(
+        JSON.stringify({
+          error: 'Missing required fields: either user_id or broadcast must be provided',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!request.type || !request.title || !request.message) {
       return new Response(
         JSON.stringify({
           error: 'Missing required fields: user_id, type, title, message',
@@ -212,21 +291,28 @@ serve(async (req: Request) => {
       );
     }
 
+    // Broadcast mode
+    if (request.broadcast) {
+      console.log('Broadcasting notification:', { target: request.broadcast.target, type: request.type });
+      const result = await broadcastNotification(request);
+      return new Response(
+        JSON.stringify({ success: true, sent_count: result.sent_count, timestamp: new Date().toISOString() }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Single / multi-user mode
     console.log('Creating notification:', {
       users: Array.isArray(request.user_id) ? request.user_id.length : 1,
       type: request.type,
       title: request.title,
     });
 
-    // Create notifications
     const result = await createBulkNotifications(request);
 
     if (!result.success) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: result.error,
-        }),
+        JSON.stringify({ success: false, error: result.error }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -238,10 +324,7 @@ serve(async (req: Request) => {
         count: result.notification_ids?.length || 0,
         timestamp: new Date().toISOString(),
       }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error in create-notification function:', error);

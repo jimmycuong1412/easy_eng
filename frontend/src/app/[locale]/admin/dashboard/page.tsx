@@ -64,6 +64,12 @@ export default function AdminDashboardPage() {
             href="/admin/reconciliation"
             icon="🔍"
           />
+          <AdminActionCard
+            title="Notifications"
+            description="Broadcast system messages"
+            href="/admin/notifications"
+            icon="🔔"
+          />
         </div>
       </div>
     </ProtectedRoute>

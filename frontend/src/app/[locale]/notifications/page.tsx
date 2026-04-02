@@ -20,6 +20,7 @@ import {
   Video,
   Gem,
   Star,
+  Heart,
 } from 'lucide-react';
 
 import { useTranslations } from 'next-intl';
@@ -32,6 +33,7 @@ import { Label } from '@/components/ui/label';
 
 import { useAuth } from '@/hooks/useAuth';
 import { getUserNotifications, markNotificationRead } from '@/lib/queries';
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 
 const notificationIconMap: Record<string, { icon: typeof Bell; color: string; bgColor: string }> = {
   class_reminder: { icon: Video, color: 'text-[#3B82F6]', bgColor: 'bg-[#3B82F6]/10' },
@@ -43,9 +45,14 @@ const notificationIconMap: Record<string, { icon: typeof Bell; color: string; bg
   level_up: { icon: Star, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
   booking_confirmed: { icon: Calendar, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
   booking_cancelled: { icon: AlertCircle, color: 'text-red-400', bgColor: 'bg-red-500/10' },
+  new_booking: { icon: Calendar, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
   message_received: { icon: MessageSquare, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
   payment_received: { icon: Gift, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
+  booking_payment: { icon: Gift, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
   system_announcement: { icon: AlertCircle, color: 'text-slate-400', bgColor: 'bg-slate-500/10' },
+  slot_opened: { icon: Calendar, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
+  teacher_favorited: { icon: Heart, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
+  cancellation_alert: { icon: AlertCircle, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
 };
 
 const containerVariants = {
@@ -82,15 +89,28 @@ const NOTIFICATION_SETTING_KEYS = [
   'achievement',
   'promotions',
   'paymentUpdate',
+  'slotOpened',
+  'teacherFavorited',
 ] as const;
+
+// Maps UI camelCase key → DB notification type for preference lookup
+const SETTING_KEY_TO_DB_TYPE: Record<string, string> = {
+  classReminder:    'class_reminder',
+  newMessage:       'message_received',
+  gemEarned:        'gems_earned',
+  reviewRequest:    'booking_confirmed',
+  achievement:      'achievement_unlocked',
+  promotions:       'system_announcement',
+  paymentUpdate:    'payment_received',
+  slotOpened:       'slot_opened',
+  teacherFavorited: 'teacher_favorited',
+};
 
 export default function NotificationsPage() {
   const { user } = useAuth();
   const t = useTranslations('notifications');
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
-  const [settings, setSettings] = React.useState<Record<string, boolean>>(
-    Object.fromEntries(NOTIFICATION_SETTING_KEYS.map((k) => [k, true]))
-  );
+  const { preferences, updatePreference } = useNotificationPreferences();
 
   React.useEffect(() => {
     if (!user?.id) return;
@@ -152,7 +172,10 @@ export default function NotificationsPage() {
   };
 
   const toggleSetting = (key: string) => {
-    setSettings({ ...settings, [key]: !settings[key] });
+    const dbType = SETTING_KEY_TO_DB_TYPE[key];
+    if (!dbType) return;
+    const current = preferences[dbType]?.in_app ?? true;
+    updatePreference(dbType, 'in_app', !current).catch(console.error);
   };
 
   return (
@@ -382,7 +405,7 @@ export default function NotificationsPage() {
                     <p className="text-sm text-slate-400">{t(`settings.${key}Desc`)}</p>
                   </div>
                   <Switch
-                    checked={settings[key]}
+                    checked={preferences[SETTING_KEY_TO_DB_TYPE[key] ?? key]?.in_app ?? true}
                     onCheckedChange={() => toggleSetting(key)}
                   />
                 </div>

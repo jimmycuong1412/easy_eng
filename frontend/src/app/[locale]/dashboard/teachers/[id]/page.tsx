@@ -6,7 +6,7 @@ import * as React from 'react';
 import { Link } from '@/i18n/routing';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 
 import { useTranslations } from 'next-intl';
 
@@ -19,6 +19,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PixelAvatar } from '@/components/features/PixelAvatar';
 import { GemImage } from '@/components/common/GemImage';
 import { getTeacherById } from '@/lib/queries';
+import { useAuth } from '@/hooks/useAuth';
+import { createClient } from '@/lib/supabase/client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -258,12 +260,52 @@ export default function TeacherDetailPage() {
   const router = useRouter();
   const teacherId = params.id as string;
   const t = useTranslations('teachers');
+  const { user, profile } = useAuth();
+  const supabase = createClient();
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [teacher, setTeacher] = React.useState<TeacherData | null>(null);
   // dateKey = "dayOfWeek:YYYY-MM-DD"  e.g. "1:2026-02-24"
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [selectedTime, setSelectedTime] = React.useState<string | null>(null);
+  const [isFavorited, setIsFavorited] = React.useState(false);
+  const [favoriteLoading, setFavoriteLoading] = React.useState(false);
+
+  // Check if this teacher is already favorited on mount
+  React.useEffect(() => {
+    if (!user?.id || !teacherId) return;
+    supabase
+      .from('teacher_favorites')
+      .select('id')
+      .eq('student_id', user.id)
+      .eq('teacher_id', teacherId)
+      .maybeSingle()
+      .then(({ data }) => setIsFavorited(!!data));
+  }, [user?.id, teacherId]);
+
+  const handleToggleFavorite = async () => {
+    if (!user?.id || favoriteLoading) return;
+    setFavoriteLoading(true);
+    try {
+      if (isFavorited) {
+        await supabase
+          .from('teacher_favorites')
+          .delete()
+          .eq('student_id', user.id)
+          .eq('teacher_id', teacherId);
+        setIsFavorited(false);
+      } else {
+        await supabase
+          .from('teacher_favorites')
+          .insert({ student_id: user.id, teacher_id: teacherId });
+        setIsFavorited(true);
+      }
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
   React.useEffect(() => {
     getTeacherById(teacherId)
       .then((data: Record<string, unknown>) => {
@@ -403,6 +445,21 @@ export default function TeacherDetailPage() {
                     <h1 className="text-2xl font-bold text-text-primary">{mockTeacher.name}</h1>
                     {mockTeacher.isVerified && <Badge variant="success">✓ Verified</Badge>}
                     {mockTeacher.isOnline && <Badge variant="outline" className="text-success border-success">Online</Badge>}
+                    {/* Favorite toggle — only visible to students */}
+                    {profile?.role === 'student' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleToggleFavorite}
+                        disabled={favoriteLoading}
+                        aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                        className="ml-auto"
+                      >
+                        <Heart
+                          className={`w-5 h-5 transition-colors ${isFavorited ? 'fill-red-500 text-red-500' : 'text-text-muted'}`}
+                        />
+                      </Button>
+                    )}
                   </div>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex items-center gap-1">
