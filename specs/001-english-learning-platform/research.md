@@ -1,118 +1,113 @@
-# Research: Multi-Role Notification System
+# Research: Teacher Schedule UX Overhaul
 
-**Feature**: Robust multi-role notification system (bell, realtime, email, favorites, batching, preferences, admin broadcast, toast)
+**Feature**: Teacher Schedule — Batch Save, Drag Selection, Visual Polish
 **Branch**: `001-english-learning-platform`
 
 ---
 
-## Summary of Existing Infrastructure
+## Decision 1 — Batch State Management Strategy
 
-### What Already Exists (DO NOT RE-IMPLEMENT)
+**Decision**: Replace 800ms debounce auto-save with an explicit "Save Changes" / "Discard" button pair.
 
-| Component | Location | Status |
-|-----------|----------|--------|
-| `notifications` table (full schema) | `supabase/migrations/033_notifications.sql` | Complete |
-| Schema fix migration | `supabase/migrations/034_notifications_schema_fix.sql` | Applied |
-| DB triggers: booking created/cancelled, gems earned, new user, payout | `supabase/migrations/035_notification_triggers.sql` | Complete |
-| `useRealtimeNotifications` hook | `frontend/src/hooks/useRealtimeNotifications.ts` | Complete |
-| `NotificationBell` component | `frontend/src/components/layout/NotificationBell.tsx` | In RoleBasedNav |
-| `NotificationList` component | `frontend/src/components/common/NotificationList.tsx` | Complete |
-| `NotificationCenter` (Zustand toast system) | `frontend/src/components/common/NotificationCenter.tsx` | Complete |
-| Notifications page | `frontend/src/app/[locale]/notifications/page.tsx` | Complete |
-| `send-email` Edge Function | `supabase/functions/send-email/` | Complete |
-| `create-notification` Edge Function | `supabase/functions/create-notification/` | Complete |
-| `send-booking-confirmation` Edge Function | `supabase/functions/send-booking-confirmation/` | Complete |
-| `send-class-reminder` Edge Function | `supabase/functions/send-class-reminder/` | Complete |
-| Local notification preference toggles (UI only) | `frontend/src/app/[locale]/notifications/page.tsx` | localStorage only |
+**Approach**:
+- Maintain a `savedState` ref (mirrors what is in the DB, set on load and after each successful save)
+- `slotState` continues to be the local working copy
+- `hasUnsavedChanges` derived by comparing `slotState` to `savedState` via JSON.stringify
+- A sticky `Save Changes` button becomes active when `hasUnsavedChanges` is true
+- `Discard` resets `slotState` back to `savedState`
+- Remove `debounceTimer` and `scheduleSave` entirely
+- `bulkOpen`, `bulkClose`, `applyPreset` and single-slot toggle no longer auto-save
+- `saveToDb` called only on explicit Save button click
 
-### What Is Missing (MUST BUILD)
+**Rationale**: Reduces DB write volume from every click to 1 batch per session. Teachers can experiment freely before committing. Matches standard form UX (settings pages, calendar editors).
 
-| Gap | Description | Priority |
-|-----|-------------|----------|
-| `teacher_favorites` table | No DB table or triggers for student-to-teacher favorites | P1 |
-| `slot_opened` notification type | Alert subscribed students when favorite teacher opens new slots | P1 |
-| `teacher_favorited` notification type | Alert teacher when a student favorites them | P1 |
-| `new_booking` type in CHECK constraint | Used in trigger but missing from schema CHECK — schema bug | P1 (bug) |
-| Batching / anti-fatigue logic | Multiple `slot_opened` events in short window group into one notification | P1 |
-| `notification_preferences` DB table | Currently only localStorage toggles; preferences not persisted server-side | P2 |
-| Admin "System Broadcast" UI | Admin composes and sends `system_announcement` to all users or segments | P2 |
-| High-frequency cancellation alerts | Admin notified when cancellations exceed threshold | P3 |
+**Alternatives rejected**:
+- Keep debounce but increase to 3s — still fires per-click, no user control
+- Optimistic immediate save on every slot — opposite of batch goal
 
 ---
 
-## Decision Log
+## Decision 2 — Drag Selection Implementation
 
-### Decision 1: Realtime Transport — Supabase Realtime (Keep)
-- **Decision**: Keep Supabase Realtime (`postgres_changes` on `notifications` table)
-- **Rationale**: Zero additional infrastructure; already deployed; sub-200ms latency for inserts; already in `useRealtimeNotifications`
-- **Alternatives considered**: Socket.io server, Pusher Channels
-- **Why rejected**: Would require separate WS server or paid Pusher plan; Supabase Realtime already solves the problem
+**Decision**: Add mousedown+mousemove drag selection using React state + document-level `mouseup` listener.
 
-### Decision 2: Batching — DB-Level Deduplication Window
-- **Decision**: PostgreSQL upsert with `last_batched_at` + `count` stored in `metadata`, using a 15-minute window keyed on `(user_id, type, related_id)` via a new `notify_user_batched()` helper
-- **Rationale**: Pure server-side; no separate job queue; Supabase Realtime fires UPDATE events (handled by existing hook) when a batch record is updated
-- **Alternatives considered**: Client-side coalescing, cron-job batching, Redis deduplication
-- **Why rejected**: Client-side loses state on page reload; cron too slow; no Redis on Supabase
+**Approach**:
+- `isDragging` boolean state + `dragStartKey` string state
+- `onMouseDown` on a cell: set `isDragging=true`, `dragStartKey=key`, add key to selection
+- `onMouseEnter` on a cell (when `isDragging`): compute range from `dragStartKey` to current key, add to selection
+- Document-level `mouseup` listener (in `useEffect` cleanup): set `isDragging=false`
+- Shift+click range (existing) preserved alongside drag; drag uses the same `getTimeRange` helper
+- Drag does NOT cross columns (same single-column range as shift-click per `getTimeRange`)
+- Add `select-none` class to table to prevent text selection during drag
 
-### Decision 3: Notification Preferences — New DB Table
-- **Decision**: New `notification_preferences` table with one row per user and a JSONB `settings` column
-- **Rationale**: Preferences must survive across devices and sessions; localStorage breaks multi-device usage
-- **Alternatives considered**: `profiles.notification_settings JSONB` column
-- **Why rejected**: Wider `profiles` row; separate table is cleaner and independently RLS-gated
+**Rationale**: Native drag feel with zero new dependencies. `getTimeRange` already exists and handles the range math correctly.
 
-### Decision 4: Admin Broadcast UI — New Admin Page
-- **Decision**: New page at `frontend/src/app/[locale]/admin/notifications/page.tsx` with a form calling the existing `create-notification` Edge Function with `target: "all" | "students" | "teachers"`
-- **Rationale**: Re-uses existing Edge Function; admin-only route; follows existing admin page patterns
-- **Alternatives considered**: Supabase Dashboard SQL editor, new dedicated Edge Function
-- **Why rejected**: SQL editor not user-friendly; new Edge Function unnecessary
-
-### Decision 5: Favorites — New `teacher_favorites` Table
-- **Decision**: New `teacher_favorites (id, student_id, teacher_id, created_at)` table with RLS
-- **Rationale**: No existing favorites infrastructure; clean separation from bookings; efficient reverse-direction queries (who favorited this teacher?)
-- **Alternatives considered**: `profiles.favorite_teachers UUID[]` array column
-- **Why rejected**: Array column makes reverse queries expensive
-
-### Decision 6: `slot_opened` Trigger — On Teacher Availability Insert
-- **Decision**: DB trigger on `teacher_availability INSERT` that calls `notify_user_batched()` for all students with that teacher in their favorites
-- **Rationale**: Fully server-side; fires immediately when teacher saves slots
-- **Alternatives considered**: Edge Function polling, application-layer dispatch
-- **Why rejected**: Polling introduces latency; application layer misses direct DB inserts
+**Alternatives rejected**:
+- External library (react-dnd) — overkill for a simple selection gesture
+- Pointer events API — adds complexity; mouse events sufficient for desktop-first teacher UI
 
 ---
 
-## Architecture Overview (New Work Only)
+## Decision 3 — Visual Simplification / Scrollable Grid
 
-```
-[Student] favorites teacher → teacher_favorites INSERT
-                              └→ trg_teacher_favorited() → notify teacher (teacher_favorited)
+**Decision**: Wrap the grid in a `max-h-[400px] overflow-y-auto` scrollable container with a sticky `<thead>`.
 
-[Teacher] saves availability → teacher_availability INSERT
-                               └→ trg_slot_opened() → query teacher_favorites
-                                    └→ notify_user_batched() for each subscribed student (slot_opened)
+**Approach**:
+- Grid stays at full 00:00–23:30 range (48 rows) — teachers set overnight tutoring slots
+- Wrap `<div className="overflow-x-auto rounded-lg border border-white/10">` gets an inner `<div className="max-h-[400px] overflow-y-auto">`
+- `<thead>` gets `sticky top-0 z-10` with explicit background to prevent bleed-through
+- Time column: only show label on `:00` rows; `:30` rows show invisible placeholder button (still clickable for row-select)
+- `:00` rows get `border-t border-white/10` to visually group hours; `:30` rows get `border-b border-white/5`
 
-[Admin Dashboard /admin/notifications]
-  → compose broadcast form → POST create-notification Edge Function (service role)
-                             └→ INSERT notifications for all / segment
-
-[Settings page /notifications]
-  → toggle switch → UPSERT notification_preferences (server-side)
-                    notify_user_batched() checks preferences before inserting
-```
+**Rationale**: 48-row × 7-col grid scrolled inline is the Google Calendar standard. Sticky headers keep day context visible at all scroll positions.
 
 ---
 
-## Existing Notification Types in Schema CHECK Constraint
+## Decision 4 — High-Contrast State Indicators
 
-From `033_notifications.sql`:
+**Decision**: Use higher-opacity background fills for all interactive states.
+
+| State    | Background              | Border                  |
+|----------|-------------------------|-------------------------|
+| Open     | `bg-emerald-500/70`     | `border-emerald-400`    |
+| Closed   | `bg-slate-700/50`       | `border-slate-600/40`   |
+| Booked   | `bg-blue-500/70`        | `border-blue-400`       |
+| Selected | `bg-amber-400/80`       | `border-amber-300`      |
+| Past     | diagonal stripe texture | `border-slate-700/20`   |
+
+Past slot stripe (Tailwind arbitrary):
 ```
-'booking_confirmed', 'booking_cancelled', 'class_reminder', 'gems_earned',
-'xp_earned', 'achievement_unlocked', 'level_up', 'class_started', 'class_ended',
-'payment_received', 'system_announcement', 'friend_request', 'message_received'
+bg-[repeating-linear-gradient(45deg,transparent,transparent_3px,rgba(255,255,255,0.06)_3px,rgba(255,255,255,0.06)_6px)]
 ```
 
-Missing types that need to be added in new migration:
-- `new_booking` (used in trigger T006 but not in CHECK)
-- `slot_opened` (new — favorite teacher opened availability)
-- `teacher_favorited` (new — student added teacher to favorites)
-- `booking_payment` (new — payment receipt for student)
-- `cancellation_alert` (new — admin high-frequency cancellation alert)
+**Rationale**: Current `bg-xxx/20–/30` fills are hard to distinguish in a dense dark grid. Higher opacity + stripe texture for Past vs Closed resolves the most-confused pair.
+
+---
+
+## Decision 5 — i18n Keys to Add
+
+New keys in `teacherSchedule.calendar`:
+
+```json
+"saveChanges": "Save Changes",
+"discardChanges": "Discard",
+"unsavedChanges": "{count} unsaved change(s)",
+"saved": "Saved!",
+"dragHint": "Click and drag or Shift+click to select multiple slots",
+"saveError": "Failed to save. Please try again."
+```
+
+Existing `shiftHint` key is replaced by `dragHint` (superset message).
+
+---
+
+## Decision 6 — Scope (Files Changed)
+
+| File | Change |
+|------|--------|
+| `frontend/src/components/teacher/AvailabilityCalendar.tsx` | All 4 features |
+| `frontend/messages/en.json` | 6 new/updated `calendar.*` keys |
+| `frontend/messages/vi.json` | Same 6 keys in Vietnamese |
+| `frontend/src/app/[locale]/teacher/schedule/page.tsx` | No changes needed |
+
+No new packages. No DB schema changes. No new API routes.

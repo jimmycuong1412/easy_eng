@@ -3,7 +3,8 @@
     "allow": [
       "Bash(*)",
       "mcp__3c0adb49-c8ef-488d-a1e9-bf4b1d9b7164__list_projects",
-      "mcp__3c0adb49-c8ef-488d-a1e9-bf4b1d9b7164__execute_sql"
+      "mcp__3c0adb49-c8ef-488d-a1e9-bf4b1d9b7164__execute_sql",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }
