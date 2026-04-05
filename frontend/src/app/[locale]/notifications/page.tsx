@@ -69,7 +69,7 @@ const itemVariants = {
 };
 
 type NotificationItem = {
-  id: number;
+  id: string;   // UUID from DB
   type: string;
   title: string;
   message: string;
@@ -119,7 +119,7 @@ export default function NotificationsPage() {
         const mapped: NotificationItem[] = (data || []).map((n: Record<string, unknown>) => {
           const iconInfo = notificationIconMap[(n.type as string) || ''] || notificationIconMap.system_announcement;
           return {
-            id: n.id as number,
+            id: String(n.id),
             type: (n.type as string) || 'system_announcement',
             title: (n.title as string) || '',
             message: (n.message as string) || '',
@@ -152,8 +152,8 @@ export default function NotificationsPage() {
     return date.toLocaleDateString();
   };
 
-  const markAsRead = (id: number) => {
-    markNotificationRead(String(id)).catch(console.error);
+  const markAsRead = (id: string) => {
+    markNotificationRead(id).catch(console.error);
     setNotifications(
       notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
@@ -163,7 +163,7 @@ export default function NotificationsPage() {
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
-  const deleteNotification = (id: number) => {
+  const deleteNotification = (id: string) => {
     setNotifications(notifications.filter((n) => n.id !== id));
   };
 
@@ -405,6 +405,7 @@ export default function NotificationsPage() {
                     <p className="text-sm text-slate-400">{t(`settings.${key}Desc`)}</p>
                   </div>
                   <Switch
+                    id={`toggle-${key}`}
                     checked={preferences[SETTING_KEY_TO_DB_TYPE[key] ?? key]?.in_app ?? true}
                     onCheckedChange={() => toggleSetting(key)}
                   />

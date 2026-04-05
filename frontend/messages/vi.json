@@ -807,7 +807,11 @@
       "promotions": "Khuyến mãi & Ưu đãi",
       "promotionsDesc": "Ưu đãi đặc biệt và thông báo tính năng mới",
       "paymentUpdate": "Cập nhật thanh toán",
-      "paymentUpdateDesc": "Biên lai và cập nhật trạng thái thanh toán"
+      "paymentUpdateDesc": "Biên lai và cập nhật trạng thái thanh toán",
+      "slotOpened": "Lịch mới mở",
+      "slotOpenedDesc": "Khi giáo viên bạn theo dõi mở khung giờ dạy mới",
+      "teacherFavorited": "Được yêu thích",
+      "teacherFavoritedDesc": "Khi học sinh thêm bạn vào danh sách yêu thích"
     },
     "channels": {
       "inApp": "Trong ứng dụng",
