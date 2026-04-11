@@ -277,11 +277,11 @@ export default function UserManagementPage() {
                                   ? <Loader2 className="w-3 h-3 animate-spin" />
                                   : <SelectValue />}
                               </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="student">{t('roles.student')}</SelectItem>
-                                <SelectItem value="teacher">{t('roles.teacher')}</SelectItem>
-                                <SelectItem value="parent">{t('roles.parent')}</SelectItem>
-                                <SelectItem value="admin">{t('roles.admin')}</SelectItem>
+                              <SelectContent className="bg-[#1a2236] border-white/10 text-white">
+                                <SelectItem value="student" className="text-white focus:bg-white/10 focus:text-white">{t('roles.student')}</SelectItem>
+                                <SelectItem value="teacher" className="text-white focus:bg-white/10 focus:text-white">{t('roles.teacher')}</SelectItem>
+                                <SelectItem value="parent" className="text-white focus:bg-white/10 focus:text-white">{t('roles.parent')}</SelectItem>
+                                <SelectItem value="admin" className="text-white focus:bg-white/10 focus:text-white">{t('roles.admin')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </td>

@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,9 +17,9 @@ interface GemTransaction {
   id: string;
   amount: number;
   transaction_type: string;
-  reason: string;
+  description: string;
   created_at: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface GemSummary {
@@ -37,7 +37,7 @@ export default function GemHistoryPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>('all'); // all, earned, spent
+  const [filter, setFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
@@ -47,6 +47,7 @@ export default function GemHistoryPage() {
   useEffect(() => {
     fetchGemHistory();
     fetchGemSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, page]);
 
   const fetchGemHistory = async () => {
@@ -54,9 +55,7 @@ export default function GemHistoryPage() {
       setIsLoading(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
         setError('You must be logged in to view your gem history');
@@ -66,11 +65,10 @@ export default function GemHistoryPage() {
       let query = supabase
         .from('gem_transactions')
         .select('*', { count: 'exact' })
-        .eq('student_id', user.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
 
-      // Apply filter
       if (filter === 'earned') {
         query = query.gt('amount', 0);
       } else if (filter === 'spent') {
@@ -79,11 +77,9 @@ export default function GemHistoryPage() {
 
       const { data, error: fetchError, count } = await query;
 
-      if (fetchError) {
-        throw fetchError;
-      }
+      if (fetchError) throw fetchError;
 
-      setTransactions(data || []);
+      setTransactions((data ?? []) as GemTransaction[]);
       setHasMore(count ? count > page * ITEMS_PER_PAGE : false);
     } catch (err) {
       console.error('Error fetching gem history:', err);
@@ -95,50 +91,45 @@ export default function GemHistoryPage() {
 
   const fetchGemSummary = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get current balance
-      const { data: balance } = await (supabase as any).rpc('get_student_gem_balance', {
-        student_id: user.id,
+      const { data: viewData } = await supabase
+        .from('user_gems_balances')
+        .select('balance, total_earned, total_spent')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (viewData) {
+        setSummary({
+          current_balance: (viewData.balance as number) ?? 0,
+          total_earned: (viewData.total_earned as number) ?? 0,
+          total_spent: Math.abs((viewData.total_spent as number) ?? 0),
+        });
+        return;
+      }
+
+      const { data: balance } = await supabase.rpc('get_gems_balance', {
+        p_user_id: user.id,
       });
 
-      // Calculate totals
-      const { data: allTransactions } = await (supabase as any)
-        .from('gem_transactions')
-        .select('amount')
-        .eq('student_id', user.id);
-
-      const totalEarned = (allTransactions as any[])
-        ?.filter((t: any) => t.amount > 0)
-        .reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
-
-      const totalSpent = Math.abs(
-        (allTransactions as any[])
-          ?.filter((t: any) => t.amount < 0)
-          .reduce((sum: number, t: any) => sum + t.amount, 0) || 0
-      );
-
       setSummary({
-        total_earned: totalEarned,
-        total_spent: totalSpent,
-        current_balance: balance || 0,
+        current_balance: (balance as number) ?? 0,
+        total_earned: 0,
+        total_spent: 0,
       });
     } catch (err) {
       console.error('Error fetching gem summary:', err);
     }
   };
 
-  const exportHistory = async () => {
+  const exportHistory = () => {
     const csv = [
-      ['Date', 'Type', 'Reason', 'Amount', 'Balance Change'],
+      ['Date', 'Type', 'Description', 'Amount', 'Balance Change'],
       ...transactions.map((t) => [
         format(new Date(t.created_at), 'yyyy-MM-dd HH:mm:ss'),
         t.transaction_type,
-        t.reason,
+        t.description,
         t.amount.toString(),
         t.amount > 0 ? `+${t.amount}` : t.amount.toString(),
       ]),
@@ -169,9 +160,8 @@ export default function GemHistoryPage() {
       refund: 'default',
       admin_adjustment: 'destructive',
     };
-
     return (
-      <Badge variant={variants[type] || 'secondary'}>
+      <Badge variant={variants[type] ?? 'secondary'}>
         {type.replace('_', ' ')}
       </Badge>
     );
@@ -179,7 +169,6 @@ export default function GemHistoryPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Gem History</h1>
@@ -193,7 +182,6 @@ export default function GemHistoryPage() {
         </Button>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
@@ -235,7 +223,6 @@ export default function GemHistoryPage() {
         </Card>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -257,7 +244,6 @@ export default function GemHistoryPage() {
         </CardHeader>
 
         <CardContent>
-          {/* Error */}
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -265,7 +251,6 @@ export default function GemHistoryPage() {
             </Alert>
           )}
 
-          {/* Loading */}
           {isLoading && (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -281,7 +266,6 @@ export default function GemHistoryPage() {
             </div>
           )}
 
-          {/* Transactions List */}
           {!isLoading && !error && (
             <>
               {transactions.length === 0 ? (
@@ -303,7 +287,7 @@ export default function GemHistoryPage() {
                         {getTransactionIcon(transaction.amount)}
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="font-semibold">{transaction.reason}</h4>
+                            <h4 className="font-semibold">{transaction.description}</h4>
                             {getTransactionBadge(transaction.transaction_type)}
                           </div>
                           <p className="text-sm text-muted-foreground">
@@ -329,7 +313,6 @@ export default function GemHistoryPage() {
                 </div>
               )}
 
-              {/* Pagination */}
               {transactions.length > 0 && (
                 <div className="flex items-center justify-between mt-6">
                   <Button
