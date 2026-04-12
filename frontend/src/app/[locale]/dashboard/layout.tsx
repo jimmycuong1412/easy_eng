@@ -13,12 +13,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GemBadge } from '@/components/features/CookieBadge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GemImage } from '@/components/common/GemImage';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
+import NotificationBell from '@/components/layout/NotificationBell';
 
 interface NavItem {
   labelKey: string;
@@ -374,10 +374,7 @@ export default function DashboardLayout({
               <LanguageSwitcher />
 
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <span className="text-xl">🔔</span>
-                <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
-              </Button>
+              <NotificationBell />
 
               {/* Gem badge on mobile */}
               {profile?.role === 'student' && (
