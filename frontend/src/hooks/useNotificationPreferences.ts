@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -52,7 +52,8 @@ export interface UseNotificationPreferencesReturn {
 }
 
 export function useNotificationPreferences(): UseNotificationPreferencesReturn {
-  const supabase = createClient();
+  // Stabilize supabase client to prevent stale instances on re-render
+  const supabase = useMemo(() => createClient(), []);
   const { user } = useAuth();
 
   const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
@@ -71,13 +72,16 @@ export function useNotificationPreferences(): UseNotificationPreferencesReturn {
       .eq('user_id', user.id)
       .maybeSingle()
       .then(({ data, error }) => {
+        if (error) {
+          console.error('[useNotificationPreferences] SELECT error:', error.message, error.code);
+        }
         if (!error && data?.settings) {
           // Merge with defaults so new types always have a value
           setPreferences({ ...DEFAULT_PREFERENCES, ...(data.settings as NotificationPreferences) });
         }
         setLoading(false);
       });
-  }, [user?.id]);
+  }, [user?.id, supabase]);
 
   const updatePreference = useCallback(
     async (type: string, channel: NotificationChannel, value: boolean) => {
@@ -94,12 +98,15 @@ export function useNotificationPreferences(): UseNotificationPreferencesReturn {
       // Optimistic update
       setPreferences(updated);
 
-      await supabase.from('notification_preferences').upsert(
+      const { error } = await supabase.from('notification_preferences').upsert(
         { user_id: user.id, settings: updated, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' }
       );
+      if (error) {
+        console.error('[useNotificationPreferences] UPSERT error:', error.message, error.code);
+      }
     },
-    [supabase, user?.id, preferences]
+    [user?.id, preferences, supabase]
   );
 
   return { preferences, loading, updatePreference };

@@ -807,7 +807,11 @@
       "promotions": "Promotions & Offers",
       "promotionsDesc": "Special offers and new feature announcements",
       "paymentUpdate": "Payment Updates",
-      "paymentUpdateDesc": "Receipts and payment status updates"
+      "paymentUpdateDesc": "Receipts and payment status updates",
+      "slotOpened": "Slot Opened",
+      "slotOpenedDesc": "When a teacher you follow opens new availability slots",
+      "teacherFavorited": "Teacher Favorited",
+      "teacherFavoritedDesc": "When a student adds you to their favorites"
     },
     "channels": {
       "inApp": "In-app",
