@@ -20,11 +20,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check required secrets
+        id: check_secrets
+        run: |
+          if [ -z "${{ secrets.SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "skipped=true" >> $GITHUB_OUTPUT
+            echo "::warning::SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secrets are not configured. Skipping reconciliation."
+          else
+            echo "skipped=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run Gem Balance Reconciliation
         id: gem_reconciliation
+        if: steps.check_secrets.outputs.skipped == 'false'
         run: |
           # Call Supabase Edge Function for Gem reconciliation
-          response=$(curl -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/reconcile-gem-balances" \
+          response=$(curl -s -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/reconcile-gem-balances" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json")
 
@@ -33,9 +44,10 @@ jobs:
 
       - name: Run Discrepancy Detection
         id: discrepancy_detection
+        if: steps.check_secrets.outputs.skipped == 'false'
         run: |
           # Call Supabase Edge Function for discrepancy detection
-          response=$(curl -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/detect-discrepancies" \
+          response=$(curl -s -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/detect-discrepancies" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json")
 
@@ -44,6 +56,7 @@ jobs:
 
       - name: Parse Results
         id: parse_results
+        if: steps.check_secrets.outputs.skipped == 'false'
         run: |
           # Extract critical counts from responses
           gem_response='${{ steps.gem_reconciliation.outputs.gem_response }}'
