@@ -188,10 +188,13 @@ serve(async (req: Request) => {
 
     // Process Gem refund
     if (gems_refunded > 0) {
+      // Direct insert: refund amount is variable per booking so we can't use
+      // award_gems_for_activity (which uses the fixed gem_earning_rules.gem_reward).
+      // The enforce_gem_cap_before_insert DB trigger still enforces the 10,000 cap.
       const { error: gemError } = await supabase.from('gem_transactions').insert({
-        student_id: cancellation.student_id,
+        user_id: cancellation.student_id,
         amount: gems_refunded,
-        transaction_type: 'earned',
+        transaction_type: 'booking_cancellation_refund',
         reason: 'booking_cancellation_refund',
         metadata: {
           booking_id,

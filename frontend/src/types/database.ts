@@ -1282,7 +1282,14 @@ export type Database = {
         | 'homework_submission'
         | 'admin_grant'
         | 'booking_discount'
-        | 'admin_deduction';
+        | 'admin_deduction'
+        | 'gem_purchase'
+        | 'gem_purchase_refund'
+        | 'booking_payment'
+        | 'booking_cancellation_refund'
+        | 'earned'
+        | 'spent'
+        | 'refunded';
     };
     CompositeTypes: {
       [_ in never]: never;

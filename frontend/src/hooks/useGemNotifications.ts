@@ -50,10 +50,8 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
 
       // Fetch current balance
       const { data: balanceData, error: balanceError } = await (supabase as any).rpc(
-        'get_student_gem_balance',
-        {
-          student_id: user.id,
-        }
+        'get_gems_balance',
+        { p_user_id: user.id }
       );
 
       if (!balanceError && balanceData !== null) {
@@ -69,7 +67,7 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
             event: 'INSERT',
             schema: 'public',
             table: 'gem_transactions',
-            filter: `student_id=eq.${user.id}`,
+            filter: `user_id=eq.${user.id}`,
           },
           async (payload) => {
             const newTransaction = payload.new;
@@ -78,10 +76,8 @@ export function useGemNotifications(options: UseGemNotificationsOptions = {}) {
             if (newTransaction.amount > 0) {
               // Fetch updated balance
               const { data: newBalanceData } = await (supabase as any).rpc(
-                'get_student_gem_balance',
-                {
-                  student_id: user.id,
-                }
+                'get_gems_balance',
+                { p_user_id: user.id }
               );
 
               const updatedBalance = newBalanceData || currentBalance + newTransaction.amount;

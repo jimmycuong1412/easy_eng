@@ -106,13 +106,11 @@ async function awardSessionRewards(sessionId: string): Promise<{
     // Award Gems and XP to each eligible participant
     for (const participant of participants) {
       try {
-        // Award Gems
-        const { error: gemsError } = await supabase.from('gem_transactions').insert({
-          student_id: participant.user_id,
-          amount: REWARDS.CLASS_COMPLETION.gems,
-          transaction_type: 'earned',
-          reason: 'lesson_completion',
-          metadata: {
+        // Award Gems via award_gems_for_activity — enforces cap, rate limits, and activity rules
+        const { data: gemData, error: gemsError } = await supabase.rpc('award_gems_for_activity', {
+          p_student_id: participant.user_id,
+          p_activity_type: 'lesson_completion',
+          p_metadata: {
             session_id: sessionId,
             class_id: session.class_id,
             attendance_duration: participant.duration_seconds,
@@ -122,6 +120,12 @@ async function awardSessionRewards(sessionId: string): Promise<{
         if (gemsError) {
           errors.push(`Failed to award Gems to ${participant.user_id}: ${gemsError.message}`);
           continue;
+        }
+
+        const gemResult = Array.isArray(gemData) ? gemData[0] : gemData;
+        if (!gemResult?.success) {
+          // Not an error — student may have hit cap or daily rate limit; log and continue
+          console.log(`Gems not awarded to ${participant.user_id}: ${gemResult?.message}`);
         }
 
         // Award XP (if student_characters table exists)

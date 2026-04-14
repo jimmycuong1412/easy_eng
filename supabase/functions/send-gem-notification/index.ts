@@ -107,9 +107,9 @@ async function sendGemNotification(transactionId: string): Promise<{
       throw new Error(`Transaction not found: ${txError?.message || transactionId}`);
     }
 
-    // Only send email for earned Gems (not spent)
-    if (transaction.transaction_type !== 'earned') {
-      console.log('Skipping email for non-earned transaction');
+    // Only send email for positive (earning) transactions
+    if (transaction.amount <= 0) {
+      console.log('Skipping email for non-earning transaction');
       return { success: true };
     }
 
@@ -119,14 +119,12 @@ async function sendGemNotification(transactionId: string): Promise<{
       return { success: true };
     }
 
-    // Get student's current balance
-    const { data: balanceData } = await supabase
-      .from('student_gems')
-      .select('balance')
-      .eq('student_id', transaction.student_id)
-      .single();
+    // Get student's current balance via RPC (gem_transactions ledger, not student_gems)
+    const { data: balanceData } = await supabase.rpc('get_gems_balance', {
+      p_user_id: transaction.user_id,
+    });
 
-    const currentBalance = balanceData?.balance || 0;
+    const currentBalance = (balanceData as number) || 0;
     const previousBalance = currentBalance - transaction.amount;
 
     // Check if XP was also earned
