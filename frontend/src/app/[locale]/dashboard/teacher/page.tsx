@@ -16,7 +16,6 @@ import {
   ChevronRight,
   Video,
   BookOpen,
-  Bell,
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -201,11 +200,6 @@ export default function TeacherDashboardPage() {
           </p>
         </motion.div>
         <motion.div variants={itemVariants} className="flex gap-3">
-          <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
-            <Bell className="w-4 h-4 mr-2" />
-            {t('notifications')}
-            <Badge className="ml-2 bg-red-500 text-white text-xs">3</Badge>
-          </Button>
           <Button className="bg-[#3B82F6] hover:bg-[#3B82F6]/90" onClick={() => router.push('/teacher/classes/new')}>
             <Plus className="w-4 h-4 mr-2" />
             {t('createClass')}
