@@ -2,19 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Live Class Page
- *
- * Main page for live video class sessions
- * Task: T124 Create live class page
- */
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import ClassRoom from '@/components/video/ClassRoom';
 import WaitingRoom from '@/components/video/WaitingRoom';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { MicIcon, CamIcon, DocIcon, BookIcon, FlagIcon, SparkIcon, UsersIcon, GearIcon, PlusIcon, DownloadIcon } from '@/components/editorial/Icons';
 
 interface ClassSession {
   id: string;
@@ -42,21 +35,18 @@ export default function LiveClassPage() {
   const supabase = createClient();
 
   const classId = params.classId as string;
+  const locale = (params.locale as string) ?? 'en';
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<ClassSession | null>(null);
   const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
   const [userRole, setUserRole] = useState<'teacher' | 'student'>('student');
-  const [hasBooking, setHasBooking] = useState(false);
   const [isInWaitingRoom, setIsInWaitingRoom] = useState(true);
-
-  // ============================================================================
-  // Data Loading
-  // ============================================================================
 
   useEffect(() => {
     loadClassData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId]);
 
   const loadClassData = async () => {
@@ -64,131 +54,62 @@ export default function LiveClassPage() {
       setLoading(true);
       setError(null);
 
-      // Get current user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('You must be logged in to access this class');
 
-      if (userError || !user) {
-        throw new Error('You must be logged in to access this class');
-      }
-
-      // Get user profile and role
       const { data: profile, error: profileError } = await (supabase as any)
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
+        .from('profiles').select('role').eq('id', user.id).single();
       if (profileError || !profile) throw profileError ?? new Error('Profile not found');
       setUserRole((profile as any).role as 'teacher' | 'student');
 
-      // Get class details
       const { data: classData, error: classError } = await (supabase as any)
-        .from('classes')
-        .select('*')
-        .eq('id', classId)
-        .single();
-
+        .from('classes').select('*').eq('id', classId).single();
       if (classError) throw classError;
       setClassDetails(classData);
 
-      // Check if student has a valid booking
       if ((profile as any).role === 'student') {
         const { data: booking, error: bookingError } = await (supabase as any)
-          .from('bookings')
-          .select('*')
-          .eq('student_id', user.id)
-          .eq('class_id', classId)
-          .in('status', ['confirmed', 'completed'])
-          .single();
-
-        if (bookingError || !booking) {
-          throw new Error('You must have a confirmed booking to join this class');
-        }
-        setHasBooking(true);
+          .from('bookings').select('*').eq('student_id', user.id).eq('class_id', classId)
+          .in('status', ['confirmed', 'completed']).single();
+        if (bookingError || !booking) throw new Error('You must have a confirmed booking to join this class');
       }
 
-      // Get or create session
       let { data: existingSession, error: sessionError } = await (supabase as any)
-        .from('class_sessions')
-        .select('*')
-        .eq('class_id', classId)
-        .single();
+        .from('class_sessions').select('*').eq('class_id', classId).single();
+      if (sessionError && sessionError.code !== 'PGRST116') throw sessionError;
 
-      if (sessionError && sessionError.code !== 'PGRST116') {
-        throw sessionError;
-      }
-
-      // If no session exists and user is teacher, create one
       if (!existingSession && (profile as any).role === 'teacher' && classData.teacher_id === user.id) {
         const groupId = `class-${classId}-${Date.now()}`;
-
         const { data: newSession, error: createError } = await (supabase as any)
           .from('class_sessions')
-          .insert({
-            class_id: classId,
-            teacher_id: user.id,
-            cometchat_group_id: groupId,
-            status: 'scheduled',
-            scheduled_start_time: classData.scheduled_at,
-            max_participants: classData.capacity,
-          })
-          .select()
-          .single();
-
+          .insert({ class_id: classId, teacher_id: user.id, cometchat_group_id: groupId, status: 'scheduled', scheduled_start_time: classData.scheduled_at, max_participants: classData.capacity })
+          .select().single();
         if (createError) throw createError;
         existingSession = newSession;
       }
 
-      if (!existingSession) {
-        throw new Error('Class session not found');
-      }
-
+      if (!existingSession) throw new Error('Class session not found');
       setSession(existingSession);
       setLoading(false);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load class data';
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : 'Failed to load class data');
       setLoading(false);
     }
   };
 
-  // ============================================================================
-  // Event Handlers
-  // ============================================================================
-
   const handleJoinReady = async () => {
     if (!session) return;
-
     try {
-      // Update session status to live if teacher is starting
       if (userRole === 'teacher') {
-        await (supabase as any)
-          .from('class_sessions')
-          .update({
-            status: 'live',
-            actual_start_time: new Date().toISOString(),
-          })
+        await (supabase as any).from('class_sessions')
+          .update({ status: 'live', actual_start_time: new Date().toISOString() })
           .eq('id', session.id);
-
         setSession({ ...session, status: 'live', actual_start_time: new Date().toISOString() });
       }
-
-      // Record participant joining
       await (supabase as any).from('session_participants').upsert(
-        {
-          session_id: session.id,
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          role: userRole,
-          joined_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'session_id,user_id',
-        }
+        { session_id: session.id, user_id: (await supabase.auth.getUser()).data.user?.id, role: userRole, joined_at: new Date().toISOString() },
+        { onConflict: 'session_id,user_id' }
       );
-
       setIsInWaitingRoom(false);
     } catch (err) {
       console.error('Failed to join class:', err);
@@ -198,75 +119,66 @@ export default function LiveClassPage() {
 
   const handleLeave = async () => {
     if (!session) return;
-
     try {
       const userId = (await supabase.auth.getUser()).data.user?.id;
-
-      // Update participant left time
-      await (supabase as any)
-        .from('session_participants')
-        .update({
-          left_at: new Date().toISOString(),
-        })
-        .eq('session_id', session.id)
-        .eq('user_id', userId);
-
-      // If teacher is leaving, end the session
+      await (supabase as any).from('session_participants')
+        .update({ left_at: new Date().toISOString() })
+        .eq('session_id', session.id).eq('user_id', userId);
       if (userRole === 'teacher') {
-        await (supabase as any)
-          .from('class_sessions')
-          .update({
-            status: 'ended',
-            end_time: new Date().toISOString(),
-          })
-          .eq('id', session.id);
-      }
-
-      // Redirect to appropriate page
-      if (userRole === 'teacher') {
-        router.push('/teacher/classes');
-      } else {
-        router.push('/student/classes');
+        await (supabase as any).from('class_sessions')
+          .update({ status: 'ended', end_time: new Date().toISOString() }).eq('id', session.id);
       }
     } catch (err) {
       console.error('Failed to leave class:', err);
-      // Force redirect anyway
-      router.push(userRole === 'teacher' ? '/teacher/classes' : '/student/classes');
+    } finally {
+      router.push(`/${locale}/${userRole === 'teacher' ? 'teacher/dashboard' : 'student/dashboard'}`);
     }
   };
 
-  const handleError = (error: string | Error) => {
-    console.error('ClassRoom error:', error);
-    setError(typeof error === 'string' ? error : error.message);
+  const handleError = (err: string | Error) => {
+    setError(typeof err === 'string' ? err : err.message);
   };
 
-  // ============================================================================
-  // Render States
-  // ============================================================================
-
+  /* ---- Loading ---- */
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-900">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-12 w-12 animate-spin text-blue-500" />
-          <p className="mt-4 text-lg text-gray-300">Loading class...</p>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--ed-ink-2)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 999,
+            border: '3px solid rgba(255,255,255,0.15)',
+            borderTopColor: 'var(--ed-coral)',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto',
+          }} />
+          <p style={{ marginTop: 20, fontFamily: 'var(--ed-mono)', fontSize: 12, letterSpacing: '.12em', textTransform: 'uppercase', color: '#A3ADD0' }}>
+            Loading class…
+          </p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
     );
   }
 
+  /* ---- Error ---- */
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-900">
-        <div className="max-w-md text-center">
-          <AlertCircle className="mx-auto h-16 w-16 text-red-500" />
-          <h2 className="mt-4 text-xl font-semibold text-white">Unable to Join Class</h2>
-          <p className="mt-2 text-gray-400">{error}</p>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--ed-ink-2)' }}>
+        <div style={{ maxWidth: 420, textAlign: 'center', padding: 40 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 16, background: 'var(--ed-coral-2)',
+            display: 'grid', placeItems: 'center', margin: '0 auto',
+          }}>
+            <FlagIcon style={{ width: 28, height: 28, stroke: 'var(--ed-coral-ink)' }} />
+          </div>
+          <h2 className="ed-serif" style={{ fontSize: 28, color: '#F4EFE2', marginTop: 20 }}>Unable to join class</h2>
+          <p style={{ fontFamily: 'var(--ed-sans)', fontSize: 14, color: '#A3ADD0', marginTop: 8, lineHeight: 1.5 }}>{error}</p>
           <button
-            onClick={() => router.push(userRole === 'teacher' ? '/teacher/classes' : '/student/classes')}
-            className="mt-6 rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
+            onClick={() => router.push(`/${locale}/${userRole === 'teacher' ? 'teacher/dashboard' : 'student/dashboard'}`)}
+            className="ed-btn ed-btn-coral"
+            style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
-            Back to Classes
+            Back to dashboard
           </button>
         </div>
       </div>
@@ -275,15 +187,13 @@ export default function LiveClassPage() {
 
   if (!session || !classDetails) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-900">
-        <div className="text-center text-gray-400">
-          <p>Session not found</p>
-        </div>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--ed-ink-2)' }}>
+        <p style={{ fontFamily: 'var(--ed-mono)', color: '#A3ADD0', fontSize: 13 }}>Session not found</p>
       </div>
     );
   }
 
-  // Show waiting room before class starts
+  /* ---- Waiting room ---- */
   if (isInWaitingRoom || session.status === 'scheduled' || session.status === 'waiting') {
     return (
       <WaitingRoom
@@ -296,7 +206,7 @@ export default function LiveClassPage() {
     );
   }
 
-  // Show classroom when live
+  /* ---- Live classroom ---- */
   if (session.status === 'live') {
     return (
       <ClassRoom
@@ -310,17 +220,32 @@ export default function LiveClassPage() {
     );
   }
 
-  // Class has ended
+  /* ---- Class ended ---- */
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-900">
-      <div className="max-w-md text-center">
-        <h2 className="text-2xl font-semibold text-white">Class Has Ended</h2>
-        <p className="mt-2 text-gray-400">Thank you for attending!</p>
+    <div
+      style={{
+        display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--ed-ink-2)',
+      }}
+    >
+      <div style={{ maxWidth: 440, textAlign: 'center', padding: 40 }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 16,
+          background: 'rgba(255,255,255,0.08)',
+          display: 'grid', placeItems: 'center', margin: '0 auto',
+        }}>
+          <BookIcon style={{ width: 28, height: 28, stroke: '#F4EFE2' }} />
+        </div>
+        <h2 className="ed-serif" style={{ fontSize: 32, color: '#F4EFE2', marginTop: 20 }}>Class has ended.</h2>
+        <p style={{ fontFamily: 'var(--ed-sans)', fontSize: 15, color: '#A3ADD0', marginTop: 8 }}>
+          Thank you for attending. Your notes have been saved.
+        </p>
         <button
-          onClick={() => router.push(userRole === 'teacher' ? '/teacher/classes' : '/student/classes')}
-          className="mt-6 rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
+          onClick={() => router.push(`/${locale}/${userRole === 'teacher' ? 'teacher/dashboard' : 'student/dashboard'}`)}
+          className="ed-btn ed-btn-primary"
+          style={{ marginTop: 28, display: 'inline-flex', alignItems: 'center', gap: 8 }}
         >
-          Back to Classes
+          Back to dashboard
         </button>
       </div>
     </div>

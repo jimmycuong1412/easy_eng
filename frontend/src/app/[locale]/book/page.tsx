@@ -3,22 +3,29 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
+import { useParams } from 'next/navigation';
+import { EdTopBar } from '@/components/editorial/TopBar';
 import { ClassCatalog } from '@/components/booking/ClassCatalog';
 import { BookingFlow } from '@/components/booking/BookingFlow';
 import { ClassData } from '@/components/booking/ClassCard';
+import {
+  ArrowRIcon, FilterIcon, PinIcon, GlobeIcon, StarIcon, CheckIcon,
+} from '@/components/editorial/Icons';
 
 export default function BookClassesPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) ?? 'en';
+
   const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [step] = useState(2); // design shows step 2
 
   const handleSelectClass = (classData: ClassData) => {
     setSelectedClass(classData);
     setBookingSuccess(false);
   };
 
-  const handleCancelBooking = () => {
-    setSelectedClass(null);
-  };
+  const handleCancelBooking = () => setSelectedClass(null);
 
   const handleBookingSuccess = () => {
     setBookingSuccess(true);
@@ -29,39 +36,311 @@ export default function BookClassesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        {/* Success Message */}
+    <div className="ed-frame">
+      <EdTopBar role="student" initials="AL" locale={locale} />
+
+      <main className="ed-content" id="main-content">
+        {/* Success banner */}
         {bookingSuccess && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
-            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div
+            style={{
+              marginBottom: 24, padding: '14px 20px', borderRadius: 12,
+              background: 'var(--ed-paper-2)', border: '1px solid var(--ed-rule-strong)',
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}
+          >
+            <CheckIcon style={{ width: 18, height: 18, stroke: 'oklch(0.5 0.13 150)' }} />
             <div>
-              <p className="font-medium text-green-900">Booking Successful!</p>
-              <p className="text-sm text-green-700">Your class has been booked. Check your email for confirmation.</p>
+              <p style={{ fontWeight: 600, color: 'var(--ed-ink-2)', fontSize: 15 }}>Booking confirmed.</p>
+              <p className="ed-body" style={{ marginTop: 2 }}>We'll send details to your email.</p>
             </div>
           </div>
         )}
 
-        {/* Show booking flow if class selected, otherwise show catalog */}
         {selectedClass ? (
-          <BookingFlow
-            selectedClass={selectedClass}
-            onCancel={handleCancelBooking}
-            onSuccess={handleBookingSuccess}
-          />
+          /* Hand off to existing booking flow — wrapped in editorial shell */
+          <div>
+            <button
+              onClick={handleCancelBooking}
+              className="ed-btn ed-btn-ghost"
+              style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              ← Back to tutors
+            </button>
+            <BookingFlow
+              selectedClass={selectedClass}
+              onCancel={handleCancelBooking}
+              onSuccess={handleBookingSuccess}
+            />
+          </div>
         ) : (
           <>
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Book a Class</h1>
-              <p className="text-gray-600">
-                Choose from our available classes and use your Gems to get discounts!
-              </p>
+            {/* Wizard header */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+              <div>
+                <p className="ed-eyebrow">Book a session · Step {step} of 3</p>
+                <h1
+                  className="ed-display"
+                  style={{ fontSize: 'clamp(32px, 4vw, 52px)', marginTop: 8, marginBottom: 0 }}
+                >
+                  Pick someone you'd like to talk with.
+                </h1>
+                <p className="ed-body" style={{ marginTop: 10, maxWidth: 560 }}>
+                  We've narrowed it to tutors who match your level and the things you said you'd like to work on.
+                </p>
+              </div>
+              <BookingStepper step={step} />
             </div>
-            <ClassCatalog onSelectClass={handleSelectClass} />
+
+            <hr className="ed-divider" style={{ marginTop: 28 }} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 32, marginTop: 28 }}>
+              {/* Filters */}
+              <aside>
+                <p className="ed-eyebrow">Filters</p>
+
+                <FilterBlock title="Focus">
+                  {['Speaking', 'Writing', 'Grammar', 'Pronunciation', 'Test prep'].map((t, i) => (
+                    <CheckRow key={i} label={t} checked={i === 0 || i === 2} />
+                  ))}
+                </FilterBlock>
+
+                <FilterBlock title="Speaks">
+                  {['English', 'Spanish', 'Portuguese', 'Mandarin', 'Arabic'].map((t, i) => (
+                    <CheckRow key={i} label={t} checked={i === 0 || i === 1} />
+                  ))}
+                </FilterBlock>
+
+                <FilterBlock title="Time of day">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                    {['Early', 'Morning', 'Midday', 'Evening', 'Late'].map((t, i) => (
+                      <span
+                        key={i}
+                        className={`ed-chip ${i === 3 ? 'ed-chip-ink' : ''}`}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </FilterBlock>
+
+                <FilterBlock title="Lesson length">
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                    {['25 min', '50 min', '90 min'].map((t, i) => (
+                      <span
+                        key={i}
+                        className={`ed-chip ${i === 1 ? 'ed-chip-ink' : ''}`}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </FilterBlock>
+              </aside>
+
+              {/* Tutor list */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <span className="ed-tiny">12 tutors match · sorted by best fit</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="ed-btn ed-btn-sm">Best fit ↓</button>
+                    <button className="ed-btn ed-btn-sm ed-btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <FilterIcon style={{ width: 13, height: 13 }} /> More
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <TutorCard
+                    selected
+                    name="Maria Rojas" loc="Buenos Aires" speaks="EN, ES, PT"
+                    tag="Your tutor"
+                    bio="Calm, patient, and very good with people who freeze up. Specialises in conversational fluency and writing for work."
+                    rate="$24/h" rating="4.96" sessions="2,310"
+                    slots={['Today 2pm', 'Today 6pm', 'Tomorrow 9am']}
+                    focus={['Speaking', 'Writing', 'Business']}
+                    onSelect={() => {}}
+                  />
+                  <TutorCard
+                    name="Daniel Khoury" loc="Beirut" speaks="EN, AR, FR"
+                    bio="Former journalist. Loves working on argument structure, clarity, and finding your voice in writing."
+                    rate="$28/h" rating="4.91" sessions="1,840"
+                    slots={['Today 8pm', 'Friday 7am', 'Friday 10am']}
+                    focus={['Writing', 'Grammar']}
+                    onSelect={() => {}}
+                  />
+                  <TutorCard
+                    name="Yuki Tanaka" loc="Kyoto" speaks="EN, JA"
+                    bio="Direct and structured. Best for learners who want to drill and want feedback that doesn't sugar-coat."
+                    rate="$22/h" rating="4.88" sessions="3,021"
+                    slots={['Friday 6am', 'Friday 8am', 'Sat 11am']}
+                    focus={['Pronunciation', 'Drills']}
+                    onSelect={() => {}}
+                  />
+                </div>
+
+                {/* Also render the real class catalog below the editorial tutors */}
+                <div style={{ marginTop: 32 }}>
+                  <p className="ed-eyebrow" style={{ marginBottom: 14 }}>All available classes</p>
+                  <ClassCatalog onSelectClass={handleSelectClass} />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+                  <button className="ed-btn ed-btn-ghost">← Back to focus</button>
+                  <button className="ed-btn ed-btn-primary ed-btn-lg" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    Continue with Maria <ArrowRIcon />
+                  </button>
+                </div>
+              </div>
+            </div>
           </>
         )}
+
+        <div style={{ height: 60 }} />
+      </main>
+    </div>
+  );
+}
+
+/* ---- Stepper ---- */
+function BookingStepper({ step }: { step: number }) {
+  const steps = ['Focus', 'Tutor', 'Time'];
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, marginLeft: 24 }}>
+      {steps.map((s, i) => {
+        const idx = i + 1;
+        const done = idx < step, cur = idx === step;
+        return (
+          <React.Fragment key={i}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span
+                style={{
+                  width: 24, height: 24, borderRadius: 999, display: 'grid', placeItems: 'center',
+                  background: done ? 'var(--ed-ink)' : cur ? 'var(--ed-coral-2)' : 'var(--ed-paper-2)',
+                  color: done ? '#F4EFE2' : cur ? 'var(--ed-coral-ink)' : 'var(--ed-ink-mute)',
+                  fontFamily: 'var(--ed-mono)', fontSize: 11,
+                  border: '1px solid var(--ed-rule)',
+                  flexShrink: 0,
+                }}
+              >
+                {done ? '✓' : idx}
+              </span>
+              <span
+                className="ed-mono"
+                style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: cur ? 'var(--ed-ink-2)' : 'var(--ed-ink-mute)' }}
+              >
+                {s}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div style={{ width: 24, height: 1, background: 'var(--ed-rule-strong)' }} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---- Filter block ---- */
+function FilterBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginTop: 22 }}>
+      <p className="ed-serif" style={{ fontSize: 18, color: 'var(--ed-ink-2)', marginBottom: 8, letterSpacing: '-0.01em' }}>{title}</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div>
+    </div>
+  );
+}
+
+/* ---- Checkbox row ---- */
+function CheckRow({ label, checked }: { label: string; checked: boolean }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '3px 0' }}>
+      <span
+        style={{
+          width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+          background: checked ? 'var(--ed-ink)' : 'var(--ed-card)',
+          border: `1px solid ${checked ? 'var(--ed-ink)' : 'var(--ed-rule-strong)'}`,
+          display: 'grid', placeItems: 'center', color: '#F4EFE2',
+        }}
+      >
+        {checked && <CheckIcon style={{ width: 10, height: 10, strokeWidth: 2.5 }} />}
+      </span>
+      <span style={{ fontSize: 14, color: 'var(--ed-ink-2)' }}>{label}</span>
+    </label>
+  );
+}
+
+/* ---- Tutor card ---- */
+function TutorCard({
+  selected, name, loc, speaks, tag, bio, rate, rating, sessions, slots, focus, onSelect,
+}: {
+  selected?: boolean; name: string; loc: string; speaks: string; tag?: string;
+  bio: string; rate: string; rating: string; sessions: string;
+  slots: string[]; focus: string[]; onSelect: () => void;
+}) {
+  return (
+    <div
+      style={{
+        border: `1px solid ${selected ? 'var(--ed-ink)' : 'var(--ed-rule)'}`,
+        borderRadius: 14,
+        background: 'var(--ed-card)',
+        boxShadow: selected ? '0 0 0 4px rgba(11,42,107,0.08)' : 'none',
+        padding: 22,
+        display: 'grid',
+        gridTemplateColumns: 'auto 1fr auto',
+        gap: 22,
+      }}
+    >
+      <div className="ed-image-slot" style={{ width: 88, height: 112, borderRadius: 10, flexShrink: 0 }}>
+        <span style={{ fontSize: 9 }}>portrait</span>
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+          <p className="ed-serif" style={{ fontSize: 24, color: 'var(--ed-ink-2)', letterSpacing: '-0.02em' }}>{name}</p>
+          {tag && <span className="ed-chip ed-chip-sky">{tag}</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
+          <span className="ed-tiny" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <PinIcon style={{ width: 10, height: 10 }} /> {loc}
+          </span>
+          <span className="ed-tiny" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <GlobeIcon style={{ width: 10, height: 10 }} /> {speaks}
+          </span>
+          <span className="ed-tiny" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <StarIcon style={{ width: 10, height: 10 }} /> {rating} · {sessions}
+          </span>
+        </div>
+        <p className="ed-body" style={{ marginTop: 10, maxWidth: 500, fontStyle: 'italic', color: 'var(--ed-ink-soft)' }}>"{bio}"</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+          {focus.map((f, i) => <span key={i} className="ed-chip">{f}</span>)}
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end', flexShrink: 0 }}>
+        <p className="ed-serif" style={{ fontSize: 22, color: 'var(--ed-ink-2)' }}>{rate}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 160 }}>
+          {slots.map((s, i) => (
+            <button
+              key={i}
+              className="ed-btn ed-btn-sm"
+              style={{
+                justifyContent: 'space-between',
+                background: selected && i === 0 ? 'var(--ed-ink)' : 'var(--ed-paper-2)',
+                color: selected && i === 0 ? '#F4EFE2' : 'var(--ed-ink-2)',
+                borderColor: selected && i === 0 ? 'var(--ed-ink)' : 'var(--ed-rule-strong)',
+                display: 'flex', alignItems: 'center',
+              }}
+              onClick={onSelect}
+            >
+              {s} <ArrowRIcon style={{ width: 11, height: 11 }} />
+            </button>
+          ))}
+          <button className="ed-btn ed-btn-sm ed-btn-ghost" style={{ justifyContent: 'center' }}>
+            More times →
+          </button>
+        </div>
       </div>
     </div>
   );
