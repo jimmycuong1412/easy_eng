@@ -95,11 +95,12 @@
 
   html {
     @apply scroll-smooth;
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   body {
-    @apply bg-bg-primary text-text-primary antialiased;
+    @apply text-text-primary antialiased;
+    background-color: #F7F4ED;
     font-family: var(--font-sans);
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
