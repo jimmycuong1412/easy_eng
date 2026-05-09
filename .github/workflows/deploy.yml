@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [001-english-learning-platform]
   workflow_dispatch:
     inputs:
       environment:
@@ -114,7 +114,7 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: frontend
-          vercel-args: ${{ (github.event.inputs.environment == 'production' || github.ref == 'refs/heads/main') && '--prod' || '' }}
+          vercel-args: ${{ (github.event.inputs.environment == 'production' || github.ref == 'refs/heads/001-english-learning-platform') && '--prod' || '' }}
 
   # ──────────────────────────────────────────────────
   # 4. Post-deploy health check
