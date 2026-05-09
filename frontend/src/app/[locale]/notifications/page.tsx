@@ -112,6 +112,24 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
   const { preferences, updatePreference } = useNotificationPreferences();
 
+  const sendTestNotification = async () => {
+    if (!user?.id) return;
+    const supabase = (await import('@/lib/supabase/client')).createClient();
+
+    const testId = `test-${Date.now()}`;
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      type: 'system_announcement',
+      title: 'Diagnostic Test',
+      message: `If you see this, notification list rendering is working! (${testId})`,
+      priority: 'high',
+      metadata: { test_id: testId }
+    });
+    
+    // Refresh list (normally we'd use realtime, but a simple refetch for test is fine)
+    window.location.reload();
+  };
+
   React.useEffect(() => {
     if (!user?.id) return;
     getUserNotifications(user.id)
@@ -171,13 +189,6 @@ export default function NotificationsPage() {
     setNotifications([]);
   };
 
-  const toggleSetting = (key: string) => {
-    const dbType = SETTING_KEY_TO_DB_TYPE[key];
-    if (!dbType) return;
-    const current = preferences[dbType]?.in_app ?? true;
-    updatePreference(dbType, 'in_app', !current).catch(console.error);
-  };
-
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* Header */}
@@ -194,29 +205,41 @@ export default function NotificationsPage() {
               : t('allRead')}
           </p>
         </div>
-        {notifications.length > 0 && (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-white/20 text-white"
-              onClick={markAllAsRead}
-              disabled={unreadCount === 0}
-            >
-              <Check className="w-4 h-4 mr-1" />
-              {t('markAllRead')}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-red-500/50 text-red-400"
-              onClick={clearAll}
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
-              {t('clearAll')}
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-[#3B82F6]/50 text-[#3B82F6]"
+            onClick={sendTestNotification}
+          >
+            <Bell className="w-4 h-4 mr-1" />
+            Test
+          </Button>
+
+          {notifications.length > 0 && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-white/20 text-white"
+                onClick={markAllAsRead}
+                disabled={unreadCount === 0}
+              >
+                <Check className="w-4 h-4 mr-1" />
+                {t('markAllRead')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-red-500/50 text-red-400"
+                onClick={clearAll}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                {t('clearAll')}
+              </Button>
+            </div>
+          )}
+        </div>
       </motion.div>
 
       <Tabs defaultValue="all" className="space-y-6">
@@ -407,7 +430,13 @@ export default function NotificationsPage() {
                   <Switch
                     id={`toggle-${key}`}
                     checked={preferences[SETTING_KEY_TO_DB_TYPE[key] ?? key]?.in_app ?? true}
-                    onCheckedChange={() => toggleSetting(key)}
+                    onCheckedChange={(checked) => {
+                      console.log(`[NotificationsPage] Toggle ${key} changed to ${checked}`);
+                      const dbType = SETTING_KEY_TO_DB_TYPE[key];
+                      if (dbType) {
+                        updatePreference(dbType, 'in_app', checked).catch(console.error);
+                      }
+                    }}
                   />
                 </div>
               ))}
