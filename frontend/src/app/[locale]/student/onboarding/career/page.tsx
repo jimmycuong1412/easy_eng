@@ -139,7 +139,7 @@ export default function CareerOnboardingPage() {
   const selectedCareerData = careers.find((c) => c.id === selectedCareer)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#142844] to-[#0A1628] py-12 px-4">
+    <div className="min-h-screen bg-bg-primary py-12 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Progress Indicator */}
         <div className="mb-8">

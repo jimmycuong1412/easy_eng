@@ -145,7 +145,7 @@ export default function QuizListPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
+    <div className="min-h-screen bg-bg-primary">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
         <motion.div

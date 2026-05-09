@@ -208,7 +208,7 @@ export default function ClassCatalogPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-[#3B82F6] animate-spin mx-auto mb-4" />
           <p className="text-slate-400">{t('loading')}</p>
@@ -219,7 +219,7 @@ export default function ClassCatalogPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-white mb-2">{t('loadFailed')}</h2>
@@ -236,7 +236,7 @@ export default function ClassCatalogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
+    <div className="min-h-screen bg-bg-primary">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <motion.div

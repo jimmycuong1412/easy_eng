@@ -185,7 +185,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
   // Loading Screen
   if (quizState === 'loading' || !quiz) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
       </div>
     );
@@ -194,7 +194,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
   // Intro Screen
   if (quizState === 'intro') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -272,7 +272,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
     const results = calculateResults();
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -406,7 +406,7 @@ export default function QuizPage({ params }: { params: { quizId: string } }) {
 
   // Quiz Screen
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
+    <div className="min-h-screen bg-bg-primary">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

@@ -133,7 +133,7 @@ export default function ClassMaterialsPage({ params }: { params: { classId: stri
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -178,7 +178,7 @@ export default function ClassMaterialsPage({ params }: { params: { classId: stri
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] py-8">
+    <div className="min-h-screen bg-bg-primary py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <motion.div

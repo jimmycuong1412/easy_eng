@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { ArrowRIcon } from '@/components/editorial/Icons';
 
 export default function Error({
   error,
@@ -14,17 +15,38 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="max-w-md text-center">
-        <h2 className="text-2xl font-bold text-red-600">Something went wrong</h2>
-        <p className="mt-2 text-muted-foreground">
+    <div
+      className="ed-frame"
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 24px',
+      }}
+    >
+      <div style={{ maxWidth: 480, textAlign: 'center' }}>
+        <p className="ed-eyebrow">Something went wrong · 500</p>
+        <h2
+          className="ed-display"
+          style={{
+            fontSize: 'clamp(36px, 4.5vw, 52px)',
+            marginTop: 8,
+            color: 'var(--ed-coral-ink)',
+            letterSpacing: '-0.025em',
+          }}
+        >
+          We hit a snag.
+        </h2>
+        <p className="ed-body" style={{ marginTop: 14, maxWidth: 360, marginInline: 'auto' }}>
           An unexpected error occurred. Please try again.
         </p>
         <button
           onClick={reset}
-          className="mt-6 rounded-lg bg-primary px-6 py-2 text-white hover:bg-primary/90"
+          className="ed-btn ed-btn-primary ed-btn-lg"
+          style={{ marginTop: 22 }}
         >
-          Try again
+          Try again <ArrowRIcon />
         </button>
       </div>
     </div>

@@ -177,7 +177,7 @@ export default function CancelBookingPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -194,7 +194,7 @@ export default function CancelBookingPage({
 
   if (step === 'success') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -262,7 +262,7 @@ export default function CancelBookingPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A1628] via-[#1E3A5F] to-[#0A1628]">
+    <div className="min-h-screen bg-bg-primary">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <motion.div

@@ -324,6 +324,25 @@
 .ed-ink-panel .text-slate-200,
 .ed-ink-panel.text-slate-200 { color: #DDE3F1 !important; }
 
+/* Pre-redesign cards relied on 5-10% white over a dark page bg.
+   On warm paper that vanishes, so swap to a paper-friendly tint. */
+.bg-white\/5  { background-color: rgba(11, 42, 107, 0.04) !important; }
+.bg-white\/10 { background-color: rgba(11, 42, 107, 0.06) !important; }
+.bg-white\/20 { background-color: rgba(11, 42, 107, 0.08) !important; }
+.border-white\/5  { border-color: rgba(11, 42, 107, 0.05) !important; }
+.border-white\/10 { border-color: rgba(11, 42, 107, 0.10) !important; }
+.border-white\/20 { border-color: rgba(11, 42, 107, 0.14) !important; }
+.hover\:bg-white\/10:hover { background-color: rgba(11, 42, 107, 0.08) !important; }
+.hover\:bg-white\/20:hover { background-color: rgba(11, 42, 107, 0.12) !important; }
+
+/* Inside an ink panel the original semantics still apply */
+.ed-ink-panel .bg-white\/5  { background-color: rgba(255,255,255,0.05) !important; }
+.ed-ink-panel .bg-white\/10 { background-color: rgba(255,255,255,0.10) !important; }
+.ed-ink-panel .bg-white\/20 { background-color: rgba(255,255,255,0.20) !important; }
+.ed-ink-panel .border-white\/5  { border-color: rgba(255,255,255,0.05) !important; }
+.ed-ink-panel .border-white\/10 { border-color: rgba(255,255,255,0.10) !important; }
+.ed-ink-panel .border-white\/20 { border-color: rgba(255,255,255,0.20) !important; }
+
 /* ============================================================
    Editorial design system — Direction A
    All scoped under .ed- prefix to avoid collision with dark theme
