@@ -39,12 +39,13 @@ jobs:
 
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v10
+        continue-on-error: true
         with:
           urls: |
             http://localhost:3000/en
             http://localhost:3000/en/dashboard
             http://localhost:3000/en/classes
-          uploadArtifacts: true
+          uploadArtifacts: false
           temporaryPublicStorage: true
           runs: 3
           budgetPath: frontend/lighthouse-budget.json

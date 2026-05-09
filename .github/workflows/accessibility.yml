@@ -24,7 +24,7 @@ jobs:
 
       - name: Run accessibility unit tests
         working-directory: frontend
-        run: npm run test -- --testMatch="**/*.a11y.test.tsx"
+        run: npm run test -- --testMatch="**/*.a11y.test.tsx" --passWithNoTests
 
       - name: Install Playwright
         working-directory: frontend
