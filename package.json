@@ -14,5 +14,8 @@
   "devDependencies": {
     "@supabase/supabase-js": "^2.93.3",
     "supabase": "^2.75.0"
+  },
+  "dependencies": {
+    "geist": "^1.7.0"
   }
 }
