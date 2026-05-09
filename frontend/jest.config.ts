@@ -29,6 +29,7 @@ const config: Config = {
     '!src/app/**/loading.tsx',
     '!src/app/**/error.tsx',
     '!src/app/**/not-found.tsx',
+    '!src/components/editorial/**', // Editorial UI components (no business logic)
   ],
 
   // Coverage thresholds

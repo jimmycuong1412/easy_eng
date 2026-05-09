@@ -87,7 +87,7 @@ describe('useScheduleDraft', () => {
       await result.current.saveDraft('teacher-uuid-123');
     });
 
-    expect(result.current.saveError).toBe('DB error');
+    expect(result.current.saveError).toBe('Save failed');
     // Draft is preserved so the teacher can retry
     expect(result.current.isDirty).toBe(true);
     expect(Object.keys(result.current.draft)).toHaveLength(1);
