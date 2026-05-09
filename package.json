@@ -13,10 +13,6 @@
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.93.3",
-    "dotenv": "^17.4.2",
     "supabase": "^2.75.0"
-  },
-  "dependencies": {
-    "geist": "^1.7.0"
   }
 }
