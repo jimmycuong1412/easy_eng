@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { GemImage } from '@/components/common/GemImage';
 
 export default function AuthLayout({
   children,
@@ -7,26 +6,48 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-primary flex flex-col">
-      {/* Header */}
-      <header className="p-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xl font-bold text-gradient hover:opacity-80 transition-opacity"
-        >
-          <GemImage size={28} alt="Gem" />
-          EasyEng
+    <div className="ed-frame" style={{ minHeight: '100vh' }}>
+      {/* Editorial header */}
+      <header
+        style={{
+          padding: '20px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid var(--ed-rule)',
+        }}
+      >
+        <Link href="/" className="ed-brand">
+          <span className="ed-brand-mark">e</span>
+          <span>easyeng</span>
         </Link>
+        <p className="ed-eyebrow">A new way to learn English</p>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8">
+      {/* Main */}
+      <main
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '40px 24px',
+        }}
+      >
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-text-muted text-sm">
-        <p>&copy; {new Date().getFullYear()} EasyEng. All rights reserved.</p>
+      <footer
+        style={{
+          padding: '20px 28px',
+          textAlign: 'center',
+          borderTop: '1px solid var(--ed-rule)',
+        }}
+      >
+        <p className="ed-tiny">
+          &copy; {new Date().getFullYear()} EasyEng. All rights reserved.
+        </p>
       </footer>
     </div>
   );

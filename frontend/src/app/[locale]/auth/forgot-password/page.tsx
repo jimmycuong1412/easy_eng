@@ -4,13 +4,21 @@ export const dynamic = 'force-dynamic';
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowRIcon, CheckIcon } from '@/components/editorial/Icons';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '11px 14px',
+  borderRadius: 10,
+  border: '1px solid var(--ed-rule-strong)',
+  background: 'var(--ed-paper)',
+  color: 'var(--ed-ink-2)',
+  fontFamily: 'var(--ed-sans)',
+  fontSize: 14,
+  outline: 'none',
+};
 
 export default function ForgotPasswordPage() {
   const { resetPassword, isLoading, error } = useAuth();
@@ -22,12 +30,10 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
-
     if (!email) {
       setFormError('Vui lòng nhập email');
       return;
     }
-
     try {
       await resetPassword(email);
       setSuccess(true);
@@ -38,83 +44,127 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md"
-      >
-        <Card variant="glass" className="border-border-default text-center">
-          <CardHeader>
-            <div className="text-6xl mb-4">📧</div>
-            <CardTitle className="text-2xl">Kiểm tra email</CardTitle>
-            <CardDescription>
-              Nếu email <strong>{email}</strong> tồn tại trong hệ thống, bạn sẽ nhận được 
-              link khôi phục mật khẩu. Vui lòng kiểm tra hộp thư (kể cả spam).
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/auth/login">
-              <Button variant="outline">Quay lại đăng nhập</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </motion.div>
+      <div style={{ width: '100%', maxWidth: 440, textAlign: 'center' }}>
+        <div
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: '50%',
+            background: 'var(--ed-coral-2)',
+            color: 'var(--ed-coral-ink)',
+            display: 'grid',
+            placeItems: 'center',
+            margin: '0 auto 18px',
+          }}
+        >
+          <CheckIcon />
+        </div>
+        <p className="ed-eyebrow">Sent</p>
+        <h1
+          className="ed-display"
+          style={{ fontSize: 'clamp(32px, 4vw, 44px)', marginTop: 8 }}
+        >
+          Kiểm tra email.
+        </h1>
+        <p className="ed-body" style={{ marginTop: 14, maxWidth: 380, marginInline: 'auto' }}>
+          Nếu email <strong style={{ color: 'var(--ed-ink-2)' }}>{email}</strong> tồn tại trong hệ
+          thống, bạn sẽ nhận được link khôi phục mật khẩu. Vui lòng kiểm tra hộp thư (kể cả spam).
+        </p>
+        <Link href="/auth/login" className="ed-btn ed-btn-primary" style={{ marginTop: 22 }}>
+          Quay lại đăng nhập <ArrowRIcon />
+        </Link>
+      </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="w-full max-w-md"
-    >
-      <Card variant="glass" className="border-border-default">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Quên mật khẩu?</CardTitle>
-          <CardDescription>
-            Nhập email của bạn và chúng tôi sẽ gửi link khôi phục mật khẩu
-          </CardDescription>
-        </CardHeader>
+    <div style={{ width: '100%', maxWidth: 440 }}>
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <p className="ed-eyebrow">Reset password</p>
+        <h1
+          className="ed-display"
+          style={{
+            fontSize: 'clamp(32px, 4vw, 46px)',
+            marginTop: 8,
+            letterSpacing: '-0.025em',
+          }}
+        >
+          Quên mật khẩu?
+        </h1>
+        <p className="ed-body" style={{ marginTop: 10, maxWidth: 360, marginInline: 'auto' }}>
+          Nhập email của bạn và chúng tôi sẽ gửi link khôi phục mật khẩu.
+        </p>
+      </div>
 
-        <CardContent className="space-y-6">
-          {/* Error messages */}
-          {(formError || error) && (
-            <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-error text-sm">
-              {formError || error?.message}
-            </div>
-          )}
+      <article className="ed-card" style={{ padding: 28 }}>
+        {(formError || error) && (
+          <div
+            role="alert"
+            style={{
+              padding: '12px 14px',
+              borderRadius: 10,
+              background: 'var(--ed-coral-2)',
+              color: 'var(--ed-coral-ink)',
+              fontFamily: 'var(--ed-sans)',
+              fontSize: 13,
+              marginBottom: 18,
+            }}
+          >
+            {formError || error?.message}
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                autoComplete="email"
-              />
-            </div>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <label htmlFor="email" className="ed-eyebrow" style={{ display: 'block', marginBottom: 8 }}>
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+              autoComplete="email"
+              style={inputStyle}
+            />
+          </div>
 
-            <Button type="submit" className="w-full" isLoading={isLoading}>
-              Gửi link khôi phục
-            </Button>
-          </form>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="ed-btn ed-btn-primary ed-btn-lg"
+            style={{ width: '100%', justifyContent: 'center', marginTop: 6 }}
+          >
+            {isLoading ? '…' : 'Gửi link khôi phục'} <ArrowRIcon />
+          </button>
+        </form>
+      </article>
 
-          <p className="text-center text-sm text-text-secondary">
-            Nhớ mật khẩu rồi?{' '}
-            <Link
-              href="/auth/login"
-              className="text-accent-primary hover:underline font-medium"
-            >
-              Đăng nhập
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </motion.div>
+      <p
+        style={{
+          textAlign: 'center',
+          marginTop: 20,
+          fontFamily: 'var(--ed-sans)',
+          fontSize: 14,
+          color: 'var(--ed-ink-soft)',
+        }}
+      >
+        Nhớ mật khẩu rồi?{' '}
+        <Link
+          href="/auth/login"
+          style={{
+            color: 'var(--ed-ink-2)',
+            fontWeight: 600,
+            textDecoration: 'underline',
+            textDecorationColor: 'var(--ed-rule-strong)',
+            textUnderlineOffset: 4,
+          }}
+        >
+          Đăng nhập
+        </Link>
+      </p>
+    </div>
   );
 }

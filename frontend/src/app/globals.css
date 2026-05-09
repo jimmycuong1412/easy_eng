@@ -4,37 +4,37 @@
 
 /* CSS Variables for Design System */
 :root {
-  /* Background Colors */
-  --bg-primary: #0a1628;
-  --bg-secondary: #1e3a5f;
-  --bg-surface: #1e293b;
-  --bg-elevated: #334155;
+  /* Background Colors — remapped to Editorial Direction A (warm paper) */
+  --bg-primary: #F7F4ED;
+  --bg-secondary: #EFEAE0;
+  --bg-surface: #FBF9F4;
+  --bg-elevated: #EFEAE0;
 
-  /* Accent Colors */
-  --accent-primary: #3b82f6;
-  --accent-secondary: #06b6d4;
-  --accent-gold: #ffd700;
-  --accent-gem: #f97316;
-  --accent-cookie: #f97316; /* legacy alias for accent-gem */
+  /* Accent Colors — remapped to editorial ink + coral */
+  --accent-primary: #0B2A6B;
+  --accent-secondary: #2A3F7A;
+  --accent-gold: #B5832A;
+  --accent-gem: #C44E22;
+  --accent-cookie: #C44E22;
 
   /* Semantic Colors */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  --color-success: #1F8A55;
+  --color-warning: #B27514;
+  --color-error: #B23A3A;
 
-  /* Text Colors */
-  --text-primary: #ffffff;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  /* Text Colors — editorial ink */
+  --text-primary: #0A1F4F;
+  --text-secondary: #2A3F7A;
+  --text-muted: #5C6A92;
 
   /* Border Colors */
-  --border-default: #334155;
-  --border-focus: #3b82f6;
+  --border-default: rgba(42, 42, 42, 0.15);
+  --border-focus: #0B2A6B;
 
-  /* Shadows */
-  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
-  --shadow-glow-lg: 0 0 40px rgba(59, 130, 246, 0.4);
-  --shadow-card-hover: 0 20px 40px rgba(59, 130, 246, 0.15);
+  /* Shadows — soft warm shadows */
+  --shadow-glow: 0 8px 22px rgba(11, 42, 107, 0.08);
+  --shadow-glow-lg: 0 16px 40px rgba(11, 42, 107, 0.12);
+  --shadow-card-hover: 0 12px 28px rgba(11, 42, 107, 0.10);
 
   /* Animation Durations */
   --duration-instant: 50ms;

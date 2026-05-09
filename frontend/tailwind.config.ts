@@ -10,36 +10,53 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Primary backgrounds
-        'bg-primary': '#0A1628',
-        'bg-secondary': '#1E3A5F',
-        'bg-surface': '#1E293B',
-        'bg-elevated': '#334155',
+        // Primary backgrounds — remapped to Editorial Direction A (warm paper)
+        'bg-primary': '#F7F4ED',     // warm paper (was dark navy)
+        'bg-secondary': '#EFEAE0',   // paper-2
+        'bg-surface': '#FBF9F4',     // card paper
+        'bg-elevated': '#EFEAE0',    // paper-2 (was elevated dark)
 
-        // Accent colors
-        'accent-primary': '#3B82F6',
-        'accent-secondary': '#06B6D4',
-        'accent-gold': '#FFD700',
-        'accent-gem': '#F97316',
-        'accent-cookie': '#F97316', // legacy alias
+        // Accent colors — remapped to editorial ink + coral
+        'accent-primary': '#0B2A6B', // dark navy ink
+        'accent-secondary': '#2A3F7A', // ink-soft
+        'accent-gold': '#B5832A',    // muted gold ok on paper
+        'accent-gem': '#C44E22',     // coral-deep (gem stays warm)
+        'accent-cookie': '#C44E22',
 
-        // Semantic colors
-        success: '#10B981',
-        warning: '#F59E0B',
-        error: '#EF4444',
+        // Semantic colors (kept; tuned slightly for paper background)
+        success: '#1F8A55',
+        warning: '#B27514',
+        error: '#B23A3A',
 
-        // Text colors
-        'text-primary': '#FFFFFF',
-        'text-secondary': '#94A3B8',
-        'text-muted': '#64748B',
+        // Text colors — remapped to editorial ink
+        'text-primary': '#0A1F4F',   // ink-2 (was white)
+        'text-secondary': '#2A3F7A', // ink-soft
+        'text-muted': '#5C6A92',     // ink-mute
 
-        // Border colors
-        'border-default': '#334155',
-        'border-focus': '#3B82F6',
+        // Border colors — remapped to subtle paper rules
+        'border-default': 'rgba(42,42,42,0.15)',
+        'border-focus': '#0B2A6B',
+
+        // Shadcn/ui foreground & semantic tokens (paper-friendly)
+        'primary-foreground': '#F4EFE2',     // cream — text on dark navy buttons
+        'secondary-foreground': '#0A1F4F',   // ink-2 — text on paper buttons
+        'destructive': '#B23A3A',
+        'destructive-foreground': '#FBF9F4',
+        'accent-foreground': '#0A1F4F',
+        'accent': '#EFEAE0',                 // paper-2 — used for ghost hover
+        'background': '#FBF9F4',             // card paper
+        'foreground': '#0A1F4F',             // ink-2 default text
+        'input': 'rgba(42,42,42,0.18)',
+        'ring': '#0B2A6B',
+
+        // Surface aliases (used by some layouts/UI components)
+        'surface-base': '#F7F4ED',
+        'surface-elevated': '#FBF9F4',
+        'text-subtle': '#5C6A92',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-primary': 'linear-gradient(135deg, #0A1628 0%, #1E3A5F 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #F7F4ED 0%, #EFEAE0 100%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',
@@ -123,11 +140,12 @@ const config: Config = {
         pixel: ['var(--font-pixel)', 'monospace'],
       },
       boxShadow: {
-        glow: '0 0 20px rgba(59, 130, 246, 0.3)',
-        'glow-lg': '0 0 40px rgba(59, 130, 246, 0.4)',
-        'glow-gold': '0 0 20px rgba(255, 215, 0, 0.4)',
-        'glow-cookie': '0 0 20px rgba(249, 115, 22, 0.4)',
-        'card-hover': '0 20px 40px rgba(59, 130, 246, 0.15)',
+        // Soft warm-paper-friendly shadows (was dark-mode glow)
+        glow: '0 8px 22px rgba(11, 42, 107, 0.08)',
+        'glow-lg': '0 16px 40px rgba(11, 42, 107, 0.12)',
+        'glow-gold': '0 6px 18px rgba(196, 78, 34, 0.18)',
+        'glow-cookie': '0 6px 18px rgba(196, 78, 34, 0.18)',
+        'card-hover': '0 12px 28px rgba(11, 42, 107, 0.10)',
       },
     },
   },
