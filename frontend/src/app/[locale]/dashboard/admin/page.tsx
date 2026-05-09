@@ -175,15 +175,15 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <motion.div variants={itemVariants}>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold text-text-primary">
             Admin Dashboard 🎯
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="text-text-muted mt-1">
             Tổng quan hệ thống - Cập nhật lúc {currentTime || '--:--:--'}
           </p>
         </motion.div>
         <motion.div variants={itemVariants} className="flex gap-3">
-          <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+          <Button variant="outline" className="border-border-default text-text-primary hover:bg-bg-elevated">
             <BarChart3 className="w-4 h-4 mr-2" />
             Xuất báo cáo
           </Button>
@@ -205,15 +205,15 @@ export default function AdminDashboardPage() {
                 <div className="p-2 bg-[#3B82F6]/20 rounded-lg">
                   <Users className="w-5 h-5 text-[#3B82F6]" />
                 </div>
-                <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
+                <Badge className="bg-emerald-500/20 text-emerald-700 border-0">
                   <ArrowUpRight className="w-3 h-3 mr-1" />
                   {platformStats.usersGrowth}%
                 </Badge>
               </div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-text-primary">
                 {formatNumber(platformStats.totalUsers)}
               </p>
-              <p className="text-sm text-slate-400">Tổng người dùng</p>
+              <p className="text-sm text-text-muted">Tổng người dùng</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -223,17 +223,17 @@ export default function AdminDashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-emerald-500/20 rounded-lg">
-                  <DollarSign className="w-5 h-5 text-emerald-400" />
+                  <DollarSign className="w-5 h-5 text-emerald-700" />
                 </div>
-                <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
+                <Badge className="bg-emerald-500/20 text-emerald-700 border-0">
                   <ArrowUpRight className="w-3 h-3 mr-1" />
                   {revenueStats.revenueGrowth}%
                 </Badge>
               </div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-text-primary">
                 {formatVND(revenueStats.totalRevenue)}đ
               </p>
-              <p className="text-sm text-slate-400">Tổng doanh thu</p>
+              <p className="text-sm text-text-muted">Tổng doanh thu</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -243,17 +243,17 @@ export default function AdminDashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-amber-500/20 rounded-lg">
-                  <Gem className="w-5 h-5 text-amber-400" />
+                  <Gem className="w-5 h-5 text-amber-700" />
                 </div>
-                <Badge className="bg-amber-500/20 text-amber-400 border-0">
+                <Badge className="bg-amber-500/20 text-amber-700 border-0">
                   <Activity className="w-3 h-3 mr-1" />
                   Active
                 </Badge>
               </div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-text-primary">
                 {formatNumber(gemStats.totalCirculating)}
               </p>
-              <p className="text-sm text-slate-400">Gems lưu hành</p>
+              <p className="text-sm text-text-muted">Gems lưu hành</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -263,16 +263,16 @@ export default function AdminDashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-purple-500/20 rounded-lg">
-                  <BookOpen className="w-5 h-5 text-purple-400" />
+                  <BookOpen className="w-5 h-5 text-purple-700" />
                 </div>
-                <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
+                <Badge className="bg-emerald-500/20 text-emerald-700 border-0">
                   {bookingStats.completionRate}%
                 </Badge>
               </div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-text-primary">
                 {formatNumber(bookingStats.totalBookings)}
               </p>
-              <p className="text-sm text-slate-400">Tổng lớp học</p>
+              <p className="text-sm text-text-muted">Tổng lớp học</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -287,8 +287,8 @@ export default function AdminDashboardPage() {
                 <Users className="w-4 h-4 text-[#3B82F6]" />
               </div>
               <div>
-                <p className="text-lg font-bold text-white">{formatNumber(platformStats.totalStudents)}</p>
-                <p className="text-xs text-slate-400">Học viên</p>
+                <p className="text-lg font-bold text-text-primary">{formatNumber(platformStats.totalStudents)}</p>
+                <p className="text-xs text-text-muted">Học viên</p>
               </div>
             </CardContent>
           </Card>
@@ -298,11 +298,11 @@ export default function AdminDashboardPage() {
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 bg-emerald-500/10 rounded-lg">
-                <Users className="w-4 h-4 text-emerald-400" />
+                <Users className="w-4 h-4 text-emerald-700" />
               </div>
               <div>
-                <p className="text-lg font-bold text-white">{platformStats.totalTeachers}</p>
-                <p className="text-xs text-slate-400">Giáo viên</p>
+                <p className="text-lg font-bold text-text-primary">{platformStats.totalTeachers}</p>
+                <p className="text-xs text-text-muted">Giáo viên</p>
               </div>
             </CardContent>
           </Card>
@@ -312,11 +312,11 @@ export default function AdminDashboardPage() {
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 bg-amber-500/10 rounded-lg">
-                <DollarSign className="w-4 h-4 text-amber-400" />
+                <DollarSign className="w-4 h-4 text-amber-700" />
               </div>
               <div>
-                <p className="text-lg font-bold text-white">{formatVND(revenueStats.monthlyRevenue)}đ</p>
-                <p className="text-xs text-slate-400">Doanh thu tháng</p>
+                <p className="text-lg font-bold text-text-primary">{formatVND(revenueStats.monthlyRevenue)}đ</p>
+                <p className="text-xs text-text-muted">Doanh thu tháng</p>
               </div>
             </CardContent>
           </Card>
@@ -326,11 +326,11 @@ export default function AdminDashboardPage() {
           <Card className="bg-white/5 border-white/10">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 bg-purple-500/10 rounded-lg">
-                <TrendingUp className="w-4 h-4 text-purple-400" />
+                <TrendingUp className="w-4 h-4 text-purple-700" />
               </div>
               <div>
-                <p className="text-lg font-bold text-white">{formatVND(revenueStats.averageBookingValue)}đ</p>
-                <p className="text-xs text-slate-400">Giá trị TB/booking</p>
+                <p className="text-lg font-bold text-text-primary">{formatVND(revenueStats.averageBookingValue)}đ</p>
+                <p className="text-xs text-text-muted">Giá trị TB/booking</p>
               </div>
             </CardContent>
           </Card>
@@ -342,22 +342,22 @@ export default function AdminDashboardPage() {
         <motion.div variants={itemVariants} className="lg:col-span-2">
           <Card className="bg-white/5 border-white/10 h-full">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="text-text-primary flex items-center gap-2">
                 <Activity className="w-5 h-5 text-[#3B82F6]" />
                 Hoạt động gần đây
               </CardTitle>
-              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+              <Button variant="ghost" size="sm" className="text-text-muted hover:text-text-primary">
                 Xem tất cả
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
               {isLoading ? (
-                <div className="text-center py-8 text-slate-400">Đang tải...</div>
+                <div className="text-center py-8 text-text-muted">Đang tải...</div>
               ) : error ? (
                 <div className="text-center py-8 text-red-400">{error}</div>
               ) : recentActivities.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">Chưa có hoạt động nào</div>
+                <div className="text-center py-8 text-text-muted">Chưa có hoạt động nào</div>
               ) : (
                 recentActivities.map((activity, index) => {
                   const IconComponent = getActivityIcon(activity.type);
@@ -373,7 +373,7 @@ export default function AdminDashboardPage() {
                         <IconComponent className={`w-4 h-4 ${activity.color}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white truncate">{activity.message}</p>
+                        <p className="text-sm text-text-primary truncate">{activity.message}</p>
                         <p className="text-xs text-slate-500">{activity.time}</p>
                       </div>
                     </motion.div>
@@ -388,37 +388,37 @@ export default function AdminDashboardPage() {
         <motion.div variants={itemVariants}>
           <Card className="bg-white/5 border-white/10 h-full">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Gem className="w-5 h-5 text-amber-400" />
+              <CardTitle className="text-text-primary flex items-center gap-2">
+                <Gem className="w-5 h-5 text-amber-700" />
                 Gem Analytics
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Phát hành tháng này</span>
-                  <span className="text-emerald-400">+{formatNumber(gemStats.issuedThisMonth)}</span>
+                  <span className="text-text-muted">Phát hành tháng này</span>
+                  <span className="text-emerald-700">+{formatNumber(gemStats.issuedThisMonth)}</span>
                 </div>
                 <Progress value={65} className="h-2 bg-white/10" />
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Đã sử dụng</span>
-                  <span className="text-amber-400">-{formatNumber(gemStats.redeemedThisMonth)}</span>
+                  <span className="text-text-muted">Đã sử dụng</span>
+                  <span className="text-amber-700">-{formatNumber(gemStats.redeemedThisMonth)}</span>
                 </div>
                 <Progress value={45} className="h-2 bg-white/10" />
               </div>
 
               <div className="p-3 bg-white/5 rounded-xl">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">TB gems/booking</span>
-                  <span className="text-xl font-bold text-white">{gemStats.averageRedemption}</span>
+                  <span className="text-text-muted">TB gems/booking</span>
+                  <span className="text-xl font-bold text-text-primary">{gemStats.averageRedemption}</span>
                 </div>
               </div>
 
               <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
-                <p className="text-sm text-amber-400 text-center">
+                <p className="text-sm text-amber-700 text-center">
                   <GemImage size={14} className="inline-block align-middle mr-1" /> Net flow: +{formatNumber(gemStats.issuedThisMonth - gemStats.redeemedThisMonth)}
                 </p>
               </div>
@@ -431,12 +431,12 @@ export default function AdminDashboardPage() {
       <motion.div variants={itemVariants}>
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-white flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-purple-400" />
+            <CardTitle className="text-text-primary flex items-center gap-2">
+              <PieChart className="w-5 h-5 text-purple-700" />
               Top Giáo viên tháng này
             </CardTitle>
             <Link href="/dashboard/analytics/teachers">
-              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+              <Button variant="ghost" size="sm" className="text-text-muted hover:text-text-primary">
                 Xem chi tiết
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
@@ -447,11 +447,11 @@ export default function AdminDashboardPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-white/10">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">#</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Giáo viên</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Doanh thu</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Lớp học</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Đánh giá</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-text-muted">#</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-text-muted">Giáo viên</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-text-muted">Doanh thu</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-text-muted">Lớp học</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-text-muted">Đánh giá</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -465,19 +465,19 @@ export default function AdminDashboardPage() {
                           inline-flex items-center justify-center w-6 h-6 rounded-full text-sm font-bold
                           ${index === 0 ? 'bg-amber-500 text-black' : ''}
                           ${index === 1 ? 'bg-slate-400 text-black' : ''}
-                          ${index === 2 ? 'bg-amber-700 text-white' : ''}
-                          ${index > 2 ? 'bg-white/10 text-slate-400' : ''}
+                          ${index === 2 ? 'bg-amber-700 text-text-primary' : ''}
+                          ${index > 2 ? 'bg-white/10 text-text-muted' : ''}
                         `}>
                           {index + 1}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-white font-medium">{teacher.name}</td>
-                      <td className="py-3 px-4 text-right text-emerald-400">
+                      <td className="py-3 px-4 text-text-primary font-medium">{teacher.name}</td>
+                      <td className="py-3 px-4 text-right text-emerald-700">
                         {formatVND(teacher.revenue)}đ
                       </td>
-                      <td className="py-3 px-4 text-right text-slate-300">{teacher.bookings}</td>
+                      <td className="py-3 px-4 text-right text-text-secondary">{teacher.bookings}</td>
                       <td className="py-3 px-4 text-right">
-                        <Badge className="bg-amber-500/20 text-amber-400 border-0">
+                        <Badge className="bg-amber-500/20 text-amber-700 border-0">
                           ⭐ {teacher.rating}
                         </Badge>
                       </td>

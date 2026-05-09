@@ -136,15 +136,16 @@
 
 /* Utility Classes */
 @layer utilities {
-  /* Gradient text */
+  /* Gradient text — editorial ink with coral accent so it reads on warm paper */
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    background-image: linear-gradient(135deg, var(--ed-ink, #0B2A6B), var(--ed-coral-ink, #C44E22));
   }
 
-  /* Glass morphism effect */
+  /* Glass morphism effect — solid card paper on light theme */
   .glass {
-    @apply bg-bg-surface/80 backdrop-blur-lg border border-border-default;
+    background-color: var(--ed-card, #FBF9F4);
+    border: 1px solid var(--ed-rule, rgba(42,42,42,0.08));
   }
 
   /* Smooth transitions */
@@ -293,6 +294,35 @@
     @apply rounded-lg bg-accent-gold/20 text-accent-gold font-bold text-sm;
   }
 }
+
+/* ============================================================
+   Compatibility shim — re-theme legacy dark-mode utilities to
+   read on warm-paper backgrounds.
+
+   Pages that pre-date the editorial redesign still use `text-white`,
+   `text-slate-400`, etc. directly. We override those utilities to
+   editorial ink whenever they are NOT inside a known dark surface
+   (.ed-ink-panel, .bg-bg-primary used as a true dark wrapper, etc.).
+
+   Inside dark surfaces we re-allow the original behaviour with
+   higher-specificity overrides so cream-on-navy text still works.
+   ============================================================ */
+.text-white { color: var(--ed-ink-2) !important; }
+.text-slate-400, .text-gray-400, .text-zinc-400, .text-neutral-400 { color: var(--ed-ink-mute) !important; }
+.text-slate-300, .text-gray-300, .text-zinc-300, .text-neutral-300 { color: var(--ed-ink-soft) !important; }
+.text-slate-500, .text-gray-500, .text-zinc-500, .text-neutral-500 { color: var(--ed-ink-mute) !important; }
+.text-slate-200, .text-gray-200, .text-zinc-200, .text-neutral-200 { color: var(--ed-ink-soft) !important; }
+.text-slate-100, .text-gray-100, .text-zinc-100, .text-neutral-100 { color: var(--ed-ink-2) !important; }
+
+/* Inside ink panels (intentional dark surfaces) keep the cream text */
+.ed-ink-panel .text-white,
+.ed-ink-panel.text-white { color: #F4EFE2 !important; }
+.ed-ink-panel .text-slate-400,
+.ed-ink-panel.text-slate-400 { color: #B5BEDF !important; }
+.ed-ink-panel .text-slate-300,
+.ed-ink-panel.text-slate-300 { color: #C9D1ED !important; }
+.ed-ink-panel .text-slate-200,
+.ed-ink-panel.text-slate-200 { color: #DDE3F1 !important; }
 
 /* ============================================================
    Editorial design system — Direction A
