@@ -1125,5 +1125,100 @@
     "leaderboard": "Bảng xếp hạng",
     "users": "Người dùng",
     "notifications": "Thông báo"
+  },
+  "materials": {
+    "catalog": {
+      "title": "Tài liệu học tập",
+      "subtitle": "Khám phá kho tài liệu được biên soạn riêng cho người Việt học tiếng Anh.",
+      "empty": "Chưa có tài liệu nào phù hợp với bộ lọc của bạn.",
+      "loading": "Đang tải…",
+      "search": "Tìm kiếm tài liệu",
+      "filterLevel": "Trình độ",
+      "filterType": "Loại tài liệu",
+      "filterGoal": "Mục tiêu",
+      "clearFilters": "Xoá bộ lọc"
+    },
+    "card": {
+      "minutes": "~{count} phút",
+      "rewardLabel": "+{gems} ⟡",
+      "completed": "Đã hoàn thành",
+      "inProgress": "Đang học",
+      "anonymousLockTooltip": "Đăng nhập để theo dõi tiến độ",
+      "badge": {
+        "recommended": "ĐỀ XUẤT",
+        "new": "MỚI",
+        "pinned": "GHIM"
+      }
+    },
+    "type": {
+      "vocabulary_pack": "Từ vựng",
+      "grammar_lesson": "Ngữ pháp",
+      "reading_passage": "Đọc",
+      "listening_audio": "Nghe",
+      "dialogue": "Hội thoại",
+      "mock_test": "Đề luyện thi"
+    },
+    "level": {
+      "a1": "A1",
+      "a2": "A2",
+      "b1": "B1",
+      "b2": "B2",
+      "c1": "C1"
+    },
+    "goal": {
+      "school": "Học phổ thông",
+      "vstep": "VSTEP",
+      "toeic": "TOEIC",
+      "ielts": "IELTS",
+      "business": "Kinh doanh",
+      "study_abroad": "Du học",
+      "conversation": "Giao tiếp",
+      "travel": "Du lịch"
+    },
+    "detail": {
+      "translationPending": "Bản dịch đang được biên soạn — hiển thị nội dung tiếng Việt",
+      "signInCta": "Đăng nhập để lưu tiến độ và nhận thưởng",
+      "startLearning": "Bắt đầu học",
+      "continueLearning": "Tiếp tục",
+      "alreadyCompleted": "Bạn đã hoàn thành tài liệu này"
+    },
+    "reward": {
+      "earned": "+{gems} ⟡  +{xp} XP",
+      "completed": "Hoàn thành! Bạn nhận được {gems} gem và {xp} XP.",
+      "alreadyEarned": "Bạn đã nhận thưởng cho tài liệu này"
+    },
+    "audio": {
+      "loadFailed": "Âm thanh không tải được — xem bản ghi",
+      "transcriptLabel": "Bản ghi",
+      "showTranscript": "Hiện bản ghi",
+      "hideTranscript": "Ẩn bản ghi"
+    },
+    "test": {
+      "submit": "Nộp bài",
+      "score": "Điểm: {score}%",
+      "passed": "Đạt!",
+      "failed": "Chưa đạt — thử lại nhé",
+      "correctAnswer": "Đáp án đúng",
+      "yourAnswer": "Câu trả lời của bạn",
+      "explanation": "Giải thích",
+      "noReward": "Đề luyện thi không trao gem hay XP — chỉ phản hồi điểm số."
+    },
+    "editor": {
+      "createNew": "Tạo mới",
+      "saveDraft": "Lưu bản nháp",
+      "submitForReview": "Gửi xét duyệt",
+      "approve": "Phê duyệt",
+      "reject": "Từ chối",
+      "archive": "Lưu trữ",
+      "restore": "Khôi phục",
+      "conflictDetected": "Đã có thay đổi từ phiên khác — tải lại để xem trước khi tiếp tục chỉnh sửa.",
+      "validationFailed": "Vui lòng sửa các lỗi sau trước khi tiếp tục"
+    },
+    "status": {
+      "draft": "Bản nháp",
+      "in_review": "Đang xét duyệt",
+      "published": "Đã xuất bản",
+      "archived": "Đã lưu trữ"
+    }
   }
 }

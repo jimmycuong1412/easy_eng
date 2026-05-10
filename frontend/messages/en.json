@@ -1125,5 +1125,100 @@
     "leaderboard": "Leaderboard",
     "users": "Users",
     "notifications": "Notifications"
+  },
+  "materials": {
+    "catalog": {
+      "title": "Materials",
+      "subtitle": "Curriculum crafted for Vietnamese learners of English.",
+      "empty": "No materials match your filters yet.",
+      "loading": "Loading…",
+      "search": "Search materials",
+      "filterLevel": "Level",
+      "filterType": "Type",
+      "filterGoal": "Goal",
+      "clearFilters": "Clear filters"
+    },
+    "card": {
+      "minutes": "~{count} min",
+      "rewardLabel": "+{gems} ⟡",
+      "completed": "Completed",
+      "inProgress": "In progress",
+      "anonymousLockTooltip": "Sign in to track progress",
+      "badge": {
+        "recommended": "RECOMMENDED",
+        "new": "NEW",
+        "pinned": "PINNED"
+      }
+    },
+    "type": {
+      "vocabulary_pack": "Vocabulary",
+      "grammar_lesson": "Grammar",
+      "reading_passage": "Reading",
+      "listening_audio": "Listening",
+      "dialogue": "Dialogue",
+      "mock_test": "Mock test"
+    },
+    "level": {
+      "a1": "A1",
+      "a2": "A2",
+      "b1": "B1",
+      "b2": "B2",
+      "c1": "C1"
+    },
+    "goal": {
+      "school": "School",
+      "vstep": "VSTEP",
+      "toeic": "TOEIC",
+      "ielts": "IELTS",
+      "business": "Business",
+      "study_abroad": "Study abroad",
+      "conversation": "Conversation",
+      "travel": "Travel"
+    },
+    "detail": {
+      "translationPending": "English translation pending — showing Vietnamese content",
+      "signInCta": "Sign in to save progress and earn rewards",
+      "startLearning": "Start learning",
+      "continueLearning": "Continue",
+      "alreadyCompleted": "You have already completed this material"
+    },
+    "reward": {
+      "earned": "+{gems} ⟡  +{xp} XP",
+      "completed": "Completed! You earned {gems} gems and {xp} XP.",
+      "alreadyEarned": "You already earned rewards for this material"
+    },
+    "audio": {
+      "loadFailed": "Audio failed to load — see transcript",
+      "transcriptLabel": "Transcript",
+      "showTranscript": "Show transcript",
+      "hideTranscript": "Hide transcript"
+    },
+    "test": {
+      "submit": "Submit",
+      "score": "Score: {score}%",
+      "passed": "Passed!",
+      "failed": "Not passed yet — try again",
+      "correctAnswer": "Correct answer",
+      "yourAnswer": "Your answer",
+      "explanation": "Explanation",
+      "noReward": "Mock tests do not award gems or XP — score feedback only."
+    },
+    "editor": {
+      "createNew": "New material",
+      "saveDraft": "Save draft",
+      "submitForReview": "Submit for review",
+      "approve": "Approve",
+      "reject": "Reject",
+      "archive": "Archive",
+      "restore": "Restore",
+      "conflictDetected": "Someone else saved changes — reload to see their version before editing.",
+      "validationFailed": "Please fix the following errors before continuing"
+    },
+    "status": {
+      "draft": "Draft",
+      "in_review": "In review",
+      "published": "Published",
+      "archived": "Archived"
+    }
   }
 }
