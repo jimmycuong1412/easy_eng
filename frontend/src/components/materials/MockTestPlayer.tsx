@@ -114,7 +114,7 @@ export function MockTestPlayer({
                     </p>
                     <p className="mt-1 text-xs text-[color:var(--ed-ink-mute,#6B7280)]">
                       {t('materials.test.yourAnswer')}: {String(userPick ?? '—')} ·{' '}
-                      {t('materials.test.correctAnswer')}: {item.correct_index}
+                      {t('materials.test.correctAnswer')}: {item.idx}
                     </p>
                     {(item.explanation_vi ?? item.explanation_en) && (
                       <p className="mt-2 text-sm text-[color:var(--ed-ink,#0B2A6B)]">
