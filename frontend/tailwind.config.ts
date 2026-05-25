@@ -10,53 +10,55 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Primary backgrounds — remapped to Editorial Direction A (warm paper)
-        'bg-primary': '#F7F4ED',     // warm paper (was dark navy)
-        'bg-secondary': '#EFEAE0',   // paper-2
-        'bg-surface': '#FBF9F4',     // card paper
-        'bg-elevated': '#EFEAE0',    // paper-2 (was elevated dark)
+        // Primary backgrounds — Direction C (deep indigo canvas)
+        'bg-primary': '#060f33',     // page canvas
+        'bg-secondary': '#0d1a4a',   // default card body
+        'bg-surface': '#15235e',     // card hover / input
+        'bg-elevated': '#1d2e75',    // raised / pressed
 
-        // Accent colors — remapped to editorial ink + coral
-        'accent-primary': '#0B2A6B', // dark navy ink
-        'accent-secondary': '#2A3F7A', // ink-soft
-        'accent-gold': '#B5832A',    // muted gold ok on paper
-        'accent-gem': '#C44E22',     // coral-deep (gem stays warm)
-        'accent-cookie': '#C44E22',
+        // Accent colors — violet / blue brand
+        'accent-primary': '#7c5cff',  // violet
+        'accent-secondary': '#4c6bff', // blue
+        'accent-gold': '#fbbf24',     // amber (bestseller / cert badges)
+        'accent-gem': '#ec4899',      // pink (gem accent stays warm)
+        'accent-cookie': '#ff7a59',   // coral (discount/urgency)
 
-        // Semantic colors (kept; tuned slightly for paper background)
-        success: '#1F8A55',
-        warning: '#B27514',
-        error: '#B23A3A',
+        // Semantic colors
+        success: '#34d399',
+        warning: '#fbbf24',
+        error: '#ef4444',
 
-        // Text colors — remapped to editorial ink
-        'text-primary': '#0A1F4F',   // ink-2 (was white)
-        'text-secondary': '#2A3F7A', // ink-soft
-        'text-muted': '#5C6A92',     // ink-mute
+        // Text colors — light-on-dark
+        'text-primary': '#f5f7ff',
+        'text-secondary': '#c8ccea',
+        'text-muted': '#8a90b8',
 
-        // Border colors — remapped to subtle paper rules
-        'border-default': 'rgba(42,42,42,0.15)',
-        'border-focus': '#0B2A6B',
+        // Border colors — blue-tinted, never neutral
+        'border-default': 'rgba(91, 141, 255, 0.13)',
+        'border-focus': '#7c5cff',
 
-        // Shadcn/ui foreground & semantic tokens (paper-friendly)
-        'primary-foreground': '#F4EFE2',     // cream — text on dark navy buttons
-        'secondary-foreground': '#0A1F4F',   // ink-2 — text on paper buttons
-        'destructive': '#B23A3A',
-        'destructive-foreground': '#FBF9F4',
-        'accent-foreground': '#0A1F4F',
-        'accent': '#EFEAE0',                 // paper-2 — used for ghost hover
-        'background': '#FBF9F4',             // card paper
-        'foreground': '#0A1F4F',             // ink-2 default text
-        'input': 'rgba(42,42,42,0.18)',
-        'ring': '#0B2A6B',
+        // Shadcn/ui foreground & semantic tokens (navy-friendly)
+        'primary-foreground': '#ffffff',
+        'secondary-foreground': '#f5f7ff',
+        'destructive': '#ef4444',
+        'destructive-foreground': '#ffffff',
+        'accent-foreground': '#f5f7ff',
+        'accent': '#15235e',          // card hover bg — used for ghost hover
+        'background': '#0d1a4a',      // card surface
+        'foreground': '#f5f7ff',      // default text
+        'input': 'rgba(91, 141, 255, 0.20)',
+        'ring': '#7c5cff',
 
         // Surface aliases (used by some layouts/UI components)
-        'surface-base': '#F7F4ED',
-        'surface-elevated': '#FBF9F4',
-        'text-subtle': '#5C6A92',
+        'surface-base': '#060f33',
+        'surface-elevated': '#0d1a4a',
+        'text-subtle': '#5b6093',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-primary': 'linear-gradient(135deg, #F7F4ED 0%, #EFEAE0 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #7c5cff 0%, #4c6bff 100%)',
+        'gradient-brand-text':
+          'linear-gradient(120deg, #a48bff 0%, #7c5cff 50%, #4c6bff 100%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',
@@ -94,8 +96,8 @@ const config: Config = {
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
         pulseGlow: {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(59, 130, 246, 0.6)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(124, 92, 255, 0.35)' },
+          '50%': { boxShadow: '0 0 40px rgba(124, 92, 255, 0.65)' },
         },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
@@ -140,12 +142,12 @@ const config: Config = {
         pixel: ['var(--font-pixel)', 'monospace'],
       },
       boxShadow: {
-        // Soft warm-paper-friendly shadows (was dark-mode glow)
-        glow: '0 8px 22px rgba(11, 42, 107, 0.08)',
-        'glow-lg': '0 16px 40px rgba(11, 42, 107, 0.12)',
-        'glow-gold': '0 6px 18px rgba(196, 78, 34, 0.18)',
-        'glow-cookie': '0 6px 18px rgba(196, 78, 34, 0.18)',
-        'card-hover': '0 12px 28px rgba(11, 42, 107, 0.10)',
+        // Direction C — violet bloom + soft white inner highlight
+        glow: '0 8px 24px -8px rgba(124, 92, 255, 0.50)',
+        'glow-lg': '0 20px 40px -20px rgba(124, 92, 255, 0.60)',
+        'glow-gold': '0 4px 12px -4px rgba(251, 191, 36, 0.50)',
+        'glow-cookie': '0 6px 18px rgba(255, 122, 89, 0.45)',
+        'card-hover': '0 20px 40px -20px rgba(124, 92, 255, 0.60)',
       },
     },
   },

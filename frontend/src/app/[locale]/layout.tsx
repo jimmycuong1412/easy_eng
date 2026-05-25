@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { Inter, JetBrains_Mono, Newsreader } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
 
@@ -24,15 +24,6 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
   variable: '--font-mono',
 });
-
-const newsreader = Newsreader({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-newsreader',
-  weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
-});
-
 
 export const metadata: Metadata = {
   title: {
@@ -103,12 +94,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#F7F4ED',
+  themeColor: '#060f33',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  colorScheme: 'light',
+  colorScheme: 'dark',
 };
 
 export function generateStaticParams() {
@@ -135,7 +126,7 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
-      className={`${inter.variable} ${jetbrainsMono.variable} ${newsreader.variable} ${GeistSans.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable} ${GeistSans.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-bg-primary font-sans antialiased" suppressHydrationWarning>
