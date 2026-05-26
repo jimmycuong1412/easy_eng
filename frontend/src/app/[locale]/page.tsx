@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import * as React from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { LanguageSwitcher } from '@/components/common';
 
@@ -118,9 +119,15 @@ function ImageSlot({
 function PricingToggle({
   value,
   onChange,
+  monthlyLabel,
+  yearlyLabel,
+  saveLabel,
 }: {
   value: 'month' | 'year';
   onChange: (v: 'month' | 'year') => void;
+  monthlyLabel: string;
+  yearlyLabel: string;
+  saveLabel: string;
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const monthRef = React.useRef<HTMLButtonElement>(null);
@@ -144,7 +151,7 @@ function PricingToggle({
         onClick={() => onChange('month')}
         type="button"
       >
-        Monthly
+        {monthlyLabel}
       </button>
       <button
         ref={yearRef}
@@ -152,7 +159,7 @@ function PricingToggle({
         onClick={() => onChange('year')}
         type="button"
       >
-        Yearly{' '}
+        {yearlyLabel}{' '}
         <span
           style={{
             marginLeft: 6,
@@ -164,7 +171,7 @@ function PricingToggle({
             color: value === 'year' ? '#fff' : '#34d399',
           }}
         >
-          Save 17%
+          {saveLabel}
         </span>
       </button>
     </div>
@@ -175,13 +182,13 @@ function PricingToggle({
 // Top nav
 // -----------------------------------------------------------------------------
 
-function TopNav({ locale }: { locale: string }) {
+function TopNav({ locale, t }: { locale: string; t: ReturnType<typeof useTranslations<'landing'>> }) {
   const items = [
-    { label: 'Courses', href: '#courses' },
-    { label: 'Categories', href: '#categories' },
-    { label: 'Tutors', href: '#instructors' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'About', href: '#why' },
+    { label: t('nav.courses'), href: '#courses' },
+    { label: t('nav.categories'), href: '#categories' },
+    { label: t('nav.tutors'), href: '#instructors' },
+    { label: t('nav.pricing'), href: '#pricing' },
+    { label: t('nav.about'), href: '#why' },
   ];
   return (
     <header className="et-topbar">
@@ -216,10 +223,10 @@ function TopNav({ locale }: { locale: string }) {
           </svg>
         </button>
         <Link href={`/${locale}/auth/login`} className="et-btn ghost">
-          Sign In
+          {t('nav.signIn')}
         </Link>
         <Link href={`/${locale}/auth/signup`} className="et-btn primary">
-          Get Started
+          {t('nav.getStarted')}
         </Link>
       </div>
     </header>
@@ -230,7 +237,7 @@ function TopNav({ locale }: { locale: string }) {
 // Hero
 // -----------------------------------------------------------------------------
 
-function Hero({ locale }: { locale: string }) {
+function Hero({ locale, t }: { locale: string; t: ReturnType<typeof useTranslations<'landing'>> }) {
   return (
     <section
       className="et-section"
@@ -273,7 +280,7 @@ function Hero({ locale }: { locale: string }) {
                   boxShadow: '0 0 10px var(--et-green)',
                 }}
               />
-              Trusted by 50,000+ fluent learners worldwide
+              {t('hero.trusted')}
             </span>
             <span style={{ display: 'inline-flex' }}>
               {['A', 'M', 'S', 'K'].map((c, i) => (
@@ -286,22 +293,22 @@ function Hero({ locale }: { locale: string }) {
         </div>
 
         <h1 className="et-h1" style={{ maxWidth: 920, margin: '0 auto' }}>
-          Master English. <span className="et-grad-text">Fluency Without Limits.</span>
+          {t('hero.headline')} <span className="et-grad-text">{t('hero.headlineAccent')}</span>
         </h1>
 
         <p
           className="et-body"
           style={{ maxWidth: 640, margin: '22px auto 0', fontSize: 18 }}
         >
-          Learn from world-class native-speaker tutors through structured conversational tracks. From your first &ldquo;hello&rdquo; to confident C2 — at your pace, on your terms.
+          {t('hero.subhead')}
         </p>
 
         <div
           className="et-row et-gap-3"
           style={{ justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}
         >
-          <Link href={`/${locale}/auth/signup`} className="et-btn white lg" aria-label="Explore courses">
-            Explore Courses
+          <Link href={`/${locale}/auth/signup`} className="et-btn white lg" aria-label={t('hero.exploreCourses')}>
+            {t('hero.exploreCourses')}
             <svg
               width="16"
               height="16"
@@ -315,8 +322,8 @@ function Hero({ locale }: { locale: string }) {
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
           </Link>
-          <a href="#pricing" className="et-btn outline lg" aria-label="View pricing plans">
-            View Pricing
+          <a href="#pricing" className="et-btn outline lg" aria-label={t('hero.viewPricing')}>
+            {t('hero.viewPricing')}
           </a>
         </div>
 
@@ -329,7 +336,7 @@ function Hero({ locale }: { locale: string }) {
             style={{ color: 'var(--et-fg-2)', fontSize: 13 }}
           >
             <span style={{ color: 'var(--et-amber)', fontWeight: 600 }}>★ 4.8</span>
-            <span className="et-tiny">from 38k reviews</span>
+            <span className="et-tiny">{t('hero.fromReviews')}</span>
           </span>
           <span style={{ width: 1, height: 14, background: 'rgba(91, 141, 255, 0.20)' }} />
           <span
@@ -349,7 +356,7 @@ function Hero({ locale }: { locale: string }) {
               <path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z" />
               <path d="M9 12l2 2 4-4" />
             </svg>
-            30-day money-back guarantee
+            {t('hero.moneyBack')}
           </span>
           <span style={{ width: 1, height: 14, background: 'rgba(91, 141, 255, 0.20)' }} />
           <span
@@ -368,7 +375,7 @@ function Hero({ locale }: { locale: string }) {
             >
               <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" />
             </svg>
-            Lifetime access
+            {t('hero.lifetimeAccess')}
           </span>
         </div>
 
@@ -387,10 +394,10 @@ function Hero({ locale }: { locale: string }) {
           }}
         >
           {[
-            { num: '50K+', label: 'Active Students', sub: 'across 86 countries' },
-            { num: '500+', label: 'Certified Native Tutors', sub: 'vetted & trained' },
-            { num: '2,500+', label: 'Specialized Lessons', sub: 'from A1 to C2' },
-            { num: '95%', label: 'Fluency Success Rate', sub: 'goal completed in 6mo' },
+            { num: t('hero.stat1Num'), label: t('hero.stat1Label'), sub: t('hero.stat1Sub') },
+            { num: t('hero.stat2Num'), label: t('hero.stat2Label'), sub: t('hero.stat2Sub') },
+            { num: t('hero.stat3Num'), label: t('hero.stat3Label'), sub: t('hero.stat3Sub') },
+            { num: t('hero.stat4Num'), label: t('hero.stat4Label'), sub: t('hero.stat4Sub') },
           ].map((s, i) => (
             <div
               key={s.label}
@@ -444,7 +451,7 @@ type CategoryIcon =
   | 'plane'
   | 'users';
 
-function CategoryIcon({ kind, color }: { kind: CategoryIcon; color: string }) {
+function CategoryIconSvg({ kind, color }: { kind: CategoryIcon; color: string }) {
   const common = {
     fill: 'none',
     stroke: color,
@@ -516,16 +523,16 @@ function CategoryIcon({ kind, color }: { kind: CategoryIcon; color: string }) {
   }
 }
 
-function Categories() {
-  const cats: { name: string; count: number; hue: string; icon: CategoryIcon; blurb: string }[] = [
-    { name: 'Business English', count: 124, hue: '#4c6bff', icon: 'case', blurb: 'Meetings, email, presentations.' },
-    { name: 'IELTS / TOEFL Prep', count: 86, hue: '#ec4899', icon: 'paper', blurb: 'Score 7.0+ with proven strategy.' },
-    { name: 'Conversational English', count: 162, hue: '#7c5cff', icon: 'speech', blurb: 'Real talk, real fluency.' },
-    { name: 'Grammar & Accent', count: 74, hue: '#34d399', icon: 'abc', blurb: 'Reduce accent, polish grammar.' },
-    { name: 'Corporate Training', count: 38, hue: '#fbbf24', icon: 'users', blurb: 'Programs for global teams.' },
-    { name: 'Pronunciation', count: 52, hue: '#ff7a59', icon: 'wave', blurb: 'Sound natural, not robotic.' },
-    { name: 'Writing & Email', count: 41, hue: '#a48bff', icon: 'pen', blurb: 'Essays, reports, business notes.' },
-    { name: 'Travel English', count: 24, hue: '#22d3ee', icon: 'plane', blurb: 'Order, navigate, make friends.' },
+function Categories({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
+  const cats: { key: 'business' | 'ielts' | 'conversation' | 'grammar' | 'corporate' | 'pronunciation' | 'writing' | 'travel'; count: number; hue: string; icon: CategoryIcon }[] = [
+    { key: 'business', count: 124, hue: '#4c6bff', icon: 'case' },
+    { key: 'ielts', count: 86, hue: '#ec4899', icon: 'paper' },
+    { key: 'conversation', count: 162, hue: '#7c5cff', icon: 'speech' },
+    { key: 'grammar', count: 74, hue: '#34d399', icon: 'abc' },
+    { key: 'corporate', count: 38, hue: '#fbbf24', icon: 'users' },
+    { key: 'pronunciation', count: 52, hue: '#ff7a59', icon: 'wave' },
+    { key: 'writing', count: 41, hue: '#a48bff', icon: 'pen' },
+    { key: 'travel', count: 24, hue: '#22d3ee', icon: 'plane' },
   ];
 
   return (
@@ -541,13 +548,13 @@ function Categories() {
           }}
         >
           <div className="et-col et-gap-3">
-            <span className="et-eyebrow">Browse by topic</span>
+            <span className="et-eyebrow">{t('categories.eyebrow')}</span>
             <h2 className="et-h2" style={{ maxWidth: 520 }}>
-              Pick your path. We&apos;ll handle the lesson plan.
+              {t('categories.heading')}
             </h2>
           </div>
-          <a href="#" className="et-btn ghost" aria-label="See all categories">
-            See all 28 categories →
+          <a href="#" className="et-btn ghost" aria-label={t('categories.seeAll')}>
+            {t('categories.seeAll')}
           </a>
         </div>
 
@@ -557,7 +564,7 @@ function Categories() {
         >
           {cats.map((c) => (
             <a
-              key={c.name}
+              key={c.key}
               className="et-card hoverable"
               href="#"
               style={{
@@ -581,12 +588,12 @@ function Categories() {
                   placeItems: 'center',
                 }}
               >
-                <CategoryIcon kind={c.icon} color={c.hue} />
+                <CategoryIconSvg kind={c.icon} color={c.hue} />
               </div>
               <div className="et-col et-gap-2">
-                <div className="et-h3">{c.name}</div>
+                <div className="et-h3">{t(`categories.items.${c.key}.name`)}</div>
                 <div className="et-meta" style={{ lineHeight: 1.45 }}>
-                  {c.blurb}
+                  {t(`categories.items.${c.key}.blurb`)}
                 </div>
               </div>
               <div
@@ -599,7 +606,7 @@ function Categories() {
                   fontWeight: 500,
                 }}
               >
-                <span>{c.count} courses</span>
+                <span>{t('categories.coursesCount', { count: c.count })}</span>
                 <svg
                   width="14"
                   height="14"
@@ -625,9 +632,10 @@ function Categories() {
 // Featured courses
 // -----------------------------------------------------------------------------
 
+type CourseKey = 'course1' | 'course2' | 'course3' | 'course4' | 'course5' | 'course6';
+
 type Course = {
-  title: string;
-  tag: string;
+  key: CourseKey;
   level: string;
   hours: number;
   lessons: number;
@@ -642,7 +650,9 @@ type Course = {
   accent: string;
 };
 
-function CourseCard({ course }: { course: Course }) {
+function CourseCard({ course, t }: { course: Course; t: ReturnType<typeof useTranslations<'landing'>> }) {
+  const title = t(`courses.items.${course.key}.title`);
+  const tag = t(`courses.items.${course.key}.tag`);
   return (
     <article
       className="et-card hoverable"
@@ -652,7 +662,7 @@ function CourseCard({ course }: { course: Course }) {
         <ImageSlot label={course.imageLabel} height={170} accent={course.accent} />
         {course.bestseller && (
           <span className="et-badge" style={{ position: 'absolute', top: 12, left: 12 }}>
-            ★ Bestseller
+            {t('courses.bestseller')}
           </span>
         )}
         <span
@@ -680,14 +690,14 @@ function CourseCard({ course }: { course: Course }) {
         }}
       >
         <div className="et-row et-gap-2" style={{ flexWrap: 'wrap' }}>
-          <span className="et-chip violet">{course.tag}</span>
+          <span className="et-chip violet">{tag}</span>
           <span className="et-tiny">
-            · {course.hours}h · {course.lessons} lessons
+            {t('courses.hoursLessons', { hours: course.hours, lessons: course.lessons })}
           </span>
         </div>
 
         <h3 className="et-h3" style={{ lineHeight: 1.3 }}>
-          {course.title}
+          {title}
         </h3>
 
         <div className="et-row et-gap-2" style={{ marginTop: 'auto' }}>
@@ -724,10 +734,10 @@ function CourseCard({ course }: { course: Course }) {
           </div>
           <button
             className="et-btn sm secondary"
-            aria-label={`Enroll in ${course.title}`}
+            aria-label={`${t('courses.enroll')} ${title}`}
             type="button"
           >
-            Enroll →
+            {t('courses.enroll')}
           </button>
         </div>
       </div>
@@ -735,55 +745,69 @@ function CourseCard({ course }: { course: Course }) {
   );
 }
 
-function Courses() {
+function Courses({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
   const courses: Course[] = [
     {
-      title: 'Everyday Conversation: From Hi to Fluent',
-      tag: 'Conversation', level: 'A2–B1', hours: 14, lessons: 32,
+      key: 'course1',
+      level: 'A2–B1', hours: 14, lessons: 32,
       teacher: 'Maya Reyes', teacherInitials: 'MR',
       rating: 4.9, reviews: 4821, price: 49, oldPrice: 89, bestseller: true,
       imageLabel: 'course · conversation cover', accent: '#7c5cff',
     },
     {
-      title: 'Business English for Meetings & Email',
-      tag: 'Business', level: 'B1–B2', hours: 18, lessons: 40,
+      key: 'course2',
+      level: 'B1–B2', hours: 18, lessons: 40,
       teacher: 'Daniel Cho', teacherInitials: 'DC',
       rating: 4.8, reviews: 3104, price: 59, oldPrice: 99, bestseller: true,
       imageLabel: 'course · business cover', accent: '#4c6bff',
     },
     {
-      title: 'IELTS Academic — 7.0+ Strategy',
-      tag: 'IELTS', level: 'B2–C1', hours: 22, lessons: 48,
+      key: 'course3',
+      level: 'B2–C1', hours: 22, lessons: 48,
       teacher: 'Priya Nair', teacherInitials: 'PN',
       rating: 4.9, reviews: 5910, price: 79, oldPrice: 129, bestseller: false,
       imageLabel: 'course · IELTS cover', accent: '#ec4899',
     },
     {
-      title: 'Pronunciation That Actually Sticks',
-      tag: 'Pronunciation', level: 'A2–C1', hours: 10, lessons: 24,
+      key: 'course4',
+      level: 'A2–C1', hours: 10, lessons: 24,
       teacher: 'Sam Okafor', teacherInitials: 'SO',
       rating: 4.7, reviews: 1822, price: 39, oldPrice: 69, bestseller: false,
       imageLabel: 'course · pronunciation cover', accent: '#ff7a59',
     },
     {
-      title: 'Grammar Without the Pain',
-      tag: 'Grammar', level: 'A1–B1', hours: 12, lessons: 28,
+      key: 'course5',
+      level: 'A1–B1', hours: 12, lessons: 28,
       teacher: 'Linda Park', teacherInitials: 'LP',
       rating: 4.8, reviews: 2390, price: 44, oldPrice: 79, bestseller: false,
       imageLabel: 'course · grammar cover', accent: '#34d399',
     },
     {
-      title: 'Write Like a Native: Essays & Reports',
-      tag: 'Writing', level: 'B1–C1', hours: 16, lessons: 36,
+      key: 'course6',
+      level: 'B1–C1', hours: 16, lessons: 36,
       teacher: 'Owen Hart', teacherInitials: 'OH',
       rating: 4.7, reviews: 1455, price: 54, oldPrice: 89, bestseller: false,
       imageLabel: 'course · writing cover', accent: '#fbbf24',
     },
   ];
 
-  const filters = ['All', 'Conversation', 'Business', 'IELTS', 'Pronunciation', 'Grammar', 'Writing'];
-  const [filter, setFilter] = React.useState('All');
-  const shown = filter === 'All' ? courses : courses.filter((c) => c.tag === filter);
+  const filterAll = t('courses.filterAll');
+  const filterTags = [
+    filterAll,
+    t('courses.items.course1.tag'),
+    t('courses.items.course2.tag'),
+    t('courses.items.course3.tag'),
+    t('courses.items.course4.tag'),
+    t('courses.items.course5.tag'),
+    t('courses.items.course6.tag'),
+  ];
+  // Deduplicate while preserving order
+  const filters = filterTags.filter((f, i) => filterTags.indexOf(f) === i);
+
+  const [filter, setFilter] = React.useState(filterAll);
+  const shown = filter === filterAll
+    ? courses
+    : courses.filter((c) => t(`courses.items.${c.key}.tag`) === filter);
 
   return (
     <section className="et-section" id="courses" style={{ paddingTop: 32 }}>
@@ -798,9 +822,9 @@ function Courses() {
           }}
         >
           <div className="et-col et-gap-3">
-            <span className="et-eyebrow">Most loved this month</span>
+            <span className="et-eyebrow">{t('courses.eyebrow')}</span>
             <h2 className="et-h2" style={{ maxWidth: 520 }}>
-              Top-rated courses, hand-picked.
+              {t('courses.heading')}
             </h2>
           </div>
           <div
@@ -829,7 +853,7 @@ function Courses() {
           style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}
         >
           {shown.map((c) => (
-            <CourseCard key={c.title} course={c} />
+            <CourseCard key={c.key} course={c} t={t} />
           ))}
         </div>
       </div>
@@ -841,11 +865,11 @@ function Courses() {
 // Why (dual column + dashboard mockup)
 // -----------------------------------------------------------------------------
 
-function WhyEasyEng() {
+function WhyEasyEng({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
   const pillars = [
     {
-      title: 'Learn at your own pace',
-      desc: 'Bite-sized lessons that fit between a coffee and a meeting. Pick up exactly where you left off — across phone, tablet and desktop.',
+      title: t('why.pillar1Title'),
+      desc: t('why.pillar1Desc'),
       ring: '#7c5cff',
       icon: (
         <path
@@ -859,8 +883,8 @@ function WhyEasyEng() {
       ),
     },
     {
-      title: 'Certified native speakers',
-      desc: 'Every tutor is CELTA/TEFL-certified and a native speaker. Choose by accent, schedule and specialty — Cambridge examiners to business coaches.',
+      title: t('why.pillar2Title'),
+      desc: t('why.pillar2Desc'),
       ring: '#4c6bff',
       icon: (
         <path
@@ -874,8 +898,8 @@ function WhyEasyEng() {
       ),
     },
     {
-      title: 'Interactive speaking lab',
-      desc: 'AI partners that listen and respond. Live group rooms when you want company. Real-time pronunciation feedback every time you talk.',
+      title: t('why.pillar3Title'),
+      desc: t('why.pillar3Desc'),
       ring: '#ec4899',
       icon: (
         <path
@@ -889,8 +913,8 @@ function WhyEasyEng() {
       ),
     },
     {
-      title: 'Verified certificates',
-      desc: 'Earn a verifiable credential at each CEFR level. Add it to your LinkedIn, your CV, your visa application — and prove it with a public link.',
+      title: t('why.pillar4Title'),
+      desc: t('why.pillar4Desc'),
       ring: '#34d399',
       icon: (
         <>
@@ -922,9 +946,9 @@ function WhyEasyEng() {
         >
           <div className="et-col et-gap-6">
             <div className="et-col et-gap-3">
-              <span className="et-eyebrow">Why EasyEng</span>
+              <span className="et-eyebrow">{t('why.eyebrow')}</span>
               <h2 className="et-h2" style={{ maxWidth: 460 }}>
-                Built for fluency. <span className="et-grad-text">Not for streaks.</span>
+                {t('why.heading')} <span className="et-grad-text">{t('why.headingAccent')}</span>
               </h2>
             </div>
             <div className="et-col et-gap-5">
@@ -964,14 +988,14 @@ function WhyEasyEng() {
             </div>
           </div>
 
-          <DashboardMock />
+          <DashboardMock t={t} />
         </div>
       </div>
     </section>
   );
 }
 
-function DashboardMock() {
+function DashboardMock({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
   return (
     <div style={{ position: 'relative' }}>
       <div
@@ -1016,7 +1040,7 @@ function DashboardMock() {
           <div className="et-row" style={{ justifyContent: 'space-between' }}>
             <div className="et-col et-gap-2">
               <div className="et-meta" style={{ fontSize: 12 }}>
-                Welcome back,
+                {t('why.mock.welcomeBack')}
               </div>
               <div style={{ fontSize: 20, fontWeight: 600 }}>Aisha Patel</div>
             </div>
@@ -1050,7 +1074,7 @@ function DashboardMock() {
                     fontFamily: 'var(--et-mono)',
                   }}
                 >
-                  Current level
+                  {t('why.mock.currentLevel')}
                 </div>
                 <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.025em' }}>
                   B2 · Upper-Inter
@@ -1092,7 +1116,7 @@ function DashboardMock() {
               }}
             >
               <span>4,820 XP</span>
-              <span>5,800 to C1</span>
+              <span>5,800 {t('why.mock.toNext')}</span>
             </div>
             <div
               style={{
@@ -1116,9 +1140,9 @@ function DashboardMock() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
             {[
-              { label: 'Streak', value: '32', unit: 'days', color: '#fbbf24' },
-              { label: 'Hours', value: '127', unit: 'this month', color: '#34d399' },
-              { label: 'Accuracy', value: '91', unit: '%', color: '#7c5cff' },
+              { label: t('why.mock.streak'), value: '32', unit: t('why.mock.days'), color: '#fbbf24' },
+              { label: t('why.mock.hours'), value: '127', unit: t('why.mock.thisMonth'), color: '#34d399' },
+              { label: t('why.mock.accuracy'), value: '91', unit: '%', color: '#7c5cff' },
             ].map((s) => (
               <div
                 key={s.label}
@@ -1157,9 +1181,9 @@ function DashboardMock() {
                 className="et-meta"
                 style={{ fontSize: 12, fontWeight: 600, color: 'var(--et-fg-2)' }}
               >
-                Today&apos;s lessons
+                {t('why.mock.todayLessons')}
               </div>
-              <div className="et-tiny">3 scheduled</div>
+              <div className="et-tiny">{t('why.mock.scheduled')}</div>
             </div>
             {[
               { time: '09:00', title: 'Speaking · Job interviews', with: 'Daniel Cho', done: true },
@@ -1257,8 +1281,8 @@ function DashboardMock() {
           </svg>
         </div>
         <div className="et-col" style={{ gap: 2 }}>
-          <div style={{ fontSize: 13, fontWeight: 600 }}>B1 Certified</div>
-          <div className="et-tiny">Verified · Mar 2026</div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>{t('why.mock.certified')}</div>
+          <div className="et-tiny">{t('why.mock.verified')}</div>
         </div>
       </div>
     </div>
@@ -1269,7 +1293,7 @@ function DashboardMock() {
 // Instructors
 // -----------------------------------------------------------------------------
 
-function Instructors() {
+function Instructors({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
   const teachers = [
     { name: 'Maya Reyes',    initials: 'MR', role: 'Conversation · A2–C1', students: 24820, courses: 12, rating: 4.9, country: '🇵🇭 Manila',     accent: '#7c5cff' },
     { name: 'Daniel Cho',    initials: 'DC', role: 'Business English',     students: 18430, courses: 9,  rating: 4.8, country: '🇰🇷 Seoul',      accent: '#4c6bff' },
@@ -1294,13 +1318,13 @@ function Instructors() {
           }}
         >
           <div className="et-col et-gap-3">
-            <span className="et-eyebrow">Meet the teachers</span>
+            <span className="et-eyebrow">{t('instructors.eyebrow')}</span>
             <h2 className="et-h2" style={{ maxWidth: 580 }}>
-              1,200+ instructors. Vetted, trained, and very real.
+              {t('instructors.heading')}
             </h2>
           </div>
-          <a href="#" className="et-btn ghost" aria-label="Browse all instructors">
-            Browse all instructors →
+          <a href="#" className="et-btn ghost" aria-label={t('instructors.browseAll')}>
+            {t('instructors.browseAll')}
           </a>
         </div>
 
@@ -1308,9 +1332,9 @@ function Instructors() {
           className="et-grid-4"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}
         >
-          {teachers.map((t) => (
+          {teachers.map((teacher) => (
             <div
-              key={t.name}
+              key={teacher.name}
               className="et-card hoverable"
               style={{
                 padding: 24,
@@ -1331,16 +1355,16 @@ function Instructors() {
                   transform: 'translateX(-50%)',
                   width: 200,
                   height: 120,
-                  background: `radial-gradient(ellipse at center top, ${t.accent}55, transparent 70%)`,
+                  background: `radial-gradient(ellipse at center top, ${teacher.accent}55, transparent 70%)`,
                   pointerEvents: 'none',
                 }}
               />
 
               <div style={{ position: 'relative', marginTop: 8 }}>
                 <Avatar
-                  initials={t.initials}
+                  initials={teacher.initials}
                   size={84}
-                  gradient={`linear-gradient(135deg, ${t.accent}, #4c6bff)`}
+                  gradient={`linear-gradient(135deg, ${teacher.accent}, #4c6bff)`}
                 />
                 <span
                   style={{
@@ -1353,41 +1377,41 @@ function Instructors() {
                     background: 'var(--et-green)',
                     border: '3px solid var(--et-bg-2)',
                   }}
-                  title="Online now"
+                  title={t('instructors.onlineNow')}
                 />
               </div>
 
               <div className="et-col et-gap-2" style={{ alignItems: 'center' }}>
-                <div className="et-h3">{t.name}</div>
-                <div className="et-meta">{t.role}</div>
-                <div className="et-tiny">{t.country}</div>
+                <div className="et-h3">{teacher.name}</div>
+                <div className="et-meta">{teacher.role}</div>
+                <div className="et-tiny">{teacher.country}</div>
               </div>
 
-              <Stars value={t.rating} big />
+              <Stars value={teacher.rating} big />
 
               <div style={{ width: '100%', height: 1, background: 'var(--et-line)' }} />
 
               <div className="et-row" style={{ width: '100%', justifyContent: 'space-around' }}>
                 <div className="et-col et-gap-2" style={{ alignItems: 'center' }}>
                   <span style={{ fontSize: 18, fontWeight: 700 }}>
-                    {(t.students / 1000).toFixed(1)}k
+                    {(teacher.students / 1000).toFixed(1)}k
                   </span>
-                  <span className="et-tiny">Students</span>
+                  <span className="et-tiny">{t('instructors.students')}</span>
                 </div>
                 <div style={{ width: 1, background: 'var(--et-line)' }} />
                 <div className="et-col et-gap-2" style={{ alignItems: 'center' }}>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>{t.courses}</span>
-                  <span className="et-tiny">Courses</span>
+                  <span style={{ fontSize: 18, fontWeight: 700 }}>{teacher.courses}</span>
+                  <span className="et-tiny">{t('instructors.coursesLabel')}</span>
                 </div>
               </div>
 
               <button
                 className="et-btn secondary sm"
                 style={{ width: '100%' }}
-                aria-label={`View ${t.name}'s profile`}
+                aria-label={`${t('instructors.viewProfile')} ${teacher.name}`}
                 type="button"
               >
-                View profile
+                {t('instructors.viewProfile')}
               </button>
             </div>
           ))}
@@ -1401,38 +1425,11 @@ function Instructors() {
 // Testimonials
 // -----------------------------------------------------------------------------
 
-function Testimonials() {
-  const stories = [
-    {
-      initials: 'EM',
-      name: 'Elena Martinez',
-      role: 'Software Engineer at Stripe',
-      country: '🇲🇽 Mexico City → 🇺🇸 NYC',
-      tag: 'Career switch',
-      quote:
-        'I went from C1 paper-fluent to actually leading standups in English. The 1:1 speaking sessions were the unlock — my tutor caught every “classroom English” habit I didn\'t know I had.',
-      accent: '#7c5cff',
-    },
-    {
-      initials: 'KS',
-      name: 'Kenji Sato',
-      role: 'Data Scientist at Meta',
-      country: '🇯🇵 Tokyo → 🇨🇦 Toronto',
-      tag: 'Visa interview',
-      quote:
-        'Six months from “I can read papers” to passing a senior-level interview loop. The IELTS prep got my paperwork through; the conversational tracks got me the job.',
-      accent: '#4c6bff',
-    },
-    {
-      initials: 'AO',
-      name: 'Adaeze Okafor',
-      role: 'Product Designer at Linear',
-      country: '🇳🇬 Lagos → Remote',
-      tag: 'Promotion',
-      quote:
-        'Presenting design crits used to make me shut down. Now I run them. The AI speaking lab let me drill the awkward parts without burning real meetings.',
-      accent: '#ec4899',
-    },
+function Testimonials({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
+  const stories: { key: 't1' | 't2' | 't3'; accent: string }[] = [
+    { key: 't1', accent: '#7c5cff' },
+    { key: 't2', accent: '#4c6bff' },
+    { key: 't3', accent: '#ec4899' },
   ];
 
   return (
@@ -1442,13 +1439,12 @@ function Testimonials() {
           className="et-col et-gap-3"
           style={{ alignItems: 'center', textAlign: 'center', marginBottom: 48 }}
         >
-          <span className="et-eyebrow">Career transformations</span>
+          <span className="et-eyebrow">{t('testimonials.eyebrow')}</span>
           <h2 className="et-h2" style={{ maxWidth: 640 }}>
-            From classroom English to the job they wanted.
+            {t('testimonials.heading')}
           </h2>
           <p className="et-body" style={{ maxWidth: 520 }}>
-            Real outcomes from learners who used EasyEng to change careers, move countries, or
-            finally lead the meeting.
+            {t('testimonials.subhead')}
           </p>
         </div>
 
@@ -1458,7 +1454,7 @@ function Testimonials() {
         >
           {stories.map((s) => (
             <article
-              key={s.name}
+              key={s.key}
               className="et-card"
               style={{
                 padding: 26,
@@ -1497,7 +1493,7 @@ function Testimonials() {
                   zIndex: 1,
                 }}
               >
-                {s.tag}
+                {t(`testimonials.items.${s.key}.tag`)}
               </span>
 
               <p
@@ -1510,7 +1506,7 @@ function Testimonials() {
                   zIndex: 1,
                 }}
               >
-                &ldquo;{s.quote}&rdquo;
+                &ldquo;{t(`testimonials.items.${s.key}.quote`)}&rdquo;
               </p>
 
               <div
@@ -1524,16 +1520,16 @@ function Testimonials() {
                 }}
               >
                 <Avatar
-                  initials={s.initials}
+                  initials={t(`testimonials.items.${s.key}.name`).split(' ').map((n: string) => n[0]).join('')}
                   size={44}
                   gradient={`linear-gradient(135deg, ${s.accent}, #4c6bff)`}
                 />
                 <div className="et-col" style={{ gap: 2 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{s.name}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{t(`testimonials.items.${s.key}.name`)}</div>
                   <div className="et-tiny" style={{ color: s.accent }}>
-                    {s.role}
+                    {t(`testimonials.items.${s.key}.role`)}
                   </div>
-                  <div className="et-tiny">{s.country}</div>
+                  <div className="et-tiny">{t(`testimonials.items.${s.key}.country`)}</div>
                 </div>
               </div>
             </article>
@@ -1548,56 +1544,14 @@ function Testimonials() {
 // Pricing
 // -----------------------------------------------------------------------------
 
-function Pricing({ locale }: { locale: string }) {
+function Pricing({ locale, t }: { locale: string; t: ReturnType<typeof useTranslations<'landing'>> }) {
   const [period, setPeriod] = React.useState<'month' | 'year'>('year');
-  const tiers = [
-    {
-      name: 'Free',
-      blurb: 'Basic access. Forever free.',
-      monthly: 0,
-      yearly: 0,
-      features: [
-        '100+ beginner lessons (A1–A2)',
-        'Daily practice exercises',
-        'Mobile + desktop access',
-        'Community forum',
-      ],
-      cta: 'Start free',
-      highlighted: false,
-      perSeat: false,
-    },
-    {
-      name: 'Pro',
-      blurb: 'Unlimited access. Most popular.',
-      monthly: 29,
-      yearly: 24,
-      features: [
-        'All courses A1 → C2',
-        '4 hrs / mo 1-on-1 speaking time',
-        'AI speaking practice (unlimited)',
-        'Verified completion certificate',
-        'Priority support',
-      ],
-      cta: 'Get Pro',
-      highlighted: true,
-      perSeat: false,
-    },
-    {
-      name: 'Team',
-      blurb: 'For corporates & organizations.',
-      monthly: 19,
-      yearly: 16,
-      perSeat: true,
-      features: [
-        'Everything in Pro',
-        'Admin dashboard & SSO',
-        'Group reporting & analytics',
-        'Custom learning paths',
-        'Dedicated success manager',
-      ],
-      cta: 'Contact sales',
-      highlighted: false,
-    },
+
+  type TierKey = 'free' | 'pro' | 'team';
+  const tiers: { key: TierKey; monthly: number; yearly: number; highlighted: boolean; perSeat: boolean; salesContact: boolean }[] = [
+    { key: 'free', monthly: 0, yearly: 0, highlighted: false, perSeat: false, salesContact: false },
+    { key: 'pro', monthly: 29, yearly: 24, highlighted: true, perSeat: false, salesContact: false },
+    { key: 'team', monthly: 19, yearly: 16, highlighted: false, perSeat: true, salesContact: true },
   ];
 
   return (
@@ -1611,15 +1565,21 @@ function Pricing({ locale }: { locale: string }) {
           className="et-col et-gap-4"
           style={{ alignItems: 'center', textAlign: 'center', marginBottom: 40 }}
         >
-          <span className="et-eyebrow">Pricing</span>
+          <span className="et-eyebrow">{t('pricing.eyebrow')}</span>
           <h2 className="et-h2" style={{ maxWidth: 640 }}>
-            Simple, honest pricing.
+            {t('pricing.heading')}
           </h2>
           <p className="et-body" style={{ maxWidth: 520 }}>
-            Cancel anytime. All plans include the 7-day free trial.
+            {t('pricing.subhead')}
           </p>
           <div style={{ marginTop: 8 }}>
-            <PricingToggle value={period} onChange={setPeriod} />
+            <PricingToggle
+              value={period}
+              onChange={setPeriod}
+              monthlyLabel={t('pricing.monthly')}
+              yearlyLabel={t('pricing.yearly')}
+              saveLabel={t('pricing.savePercent')}
+            />
           </div>
         </div>
 
@@ -1627,21 +1587,25 @@ function Pricing({ locale }: { locale: string }) {
           className="et-grid-3"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}
         >
-          {tiers.map((t) => {
-            const price = period === 'year' ? t.yearly : t.monthly;
+          {tiers.map((tier) => {
+            const price = period === 'year' ? tier.yearly : tier.monthly;
             const isFree = price === 0;
+            const perSeatStr = tier.perSeat ? t('pricing.perSeatSuffix') : '';
             const billed = isFree
-              ? 'No card required'
+              ? t('pricing.noCard')
               : period === 'year'
-              ? `Billed $${t.yearly * 12} yearly${t.perSeat ? ' / seat' : ''}`
-              : `Billed monthly${t.perSeat ? ' / seat' : ''}`;
+              ? t('pricing.billedYearly', { amount: tier.yearly * 12, perSeat: perSeatStr })
+              : t('pricing.billedMonthly', { perSeat: perSeatStr });
+
+            const features = t.raw(`pricing.tiers.${tier.key}.features`) as string[];
+
             const cardStyle: React.CSSProperties = {
               padding: 28,
               display: 'flex',
               flexDirection: 'column',
               gap: 18,
               position: 'relative',
-              ...(t.highlighted
+              ...(tier.highlighted
                 ? {
                     background: 'linear-gradient(180deg, #1d2762 0%, #111d49 100%)',
                     border: '1px solid rgba(124, 92, 255, 0.50)',
@@ -1651,8 +1615,8 @@ function Pricing({ locale }: { locale: string }) {
                 : {}),
             };
             return (
-              <div key={t.name} className="et-card" style={cardStyle}>
-                {t.highlighted && (
+              <div key={tier.key} className="et-card" style={cardStyle}>
+                {tier.highlighted && (
                   <span
                     className="et-chip"
                     style={{
@@ -1665,15 +1629,15 @@ function Pricing({ locale }: { locale: string }) {
                       boxShadow: '0 8px 20px -6px rgba(124, 92, 255, 0.68)',
                     }}
                   >
-                    ✨ Most popular
+                    {t('pricing.mostPopular')}
                   </span>
                 )}
 
                 <div className="et-col et-gap-2">
                   <div className="et-h3" style={{ fontSize: 17 }}>
-                    {t.name}
+                    {t(`pricing.tiers.${tier.key}.name`)}
                   </div>
-                  <div className="et-meta">{t.blurb}</div>
+                  <div className="et-meta">{t(`pricing.tiers.${tier.key}.blurb`)}</div>
                 </div>
 
                 <div className="et-row et-gap-2" style={{ alignItems: 'baseline' }}>
@@ -1681,28 +1645,28 @@ function Pricing({ locale }: { locale: string }) {
                     {isFree ? '$0' : `$${price}`}
                   </span>
                   <span className="et-meta">
-                    {isFree ? '' : t.perSeat ? '/ seat / mo' : '/ month'}
+                    {isFree ? '' : tier.perSeat ? t('pricing.perSeatPerMo') : t('pricing.perMonth')}
                   </span>
                 </div>
                 <div className="et-tiny" style={{ marginTop: -10 }}>
                   {billed}
                 </div>
 
-                {t.name === 'Team' ? (
+                {tier.salesContact ? (
                   <a
                     href="mailto:sales@easyeng.app"
-                    className={`et-btn ${t.highlighted ? 'primary' : 'secondary'} lg`}
-                    aria-label={`Choose ${t.name} plan`}
+                    className={`et-btn ${tier.highlighted ? 'primary' : 'secondary'} lg`}
+                    aria-label={`${t(`pricing.tiers.${tier.key}.cta`)}`}
                   >
-                    {t.cta}
+                    {t(`pricing.tiers.${tier.key}.cta`)}
                   </a>
                 ) : (
                   <Link
                     href={`/${locale}/auth/signup`}
-                    className={`et-btn ${t.highlighted ? 'primary' : 'secondary'} lg`}
-                    aria-label={`Choose ${t.name} plan`}
+                    className={`et-btn ${tier.highlighted ? 'primary' : 'secondary'} lg`}
+                    aria-label={`${t(`pricing.tiers.${tier.key}.cta`)}`}
                   >
-                    {t.cta}
+                    {t(`pricing.tiers.${tier.key}.cta`)}
                   </Link>
                 )}
 
@@ -1720,7 +1684,7 @@ function Pricing({ locale }: { locale: string }) {
                     gap: 12,
                   }}
                 >
-                  {t.features.map((f) => (
+                  {features.map((f) => (
                     <li
                       key={f}
                       className="et-row et-gap-3"
@@ -1735,7 +1699,7 @@ function Pricing({ locale }: { locale: string }) {
                         height="18"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke={t.highlighted ? '#a48bff' : '#34d399'}
+                        stroke={tier.highlighted ? '#a48bff' : '#34d399'}
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -1760,7 +1724,7 @@ function Pricing({ locale }: { locale: string }) {
 // Final CTA
 // -----------------------------------------------------------------------------
 
-function FinalCTA({ locale }: { locale: string }) {
+function FinalCTA({ locale, t }: { locale: string; t: ReturnType<typeof useTranslations<'landing'>> }) {
   return (
     <section className="et-section" style={{ paddingTop: 0, paddingBottom: 64 }}>
       <div className="et-container">
@@ -1781,14 +1745,14 @@ function FinalCTA({ locale }: { locale: string }) {
 
           <div style={{ position: 'relative' }}>
             <h2 className="et-h2" style={{ maxWidth: 680, margin: '0 auto', fontSize: 44 }}>
-              Your next conversation in English is{' '}
-              <span className="et-grad-text">one lesson away.</span>
+              {t('cta.heading')}{' '}
+              <span className="et-grad-text">{t('cta.headingAccent')}</span>
             </h2>
             <p
               className="et-body"
               style={{ maxWidth: 520, margin: '16px auto 0', fontSize: 16 }}
             >
-              No credit card required · Free Pro trial · Cancel anytime
+              {t('cta.subhead')}
             </p>
             <div
               className="et-row et-gap-3"
@@ -1797,9 +1761,9 @@ function FinalCTA({ locale }: { locale: string }) {
               <Link
                 href={`/${locale}/auth/signup`}
                 className="et-btn white lg"
-                aria-label="Start learning free"
+                aria-label={t('cta.startFree')}
               >
-                Start Learning Free
+                {t('cta.startFree')}
                 <svg
                   width="16"
                   height="16"
@@ -1816,9 +1780,9 @@ function FinalCTA({ locale }: { locale: string }) {
               <a
                 href="mailto:sales@easyeng.app"
                 className="et-btn outline lg"
-                aria-label="Talk to sales"
+                aria-label={t('cta.talkSales')}
               >
-                Talk to sales
+                {t('cta.talkSales')}
               </a>
             </div>
           </div>
@@ -1832,13 +1796,13 @@ function FinalCTA({ locale }: { locale: string }) {
 // Footer
 // -----------------------------------------------------------------------------
 
-function AppBadge({ kind }: { kind: 'ios' | 'android' }) {
+function AppBadge({ kind, t }: { kind: 'ios' | 'android'; t: ReturnType<typeof useTranslations<'landing'>> }) {
   const isIOS = kind === 'ios';
   const [hover, setHover] = React.useState(false);
   return (
     <a
       href="#"
-      aria-label={isIOS ? 'Download on the App Store' : 'Get it on Google Play'}
+      aria-label={isIOS ? t('footer.downloadIOS') : t('footer.downloadAndroid')}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -1876,31 +1840,18 @@ function AppBadge({ kind }: { kind: 'ios' | 'android' }) {
             letterSpacing: '0.04em',
           }}
         >
-          {isIOS ? 'Download on the' : 'GET IT ON'}
+          {isIOS ? t('footer.iosPreLabel') : t('footer.androidPreLabel')}
         </span>
         <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.2 }}>
-          {isIOS ? 'App Store' : 'Google Play'}
+          {isIOS ? t('footer.iosLabel') : t('footer.androidLabel')}
         </span>
       </div>
     </a>
   );
 }
 
-function Footer() {
-  const cols = [
-    {
-      title: 'Categories',
-      links: ['Business English', 'IELTS / TOEFL', 'Conversational', 'Pronunciation', 'Grammar', 'Writing'],
-    },
-    {
-      title: 'Company',
-      links: ['About us', 'Careers', 'Press', 'Partners', 'Blog', 'Contact'],
-    },
-    {
-      title: 'Support',
-      links: ['Help center', 'Refund policy', 'Status', 'Privacy', 'Terms', 'Accessibility'],
-    },
-  ];
+function Footer({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
+  const colKeys: Array<'categories' | 'company' | 'support'> = ['categories', 'company', 'support'];
 
   return (
     <footer
@@ -1923,36 +1874,38 @@ function Footer() {
               <span>easyeng</span>
             </div>
             <p className="et-meta" style={{ maxWidth: 280, lineHeight: 1.55 }}>
-              The premium English learning platform. Native tutors, structured tracks, and a quiet
-              space to actually practice.
+              {t('footer.tagline')}
             </p>
 
             <div className="et-col et-gap-2" style={{ marginTop: 6 }}>
-              <AppBadge kind="ios" />
-              <AppBadge kind="android" />
+              <AppBadge kind="ios" t={t} />
+              <AppBadge kind="android" t={t} />
             </div>
           </div>
 
-          {cols.map((c) => (
-            <div key={c.title} className="et-col et-gap-3">
-              <div className="et-eyebrow">{c.title}</div>
-              <div className="et-col" style={{ gap: 10, marginTop: 4 }}>
-                {c.links.map((l) => (
-                  <a
-                    key={l}
-                    href="#"
-                    style={{
-                      fontSize: 14,
-                      color: 'var(--et-fg-2)',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    {l}
-                  </a>
-                ))}
+          {colKeys.map((colKey) => {
+            const links = t.raw(`footer.cols.${colKey}.links`) as string[];
+            return (
+              <div key={colKey} className="et-col et-gap-3">
+                <div className="et-eyebrow">{t(`footer.cols.${colKey}.title`)}</div>
+                <div className="et-col" style={{ gap: 10, marginTop: 4 }}>
+                  {links.map((link) => (
+                    <a
+                      key={link}
+                      href="#"
+                      style={{
+                        fontSize: 14,
+                        color: 'var(--et-fg-2)',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      {link}
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div
@@ -1967,7 +1920,7 @@ function Footer() {
             gap: 16,
           }}
         >
-          <span className="et-tiny">© 2026 easyeng, Inc. All rights reserved.</span>
+          <span className="et-tiny">{t('footer.copyright')}</span>
           <div className="et-row et-gap-4">
             {['Twitter', 'LinkedIn', 'Instagram', 'YouTube'].map((s) => (
               <a
@@ -1980,7 +1933,7 @@ function Footer() {
               </a>
             ))}
           </div>
-          <span className="et-tiny">🌐 English (US) · USD $</span>
+          <span className="et-tiny">{t('footer.locale')}</span>
         </div>
       </div>
     </footer>
@@ -1993,22 +1946,23 @@ function Footer() {
 
 export default function HomePage() {
   const params = useParams();
-  const locale = (params?.locale as string) ?? 'en';
+  const locale = (params?.locale as string) ?? 'vi';
+  const t = useTranslations('landing');
 
   return (
     <div className="edtech" style={{ minHeight: '100vh' }}>
-      <TopNav locale={locale} />
+      <TopNav locale={locale} t={t} />
       <main id="main-content">
-        <Hero locale={locale} />
-        <Categories />
-        <Courses />
-        <WhyEasyEng />
-        <Instructors />
-        <Testimonials />
-        <Pricing locale={locale} />
-        <FinalCTA locale={locale} />
+        <Hero locale={locale} t={t} />
+        <Categories t={t} />
+        <Courses t={t} />
+        <WhyEasyEng t={t} />
+        <Instructors t={t} />
+        <Testimonials t={t} />
+        <Pricing locale={locale} t={t} />
+        <FinalCTA locale={locale} t={t} />
       </main>
-      <Footer />
+      <Footer t={t} />
     </div>
   );
 }

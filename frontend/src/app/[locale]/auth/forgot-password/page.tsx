@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 import { useAuth } from '@/hooks/useAuth';
 
@@ -36,6 +37,7 @@ function ArrowRight() {
 }
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations('auth.forgotPassword');
   const { resetPassword, isLoading, error } = useAuth();
 
   const [email, setEmail] = React.useState('');
@@ -46,14 +48,14 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setFormError(null);
     if (!email) {
-      setFormError('Vui lòng nhập email');
+      setFormError(t('errors.emailRequired'));
       return;
     }
     try {
       await resetPassword(email);
       setSuccess(true);
     } catch (_err) {
-      setFormError('Không thể gửi email khôi phục. Vui lòng thử lại.');
+      setFormError(t('errors.sendFailed'));
     }
   };
 
@@ -86,7 +88,7 @@ export default function ForgotPasswordPage() {
             <path d="M5 12l4.5 4.5L19 7.5" />
           </svg>
         </div>
-        <p className="et-eyebrow">Sent</p>
+        <p className="et-eyebrow">{t('successEyebrow')}</p>
         <h1
           style={{
             fontSize: 'clamp(32px, 4vw, 44px)',
@@ -96,14 +98,13 @@ export default function ForgotPasswordPage() {
             letterSpacing: '-0.025em',
           }}
         >
-          Kiểm tra email.
+          {t('successTitle')}
         </h1>
         <p className="et-body" style={{ marginTop: 14, maxWidth: 380, marginInline: 'auto' }}>
-          Nếu email <strong style={{ color: 'var(--et-fg)' }}>{email}</strong> tồn tại trong hệ
-          thống, bạn sẽ nhận được link khôi phục mật khẩu. Vui lòng kiểm tra hộp thư (kể cả spam).
+          {t('successBody', { email })}
         </p>
         <Link href="/auth/login" className="et-btn primary" style={{ marginTop: 22 }}>
-          Quay lại đăng nhập <ArrowRight />
+          {t('backToLogin')} <ArrowRight />
         </Link>
       </div>
     );
@@ -112,7 +113,7 @@ export default function ForgotPasswordPage() {
   return (
     <div style={{ width: '100%', maxWidth: 440 }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <p className="et-eyebrow">Reset password</p>
+        <p className="et-eyebrow">{t('eyebrow')}</p>
         <h1
           style={{
             fontSize: 'clamp(32px, 4vw, 46px)',
@@ -123,10 +124,10 @@ export default function ForgotPasswordPage() {
             color: 'var(--et-fg)',
           }}
         >
-          Quên mật khẩu?
+          {t('titleFull')}
         </h1>
         <p className="et-body" style={{ marginTop: 10, maxWidth: 360, marginInline: 'auto' }}>
-          Nhập email của bạn và chúng tôi sẽ gửi link khôi phục mật khẩu.
+          {t('subtitleFull')}
         </p>
       </div>
 
@@ -175,7 +176,7 @@ export default function ForgotPasswordPage() {
             className="et-btn primary lg"
             style={{ width: '100%', justifyContent: 'center', marginTop: 6 }}
           >
-            {isLoading ? '…' : 'Gửi link khôi phục'} <ArrowRight />
+            {isLoading ? '…' : t('submitLabel')} <ArrowRight />
           </button>
         </form>
       </article>
@@ -188,7 +189,7 @@ export default function ForgotPasswordPage() {
           color: 'var(--et-fg-2)',
         }}
       >
-        Nhớ mật khẩu rồi?{' '}
+        {t('rememberPassword')}{' '}
         <Link
           href="/auth/login"
           style={{
@@ -197,7 +198,7 @@ export default function ForgotPasswordPage() {
             textDecoration: 'none',
           }}
         >
-          Đăng nhập
+          {t('backToLogin')}
         </Link>
       </p>
     </div>

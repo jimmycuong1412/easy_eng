@@ -5,34 +5,11 @@ export const dynamic = 'force-dynamic';
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { useAuth } from '@/hooks/useAuth';
 
 type UserRole = 'student' | 'teacher' | 'parent';
-
-const roleOptions: { value: UserRole; label: string; icon: string; description: string; accent: string }[] = [
-  {
-    value: 'student',
-    label: 'Học sinh',
-    icon: '📚',
-    description: 'Học tiếng Anh với giáo viên',
-    accent: '#7c5cff',
-  },
-  {
-    value: 'teacher',
-    label: 'Giáo viên',
-    icon: '👨‍🏫',
-    description: 'Dạy và kiếm thu nhập',
-    accent: '#4c6bff',
-  },
-  {
-    value: 'parent',
-    label: 'Phụ huynh',
-    icon: '👪',
-    description: 'Quản lý tài khoản con em',
-    accent: '#ec4899',
-  },
-];
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -64,7 +41,32 @@ function ArrowRight() {
 
 export default function SignUpPage() {
   const router = useRouter();
+  const t = useTranslations('auth.signup');
   const { signUp, signInWithGoogle, isLoading, error } = useAuth();
+
+  const roleOptions: { value: UserRole; label: string; icon: string; description: string; accent: string }[] = [
+    {
+      value: 'student',
+      label: t('roles.student.label'),
+      icon: '📚',
+      description: t('roles.student.description'),
+      accent: '#7c5cff',
+    },
+    {
+      value: 'teacher',
+      label: t('roles.teacher.label'),
+      icon: '👨‍🏫',
+      description: t('roles.teacher.description'),
+      accent: '#4c6bff',
+    },
+    {
+      value: 'parent',
+      label: t('roles.parent.label'),
+      icon: '👪',
+      description: t('roles.parent.description'),
+      accent: '#ec4899',
+    },
+  ];
 
   const [step, setStep] = React.useState<'role' | 'details'>('role');
   const [selectedRole, setSelectedRole] = React.useState<UserRole | null>(null);
@@ -85,19 +87,19 @@ export default function SignUpPage() {
     setFormError(null);
 
     if (!fullName.trim()) {
-      setFormError('Vui lòng nhập họ tên');
+      setFormError(t('errors.nameRequired'));
       return;
     }
     if (!email) {
-      setFormError('Vui lòng nhập email');
+      setFormError(t('errors.emailRequired'));
       return;
     }
     if (password.length < 8) {
-      setFormError('Mật khẩu phải có ít nhất 8 ký tự');
+      setFormError(t('errors.passwordMin'));
       return;
     }
     if (password !== confirmPassword) {
-      setFormError('Mật khẩu xác nhận không khớp');
+      setFormError(t('errors.passwordMismatch'));
       return;
     }
 
@@ -105,7 +107,7 @@ export default function SignUpPage() {
       await signUp(email, password, fullName);
       setSuccess(true);
     } catch (_err) {
-      setFormError('Không thể tạo tài khoản. Email có thể đã được sử dụng.');
+      setFormError(t('errors.createFailed'));
     }
   };
 
@@ -113,7 +115,7 @@ export default function SignUpPage() {
     try {
       await signInWithGoogle();
     } catch (_err) {
-      setFormError('Không thể đăng ký bằng Google');
+      setFormError(t('errors.googleFailed'));
     }
   };
 
@@ -146,7 +148,7 @@ export default function SignUpPage() {
             <path d="M5 12l4.5 4.5L19 7.5" />
           </svg>
         </div>
-        <p className="et-eyebrow">Almost there</p>
+        <p className="et-eyebrow">{t('successEyebrow')}</p>
         <h1
           style={{
             fontSize: 'clamp(32px, 4vw, 44px)',
@@ -156,12 +158,10 @@ export default function SignUpPage() {
             letterSpacing: '-0.025em',
           }}
         >
-          Kiểm tra email của bạn.
+          {t('successTitle')}
         </h1>
         <p className="et-body" style={{ marginTop: 14, maxWidth: 360, marginInline: 'auto' }}>
-          Chúng tôi đã gửi link xác nhận đến{' '}
-          <strong style={{ color: 'var(--et-fg)' }}>{email}</strong>. Vui lòng kiểm tra hộp thư và
-          click vào link để hoàn tất đăng ký.
+          {t('successBody', { email })}
         </p>
         <button
           type="button"
@@ -169,7 +169,7 @@ export default function SignUpPage() {
           className="et-btn primary"
           style={{ marginTop: 22 }}
         >
-          Quay lại đăng nhập <ArrowRight />
+          {t('backToLogin')} <ArrowRight />
         </button>
       </div>
     );
@@ -178,7 +178,7 @@ export default function SignUpPage() {
   return (
     <div style={{ width: '100%', maxWidth: 440 }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <p className="et-eyebrow">{step === 'role' ? 'Step 1 of 2' : 'Step 2 of 2'}</p>
+        <p className="et-eyebrow">{step === 'role' ? t('step1of2') : t('step2of2')}</p>
         <h1
           style={{
             fontSize: 'clamp(32px, 4vw, 46px)',
@@ -189,12 +189,12 @@ export default function SignUpPage() {
             color: 'var(--et-fg)',
           }}
         >
-          {step === 'role' ? 'Chọn vai trò của bạn.' : 'Tạo tài khoản.'}
+          {step === 'role' ? t('chooseRole') : t('createAccount')}
         </h1>
         <p className="et-body" style={{ marginTop: 10, maxWidth: 360, marginInline: 'auto' }}>
           {step === 'role'
-            ? 'Bạn muốn sử dụng EasyEng với vai trò nào?'
-            : `Đăng ký với vai trò ${roleOptions.find((r) => r.value === selectedRole)?.label}`}
+            ? t('rolePrompt')
+            : `${t('detailsPromptPrefix')} ${roleOptions.find((r) => r.value === selectedRole)?.label}`}
         </p>
       </div>
 
@@ -300,7 +300,7 @@ export default function SignUpPage() {
                 padding: 0,
               }}
             >
-              ← Chọn vai trò khác
+              {t('backToRole')}
             </button>
 
             <button
@@ -333,7 +333,7 @@ export default function SignUpPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Đăng ký bằng Google
+              {t('googleSignUp')}
             </button>
 
             <div
@@ -354,7 +354,7 @@ export default function SignUpPage() {
                   textTransform: 'uppercase',
                 }}
               >
-                hoặc
+                {t('or')}
               </span>
               <span style={{ flex: 1, height: 1, background: 'rgba(91, 141, 255, 0.20)' }} />
             </div>
@@ -369,12 +369,12 @@ export default function SignUpPage() {
                   className="et-eyebrow"
                   style={{ display: 'block', marginBottom: 8 }}
                 >
-                  Họ và tên
+                  {t('fullName')}
                 </label>
                 <input
                   id="fullName"
                   type="text"
-                  placeholder="Nguyễn Văn An"
+                  placeholder={t('namePlaceholder')}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={isLoading}
@@ -389,7 +389,7 @@ export default function SignUpPage() {
                   className="et-eyebrow"
                   style={{ display: 'block', marginBottom: 8 }}
                 >
-                  Email
+                  {t('email')}
                 </label>
                 <input
                   id="email"
@@ -409,12 +409,12 @@ export default function SignUpPage() {
                   className="et-eyebrow"
                   style={{ display: 'block', marginBottom: 8 }}
                 >
-                  Mật khẩu
+                  {t('password')}
                 </label>
                 <input
                   id="password"
                   type="password"
-                  placeholder="Ít nhất 8 ký tự"
+                  placeholder={t('passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
@@ -429,12 +429,12 @@ export default function SignUpPage() {
                   className="et-eyebrow"
                   style={{ display: 'block', marginBottom: 8 }}
                 >
-                  Xác nhận mật khẩu
+                  {t('confirmPassword')}
                 </label>
                 <input
                   id="confirmPassword"
                   type="password"
-                  placeholder="Nhập lại mật khẩu"
+                  placeholder={t('confirmPlaceholder')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={isLoading}
@@ -449,7 +449,7 @@ export default function SignUpPage() {
                 className="et-btn primary lg"
                 style={{ width: '100%', justifyContent: 'center', marginTop: 6 }}
               >
-                {isLoading ? '…' : 'Tạo tài khoản'} <ArrowRight />
+                {isLoading ? '…' : t('submitCreate')} <ArrowRight />
               </button>
             </form>
 
@@ -457,7 +457,7 @@ export default function SignUpPage() {
               className="et-tiny"
               style={{ textAlign: 'center', marginTop: 18 }}
             >
-              Bằng việc đăng ký, bạn đồng ý với{' '}
+              {t('termsText')}{' '}
               <Link
                 href="/terms"
                 style={{
@@ -466,9 +466,9 @@ export default function SignUpPage() {
                   fontWeight: 500,
                 }}
               >
-                Điều khoản sử dụng
+                {t('termsLink')}
               </Link>{' '}
-              và{' '}
+              {t('and')}{' '}
               <Link
                 href="/privacy"
                 style={{
@@ -477,7 +477,7 @@ export default function SignUpPage() {
                   fontWeight: 500,
                 }}
               >
-                Chính sách bảo mật
+                {t('privacyLink')}
               </Link>
             </p>
           </>
@@ -492,7 +492,7 @@ export default function SignUpPage() {
           color: 'var(--et-fg-2)',
         }}
       >
-        Đã có tài khoản?{' '}
+        {t('hasAccount')}{' '}
         <Link
           href="/auth/login"
           style={{
@@ -501,7 +501,7 @@ export default function SignUpPage() {
             textDecoration: 'none',
           }}
         >
-          Đăng nhập
+          {t('login')}
         </Link>
       </p>
     </div>

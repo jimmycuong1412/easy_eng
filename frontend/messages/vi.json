@@ -15,7 +15,176 @@
     "settings": "Cài đặt",
     "logout": "Đăng xuất",
     "copyright": "© {year} EasyEng. All rights reserved.",
-    "searchPlaceholder": "Tìm kiếm giáo viên, bài học..."
+    "searchPlaceholder": "Tìm kiếm giáo viên, bài học...",
+    "authTagline": "Một cách mới để học tiếng Anh"
+  },
+  "meta": {
+    "title": "EasyEng - Học Tiếng Anh Vui",
+    "description": "Nền tảng học tiếng Anh hiện đại với gamification, career avatars và live video classes. Đặt giáo viên, nhận gems và nâng trình độ của bạn!"
+  },
+  "landing": {
+    "nav": {
+      "courses": "Khóa học",
+      "categories": "Danh mục",
+      "tutors": "Giáo viên",
+      "pricing": "Bảng giá",
+      "about": "Giới thiệu",
+      "signIn": "Đăng nhập",
+      "getStarted": "Bắt đầu"
+    },
+    "hero": {
+      "trusted": "Được tin tưởng bởi 50.000+ học viên thành thạo trên toàn thế giới",
+      "headline": "Thành thạo tiếng Anh.",
+      "headlineAccent": "Lưu loát không giới hạn.",
+      "subhead": "Học từ các gia sư bản ngữ đẳng cấp thế giới qua các lộ trình hội thoại có cấu trúc. Từ lần đầu nói \"hello\" đến C2 tự tin — theo tốc độ của bạn, theo điều kiện của bạn.",
+      "exploreCourses": "Khám phá khóa học",
+      "viewPricing": "Xem bảng giá",
+      "fromReviews": "từ 38k đánh giá",
+      "moneyBack": "Hoàn tiền trong 30 ngày",
+      "lifetimeAccess": "Truy cập vĩnh viễn",
+      "stat1Num": "50K+",
+      "stat1Label": "Học viên hoạt động",
+      "stat1Sub": "tại 86 quốc gia",
+      "stat2Num": "500+",
+      "stat2Label": "Gia sư bản ngữ chứng nhận",
+      "stat2Sub": "đã được kiểm tra & đào tạo",
+      "stat3Num": "2.500+",
+      "stat3Label": "Bài học chuyên biệt",
+      "stat3Sub": "từ A1 đến C2",
+      "stat4Num": "95%",
+      "stat4Label": "Tỷ lệ thành công",
+      "stat4Sub": "đạt mục tiêu trong 6 tháng"
+    },
+    "categories": {
+      "eyebrow": "Duyệt theo chủ đề",
+      "heading": "Chọn lộ trình. Chúng tôi lo giáo trình.",
+      "seeAll": "Xem tất cả 28 danh mục →",
+      "coursesCount": "{count} khóa học",
+      "items": {
+        "business": { "name": "Tiếng Anh Thương mại", "blurb": "Họp, email, thuyết trình." },
+        "ielts": { "name": "Luyện IELTS / TOEFL", "blurb": "Đạt 7.0+ với chiến lược đã được kiểm chứng." },
+        "conversation": { "name": "Tiếng Anh Giao tiếp", "blurb": "Nói thật, thành thạo thật." },
+        "grammar": { "name": "Ngữ pháp & Phát âm", "blurb": "Giảm giọng, chuẩn ngữ pháp." },
+        "corporate": { "name": "Đào tạo Doanh nghiệp", "blurb": "Chương trình cho đội nhóm toàn cầu." },
+        "pronunciation": { "name": "Phát âm", "blurb": "Nghe tự nhiên, không robot." },
+        "writing": { "name": "Viết & Email", "blurb": "Luận văn, báo cáo, ghi chú kinh doanh." },
+        "travel": { "name": "Tiếng Anh Du lịch", "blurb": "Đặt món, tìm đường, kết bạn." }
+      }
+    },
+    "courses": {
+      "eyebrow": "Được yêu thích nhất tháng này",
+      "heading": "Khóa học đánh giá cao, được chọn lọc.",
+      "filterAll": "Tất cả",
+      "hoursLessons": "· {hours}h · {lessons} bài học",
+      "enroll": "Đăng ký →",
+      "bestseller": "★ Bán chạy",
+      "items": {
+        "course1": { "title": "Giao tiếp Hàng ngày: Từ Chào đến Lưu loát", "tag": "Giao tiếp" },
+        "course2": { "title": "Tiếng Anh Thương mại cho Họp & Email", "tag": "Thương mại" },
+        "course3": { "title": "IELTS Academic — Chiến lược 7.0+", "tag": "IELTS" },
+        "course4": { "title": "Phát âm Thực sự Ghi nhớ", "tag": "Phát âm" },
+        "course5": { "title": "Ngữ pháp Không Đau", "tag": "Ngữ pháp" },
+        "course6": { "title": "Viết Như Người Bản ngữ: Luận văn & Báo cáo", "tag": "Viết" }
+      }
+    },
+    "why": {
+      "eyebrow": "Tại sao EasyEng",
+      "heading": "Xây dựng cho lưu loát.",
+      "headingAccent": "Không phải cho streak.",
+      "pillar1Title": "Học theo tốc độ của bạn",
+      "pillar1Desc": "Bài học cắt lát nhỏ phù hợp với khoảng thời gian giữa cà phê và cuộc họp. Tiếp tục đúng chỗ bạn dừng lại — trên điện thoại, máy tính bảng và máy tính.",
+      "pillar2Title": "Gia sư bản ngữ được chứng nhận",
+      "pillar2Desc": "Mỗi gia sư đều có chứng chỉ CELTA/TEFL và là người bản ngữ. Chọn theo giọng, lịch và chuyên môn — từ giám khảo Cambridge đến huấn luyện viên kinh doanh.",
+      "pillar3Title": "Phòng thực hành nói tương tác",
+      "pillar3Desc": "Đối tác AI nghe và phản hồi. Phòng nhóm trực tiếp khi bạn muốn có bạn đồng hành. Phản hồi phát âm thời gian thực mỗi khi bạn nói.",
+      "pillar4Title": "Chứng chỉ được xác minh",
+      "pillar4Desc": "Nhận chứng chỉ có thể xác minh tại mỗi cấp CEFR. Thêm vào LinkedIn, CV, hồ sơ visa — và chứng minh bằng liên kết công khai.",
+      "mock": {
+        "welcomeBack": "Chào trở lại,",
+        "currentLevel": "Cấp độ hiện tại",
+        "toNext": "đến C1",
+        "streak": "Streak",
+        "hours": "Giờ",
+        "accuracy": "Độ chính xác",
+        "days": "ngày",
+        "thisMonth": "tháng này",
+        "todayLessons": "Bài học hôm nay",
+        "scheduled": "3 đã lên lịch",
+        "certified": "Chứng nhận B1",
+        "verified": "Đã xác minh · Tháng 3/2026"
+      }
+    },
+    "instructors": {
+      "eyebrow": "Gặp gỡ giáo viên",
+      "heading": "1.200+ gia sư. Được kiểm tra, đào tạo, và rất thật.",
+      "browseAll": "Xem tất cả gia sư →",
+      "students": "Học viên",
+      "coursesLabel": "Khóa học",
+      "viewProfile": "Xem hồ sơ",
+      "onlineNow": "Đang online"
+    },
+    "testimonials": {
+      "eyebrow": "Câu chuyện thay đổi sự nghiệp",
+      "heading": "Từ tiếng Anh lớp học đến công việc họ mong muốn.",
+      "subhead": "Kết quả thực tế từ những học viên đã dùng EasyEng để đổi nghề, di chuyển quốc gia, hoặc cuối cùng dẫn dắt cuộc họp.",
+      "items": {
+        "t1": { "tag": "Đổi nghề", "quote": "Tôi đã từ C1 chỉ đọc được đến thực sự dẫn dắt standup bằng tiếng Anh. Các buổi nói 1:1 là chìa khóa — gia sư của tôi bắt được mọi thói quen tiếng Anh lớp học mà tôi không biết mình có.", "name": "Elena Martinez", "role": "Kỹ sư Phần mềm tại Stripe", "country": "🇲🇽 CDMX → 🇺🇸 NYC" },
+        "t2": { "tag": "Phỏng vấn visa", "quote": "Sáu tháng từ 'tôi có thể đọc báo' đến vượt qua vòng phỏng vấn cấp cao. Luyện IELTS giúp giấy tờ qua; các lộ trình hội thoại giúp tôi có việc.", "name": "Kenji Sato", "role": "Nhà khoa học Dữ liệu tại Meta", "country": "🇯🇵 Tokyo → 🇨🇦 Toronto" },
+        "t3": { "tag": "Thăng tiến", "quote": "Trình bày phê bình thiết kế từng làm tôi câm nín. Giờ tôi điều hành chúng. Phòng thực hành AI cho tôi luyện những phần khó mà không tốn cuộc họp thật.", "name": "Adaeze Okafor", "role": "Nhà thiết kế Sản phẩm tại Linear", "country": "🇳🇬 Lagos → Remote" }
+      }
+    },
+    "pricing": {
+      "eyebrow": "Bảng giá",
+      "heading": "Giá rõ ràng, trung thực.",
+      "subhead": "Hủy bất cứ lúc nào. Tất cả gói đều bao gồm dùng thử 7 ngày miễn phí.",
+      "monthly": "Hàng tháng",
+      "yearly": "Hàng năm",
+      "savePercent": "Tiết kiệm 17%",
+      "mostPopular": "✨ Phổ biến nhất",
+      "perSeatPerMo": "/ chỗ / tháng",
+      "perMonth": "/ tháng",
+      "noCard": "Không cần thẻ",
+      "billedYearly": "Thanh toán ${amount} hàng năm{perSeat}",
+      "billedMonthly": "Thanh toán hàng tháng{perSeat}",
+      "perSeatSuffix": " / chỗ",
+      "tiers": {
+        "free": { "name": "Miễn phí", "blurb": "Truy cập cơ bản. Miễn phí mãi.", "cta": "Bắt đầu miễn phí", "features": ["100+ bài học cơ bản (A1–A2)", "Bài tập luyện tập hàng ngày", "Truy cập mobile + desktop", "Diễn đàn cộng đồng"] },
+        "pro": { "name": "Pro", "blurb": "Truy cập không giới hạn. Phổ biến nhất.", "cta": "Dùng Pro", "features": ["Tất cả khóa học A1 → C2", "4 giờ/tháng nói 1-on-1", "Thực hành nói AI (không giới hạn)", "Chứng chỉ hoàn thành được xác minh", "Hỗ trợ ưu tiên"] },
+        "team": { "name": "Nhóm", "blurb": "Cho doanh nghiệp & tổ chức.", "cta": "Liên hệ sales", "features": ["Tất cả tính năng Pro", "Bảng điều khiển Admin & SSO", "Báo cáo & phân tích nhóm", "Lộ trình học tập tùy chỉnh", "Người quản lý thành công riêng"] }
+      }
+    },
+    "cta": {
+      "heading": "Cuộc trò chuyện tiếng Anh tiếp theo của bạn chỉ",
+      "headingAccent": "cách một bài học.",
+      "subhead": "Không cần thẻ tín dụng · Dùng thử Pro miễn phí · Hủy bất cứ lúc nào",
+      "startFree": "Bắt đầu học miễn phí",
+      "talkSales": "Nói chuyện với sales"
+    },
+    "footer": {
+      "tagline": "Nền tảng học tiếng Anh cao cấp. Gia sư bản ngữ, lộ trình có cấu trúc, và không gian yên tĩnh để thực sự luyện tập.",
+      "downloadIOS": "Tải trên App Store",
+      "downloadAndroid": "Tải trên Google Play",
+      "iosPreLabel": "Tải trên",
+      "iosLabel": "App Store",
+      "androidPreLabel": "TẢI TRÊN",
+      "androidLabel": "Google Play",
+      "copyright": "© 2026 easyeng, Inc. Bảo lưu mọi quyền.",
+      "locale": "🌐 Tiếng Việt · VND ₫",
+      "cols": {
+        "categories": {
+          "title": "Danh mục",
+          "links": ["Tiếng Anh Thương mại", "IELTS / TOEFL", "Giao tiếp", "Phát âm", "Ngữ pháp", "Viết"]
+        },
+        "company": {
+          "title": "Công ty",
+          "links": ["Về chúng tôi", "Tuyển dụng", "Báo chí", "Đối tác", "Blog", "Liên hệ"]
+        },
+        "support": {
+          "title": "Hỗ trợ",
+          "links": ["Trung tâm hỗ trợ", "Chính sách hoàn tiền", "Trạng thái", "Quyền riêng tư", "Điều khoản", "Khả năng tiếp cận"]
+        }
+      }
+    }
   },
   "home": {
     "tagline": "Học Tiếng Anh vui hơn với Gem rewards, Career Avatars và live video classes",
@@ -63,13 +232,58 @@
       "submit": "Đăng ký",
       "googleSignUp": "Đăng ký bằng Google",
       "hasAccount": "Đã có tài khoản?",
-      "login": "Đăng nhập"
+      "login": "Đăng nhập",
+      "step1of2": "Bước 1 / 2",
+      "step2of2": "Bước 2 / 2",
+      "chooseRole": "Chọn vai trò của bạn.",
+      "createAccount": "Tạo tài khoản.",
+      "rolePrompt": "Bạn muốn sử dụng EasyEng với vai trò nào?",
+      "detailsPromptPrefix": "Đăng ký với vai trò",
+      "roles": {
+        "student": { "label": "Học sinh", "description": "Học tiếng Anh với giáo viên" },
+        "teacher": { "label": "Giáo viên", "description": "Dạy và kiếm thu nhập" },
+        "parent": { "label": "Phụ huynh", "description": "Quản lý tài khoản con em" }
+      },
+      "backToRole": "← Chọn vai trò khác",
+      "or": "hoặc",
+      "namePlaceholder": "Nguyễn Văn An",
+      "passwordPlaceholder": "Ít nhất 8 ký tự",
+      "confirmPlaceholder": "Nhập lại mật khẩu",
+      "submitCreate": "Tạo tài khoản",
+      "termsText": "Bằng việc đăng ký, bạn đồng ý với",
+      "termsLink": "Điều khoản sử dụng",
+      "and": "và",
+      "privacyLink": "Chính sách bảo mật",
+      "successEyebrow": "Gần xong rồi",
+      "successTitle": "Kiểm tra email của bạn.",
+      "successBody": "Chúng tôi đã gửi link xác nhận đến {email}. Vui lòng kiểm tra hộp thư và click vào link để hoàn tất đăng ký.",
+      "backToLogin": "Quay lại đăng nhập",
+      "errors": {
+        "nameRequired": "Vui lòng nhập họ tên",
+        "emailRequired": "Vui lòng nhập email",
+        "passwordMin": "Mật khẩu phải có ít nhất 8 ký tự",
+        "passwordMismatch": "Mật khẩu xác nhận không khớp",
+        "createFailed": "Không thể tạo tài khoản. Email có thể đã được sử dụng.",
+        "googleFailed": "Không thể đăng ký bằng Google"
+      }
     },
     "forgotPassword": {
       "title": "Quên mật khẩu",
       "subtitle": "Nhập email để nhận link đặt lại mật khẩu",
       "submit": "Gửi link",
-      "backToLogin": "Quay lại đăng nhập"
+      "backToLogin": "Quay lại đăng nhập",
+      "eyebrow": "Đặt lại mật khẩu",
+      "titleFull": "Quên mật khẩu?",
+      "subtitleFull": "Nhập email của bạn và chúng tôi sẽ gửi link khôi phục mật khẩu.",
+      "submitLabel": "Gửi link khôi phục",
+      "rememberPassword": "Nhớ mật khẩu rồi?",
+      "successEyebrow": "Đã gửi",
+      "successTitle": "Kiểm tra email.",
+      "successBody": "Nếu email {email} tồn tại trong hệ thống, bạn sẽ nhận được link khôi phục mật khẩu. Vui lòng kiểm tra hộp thư (kể cả spam).",
+      "errors": {
+        "emailRequired": "Vui lòng nhập email",
+        "sendFailed": "Không thể gửi email khôi phục. Vui lòng thử lại."
+      }
     }
   },
   "dashboard": {

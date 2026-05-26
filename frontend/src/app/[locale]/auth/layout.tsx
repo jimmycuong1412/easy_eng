@@ -1,10 +1,13 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const t = await getTranslations('common');
+
   return (
     <div
       className="edtech"
@@ -56,7 +59,7 @@ export default function AuthLayout({
           <span className="et-mark">e</span>
           <span>easyeng</span>
         </Link>
-        <p className="et-eyebrow">A new way to learn English</p>
+        <p className="et-eyebrow">{t('authTagline')}</p>
       </header>
 
       {/* Main */}
@@ -85,7 +88,7 @@ export default function AuthLayout({
         }}
       >
         <p className="et-tiny">
-          &copy; {new Date().getFullYear()} EasyEng. All rights reserved.
+          {t('copyright', { year: new Date().getFullYear() })}
         </p>
       </footer>
     </div>
