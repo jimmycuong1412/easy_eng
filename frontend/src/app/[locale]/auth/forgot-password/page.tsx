@@ -4,23 +4,40 @@ export const dynamic = 'force-dynamic';
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowRIcon, CheckIcon } from '@/components/editorial/Icons';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '11px 14px',
   borderRadius: 10,
-  border: '1px solid var(--ed-rule-strong)',
-  background: 'var(--ed-paper)',
-  color: 'var(--ed-ink-2)',
-  fontFamily: 'var(--ed-sans)',
+  border: '1px solid rgba(91, 141, 255, 0.20)',
+  background: '#0a1845',
+  color: 'var(--et-fg)',
   fontSize: 14,
   outline: 'none',
 };
 
+function ArrowRight() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 export default function ForgotPasswordPage() {
+  const t = useTranslations('auth.forgotPassword');
   const { resetPassword, isLoading, error } = useAuth();
 
   const [email, setEmail] = React.useState('');
@@ -31,14 +48,14 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setFormError(null);
     if (!email) {
-      setFormError('Vui lòng nhập email');
+      setFormError(t('errors.emailRequired'));
       return;
     }
     try {
       await resetPassword(email);
       setSuccess(true);
-    } catch (err) {
-      setFormError('Không thể gửi email khôi phục. Vui lòng thử lại.');
+    } catch (_err) {
+      setFormError(t('errors.sendFailed'));
     }
   };
 
@@ -50,28 +67,44 @@ export default function ForgotPasswordPage() {
             width: 72,
             height: 72,
             borderRadius: '50%',
-            background: 'var(--ed-coral-2)',
-            color: 'var(--ed-coral-ink)',
+            background: 'rgba(52, 211, 153, 0.15)',
+            color: '#34d399',
             display: 'grid',
             placeItems: 'center',
             margin: '0 auto 18px',
+            border: '1px solid rgba(52, 211, 153, 0.35)',
           }}
         >
-          <CheckIcon />
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12l4.5 4.5L19 7.5" />
+          </svg>
         </div>
-        <p className="ed-eyebrow">Sent</p>
+        <p className="et-eyebrow">{t('successEyebrow')}</p>
         <h1
-          className="ed-display"
-          style={{ fontSize: 'clamp(32px, 4vw, 44px)', marginTop: 8 }}
+          style={{
+            fontSize: 'clamp(32px, 4vw, 44px)',
+            marginTop: 8,
+            fontWeight: 700,
+            color: 'var(--et-fg)',
+            letterSpacing: '-0.025em',
+          }}
         >
-          Kiểm tra email.
+          {t('successTitle')}
         </h1>
-        <p className="ed-body" style={{ marginTop: 14, maxWidth: 380, marginInline: 'auto' }}>
-          Nếu email <strong style={{ color: 'var(--ed-ink-2)' }}>{email}</strong> tồn tại trong hệ
-          thống, bạn sẽ nhận được link khôi phục mật khẩu. Vui lòng kiểm tra hộp thư (kể cả spam).
+        <p className="et-body" style={{ marginTop: 14, maxWidth: 380, marginInline: 'auto' }}>
+          {t('successBody', { email })}
         </p>
-        <Link href="/auth/login" className="ed-btn ed-btn-primary" style={{ marginTop: 22 }}>
-          Quay lại đăng nhập <ArrowRIcon />
+        <Link href="/auth/login" className="et-btn primary" style={{ marginTop: 22 }}>
+          {t('backToLogin')} <ArrowRight />
         </Link>
       </div>
     );
@@ -80,34 +113,36 @@ export default function ForgotPasswordPage() {
   return (
     <div style={{ width: '100%', maxWidth: 440 }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <p className="ed-eyebrow">Reset password</p>
+        <p className="et-eyebrow">{t('eyebrow')}</p>
         <h1
-          className="ed-display"
           style={{
             fontSize: 'clamp(32px, 4vw, 46px)',
             marginTop: 8,
             letterSpacing: '-0.025em',
+            fontWeight: 700,
+            lineHeight: 1.05,
+            color: 'var(--et-fg)',
           }}
         >
-          Quên mật khẩu?
+          {t('titleFull')}
         </h1>
-        <p className="ed-body" style={{ marginTop: 10, maxWidth: 360, marginInline: 'auto' }}>
-          Nhập email của bạn và chúng tôi sẽ gửi link khôi phục mật khẩu.
+        <p className="et-body" style={{ marginTop: 10, maxWidth: 360, marginInline: 'auto' }}>
+          {t('subtitleFull')}
         </p>
       </div>
 
-      <article className="ed-card" style={{ padding: 28 }}>
+      <article className="et-card" style={{ padding: 28 }}>
         {(formError || error) && (
           <div
             role="alert"
             style={{
               padding: '12px 14px',
               borderRadius: 10,
-              background: 'var(--ed-coral-2)',
-              color: 'var(--ed-coral-ink)',
-              fontFamily: 'var(--ed-sans)',
+              background: 'rgba(239, 68, 68, 0.12)',
+              color: '#fca5a5',
               fontSize: 13,
               marginBottom: 18,
+              border: '1px solid rgba(239, 68, 68, 0.30)',
             }}
           >
             {formError || error?.message}
@@ -116,7 +151,11 @@ export default function ForgotPasswordPage() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label htmlFor="email" className="ed-eyebrow" style={{ display: 'block', marginBottom: 8 }}>
+            <label
+              htmlFor="email"
+              className="et-eyebrow"
+              style={{ display: 'block', marginBottom: 8 }}
+            >
               Email
             </label>
             <input
@@ -134,10 +173,10 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="ed-btn ed-btn-primary ed-btn-lg"
+            className="et-btn primary lg"
             style={{ width: '100%', justifyContent: 'center', marginTop: 6 }}
           >
-            {isLoading ? '…' : 'Gửi link khôi phục'} <ArrowRIcon />
+            {isLoading ? '…' : t('submitLabel')} <ArrowRight />
           </button>
         </form>
       </article>
@@ -146,23 +185,20 @@ export default function ForgotPasswordPage() {
         style={{
           textAlign: 'center',
           marginTop: 20,
-          fontFamily: 'var(--ed-sans)',
           fontSize: 14,
-          color: 'var(--ed-ink-soft)',
+          color: 'var(--et-fg-2)',
         }}
       >
-        Nhớ mật khẩu rồi?{' '}
+        {t('rememberPassword')}{' '}
         <Link
           href="/auth/login"
           style={{
-            color: 'var(--ed-ink-2)',
+            color: 'var(--et-violet-2)',
             fontWeight: 600,
-            textDecoration: 'underline',
-            textDecorationColor: 'var(--ed-rule-strong)',
-            textUnderlineOffset: 4,
+            textDecoration: 'none',
           }}
         >
-          Đăng nhập
+          {t('backToLogin')}
         </Link>
       </p>
     </div>

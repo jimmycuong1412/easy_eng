@@ -14,8 +14,177 @@
     "or": "or",
     "settings": "Settings",
     "logout": "Log out",
-    "copyright": "Â© {year} EasyEng. All rights reserved.",
-    "searchPlaceholder": "Search teachers, lessons..."
+    "copyright": "© {year} EasyEng. All rights reserved.",
+    "searchPlaceholder": "Search teachers, lessons...",
+    "authTagline": "A new way to learn English"
+  },
+  "meta": {
+    "title": "EasyEng - Learn English with Fun",
+    "description": "Modern English learning platform with gamification, career avatars, and live video classes. Book teachers, earn gems, and level up your language skills!"
+  },
+  "landing": {
+    "nav": {
+      "courses": "Courses",
+      "categories": "Categories",
+      "tutors": "Tutors",
+      "pricing": "Pricing",
+      "about": "About",
+      "signIn": "Sign In",
+      "getStarted": "Get Started"
+    },
+    "hero": {
+      "trusted": "Trusted by 50,000+ fluent learners worldwide",
+      "headline": "Master English.",
+      "headlineAccent": "Fluency Without Limits.",
+      "subhead": "Learn from world-class native-speaker tutors through structured conversational tracks. From your first \"hello\" to confident C2 — at your pace, on your terms.",
+      "exploreCourses": "Explore Courses",
+      "viewPricing": "View Pricing",
+      "fromReviews": "from 38k reviews",
+      "moneyBack": "30-day money-back guarantee",
+      "lifetimeAccess": "Lifetime access",
+      "stat1Num": "50K+",
+      "stat1Label": "Active Students",
+      "stat1Sub": "across 86 countries",
+      "stat2Num": "500+",
+      "stat2Label": "Certified Native Tutors",
+      "stat2Sub": "vetted & trained",
+      "stat3Num": "2,500+",
+      "stat3Label": "Specialized Lessons",
+      "stat3Sub": "from A1 to C2",
+      "stat4Num": "95%",
+      "stat4Label": "Fluency Success Rate",
+      "stat4Sub": "goal completed in 6mo"
+    },
+    "categories": {
+      "eyebrow": "Browse by topic",
+      "heading": "Pick your path. We'll handle the lesson plan.",
+      "seeAll": "See all 28 categories →",
+      "coursesCount": "{count} courses",
+      "items": {
+        "business": { "name": "Business English", "blurb": "Meetings, email, presentations." },
+        "ielts": { "name": "IELTS / TOEFL Prep", "blurb": "Score 7.0+ with proven strategy." },
+        "conversation": { "name": "Conversational English", "blurb": "Real talk, real fluency." },
+        "grammar": { "name": "Grammar & Accent", "blurb": "Reduce accent, polish grammar." },
+        "corporate": { "name": "Corporate Training", "blurb": "Programs for global teams." },
+        "pronunciation": { "name": "Pronunciation", "blurb": "Sound natural, not robotic." },
+        "writing": { "name": "Writing & Email", "blurb": "Essays, reports, business notes." },
+        "travel": { "name": "Travel English", "blurb": "Order, navigate, make friends." }
+      }
+    },
+    "courses": {
+      "eyebrow": "Most loved this month",
+      "heading": "Top-rated courses, hand-picked.",
+      "filterAll": "All",
+      "hoursLessons": "· {hours}h · {lessons} lessons",
+      "enroll": "Enroll →",
+      "bestseller": "★ Bestseller",
+      "items": {
+        "course1": { "title": "Everyday Conversation: From Hi to Fluent", "tag": "Conversation" },
+        "course2": { "title": "Business English for Meetings & Email", "tag": "Business" },
+        "course3": { "title": "IELTS Academic — 7.0+ Strategy", "tag": "IELTS" },
+        "course4": { "title": "Pronunciation That Actually Sticks", "tag": "Pronunciation" },
+        "course5": { "title": "Grammar Without the Pain", "tag": "Grammar" },
+        "course6": { "title": "Write Like a Native: Essays & Reports", "tag": "Writing" }
+      }
+    },
+    "why": {
+      "eyebrow": "Why EasyEng",
+      "heading": "Built for fluency.",
+      "headingAccent": "Not for streaks.",
+      "pillar1Title": "Learn at your own pace",
+      "pillar1Desc": "Bite-sized lessons that fit between a coffee and a meeting. Pick up exactly where you left off — across phone, tablet and desktop.",
+      "pillar2Title": "Certified native speakers",
+      "pillar2Desc": "Every tutor is CELTA/TEFL-certified and a native speaker. Choose by accent, schedule and specialty — Cambridge examiners to business coaches.",
+      "pillar3Title": "Interactive speaking lab",
+      "pillar3Desc": "AI partners that listen and respond. Live group rooms when you want company. Real-time pronunciation feedback every time you talk.",
+      "pillar4Title": "Verified certificates",
+      "pillar4Desc": "Earn a verifiable credential at each CEFR level. Add it to your LinkedIn, your CV, your visa application — and prove it with a public link.",
+      "mock": {
+        "welcomeBack": "Welcome back,",
+        "currentLevel": "Current level",
+        "toNext": "to C1",
+        "streak": "Streak",
+        "hours": "Hours",
+        "accuracy": "Accuracy",
+        "days": "days",
+        "thisMonth": "this month",
+        "todayLessons": "Today's lessons",
+        "scheduled": "3 scheduled",
+        "certified": "B1 Certified",
+        "verified": "Verified · Mar 2026"
+      }
+    },
+    "instructors": {
+      "eyebrow": "Meet the teachers",
+      "heading": "1,200+ instructors. Vetted, trained, and very real.",
+      "browseAll": "Browse all instructors →",
+      "students": "Students",
+      "coursesLabel": "Courses",
+      "viewProfile": "View profile",
+      "onlineNow": "Online now"
+    },
+    "testimonials": {
+      "eyebrow": "Career transformations",
+      "heading": "From classroom English to the job they wanted.",
+      "subhead": "Real outcomes from learners who used EasyEng to change careers, move countries, or finally lead the meeting.",
+      "items": {
+        "t1": { "tag": "Career switch", "quote": "I went from C1 paper-fluent to actually leading standups in English. The 1:1 speaking sessions were the unlock — my tutor caught every \"classroom English\" habit I didn't know I had.", "name": "Elena Martinez", "role": "Software Engineer at Stripe", "country": "🇲🇽 Mexico City → 🇺🇸 NYC" },
+        "t2": { "tag": "Visa interview", "quote": "Six months from \"I can read papers\" to passing a senior-level interview loop. The IELTS prep got my paperwork through; the conversational tracks got me the job.", "name": "Kenji Sato", "role": "Data Scientist at Meta", "country": "🇯🇵 Tokyo → 🇨🇦 Toronto" },
+        "t3": { "tag": "Promotion", "quote": "Presenting design crits used to make me shut down. Now I run them. The AI speaking lab let me drill the awkward parts without burning real meetings.", "name": "Adaeze Okafor", "role": "Product Designer at Linear", "country": "🇳🇬 Lagos → Remote" }
+      }
+    },
+    "pricing": {
+      "eyebrow": "Pricing",
+      "heading": "Simple, honest pricing.",
+      "subhead": "Cancel anytime. All plans include the 7-day free trial.",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "savePercent": "Save 17%",
+      "mostPopular": "✨ Most popular",
+      "perSeatPerMo": "/ seat / mo",
+      "perMonth": "/ month",
+      "noCard": "No card required",
+      "billedYearly": "Billed ${amount} yearly{perSeat}",
+      "billedMonthly": "Billed monthly{perSeat}",
+      "perSeatSuffix": " / seat",
+      "tiers": {
+        "free": { "name": "Free", "blurb": "Basic access. Forever free.", "cta": "Start free", "features": ["100+ beginner lessons (A1–A2)", "Daily practice exercises", "Mobile + desktop access", "Community forum"] },
+        "pro": { "name": "Pro", "blurb": "Unlimited access. Most popular.", "cta": "Get Pro", "features": ["All courses A1 → C2", "4 hrs / mo 1-on-1 speaking time", "AI speaking practice (unlimited)", "Verified completion certificate", "Priority support"] },
+        "team": { "name": "Team", "blurb": "For corporates & organizations.", "cta": "Contact sales", "features": ["Everything in Pro", "Admin dashboard & SSO", "Group reporting & analytics", "Custom learning paths", "Dedicated success manager"] }
+      }
+    },
+    "cta": {
+      "heading": "Your next conversation in English is",
+      "headingAccent": "one lesson away.",
+      "subhead": "No credit card required · Free Pro trial · Cancel anytime",
+      "startFree": "Start Learning Free",
+      "talkSales": "Talk to sales"
+    },
+    "footer": {
+      "tagline": "The premium English learning platform. Native tutors, structured tracks, and a quiet space to actually practice.",
+      "downloadIOS": "Download on the App Store",
+      "downloadAndroid": "Get it on Google Play",
+      "iosPreLabel": "Download on the",
+      "iosLabel": "App Store",
+      "androidPreLabel": "GET IT ON",
+      "androidLabel": "Google Play",
+      "copyright": "© 2026 easyeng, Inc. All rights reserved.",
+      "locale": "🌐 English (US) · USD $",
+      "cols": {
+        "categories": {
+          "title": "Categories",
+          "links": ["Business English", "IELTS / TOEFL", "Conversational", "Pronunciation", "Grammar", "Writing"]
+        },
+        "company": {
+          "title": "Company",
+          "links": ["About us", "Careers", "Press", "Partners", "Blog", "Contact"]
+        },
+        "support": {
+          "title": "Support",
+          "links": ["Help center", "Refund policy", "Status", "Privacy", "Terms", "Accessibility"]
+        }
+      }
+    }
   },
   "home": {
     "tagline": "Learn English more fun with Gem rewards, Career Avatars and live video classes",
@@ -61,15 +230,60 @@
       "password": "Password",
       "confirmPassword": "Confirm password",
       "submit": "Sign up",
-      "googleSignUp": "Sign up with Google",
+      "googleSignUp": "Continue with Google",
       "hasAccount": "Already have an account?",
-      "login": "Log in"
+      "login": "Log in",
+      "step1of2": "Step 1 of 2",
+      "step2of2": "Step 2 of 2",
+      "chooseRole": "Choose your role.",
+      "createAccount": "Create account.",
+      "rolePrompt": "How will you use EasyEng?",
+      "detailsPromptPrefix": "Signing up as",
+      "roles": {
+        "student": { "label": "Student", "description": "Learn English with a teacher" },
+        "teacher": { "label": "Teacher", "description": "Teach and earn income" },
+        "parent": { "label": "Parent", "description": "Manage your child's account" }
+      },
+      "backToRole": "← Choose different role",
+      "or": "or",
+      "namePlaceholder": "John Doe",
+      "passwordPlaceholder": "At least 8 characters",
+      "confirmPlaceholder": "Re-enter password",
+      "submitCreate": "Create account",
+      "termsText": "By signing up, you agree to our",
+      "termsLink": "Terms of Service",
+      "and": "and",
+      "privacyLink": "Privacy Policy",
+      "successEyebrow": "Almost there",
+      "successTitle": "Check your email.",
+      "successBody": "We sent a confirmation link to {email}. Please check your inbox and click the link to complete registration.",
+      "backToLogin": "Back to login",
+      "errors": {
+        "nameRequired": "Please enter your full name",
+        "emailRequired": "Please enter your email",
+        "passwordMin": "Password must be at least 8 characters",
+        "passwordMismatch": "Passwords do not match",
+        "createFailed": "Could not create account. The email may already be in use.",
+        "googleFailed": "Could not sign up with Google"
+      }
     },
     "forgotPassword": {
       "title": "Forgot password",
       "subtitle": "Enter your email to receive a password reset link",
       "submit": "Send link",
-      "backToLogin": "Back to login"
+      "backToLogin": "Back to login",
+      "eyebrow": "Reset password",
+      "titleFull": "Forgot password?",
+      "subtitleFull": "Enter your email and we'll send you a reset link.",
+      "submitLabel": "Send reset link",
+      "rememberPassword": "Remembered it?",
+      "successEyebrow": "Sent",
+      "successTitle": "Check your email.",
+      "successBody": "If {email} exists in our system, you'll receive a password reset link. Check your inbox (including spam).",
+      "errors": {
+        "emailRequired": "Please enter your email",
+        "sendFailed": "Could not send recovery email. Please try again."
+      }
     }
   },
   "dashboard": {

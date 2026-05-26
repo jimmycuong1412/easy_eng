@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
-import { Inter, JetBrains_Mono, Newsreader } from 'next/font/google';
+import { getMessages, getTranslations } from 'next-intl/server';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
 
@@ -25,90 +25,88 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-mono',
 });
 
-const newsreader = Newsreader({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-newsreader',
-  weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
-});
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'meta' });
+  const ogLocale = locale === 'vi' ? 'vi_VN' : 'en_US';
 
-
-export const metadata: Metadata = {
-  title: {
-    default: 'EasyEng - Learn English with Fun',
-    template: '%s | EasyEng',
-  },
-  description:
-    'Modern English learning platform with gamification, career avatars, and live video classes. Book teachers, earn gems, and level up your language skills!',
-  keywords: [
-    'learn english',
-    'english learning',
-    'online tutoring',
-    'video classes',
-    'gamification',
-    'vietnam education',
-    'english for vietnamese',
-    'gem rewards',
-  ],
-  authors: [{ name: 'EasyEng Team' }],
-  creator: 'EasyEng',
-  publisher: 'EasyEng',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+  return {
+    title: {
+      default: t('title'),
+      template: '%s | EasyEng',
+    },
+    description: t('description'),
+    keywords: [
+      'learn english',
+      'english learning',
+      'online tutoring',
+      'video classes',
+      'gamification',
+      'vietnam education',
+      'english for vietnamese',
+      'gem rewards',
     ],
-  },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-  openGraph: {
-    title: 'EasyEng - Learn English with Fun',
-    description:
-      'Modern English learning platform with gamification and live video classes.',
-    url: '/',
-    siteName: 'EasyEng',
-    type: 'website',
-    locale: 'en_US',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'EasyEng - Learn English Platform',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'EasyEng - Learn English with Fun',
-    description:
-      'Modern English learning platform with gamification and live video classes.',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    authors: [{ name: 'EasyEng Team' }],
+    creator: 'EasyEng',
+    publisher: 'EasyEng',
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    icons: {
+      icon: [
+        { url: '/favicon.ico', sizes: 'any' },
+        { url: '/favicon.svg', type: 'image/svg+xml' },
+      ],
+    },
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+    openGraph: {
+      title: t('title'),
+      description: t('description'),
+      url: '/',
+      siteName: 'EasyEng',
+      type: 'website',
+      locale: ogLocale,
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: 'EasyEng - Learn English Platform',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('title'),
+      description: t('description'),
+    },
+    robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
-  },
-};
+  };
+}
 
 export const viewport: Viewport = {
-  themeColor: '#F7F4ED',
+  themeColor: '#060f33',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  colorScheme: 'light',
+  colorScheme: 'dark',
 };
 
 export function generateStaticParams() {
@@ -135,7 +133,7 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
-      className={`${inter.variable} ${jetbrainsMono.variable} ${newsreader.variable} ${GeistSans.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable} ${GeistSans.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-bg-primary font-sans antialiased" suppressHydrationWarning>

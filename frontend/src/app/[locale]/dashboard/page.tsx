@@ -13,7 +13,6 @@ import { useGemsBalance } from '@/hooks/useGemsBalance';
 import { createClient } from '@/lib/supabase/client';
 import { getDashboardData, getTeachers, getStudentProgress } from '@/lib/queries';
 import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
-import { EdTopBar } from '@/components/editorial/TopBar';
 import {
   ArrowRIcon,
   CalIcon,
@@ -155,10 +154,8 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="ed-frame">
-      <EdTopBar role="student" initials={initials} locale={locale} />
-
-      <main className="ed-content" id="main-content">
+    <div>
+      <main id="main-content">
         {/* Active class reconnect banner — kept above the fold */}
         <div style={{ marginBottom: 18 }}>
           <ActiveClassBanner userId={user?.id} role="student" />
@@ -207,22 +204,66 @@ export default function DashboardPage() {
             marginTop: 28,
           }}
         >
-          {/* Next lesson — ink panel */}
-          <div className="ed-ink-panel" style={{ padding: 28 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+          {/* Next lesson — hero card */}
+          <div
+            className="ed-ink-panel"
+            style={{
+              padding: 28,
+              background: 'linear-gradient(135deg, #1d2762 0%, #11205a 50%, #0d1640 100%)',
+              boxShadow: '0 20px 60px -20px rgba(124, 92, 255, 0.35), 0 0 0 1px rgba(91,141,255,0.20), inset 0 1px 0 rgba(255,255,255,0.08)',
+            }}
+          >
+            {/* Ambient glow */}
+            <div
+              style={{
+                position: 'absolute',
+                top: -60,
+                right: -60,
+                width: 200,
+                height: 200,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(124,92,255,0.25) 0%, transparent 70%)',
+                pointerEvents: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, position: 'relative' }}>
               <div>
-                <p
-                  className="ed-label"
-                  style={{
-                    fontFamily: 'var(--ed-mono)',
-                    fontSize: 11,
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    color: '#B5BEDF',
-                  }}
-                >
-                  {nextClass ? t('upcomingClasses') : 'Today'}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <p
+                    className="ed-label"
+                    style={{
+                      fontFamily: 'var(--ed-mono)',
+                      fontSize: 11,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: '#B5BEDF',
+                      margin: 0,
+                    }}
+                  >
+                    {nextClass ? t('upcomingClasses') : 'Today'}
+                  </p>
+                  {nextClass && (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        padding: '3px 9px',
+                        borderRadius: 999,
+                        fontSize: 10,
+                        fontFamily: 'var(--et-mono)',
+                        letterSpacing: '0.10em',
+                        textTransform: 'uppercase',
+                        background: 'rgba(255, 122, 89, 0.20)',
+                        color: '#ff7a59',
+                        border: '1px solid rgba(255, 122, 89, 0.35)',
+                      }}
+                    >
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ff7a59', display: 'inline-block', boxShadow: '0 0 6px #ff7a59' }} />
+                      Soon
+                    </span>
+                  )}
+                </div>
                 <p
                   className="ed-serif"
                   style={{
