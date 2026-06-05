@@ -33,27 +33,27 @@
       "getStarted": "Bắt đầu"
     },
     "hero": {
-      "trusted": "Được tin tưởng bởi 50.000+ học viên thành thạo trên toàn thế giới",
-      "headline": "Thành thạo tiếng Anh.",
-      "headlineAccent": "Lưu loát không giới hạn.",
+      "trusted": "Được tin tưởng bởi 50.000+ học viên Việt Nam thành thạo tiếng Anh",
+      "headline": "Nói tiếng Anh như người bản ngữ.",
+      "headlineAccent": "Tự tin, lưu loát, không sợ sai.",
       "subhead": "Học từ các gia sư bản ngữ đẳng cấp thế giới qua các lộ trình hội thoại có cấu trúc. Từ lần đầu nói \"hello\" đến C2 tự tin — theo tốc độ của bạn, theo điều kiện của bạn.",
       "exploreCourses": "Khám phá khóa học",
       "viewPricing": "Xem bảng giá",
       "fromReviews": "từ 38k đánh giá",
       "moneyBack": "Hoàn tiền trong 30 ngày",
       "lifetimeAccess": "Truy cập vĩnh viễn",
-      "stat1Num": "50K+",
-      "stat1Label": "Học viên hoạt động",
-      "stat1Sub": "tại 86 quốc gia",
+      "stat1Num": "15K+",
+      "stat1Label": "Học viên Việt Nam",
+      "stat1Sub": "đạt được mục tiêu",
       "stat2Num": "500+",
-      "stat2Label": "Gia sư bản ngữ chứng nhận",
-      "stat2Sub": "đã được kiểm tra & đào tạo",
+      "stat2Label": "Gia sư bản ngữ CELTA/TEFL",
+      "stat2Sub": "kinh nghiệm dạy người Việt",
       "stat3Num": "2.500+",
-      "stat3Label": "Bài học chuyên biệt",
-      "stat3Sub": "từ A1 đến C2",
-      "stat4Num": "95%",
-      "stat4Label": "Tỷ lệ thành công",
-      "stat4Sub": "đạt mục tiêu trong 6 tháng"
+      "stat3Label": "Bài học dành riêng",
+      "stat3Sub": "từ A1 đến C2, có giải thích Việt",
+      "stat4Num": "92%",
+      "stat4Label": "Học viên hài lòng",
+      "stat4Sub": "tiếp tục học sau 3 tháng đầu"
     },
     "categories": {
       "eyebrow": "Duyệt theo chủ đề",
@@ -116,7 +116,7 @@
     },
     "instructors": {
       "eyebrow": "Gặp gỡ giáo viên",
-      "heading": "1.200+ gia sư. Được kiểm tra, đào tạo, và rất thật.",
+      "heading": "1.200+ gia sư bản ngữ. Được kiểm tra, đào tạo, rất nhiệt tình.",
       "browseAll": "Xem tất cả gia sư →",
       "students": "Học viên",
       "coursesLabel": "Khóa học",
@@ -128,15 +128,15 @@
       "heading": "Từ tiếng Anh lớp học đến công việc họ mong muốn.",
       "subhead": "Kết quả thực tế từ những học viên đã dùng EasyEng để đổi nghề, di chuyển quốc gia, hoặc cuối cùng dẫn dắt cuộc họp.",
       "items": {
-        "t1": { "tag": "Đổi nghề", "quote": "Tôi đã từ C1 chỉ đọc được đến thực sự dẫn dắt standup bằng tiếng Anh. Các buổi nói 1:1 là chìa khóa — gia sư của tôi bắt được mọi thói quen tiếng Anh lớp học mà tôi không biết mình có.", "name": "Elena Martinez", "role": "Kỹ sư Phần mềm tại Stripe", "country": "🇲🇽 CDMX → 🇺🇸 NYC" },
-        "t2": { "tag": "Phỏng vấn visa", "quote": "Sáu tháng từ 'tôi có thể đọc báo' đến vượt qua vòng phỏng vấn cấp cao. Luyện IELTS giúp giấy tờ qua; các lộ trình hội thoại giúp tôi có việc.", "name": "Kenji Sato", "role": "Nhà khoa học Dữ liệu tại Meta", "country": "🇯🇵 Tokyo → 🇨🇦 Toronto" },
-        "t3": { "tag": "Thăng tiến", "quote": "Trình bày phê bình thiết kế từng làm tôi câm nín. Giờ tôi điều hành chúng. Phòng thực hành AI cho tôi luyện những phần khó mà không tốn cuộc họp thật.", "name": "Adaeze Okafor", "role": "Nhà thiết kế Sản phẩm tại Linear", "country": "🇳🇬 Lagos → Remote" }
+        "t1": { "tag": "Đổi nghề", "quote": "Tôi là kỹ sư ở Hà Nội, nhưng ngôn ngữ bất bình ở các buổi họp tiếng Anh. Sau 3 tháng với EasyEng, tôi bắt đầu tự tin phát biểu. Bây giờ, tôi đã được nhận vào công ty công nghệ quốc tế mơ ước — toàn bộ phỏng vấn bằng tiếng Anh, tôi đạt A+!", "name": "Minh Châu", "role": "Kỹ sư Phần mềm tại tập đoàn quốc tế", "country": "🇻🇳 Hà Nội → Singapore" },
+        "t2": { "tag": "Du học & IELTS", "quote": "Học IELTS bình thường mất 18 tháng, mình chỉ cần 4 tháng. Với EasyEng, tôi vừa luyện reading/listening vừa cải thiện speaking thực tế. Kết quả: 7.5 IELTS và vé sang Úc!", "name": "Hương Giang", "role": "Sinh viên du học tại ĐH Melbourne", "country": "🇻🇳 TPHCM → 🇦🇺 Melbourne" },
+        "t3": { "tag": "Tiếng Anh thương mại", "quote": "Công việc marketing đòi email tiếng Anh mỗi ngày. Tôi sợ lỗi, sợ mất thể diện. EasyEng giúp tôi không chỉ viết đúng mà còn tự tin giao tiếp với các client quốc tế. Lương tăng, tay tôi cũng ngấu nghiến hơn rồi!", "name": "Linh Đan", "role": "Content Marketer tại công ty digital", "country": "🇻🇳 Đà Nẵng → Remote" }
       }
     },
     "pricing": {
-      "eyebrow": "Bảng giá",
-      "heading": "Giá rõ ràng, trung thực.",
-      "subhead": "Hủy bất cứ lúc nào. Tất cả gói đều bao gồm dùng thử 7 ngày miễn phí.",
+      "eyebrow": "Bảng giá Việt Nam",
+      "heading": "Giá rõ ràng, trung thực, bằng VND.",
+      "subhead": "Hủy bất cứ lúc nào. Tất cả gói đều bao gồm dùng thử 7 ngày miễn phí. Thanh toán qua MoMo, ZaloPay, VNPay dễ dàng.",
       "monthly": "Hàng tháng",
       "yearly": "Hàng năm",
       "savePercent": "Tiết kiệm 17%",
@@ -154,9 +154,9 @@
       }
     },
     "cta": {
-      "heading": "Cuộc trò chuyện tiếng Anh tiếp theo của bạn chỉ",
-      "headingAccent": "cách một bài học.",
-      "subhead": "Không cần thẻ tín dụng · Dùng thử Pro miễn phí · Hủy bất cứ lúc nào",
+      "heading": "Bắt đầu hành trình tiếng Anh của bạn",
+      "headingAccent": "với 7 ngày miễn phí hôm nay.",
+      "subhead": "Không cần thẻ tín dụng · Dùng thử Pro miễn phí · Hủy bất cứ lúc nào · Hỗ trợ Tiếng Việt 24/7",
       "startFree": "Bắt đầu học miễn phí",
       "talkSales": "Nói chuyện với sales"
     },
@@ -169,7 +169,7 @@
       "androidPreLabel": "TẢI TRÊN",
       "androidLabel": "Google Play",
       "copyright": "© 2026 easyeng, Inc. Bảo lưu mọi quyền.",
-      "locale": "🌐 Tiếng Việt · VND ₫",
+      "locale": "🇻🇳 Tiếng Việt · VND ₫",
       "cols": {
         "categories": {
           "title": "Danh mục",
