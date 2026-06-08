@@ -69,7 +69,7 @@ export default function LiveClassPage() {
 
       if ((profile as any).role === 'student') {
         const { data: booking, error: bookingError } = await (supabase as any)
-          .from('bookings').select('*').eq('student_id', user.id).eq('class_id', classId)
+          .from('bookings').select('*').eq('user_id', user.id).eq('class_id', classId)
           .in('status', ['confirmed', 'completed']).single();
         if (bookingError || !booking) throw new Error('You must have a confirmed booking to join this class');
       }

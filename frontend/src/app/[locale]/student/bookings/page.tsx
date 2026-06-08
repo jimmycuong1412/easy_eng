@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserBookings } from '@/lib/queries';
 
@@ -101,6 +102,8 @@ function getStatusBadge(status: string) {
 
 export default function MyBookingsPage() {
   const { user } = useAuth();
+  const params = useParams();
+  const locale = (params?.locale as string) ?? 'vi';
   const [bookings, setBookings] = useState<BookingsData>({ upcoming: [], past: [], cancelled: [] });
   const [loading, setLoading] = useState(false);
 
@@ -302,7 +305,7 @@ export default function MyBookingsPage() {
                               }`}
                               asChild
                             >
-                              <Link href={`/class/${booking.classId}/live`}>
+                              <Link href={`/${locale}/class/${booking.classId}/live`}>
                                 <Video className="w-4 h-4 mr-2" />
                                 {booking.canJoin ? 'Vào lớp' : 'Chi tiết'}
                               </Link>

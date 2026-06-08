@@ -26,6 +26,20 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = createAdminClient() as any;
 
+  // 0. Duplicate guard — reject if user already booked same teacher + slot
+  const idempotencyKey = `${user.id}-${teacherId}-${startTime.toISOString()}`;
+  const { data: existingBooking } = await admin
+    .from('bookings')
+    .select('id')
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+  if (existingBooking) {
+    return NextResponse.json(
+      { error: 'You already have a booking for this time slot' },
+      { status: 409 }
+    );
+  }
+
   // 1. Create a 1-on-1 class record
   const { data: cls, error: classError } = await admin
     .from('classes')
@@ -63,6 +77,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
       payment_status: 'completed',
       status: 'confirmed',
       paid_at: new Date().toISOString(),
+      idempotency_key: idempotencyKey,
     })
     .select('id')
     .single();
