@@ -135,7 +135,7 @@ jobs:
       - name: Health check
         run: |
           DEPLOY_URL="${{ secrets.DEPLOY_URL || 'https://easyeng-dev.vercel.app' }}"
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL/")
+          HTTP_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" "$DEPLOY_URL/")
           if [ "$HTTP_STATUS" -ne 200 ]; then
             echo "::error::Health check failed with status $HTTP_STATUS"
             exit 1
