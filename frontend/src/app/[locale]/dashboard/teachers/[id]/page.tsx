@@ -211,7 +211,10 @@ function WeeklyCalendar({ availability, bookedSlots, selectedDate, selectedTime,
                   const dow = weekDayOfWeek[i];
                   const hasSlot = (availMap[dow] ?? []).includes(time);
                   const past = isSlotPast(date, time);
-                  const dateStr = date.toISOString().split('T')[0];
+                  // Local date parts — toISOString() shifts +07 local midnight
+                  // to the previous UTC day, booking a different day than the
+                  // column the user clicked.
+                  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                   const dateKey = `${dow}:${dateStr}`;
                   const isSelected = selectedDate === dateKey && selectedTime === time;
                   const isBooked = bookedSlots.has(`${dateStr}:${time}`);

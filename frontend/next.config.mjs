@@ -106,9 +106,9 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               `script-src 'self' 'unsafe-inline' https://cdn.cometchat.com${isDev ? " 'unsafe-eval'" : ''}`,
-              "style-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https:",
-              "font-src 'self' data:",
+              "font-src 'self' data: https://fonts.gstatic.com",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.cometchat.com https://*.cometchat.com wss://*.cometchat.com https://*.cometchat.io wss://*.cometchat.io https://plausible.io",
               "media-src 'self' https: blob:",
               "frame-src 'self' https://*.cometchat.com",
