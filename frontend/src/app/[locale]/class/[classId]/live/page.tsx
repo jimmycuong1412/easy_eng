@@ -24,7 +24,8 @@ interface ClassDetails {
   title: string;
   description: string;
   teacher_id: string;
-  scheduled_at: string;
+  start_time: string;
+  max_students: number;
   duration_minutes: number;
   price: number;
 }
@@ -82,7 +83,7 @@ export default function LiveClassPage() {
         const groupId = `class-${classId}-${Date.now()}`;
         const { data: newSession, error: createError } = await (supabase as any)
           .from('class_sessions')
-          .insert({ class_id: classId, teacher_id: user.id, cometchat_group_id: groupId, status: 'scheduled', scheduled_start_time: classData.scheduled_at, max_participants: classData.capacity })
+          .insert({ class_id: classId, teacher_id: user.id, cometchat_group_id: groupId, status: 'scheduled', scheduled_start_time: classData.start_time, max_participants: classData.max_students })
           .select().single();
         if (createError) throw createError;
         existingSession = newSession;
