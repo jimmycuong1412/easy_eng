@@ -310,6 +310,17 @@ export default function MyBookingsPage() {
                                 {booking.canJoin ? 'Vào lớp' : 'Chi tiết'}
                               </Link>
                             </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                              asChild
+                            >
+                              <Link href={`/${locale}/student/bookings/cancel/${booking.id}`}>
+                                Hủy
+                              </Link>
+                            </Button>
                           </div>
                         </div>
                       </CardContent>

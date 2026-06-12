@@ -83,7 +83,10 @@ export default function TeachersPage() {
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    // Retry: on hard page loads the first fetch can be aborted mid-flight
+    // while the auth session is still settling.
+    const load = async (attempt: number) => {
       try {
         const supabase = getSupabaseClient();
         const { data, error } = await supabase
@@ -94,6 +97,7 @@ export default function TeachersPage() {
           .order('full_name', { ascending: true });
 
         if (error) throw error;
+        if (cancelled) return;
 
         const mapped: Teacher[] = (data || []).map((t) => ({
           id: t.id as string,
@@ -110,12 +114,18 @@ export default function TeachersPage() {
           isVerified: true,
         }));
         setTeachers(mapped);
-      } catch (err) {
-        console.error('Failed to load teachers:', err);
-      } finally {
         setIsLoading(false);
+      } catch (err) {
+        if (!cancelled && attempt < 3) {
+          setTimeout(() => load(attempt + 1), 1500 * (attempt + 1));
+          return;
+        }
+        console.error('Failed to load teachers:', err);
+        if (!cancelled) setIsLoading(false);
       }
-    })();
+    };
+    load(0);
+    return () => { cancelled = true; };
   }, []);
 
   // Filter and sort teachers

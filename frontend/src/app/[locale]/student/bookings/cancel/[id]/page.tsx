@@ -4,90 +4,67 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { env } from '@/lib/env';
 import CancellationModal from '@/components/booking/CancellationModal';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+
+interface RefundPreview {
+  refundPercentage: number;
+  gemsRefunded: number;
+  gemsUsed: number;
+  classTitle: string;
+  startTime: string;
+}
 
 export default function CancelBookingPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClient();
   const bookingId = params.id as string;
+  const locale = (params.locale as string) ?? 'vi';
 
-  const [booking, setBooking] = useState<any>(null);
-  const [refundInfo, setRefundInfo] = useState<any>(null);
+  const [preview, setPreview] = useState<RefundPreview | null>(null);
   const [loading, setLoading] = useState(true);
-  const [cancelled, setCancelled] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cancelled, setCancelled] = useState<{ gemsRefunded: number } | null>(null);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    loadBooking();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    let attempts = 0;
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/bookings/cancel?bookingId=${bookingId}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load booking');
+        setPreview(data as RefundPreview);
+        setLoading(false);
+      } catch (err) {
+        if (attempts < 2) { attempts += 1; setTimeout(load, 1500); return; }
+        setError(err instanceof Error ? err.message : 'Failed to load booking');
+        setLoading(false);
+      }
+    };
+    load();
   }, [bookingId]);
 
-  const loadBooking = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await (supabase as any)
-        .from('bookings')
-        .select('*, class:classes(*)')
-        .eq('id', bookingId)
-        .single();
-
-      if (error) throw error;
-      setBooking(data);
-
-      // Calculate refund
-      const bookingData = data as any;
-      const { data: refundPercentage } = await (supabase as any).rpc('get_refund_percentage', {
-        p_class_scheduled_at: bookingData.class?.scheduled_at,
-      });
-
-      const { data: amounts } = await (supabase as any).rpc('calculate_refund_amounts', {
-        p_booking_id: bookingId,
-        p_refund_percentage: refundPercentage,
-      });
-
-      setRefundInfo({ percentage: refundPercentage, ...amounts[0] });
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading booking:', error);
-      setLoading(false);
-    }
-  };
-
   const handleCancel = async (reason: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-cancellation`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          booking_id: bookingId,
-          cancelled_by: user.id,
-          cancelled_by_role: 'student',
-          reason,
-        }),
-      });
-
-      setCancelled(true);
-      setTimeout(() => router.push('/student/bookings'), 2000);
-    } catch (error) {
-      console.error('Error cancelling booking:', error);
+    const res = await fetch('/api/bookings/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId, reason }),
+      credentials: 'include',
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || 'Cancellation failed');
+      setShowModal(false);
+      return;
     }
+    setCancelled({ gemsRefunded: data.gemsRefunded ?? 0 });
+    setTimeout(() => router.push(`/${locale}/student/bookings`), 2500);
   };
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-bg-primary">
         <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
       </div>
     );
@@ -95,38 +72,74 @@ export default function CancelBookingPage() {
 
   if (cancelled) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-bg-primary">
         <div className="text-center">
-          <CheckCircle className="mx-auto h-16 w-16 text-green-600" />
-          <h2 className="mt-4 text-2xl font-bold text-gray-900">Booking Cancelled</h2>
-          <p className="mt-2 text-gray-600">Your refund will be processed shortly</p>
+          <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <h2 className="mt-4 text-2xl font-bold text-white">Đã hủy lớp học</h2>
+          <p className="mt-2 text-slate-400">
+            {cancelled.gemsRefunded > 0
+              ? `${cancelled.gemsRefunded} 💎 đã được hoàn vào tài khoản của bạn`
+              : 'Không có gems được hoàn theo chính sách hủy lớp'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !preview) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-bg-primary">
+        <div className="max-w-md text-center">
+          <AlertCircle className="mx-auto h-16 w-16 text-red-500" />
+          <h2 className="mt-4 text-xl font-semibold text-white">Không thể hủy lớp học</h2>
+          <p className="mt-2 text-slate-400">{error ?? 'Booking not found'}</p>
+          <button
+            onClick={() => router.push(`/${locale}/student/bookings`)}
+            className="mt-6 rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
+          >
+            Quay lại lịch học
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-bg-primary py-12">
       <div className="mx-auto max-w-2xl px-4">
+        <h1 className="text-2xl font-bold text-white mb-2">Hủy lớp học</h1>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-6 mb-6 space-y-2">
+          <p className="text-white font-medium">{preview.classTitle}</p>
+          <p className="text-sm text-slate-400">
+            {new Date(preview.startTime).toLocaleString('vi-VN', {
+              weekday: 'long', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit',
+            })}
+          </p>
+          <p className="text-sm text-slate-400">
+            Hoàn lại: <span className="text-amber-400 font-semibold">{preview.refundPercentage}%</span>
+            {' '}({preview.gemsRefunded} / {preview.gemsUsed} 💎)
+          </p>
+        </div>
+
         <button
           onClick={() => setShowModal(true)}
           className="w-full rounded-lg bg-red-600 px-6 py-3 text-white font-medium hover:bg-red-700"
         >
-          Cancel This Booking
+          Hủy lớp học này
         </button>
 
-        {showModal && booking && refundInfo && (
+        {showModal && (
           <CancellationModal
             booking={{
-              id: booking.id,
-              class_title: booking.class.title,
-              scheduled_at: booking.class.scheduled_at,
-              gems_used: booking.gems_used,
-              final_price: booking.final_price,
+              id: bookingId,
+              class_title: preview.classTitle,
+              scheduled_at: preview.startTime,
+              gems_used: preview.gemsUsed,
+              final_price: 0,
             }}
-            refundPercentage={refundInfo.percentage}
-            gemsRefund={refundInfo.gems_refunded}
-            cashRefund={refundInfo.cash_refunded}
+            refundPercentage={preview.refundPercentage}
+            gemsRefund={preview.gemsRefunded}
+            cashRefund={0}
             onConfirm={handleCancel}
             onClose={() => setShowModal(false)}
           />

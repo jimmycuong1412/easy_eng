@@ -25,19 +25,32 @@ export function useGemsBalance() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBalance = useCallback(async () => {
+  const fetchBalance = useCallback(async (attempt: number = 0) => {
     try {
       setIsLoading(true);
       setError(null);
 
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setBalance(0); return; }
+      if (!user) {
+        // On hard page loads the first getUser() can be aborted mid-flight
+        // while the session is still settling — retry before giving up.
+        if (attempt < 3) {
+          setTimeout(() => fetchBalance(attempt + 1), 1500 * (attempt + 1));
+          return;
+        }
+        setBalance(0);
+        return;
+      }
 
       const { data, error: rpcError } = await (supabase as any).rpc('get_gems_balance', { p_user_id: user.id });
       if (rpcError) throw rpcError;
       setBalance((data as number) ?? 0);
     } catch (err) {
+      if (attempt < 3) {
+        setTimeout(() => fetchBalance(attempt + 1), 1500 * (attempt + 1));
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
@@ -72,6 +85,15 @@ export function useGemsBalance() {
 
   useEffect(() => {
     fetchBalance();
+
+    // Refetch when the session finishes hydrating (covers the hard-load race)
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        fetchBalance();
+      }
+    });
+    return () => subscription.unsubscribe();
   }, [fetchBalance]);
 
   return {
