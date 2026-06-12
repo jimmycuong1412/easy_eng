@@ -98,6 +98,14 @@ export async function csrfFetch(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
+  // Self-provision: if the readable cookie is missing, mint one first
+  if (!getCsrfToken()) {
+    try {
+      await fetch('/api/csrf', { credentials: 'same-origin' });
+    } catch {
+      // fall through — request will fail CSRF validation and surface the error
+    }
+  }
   const headers = addCsrfHeader(options.headers);
   return fetch(url, {
     ...options,

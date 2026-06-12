@@ -14,6 +14,9 @@ import {
   getCurrentCometChatUser,
   CometChat,
 } from '@/lib/cometchat/client';
+import { createClassGroup, joinClassGroup, leaveClassGroup } from '@/lib/cometchat';
+import { createClient } from '@/lib/supabase/client';
+import { csrfFetch } from '@/lib/csrf';
 import { logger } from '@/lib/cometchat/logger';
 import type { UseCometChatReturn } from '@/types/cometchat';
 
@@ -59,7 +62,7 @@ export function useCometChat(): UseCometChatReturn {
       // Get auth token from backend if not provided
       let token = authToken;
       if (!token) {
-        const response = await fetch('/api/cometchat/auth-token', {
+        const response = await csrfFetch('/api/cometchat/auth-token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -107,6 +110,59 @@ export function useCometChat(): UseCometChatReturn {
     }
   }, []);
 
+  /**
+   * Join a CometChat group, transparently initializing the SDK and logging in
+   * the current Supabase user first. Creates the group if it doesn't exist
+   * (createClassGroup treats ERR_GUID_ALREADY_EXISTS as success).
+   */
+  const joinGroup = useCallback(async (groupId: string): Promise<boolean> => {
+    try {
+      await initCometChat();
+
+      let user = await getCurrentCometChatUser();
+      if (!user) {
+        const supabase = createClient();
+        const { data: { user: sbUser } } = await supabase.auth.getUser();
+        if (!sbUser) throw new Error('Not authenticated');
+
+        const response = await csrfFetch('/api/cometchat/auth-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        if (!response.ok) throw new Error('Failed to get auth token');
+        const data = await response.json();
+
+        user = await loginCometChatUser(sbUser.id, data.authToken);
+        setCurrentUser(user);
+        setIsLoggedIn(true);
+      }
+
+      await createClassGroup(groupId, 'EasyEng Class Session');
+      if (await joinClassGroup(groupId)) return true;
+
+      // joinClassGroup returns false for ERR_ALREADY_JOINED — verify membership
+      try {
+        const group: any = await (CometChat as any).getGroup(groupId);
+        return Boolean(group?.getHasJoined?.() ?? group?.hasJoined);
+      } catch {
+        return false;
+      }
+    } catch (err) {
+      logger.logError('useCometChat joinGroup', err instanceof Error ? err : new Error(String(err)));
+      return false;
+    }
+  }, []);
+
+  const leaveGroup = useCallback(async (groupId: string): Promise<boolean> => {
+    try {
+      return await leaveClassGroup(groupId);
+    } catch (err) {
+      logger.logError('useCometChat leaveGroup', err instanceof Error ? err : new Error(String(err)));
+      return false;
+    }
+  }, []);
+
   return {
     isInitialized,
     isLoggedIn,
@@ -115,5 +171,7 @@ export function useCometChat(): UseCometChatReturn {
     error,
     login,
     logout,
+    joinGroup,
+    leaveGroup,
   };
 }

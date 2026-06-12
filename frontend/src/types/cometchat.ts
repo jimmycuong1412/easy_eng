@@ -73,6 +73,8 @@ export interface UseCometChatReturn {
   error: Error | null;
   login: (userId: string, authToken?: string) => Promise<void>;
   logout: () => Promise<void>;
+  joinGroup: (groupId: string) => Promise<boolean>;
+  leaveGroup: (groupId: string) => Promise<boolean>;
 }
 
 export interface UseVideoCallReturn {
