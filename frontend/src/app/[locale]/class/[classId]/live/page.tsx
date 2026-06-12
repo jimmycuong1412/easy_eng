@@ -127,7 +127,7 @@ export default function LiveClassPage() {
         .eq('session_id', session.id).eq('user_id', userId);
       if (userRole === 'teacher') {
         await (supabase as any).from('class_sessions')
-          .update({ status: 'ended', end_time: new Date().toISOString() }).eq('id', session.id);
+          .update({ status: 'ended', actual_end_time: new Date().toISOString() }).eq('id', session.id);
       }
     } catch (err) {
       console.error('Failed to leave class:', err);
