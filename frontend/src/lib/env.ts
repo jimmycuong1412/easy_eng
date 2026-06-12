@@ -29,10 +29,10 @@ export const env = {
 
   // CometChat
   get NEXT_PUBLIC_COMETCHAT_APP_ID() {
-    return process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '';
+    return (process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '').trim();
   },
   get NEXT_PUBLIC_COMETCHAT_REGION() {
-    return process.env.NEXT_PUBLIC_COMETCHAT_REGION || 'us';
+    return (process.env.NEXT_PUBLIC_COMETCHAT_REGION || 'us').trim();
   },
   // Note: COMETCHAT_AUTH_KEY is server-only (no NEXT_PUBLIC_ prefix). It is accessed
   // only in /api/cometchat/auth-token/route.ts via process.env.COMETCHAT_AUTH_KEY.

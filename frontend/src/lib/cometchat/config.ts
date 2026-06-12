@@ -5,8 +5,10 @@
  */
 
 export const COMETCHAT_CONFIG = {
-  appId: process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '',
-  region: process.env.NEXT_PUBLIC_COMETCHAT_REGION || 'us',
+  // trim: env values provisioned via CLI/dashboard can carry trailing
+  // newlines, which the Calls SDK's strict region schema rejects
+  appId: (process.env.NEXT_PUBLIC_COMETCHAT_APP_ID || '').trim(),
+  region: (process.env.NEXT_PUBLIC_COMETCHAT_REGION || 'us').trim(),
   // authKey intentionally omitted — server-only. Use auth tokens from /api/cometchat/auth-token.
 } as const;
 
