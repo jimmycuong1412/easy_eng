@@ -109,7 +109,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.cometchat.com https://*.cometchat.io wss://*.cometchat.io https://plausible.io",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.cometchat.com https://*.cometchat.com wss://*.cometchat.com https://*.cometchat.io wss://*.cometchat.io https://plausible.io",
               "media-src 'self' https: blob:",
               "frame-src 'self' https://*.cometchat.com",
               "worker-src 'self' blob:",

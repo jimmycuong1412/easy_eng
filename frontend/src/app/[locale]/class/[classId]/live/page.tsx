@@ -4,9 +4,13 @@ export const dynamic = 'force-dynamic';
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamicImport from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
-import ClassRoom from '@/components/video/ClassRoom';
-import WaitingRoom from '@/components/video/WaitingRoom';
+
+// CometChat SDKs are browser-only — SSR of these components 500s the page
+// shell before the client recovers, so render them client-side only.
+const ClassRoom = dynamicImport(() => import('@/components/video/ClassRoom'), { ssr: false });
+const WaitingRoom = dynamicImport(() => import('@/components/video/WaitingRoom'), { ssr: false });
 import { MicIcon, CamIcon, DocIcon, BookIcon, FlagIcon, SparkIcon, UsersIcon, GearIcon, PlusIcon, DownloadIcon } from '@/components/editorial/Icons';
 
 interface ClassSession {

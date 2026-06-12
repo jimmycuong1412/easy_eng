@@ -26,6 +26,14 @@ import { createClient } from '@/lib/supabase/client';
 
 type AvailabilityEntry = { day: string; dayOfWeek: number; slots: string[] };
 
+// Key format "YYYY-MM-DD:HH:mm" — inverse of the booking timestamp
+// `${date}T${time}:00+07:00`, so lookups always match what book-slot stores.
+function bookedSlotKey(startTimeIso: string): string {
+  const shifted = new Date(new Date(startTimeIso).getTime() + 7 * 3600 * 1000);
+  const iso = shifted.toISOString();
+  return `${iso.split('T')[0]}:${iso.slice(11, 16)}`;
+}
+
 type TeacherData = {
   id: string;
   name: string;
@@ -45,6 +53,7 @@ type TeacherData = {
   education: Array<{ degree: string; school: string; year: string }>;
   certifications: string[];
   availability: AvailabilityEntry[];
+  bookedSlots: string[];
   reviews: Array<{ id: string; studentName: string; rating: number; comment: string; date: string }>;
   ratingBreakdown: Record<number, number>;
 };
@@ -103,12 +112,13 @@ function isSlotPast(date: Date, time: string): boolean {
 
 interface WeeklyCalendarProps {
   availability: AvailabilityEntry[];
+  bookedSlots: Set<string>; // "YYYY-MM-DD:HH:mm" keys of already-booked slots
   selectedDate: string | null; // "dayOfWeek:YYYY-MM-DD"
   selectedTime: string | null;
   onSelect: (dateKey: string, time: string) => void;
 }
 
-function WeeklyCalendar({ availability, selectedDate, selectedTime, onSelect }: WeeklyCalendarProps) {
+function WeeklyCalendar({ availability, bookedSlots, selectedDate, selectedTime, onSelect }: WeeklyCalendarProps) {
   const [weekStart, setWeekStart] = React.useState<Date>(() => getMondayOf(new Date()));
 
   // Build availability map: dayOfWeek -> slots[]
@@ -204,10 +214,18 @@ function WeeklyCalendar({ availability, selectedDate, selectedTime, onSelect }: 
                   const dateStr = date.toISOString().split('T')[0];
                   const dateKey = `${dow}:${dateStr}`;
                   const isSelected = selectedDate === dateKey && selectedTime === time;
+                  const isBooked = bookedSlots.has(`${dateStr}:${time}`);
 
                   return (
                     <td key={i} className={`p-1 text-center ${isToday(date) ? 'bg-accent-primary/5' : ''}`}>
-                      {hasSlot && !past ? (
+                      {hasSlot && isBooked && !past ? (
+                        <div
+                          title="Khung giờ đã được đặt"
+                          className="w-full py-1.5 rounded-lg text-xs text-text-muted bg-bg-elevated/50 border border-border-default opacity-60 select-none"
+                        >
+                          Đã đặt
+                        </div>
+                      ) : hasSlot && !past ? (
                         <button
                           onClick={() => onSelect(dateKey, time)}
                           className={`w-full py-1.5 rounded-lg text-xs font-medium transition-all border ${
@@ -380,6 +398,9 @@ export default function TeacherDetailPage() {
           education: [],
           certifications: [],
           availability,
+          bookedSlots: classes
+            .filter((c) => (c.status as string) === 'scheduled' && c.start_time)
+            .map((c) => bookedSlotKey(c.start_time as string)),
           reviews,
           ratingBreakdown: breakdown,
         });
@@ -393,11 +414,16 @@ export default function TeacherDetailPage() {
     specializations: [], languages: [], hourlyRate: 0,
     rating: 0, totalReviews: 0, totalClasses: 0, totalStudents: 0,
     isOnline: false, isVerified: false, responseTime: '', memberSince: '',
-    education: [], certifications: [], availability: [], reviews: [],
+    education: [], certifications: [], availability: [], bookedSlots: [], reviews: [],
     ratingBreakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
   };
 
   const sessionPriceGems = Math.round(mockTeacher.hourlyRate / 1000);
+
+  const bookedSlotsSet = React.useMemo(
+    () => new Set(mockTeacher.bookedSlots),
+    [mockTeacher.bookedSlots]
+  );
 
   // Parse selectedDate "dayOfWeek:YYYY-MM-DD" for display
   const selectedDateLabel = React.useMemo(() => {
@@ -500,6 +526,7 @@ export default function TeacherDetailPage() {
             <CardContent>
               <WeeklyCalendar
                 availability={mockTeacher.availability}
+                bookedSlots={bookedSlotsSet}
                 selectedDate={selectedDate}
                 selectedTime={selectedTime}
                 onSelect={(dateKey, time) => {

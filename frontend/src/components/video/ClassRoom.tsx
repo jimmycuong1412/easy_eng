@@ -25,6 +25,12 @@ import ParticipantList from './ParticipantList';
 import InCallChat from './InCallChat';
 import { Loader2, AlertCircle, Video, VideoOff } from 'lucide-react';
 import { useCometChat } from '@/hooks/useCometChat';
+import {
+  joinCallSession,
+  leaveCallSession,
+  setCallAudioMuted,
+  setCallVideoPaused,
+} from '@/lib/cometchat-calls';
 
 export default function ClassRoom({
   sessionId,
@@ -42,10 +48,13 @@ export default function ClassRoom({
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isChatMinimized, setIsChatMinimized] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
+  const [isCallActive, setIsCallActive] = useState(false);
 
   // Refs
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const callMountRef = useRef<HTMLDivElement>(null);
+  const callStartedRef = useRef(false);
 
   // Custom hook for CometChat integration
   const cometChat = useCometChat() as any;
@@ -67,6 +76,26 @@ export default function ClassRoom({
       cleanup();
     };
   }, [groupId]);
+
+  // Start the A/V call session once the room UI is mounted (the mount node
+  // only exists after isLoading clears, so this can't run inside init).
+  useEffect(() => {
+    if (isLoading || error || callStartedRef.current) return;
+    if (!callMountRef.current) return;
+    callStartedRef.current = true;
+
+    joinCallSession(groupId, callMountRef.current, {
+      onUserListUpdated: (users) => setParticipants((users as any[]) ?? []),
+      onUserJoined: () => loadParticipants(),
+      onUserLeft: () => loadParticipants(),
+      onCallEnded: () => onLeave?.(),
+      onError: (err) => console.error('Call session error:', err),
+    }).then((ok) => {
+      if (ok) setIsCallActive(true);
+      else console.error('Call session could not be started — chat-only mode');
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, error, groupId]);
 
   const initializeClassroom = async () => {
     try {
@@ -95,6 +124,7 @@ export default function ClassRoom({
     try {
       // Stop any ongoing media
       stopLocalMedia();
+      await leaveCallSession();
 
       // Leave the group
       await leaveGroup(groupId);
@@ -123,15 +153,15 @@ export default function ClassRoom({
   // ============================================================================
 
   const handleToggleAudio = async () => {
-    setIsAudioMuted(!isAudioMuted);
-    // TODO: Implement actual audio mute/unmute with CometChat
-    console.log('Toggle audio:', !isAudioMuted);
+    const next = !isAudioMuted;
+    setIsAudioMuted(next);
+    await setCallAudioMuted(next);
   };
 
   const handleToggleVideo = async () => {
-    setIsVideoOff(!isVideoOff);
-    // TODO: Implement actual video on/off with CometChat
-    console.log('Toggle video:', !isVideoOff);
+    const next = !isVideoOff;
+    setIsVideoOff(next);
+    await setCallVideoPaused(next);
   };
 
   const handleToggleScreenShare = async () => {
@@ -246,9 +276,10 @@ export default function ClassRoom({
             ref={videoContainerRef}
             className="relative flex-1 bg-black"
           >
-            {/* CometChat Video UI will be injected here */}
-            <div id="cometchat-video-container" className="h-full w-full">
-              {/* Placeholder for CometChat UI */}
+            {/* CometChat Calls SDK renders the A/V grid into this node */}
+            <div ref={callMountRef} id="cometchat-video-container" className="absolute inset-0" />
+
+            {!isCallActive && (
               <div className="flex h-full items-center justify-center text-gray-400">
                 <div className="text-center">
                   {isVideoOff ? (
@@ -267,7 +298,7 @@ export default function ClassRoom({
                   )}
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Screen Share Indicator */}
             {isScreenSharing && (
