@@ -31,6 +31,7 @@ import {
   setCallAudioMuted,
   setCallVideoPaused,
 } from '@/lib/cometchat-calls';
+import { getGroupMembers } from '@/lib/cometchat';
 
 export default function ClassRoom({
   sessionId,
@@ -85,7 +86,7 @@ export default function ClassRoom({
     callStartedRef.current = true;
 
     joinCallSession(groupId, callMountRef.current, {
-      onUserListUpdated: (users) => setParticipants((users as any[]) ?? []),
+      onUserListUpdated: () => loadParticipants(),
       onUserJoined: () => loadParticipants(),
       onUserLeft: () => loadParticipants(),
       onCallEnded: () => onLeave?.(),
@@ -151,8 +152,12 @@ export default function ClassRoom({
     try {
       // This would be implemented using CometChat API
       // For now, using placeholder
-      const members = await CometChatService.getGroupMembers(groupId);
-      setParticipants(members);
+      const members = await getGroupMembers(groupId);
+      setParticipants((members ?? []).map((m: any) => ({
+        uid: m.uid ?? m.getUid?.(),
+        name: m.name ?? m.getName?.(),
+        avatar: m.avatar ?? m.getAvatar?.(),
+      })));
     } catch (err) {
       console.error('Failed to load participants:', err);
     }
@@ -360,10 +365,3 @@ export default function ClassRoom({
   );
 }
 
-// Placeholder for CometChat Service (will be imported from lib)
-const CometChatService = {
-  getGroupMembers: async (groupId: string) => {
-    // Placeholder implementation
-    return [];
-  },
-};
