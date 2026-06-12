@@ -402,7 +402,7 @@ export default function TeacherDetailPage() {
           certifications: [],
           availability,
           bookedSlots: classes
-            .filter((c) => (c.status as string) === 'scheduled' && c.start_time)
+            .filter((c) => ['scheduled', 'full'].includes(c.status as string) && c.start_time)
             .map((c) => bookedSlotKey(c.start_time as string)),
           reviews,
           ratingBreakdown: breakdown,

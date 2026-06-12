@@ -111,7 +111,9 @@ export async function getTeacherById(teacherId: string) {
   const classesResult = await db.from('classes')
     .select('id, title, level, price, start_time, status, current_enrollments, max_students')
     .eq('teacher_id', teacherId)
-    .eq('status', 'scheduled');
+    // 1-on-1 classes flip to 'full' on booking (max_students=1) — include
+    // them so the calendar can mark those slots as taken
+    .in('status', ['scheduled', 'full']);
   const reviewsResult = await (db as any).from('reviews')
     .select('id, rating, comment, is_anonymous, created_at, student_id')
     .eq('teacher_id', teacherId)

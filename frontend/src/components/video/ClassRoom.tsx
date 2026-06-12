@@ -97,6 +97,16 @@ export default function ClassRoom({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, groupId]);
 
+  // Fallback: keep the participants panel fresh even if call listener
+  // events don't fire (group membership is the source of truth).
+  useEffect(() => {
+    if (!isCallActive) return;
+    const interval = setInterval(() => loadParticipants(), 15000);
+    loadParticipants();
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCallActive]);
+
   const initializeClassroom = async () => {
     try {
       setIsLoading(true);
