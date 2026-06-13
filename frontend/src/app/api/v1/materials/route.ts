@@ -289,5 +289,49 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
   }
 
+  // 8. Thông báo cho TẤT CẢ admin: có bài mới chờ duyệt.
+  //    Lỗi notification KHÔNG làm hỏng việc nạp (material đã tạo xong).
+  await notifyAdminsPendingReview(supabase, {
+    materialId,
+    titleVi: body.title_vi!.trim(),
+    category,
+  });
+
   return NextResponse.json({ id: materialId, slug, status: 'draft' }, { status: 201 });
+}
+
+/** Tạo notification "có bài chờ duyệt" cho mọi admin. Best-effort (nuốt lỗi + log). */
+async function notifyAdminsPendingReview(
+  supabase: ReturnType<typeof createAdminClient>,
+  args: { materialId: string; titleVi: string; category: string | null },
+): Promise<void> {
+  try {
+    const { data: admins, error: adminErr } = await (supabase as any)
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin');
+    if (adminErr || !admins?.length) {
+      if (adminErr) console.warn('[materials ingest] không lấy được admin để thông báo', adminErr);
+      return;
+    }
+
+    const rows = (admins as { id: string }[]).map((a) => ({
+      user_id: a.id,
+      type: 'material_pending_review',
+      title: 'Bài học mới chờ duyệt',
+      message: `"${args.titleVi}" vừa được nạp và đang chờ bạn duyệt & xuất bản.`,
+      action_url: `/vi/materials/admin/editor/${args.materialId}`,
+      action_label: 'Xem & duyệt',
+      related_id: args.materialId,
+      related_type: 'material',
+      icon: '📥',
+      priority: 'normal',
+      data: { category: args.category },
+    }));
+
+    const { error: notifErr } = await (supabase as any).from('notifications').insert(rows);
+    if (notifErr) console.warn('[materials ingest] tạo notification lỗi', notifErr);
+  } catch (e) {
+    console.warn('[materials ingest] notifyAdmins exception', e);
+  }
 }
