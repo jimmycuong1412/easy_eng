@@ -19,8 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { GemImage } from '@/components/common/GemImage';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import NotificationBell from '@/components/layout/NotificationBell';
-import { useClassReminder } from '@/hooks/useClassReminder';
-import ClassReminderPopup from '@/components/class/ClassReminderPopup';
+import ClassReminderProvider from '@/components/class/ClassReminderProvider';
 
 interface NavItem {
   labelKey: string;
@@ -104,12 +103,6 @@ export default function DashboardLayout({
   const profile = mounted ? (storedProfile ?? liveProfile) : liveProfile;
   const tNav = useTranslations('dashboard.nav');
   const tCommon = useTranslations('common');
-
-  // App-wide reminder to join an imminent or live class
-  const { reminder, dismiss } = useClassReminder({
-    userId: _user?.id,
-    role: profile?.role,
-  });
 
   // Show back button on child pages (not the dashboard root)
   const isDashboardChild = React.useMemo(() => {
@@ -401,7 +394,7 @@ export default function DashboardLayout({
       </div>
 
       {/* App-wide class join reminder */}
-      <ClassReminderPopup reminder={reminder} onDismiss={dismiss} />
+      <ClassReminderProvider />
     </div>
   );
 }

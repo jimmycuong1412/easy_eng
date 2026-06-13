@@ -8,6 +8,7 @@
 
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { BackToDashboard } from '@/components/common';
+import ClassReminderProvider from '@/components/class/ClassReminderProvider';
 
 export default function TeacherLayout({
   children,
@@ -22,6 +23,7 @@ export default function TeacherLayout({
           {children}
         </div>
       </div>
+      <ClassReminderProvider />
     </ProtectedRoute>
   );
 }
