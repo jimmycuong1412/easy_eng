@@ -338,7 +338,7 @@ export async function fetchMaterialForEditor(
     .select(
       'id, slug, type, level, goal, status, title_vi, title_en, summary_vi, summary_en, ' +
       'body_vi, body_en, duration_min, gems_reward, xp_reward, min_completion_pct, ' +
-      'cover_path, author_id, updated_at',
+      'cover_path, author_id, updated_at, scheduled_publish_at',
     )
     .eq('id', materialId)
     .maybeSingle();

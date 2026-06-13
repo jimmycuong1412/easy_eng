@@ -51,6 +51,7 @@ const adminNav: NavItem[] = [
   { labelKey: 'adminDashboard', href: '/dashboard/admin', icon: '🛡️' },
   { labelKey: 'analytics', href: '/admin/analytics', icon: '📊' },
   { labelKey: 'users', href: '/admin/users', icon: '👥' },
+  { labelKey: 'materials', href: '/materials/admin', icon: '📚' },
   { labelKey: 'gemRules', href: '/admin/gems-rules', icon: '💎' },
   { labelKey: 'reconciliation', href: '/admin/reconciliation', icon: '⚖️' },
   { labelKey: 'monitoring', href: '/admin/monitoring/rollbacks', icon: '🔍' },

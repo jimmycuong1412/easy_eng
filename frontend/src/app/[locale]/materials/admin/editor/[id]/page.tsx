@@ -38,6 +38,7 @@ function MaterialEditorContent() {
   const [draft, setDraft] = useState<MaterialEditorDraft | null>(null);
   const [vocabItems, setVocabItems] = useState<VocabItemDraft[]>([]);
   const [testItems, setTestItems] = useState<TestItemDraft[]>([]);
+  const [userRole, setUserRole] = useState<'admin' | 'teacher'>('teacher');
 
   useEffect(() => {
     loadMaterial();
@@ -59,6 +60,7 @@ function MaterialEditorContent() {
       .single();
 
     const role: 'admin' | 'teacher' = profile?.role ?? 'teacher';
+    setUserRole(role);
 
     try {
       const material = await fetchMaterialForEditor(supabase as any, id);
@@ -172,6 +174,7 @@ function MaterialEditorContent() {
           initialData={draft}
           initialVocabItems={vocabItems}
           initialTestItems={testItems}
+          userRole={userRole}
           onSaved={(savedId) => {
             // Redirect to ensure URL reflects the real ID (for new materials)
             if (savedId !== id) {

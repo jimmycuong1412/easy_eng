@@ -33,6 +33,7 @@ export interface MaterialEditorDraft {
   cover_path: string | null;
   author_id: string;
   updated_at: string;
+  scheduled_publish_at: string | null;
 }
 
 interface ValidationErrors {
@@ -48,6 +49,8 @@ interface MaterialEditorProps {
   initialVocabItems?: VocabItemDraft[];
   initialTestItems?: TestItemDraft[];
   initialSections?: SectionDraft[];
+  /** Vai trò người dùng — chỉ 'admin' mới thấy nút Xuất bản / Hẹn giờ. */
+  userRole?: 'admin' | 'teacher';
   onSaved: (materialId: string) => void;
 }
 
@@ -93,6 +96,7 @@ export function MaterialEditor({
   initialVocabItems = [],
   initialTestItems = [],
   initialSections = [],
+  userRole = 'teacher',
   onSaved,
 }: MaterialEditorProps) {
   const t = useTranslations('materials.editor');
@@ -106,6 +110,13 @@ export function MaterialEditor({
   const [saving, setSaving] = useState(false);
   const [conflictDetected, setConflictDetected] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
+
+  // --- Trạng thái cho Xuất bản / Hẹn giờ (chỉ admin) ---
+  const [publishing, setPublishing] = useState(false);
+  const [publishMsg, setPublishMsg] = useState<string | null>(null);
+  const [publishErr, setPublishErr] = useState<string | null>(null);
+  // Giá trị input datetime-local cho hẹn giờ.
+  const [scheduleAt, setScheduleAt] = useState('');
 
   const update = (patch: Partial<MaterialEditorDraft>) =>
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -246,6 +257,121 @@ export function MaterialEditor({
       setSaving(false);
     }
   };
+
+  // ============================================================
+  // Publish / Schedule (chỉ admin)
+  // ============================================================
+
+  /** Bài đã đủ nội dung tiếng Anh để publish chưa? (khớp ràng buộc DB). */
+  const isBilingualComplete = Boolean(
+    draft.title_en?.trim() && draft.summary_en?.trim() && draft.body_en?.trim(),
+  );
+
+  const mapRpcError = (msg: string): string => {
+    if (msg.includes('missing_bilingual') || msg.toLowerCase().includes('tiếng anh')) {
+      return 'Cần điền đủ Tiêu đề / Tóm tắt / Nội dung tiếng Anh trước khi xuất bản.';
+    }
+    if (msg.includes('42501') || msg.toLowerCase().includes('admin')) {
+      return 'Chỉ admin mới được xuất bản.';
+    }
+    return msg;
+  };
+
+  /** Xuất bản NGAY qua RPC publish_material. */
+  const publishNow = async () => {
+    if (!draft.id) return;
+    setPublishErr(null);
+    setPublishMsg(null);
+    if (!isBilingualComplete) {
+      setPublishErr('Cần điền đủ Tiêu đề / Tóm tắt / Nội dung tiếng Anh trước khi xuất bản.');
+      return;
+    }
+    setPublishing(true);
+    try {
+      const supabase = createClient();
+      const { error } = await (supabase as any).rpc('publish_material', {
+        p_material_id: draft.id,
+      });
+      if (error) {
+        setPublishErr(mapRpcError(error.message ?? 'Xuất bản thất bại'));
+        return;
+      }
+      setDraft((prev) => ({ ...prev, status: 'published', scheduled_publish_at: null }));
+      setPublishMsg('Đã xuất bản. Học viên có thể thấy bài này ngay.');
+      onSaved(draft.id);
+    } catch (err: unknown) {
+      setPublishErr(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  /** Đặt lịch tự động publish qua RPC schedule_material_publish. */
+  const scheduleNow = async () => {
+    if (!draft.id) return;
+    setPublishErr(null);
+    setPublishMsg(null);
+    if (!scheduleAt) {
+      setPublishErr('Hãy chọn thời điểm hẹn giờ.');
+      return;
+    }
+    const at = new Date(scheduleAt);
+    if (Number.isNaN(at.getTime()) || at.getTime() <= Date.now()) {
+      setPublishErr('Thời điểm hẹn giờ phải ở tương lai.');
+      return;
+    }
+    if (!isBilingualComplete) {
+      setPublishErr('Cần điền đủ tiếng Anh trước khi đặt lịch xuất bản.');
+      return;
+    }
+    setPublishing(true);
+    try {
+      const supabase = createClient();
+      const { error } = await (supabase as any).rpc('schedule_material_publish', {
+        p_material_id: draft.id,
+        p_publish_at: at.toISOString(),
+      });
+      if (error) {
+        setPublishErr(mapRpcError(error.message ?? 'Đặt lịch thất bại'));
+        return;
+      }
+      setDraft((prev) => ({ ...prev, scheduled_publish_at: at.toISOString() }));
+      setPublishMsg(`Đã hẹn giờ xuất bản lúc ${at.toLocaleString('vi-VN')}.`);
+    } catch (err: unknown) {
+      setPublishErr(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  /** Huỷ lịch đã đặt. */
+  const cancelSchedule = async () => {
+    if (!draft.id) return;
+    setPublishErr(null);
+    setPublishMsg(null);
+    setPublishing(true);
+    try {
+      const supabase = createClient();
+      const { error } = await (supabase as any).rpc('cancel_material_publish_schedule', {
+        p_material_id: draft.id,
+      });
+      if (error) {
+        setPublishErr(mapRpcError(error.message ?? 'Huỷ lịch thất bại'));
+        return;
+      }
+      setDraft((prev) => ({ ...prev, scheduled_publish_at: null }));
+      setScheduleAt('');
+      setPublishMsg('Đã huỷ lịch xuất bản.');
+    } catch (err: unknown) {
+      setPublishErr(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  // Chỉ hiện khối publish khi: là admin + bài đã lưu (có id) + chưa published.
+  const showPublishPanel =
+    userRole === 'admin' && Boolean(draft.id) && draft.status !== 'published';
 
   // ============================================================
   // Render
@@ -505,6 +631,102 @@ export function MaterialEditor({
           {saving ? '…' : t('saveDraft')}
         </button>
       </div>
+
+      {/* ── Xuất bản / Hẹn giờ (chỉ admin, bài đã lưu & chưa published) ── */}
+      {showPublishPanel && (
+        <section
+          className="mt-2 rounded-lg border p-4"
+          style={{ borderColor: 'var(--ed-rule, rgba(0,0,0,0.12))' }}
+          data-testid="publish-panel"
+        >
+          <h3
+            className="mb-1 font-serif text-lg font-medium"
+            style={{ fontFamily: 'var(--font-newsreader, serif)', color: 'var(--ed-ink-2, #0A1F4F)' }}
+          >
+            Xuất bản
+          </h3>
+          <p className="mb-3 text-xs" style={{ color: 'var(--ed-ink-mute, #6B7280)' }}>
+            Lưu các thay đổi trước khi xuất bản. Bài chỉ xuất bản được khi đã đủ nội dung
+            song ngữ (Tiêu đề / Tóm tắt / Nội dung tiếng Anh).
+          </p>
+
+          {!isBilingualComplete && (
+            <div
+              className="mb-3 flex items-start gap-2 rounded-md p-2 text-sm"
+              style={{ background: 'rgba(180,83,9,0.08)', color: '#B45309' }}
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Chưa đủ tiếng Anh — điền title_en, summary_en, body_en để xuất bản được.</span>
+            </div>
+          )}
+
+          {draft.scheduled_publish_at ? (
+            <div
+              className="mb-3 flex items-center justify-between gap-3 rounded-md p-2 text-sm"
+              style={{ background: 'rgba(11,42,107,0.06)', color: 'var(--ed-ink, #0B2A6B)' }}
+            >
+              <span>
+                ⏰ Đã hẹn xuất bản lúc{' '}
+                <strong>{new Date(draft.scheduled_publish_at).toLocaleString('vi-VN')}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={cancelSchedule}
+                disabled={publishing}
+                className="text-sm underline"
+                data-testid="cancel-schedule-btn"
+              >
+                Huỷ lịch
+              </button>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-end gap-3">
+            <button
+              type="button"
+              onClick={publishNow}
+              disabled={publishing || !isBilingualComplete}
+              data-testid="publish-now-btn"
+              className="ed-btn ed-btn-primary"
+            >
+              {publishing ? '…' : 'Xuất bản ngay'}
+            </button>
+
+            <div className="flex items-end gap-2">
+              <label className="flex flex-col text-xs" style={{ color: 'var(--ed-ink-mute, #6B7280)' }}>
+                Hẹn giờ xuất bản
+                <input
+                  type="datetime-local"
+                  value={scheduleAt}
+                  onChange={(e) => setScheduleAt(e.target.value)}
+                  className="ed-input mt-1 text-sm"
+                  data-testid="schedule-at-input"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={scheduleNow}
+                disabled={publishing || !scheduleAt || !isBilingualComplete}
+                data-testid="schedule-publish-btn"
+                className="ed-btn text-sm"
+              >
+                Đặt lịch
+              </button>
+            </div>
+          </div>
+
+          {publishErr && (
+            <p className="mt-3 text-sm" style={{ color: '#B45309' }} data-testid="publish-error">
+              {publishErr}
+            </p>
+          )}
+          {publishMsg && (
+            <p className="mt-3 text-sm" style={{ color: '#166534' }} data-testid="publish-success">
+              {publishMsg}
+            </p>
+          )}
+        </section>
+      )}
     </div>
   );
 }
