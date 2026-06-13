@@ -20,7 +20,6 @@ const CometChatUI: React.ComponentType<any> = (() => {
   }
 })();
 import type { ClassRoomProps } from '@/types/cometchat.types';
-import CallControls from './CallControls';
 import InCallChat from './InCallChat';
 import TextbookPanel from './TextbookPanel';
 import { Loader2, AlertCircle, Video, VideoOff, Users } from 'lucide-react';
@@ -28,8 +27,6 @@ import { useCometChat } from '@/hooks/useCometChat';
 import {
   joinCallSession,
   leaveCallSession,
-  setCallAudioMuted,
-  setCallVideoPaused,
 } from '@/lib/cometchat-calls';
 import { getGroupMembers } from '@/lib/cometchat';
 
@@ -44,9 +41,8 @@ export default function ClassRoom({
   // State management
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isVideoOff] = useState(false);
+  const [isScreenSharing] = useState(false);
   const [isChatMinimized, setIsChatMinimized] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
@@ -164,48 +160,10 @@ export default function ClassRoom({
   };
 
   // ============================================================================
-  // Media Controls
+  // Media Controls — mute / camera / leave are handled by the CometChat Calls
+  // SDK's own in-grid control bar; onCallEnded (see joinCallSession) triggers
+  // onLeave for cleanup.
   // ============================================================================
-
-  const handleToggleAudio = async () => {
-    const next = !isAudioMuted;
-    setIsAudioMuted(next);
-    await setCallAudioMuted(next);
-  };
-
-  const handleToggleVideo = async () => {
-    const next = !isVideoOff;
-    setIsVideoOff(next);
-    await setCallVideoPaused(next);
-  };
-
-  const handleToggleScreenShare = async () => {
-    if (userRole !== 'teacher') {
-      alert('Only teachers can share screen');
-      return;
-    }
-
-    setIsScreenSharing(!isScreenSharing);
-    // TODO: Implement screen sharing with CometChat
-    console.log('Toggle screen share:', !isScreenSharing);
-  };
-
-  const handleLeaveCall = async () => {
-    try {
-      // End the call
-      await endCall(sessionId);
-
-      // Clean up
-      await cleanup();
-
-      // Notify parent
-      onLeave?.();
-    } catch (err) {
-      console.error('Error leaving call:', err);
-      // Force leave anyway
-      onLeave?.();
-    }
-  };
 
   const stopLocalMedia = () => {
     // Stop all media tracks
@@ -343,19 +301,8 @@ export default function ClassRoom({
             )}
           </div>
 
-          {/* Call controls strip */}
-          <div className="shrink-0 px-4 py-2.5" style={{ borderBottom: '1px solid var(--et-line)' }}>
-            <CallControls
-              isAudioMuted={isAudioMuted}
-              isVideoOff={isVideoOff}
-              isScreenSharing={isScreenSharing}
-              onToggleAudio={handleToggleAudio}
-              onToggleVideo={handleToggleVideo}
-              onToggleScreenShare={userRole === 'teacher' ? handleToggleScreenShare : undefined}
-              onLeaveCall={handleLeaveCall}
-              userRole={userRole}
-            />
-          </div>
+          {/* Call controls (mic / camera / leave) are rendered by the CometChat
+              Calls SDK inside the video grid above — no custom strip needed. */}
 
           {/* Chat — fills the rest of the right column */}
           <div className="min-h-0 flex-1">
