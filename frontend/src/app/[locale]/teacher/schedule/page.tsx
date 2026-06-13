@@ -12,6 +12,8 @@ import {
   Loader2,
 } from 'lucide-react';
 
+import Link from 'next/link';
+import { Video } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,8 +21,17 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreferences } from '@/hooks/usePreferences';
 import { getTeacherSchedule } from '@/lib/queries';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import { formatTime, getTimezoneLabel } from '@/lib/timezone';
 import AvailabilityCalendar from '@/components/teacher/AvailabilityCalendar';
+
+interface UpcomingClass {
+  id: string;
+  title: string;
+  start_time: string;
+  current_enrollments: number;
+  max_students: number;
+}
 
 export default function TeacherSchedulePage() {
   const t = useTranslations('teacherSchedule');
@@ -33,6 +44,35 @@ export default function TeacherSchedulePage() {
 
   const [loading, setLoading] = useState(true);
   const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
+  const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
+
+  // Booked upcoming classes — the teacher starts a class from here
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    const load = async (attempt: number) => {
+      try {
+        const supabase = getSupabaseClient();
+        const since = new Date(Date.now() - 30 * 60 * 1000).toISOString(); // still joinable 30 min in
+        const { data, error } = await (supabase as any)
+          .from('classes')
+          .select('id, title, start_time, current_enrollments, max_students')
+          .eq('teacher_id', user.id)
+          .in('status', ['scheduled', 'full'])
+          .gt('current_enrollments', 0)
+          .gte('start_time', since)
+          .order('start_time', { ascending: true })
+          .limit(10);
+        if (error) throw error;
+        if (!cancelled) setUpcomingClasses((data as UpcomingClass[]) ?? []);
+      } catch (err) {
+        if (!cancelled && attempt < 3) { setTimeout(() => load(attempt + 1), 1500 * (attempt + 1)); return; }
+        console.error('Failed to load upcoming classes:', err);
+      }
+    };
+    load(0);
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const [currentWeekStart, setCurrentWeekStart] = React.useState(() => {
     const now = new Date();
@@ -139,6 +179,44 @@ export default function TeacherSchedulePage() {
             )}
           </p>
         </motion.div>
+
+        {/* Upcoming booked classes — start/join the live room from here */}
+        {upcomingClasses.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <Card className="bg-white/5 border-white/10">
+              <CardContent className="p-5 space-y-3">
+                <h2 className="text-lg font-semibold text-white">Lớp sắp tới</h2>
+                {upcomingClasses.map((cls) => (
+                  <div
+                    key={cls.id}
+                    className="flex items-center justify-between gap-4 rounded-lg bg-white/5 border border-white/10 px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-white truncate">{cls.title}</p>
+                      <p className="text-sm text-slate-400">
+                        {new Date(cls.start_time).toLocaleString(dateLocale, {
+                          weekday: 'short', day: 'numeric', month: 'numeric',
+                          hour: '2-digit', minute: '2-digit',
+                        })}
+                        {' · '}{cls.current_enrollments}/{cls.max_students} học viên
+                      </p>
+                    </div>
+                    <Button asChild className="bg-emerald-600 hover:bg-emerald-600/90 shrink-0">
+                      <Link href={`/${locale}/class/${cls.id}/live`}>
+                        <Video className="w-4 h-4 mr-2" />
+                        Vào lớp
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Week Navigation + Availability Calendar — single unified card */}
         <motion.div

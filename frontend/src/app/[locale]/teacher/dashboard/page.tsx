@@ -46,7 +46,7 @@ export default async function TeacherDashboardPage({
                 <PlusIcon /> Block time
               </button>
               <Link
-                href={`/${locale}/class`}
+                href={`/${locale}/teacher/schedule`}
                 className="ed-btn ed-btn-primary"
                 style={{ display: 'flex', alignItems: 'center', gap: 8 }}
               >

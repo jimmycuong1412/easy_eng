@@ -48,11 +48,27 @@ export default function LiveClassPage() {
   const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
   const [userRole, setUserRole] = useState<'teacher' | 'student'>('student');
   const [isInWaitingRoom, setIsInWaitingRoom] = useState(true);
+  const [waitingForTeacher, setWaitingForTeacher] = useState(false);
 
   useEffect(() => {
     loadClassData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId]);
+
+  // Student arrived before the teacher created the session — poll until it appears
+  useEffect(() => {
+    if (!waitingForTeacher || session) return;
+    const interval = setInterval(async () => {
+      const { data } = await (supabase as any)
+        .from('class_sessions').select('*').eq('class_id', classId).maybeSingle();
+      if (data) {
+        setSession(data);
+        setWaitingForTeacher(false);
+      }
+    }, 8000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waitingForTeacher, session, classId]);
 
   const loadClassData = async () => {
     try {
@@ -93,7 +109,15 @@ export default function LiveClassPage() {
         existingSession = newSession;
       }
 
-      if (!existingSession) throw new Error('Class session not found');
+      if (!existingSession) {
+        if ((profile as any).role === 'student') {
+          // Teacher hasn't opened the room yet — wait and poll instead of erroring
+          setWaitingForTeacher(true);
+          setLoading(false);
+          return;
+        }
+        throw new Error('Class session not found');
+      }
       setSession(existingSession);
       setLoading(false);
     } catch (err) {
@@ -158,6 +182,35 @@ export default function LiveClassPage() {
           }} />
           <p style={{ marginTop: 20, fontFamily: 'var(--ed-mono)', fontSize: 12, letterSpacing: '.12em', textTransform: 'uppercase', color: '#A3ADD0' }}>
             Loading class…
+          </p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---- Waiting for teacher to open the room ---- */
+  if (waitingForTeacher && !session) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--ed-ink-2)' }}>
+        <div style={{ maxWidth: 440, textAlign: 'center', padding: 40 }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 999,
+            border: '3px solid rgba(255,255,255,0.15)',
+            borderTopColor: 'var(--ed-coral)',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto',
+          }} />
+          <h2 className="ed-serif" style={{ fontSize: 28, color: '#F4EFE2', marginTop: 24 }}>
+            Đang chờ giáo viên bắt đầu lớp học…
+          </h2>
+          <p style={{ fontFamily: 'var(--ed-sans)', fontSize: 14, color: '#A3ADD0', marginTop: 8, lineHeight: 1.6 }}>
+            {classDetails?.title ?? 'Lớp học'}
+            {classDetails?.start_time && (
+              <> · {new Date(classDetails.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</>
+            )}
+            <br />
+            Trang sẽ tự động cập nhật khi giáo viên vào lớp.
           </p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
