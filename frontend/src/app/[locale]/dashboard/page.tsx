@@ -13,6 +13,7 @@ import { useGemsBalance } from '@/hooks/useGemsBalance';
 import { createClient } from '@/lib/supabase/client';
 import { getDashboardData, getTeachers, getStudentProgress } from '@/lib/queries';
 import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
+import StreakWidget from '@/components/dashboard/StreakWidget';
 import {
   ArrowRIcon,
   CalIcon,
@@ -159,6 +160,11 @@ export default function DashboardPage() {
         {/* Active class reconnect banner — kept above the fold */}
         <div style={{ marginBottom: 18 }}>
           <ActiveClassBanner userId={user?.id} role="student" />
+        </div>
+
+        {/* Daily streak — retention hero */}
+        <div style={{ marginBottom: 18 }}>
+          <StreakWidget />
         </div>
 
         {/* Editorial header */}

@@ -53,6 +53,11 @@ export function useAwardCompletion(params: {
         if (payload.gems_awarded != null && payload.xp_awarded != null) {
           setAwarded({ gems: payload.gems_awarded, xp: payload.xp_awarded });
         }
+        // Count this completion toward the daily learning streak (idempotent/day)
+        supabase.rpc('record_daily_activity', { p_user_id: userId }).then(
+          () => {},
+          (e: unknown) => console.error('record_daily_activity failed:', e),
+        );
       }
       setSubmitting(false);
     })();
