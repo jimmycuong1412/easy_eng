@@ -9,11 +9,13 @@
 
 import React from 'react';
 import { useStreak } from '@/hooks/useStreak';
+import { useXpSummary } from '@/hooks/useXpSummary';
 
 const DAY_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 export default function StreakWidget() {
   const { streak, loading } = useStreak();
+  const { xp } = useXpSummary();
 
   // Build the last-7-days strip (Mon..Sun of the current week), marking days
   // that fall within the active streak window up to today.
@@ -65,9 +67,33 @@ export default function StreakWidget() {
             </p>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-xs" style={{ color: 'var(--et-fg-2)' }}>Kỷ lục</div>
-          <div className="text-lg font-semibold" style={{ color: 'var(--et-coral)' }}>{longest} 🔥</div>
+        <div className="flex items-center gap-5">
+          {/* Level + XP */}
+          {xp && (
+            <div className="hidden sm:block min-w-[140px]">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-semibold" style={{ color: 'var(--et-fg)' }}>
+                  Cấp {xp.level}
+                </span>
+                <span className="text-[10px]" style={{ color: 'var(--et-fg-2)' }}>
+                  {xp.xpInLevel}/{xp.xpForNext} XP
+                </span>
+              </div>
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full" style={{ background: 'var(--et-bg-3)' }}>
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${xp.progressPct}%`, background: 'var(--et-coral)' }}
+                />
+              </div>
+              <div className="mt-1 text-[10px]" style={{ color: 'var(--et-fg-2)' }}>
+                Tổng {xp.totalXp} XP
+              </div>
+            </div>
+          )}
+          <div className="text-right">
+            <div className="text-xs" style={{ color: 'var(--et-fg-2)' }}>Kỷ lục</div>
+            <div className="text-lg font-semibold" style={{ color: 'var(--et-coral)' }}>{longest} 🔥</div>
+          </div>
         </div>
       </div>
 

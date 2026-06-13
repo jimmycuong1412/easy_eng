@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getDashboardData, getTeachers, getStudentProgress } from '@/lib/queries';
 import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
 import StreakWidget from '@/components/dashboard/StreakWidget';
+import DailyLessonCard from '@/components/dashboard/DailyLessonCard';
 import {
   ArrowRIcon,
   CalIcon,
@@ -165,6 +166,11 @@ export default function DashboardPage() {
         {/* Daily streak — retention hero */}
         <div style={{ marginBottom: 18 }}>
           <StreakWidget />
+        </div>
+
+        {/* Bài học hôm nay — daily lesson */}
+        <div style={{ marginBottom: 18 }}>
+          <DailyLessonCard />
         </div>
 
         {/* Editorial header */}
