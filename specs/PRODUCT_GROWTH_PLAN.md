@@ -28,9 +28,12 @@ Hệ thống đã có **rất nhiều backend ngủ đông**: bảng đã tạo 
 
 ---
 
-## PHASE 1 — RETENTION (giữ chân) · ưu tiên cao nhất
+## PHASE 1 — RETENTION (giữ chân) · ✅ HOÀN THÀNH (2026-06-14)
 
 Mục tiêu: cho người dùng **lý do quay lại mỗi ngày**.
+
+> ✅ Đã triển khai & verify trên live: 1.1 Daily Streak, 1.4 XP/Level, 1.2 Daily Lesson, 1.3 Push opt-in.
+> Migrations 089–092 đã apply lên live qua MCP. **Còn 1 việc cần bạn làm thủ công cho push delivery:** thêm 2 biến env vào Vercel (xem cuối file).
 
 ### 1.1 Daily Streak (chuỗi ngày học) 🔥
 **Trạng thái:** bảng có, RPC chưa apply, UI chưa có.
@@ -144,5 +147,18 @@ Mục tiêu: người dùng **tự kéo người mới** + mỗi thành tích l�
 
 ---
 
-## Phase 1 — bắt đầu ngay
-Triển khai theo thứ tự: **1.1 Streak → 1.4 XP → 1.2 Daily Lesson → 1.3 Push**. Chi tiết kỹ thuật từng bước thực hiện trong các commit kế tiếp.
+## Việc cần bạn làm thủ công — Push delivery (Phase 1.3)
+Frontend, bảng `push_subscriptions`, route subscribe/unsubscribe và nút "Bật nhắc học" đã xong. Để **gửi được** thông báo, thêm 2 biến môi trường vào Vercel (Project → Settings → Environment Variables) rồi redeploy:
+
+```
+NEXT_PUBLIC_VAPID_PUBLIC_KEY = BACvNmKeyrbR1XFhH4XnMsp1yV9fiVcg1-lOYthUC4zg7H-UQs2Im9JMjkRoTbBS_ZHKGw3fBvDpuVFqBWtVuwQ
+VAPID_PRIVATE_KEY            = 8nXC2kNzujNZt75GaV438CZD_rWafj-joG41DiIXenA
+```
+(Cặp khóa VAPID đã sinh sẵn. `NEXT_PUBLIC_*` phải có TRƯỚC khi build vì được inline lúc build. Sau đó còn cần một cron edge function gửi nhắc lúc 20:00 nếu hôm nay chưa học — sẽ làm khi bắt đầu vận hành push.)
+
+---
+
+## Trạng thái & bước tiếp theo
+- ✅ **Phase 1 (Retention)** — xong, đã deploy + verify.
+- ⏭️ **Phase 2 (Viral)**: 2.1 Referral → 2.2 Leaderboard → 2.3 Share cards → 2.4 Certificate.
+- ⏭️ **Phase 3 (Conversion)**: 3.1 Free trial → 3.2 Quiz học viên → 3.3 AI Speaking.
