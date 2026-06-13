@@ -32,7 +32,7 @@ export default function TextbookPanel({ canChange }: TextbookPanelProps) {
   const [list, setList] = useState<MaterialSummary[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [material, setMaterial] = useState<MaterialDetail | null>(null);
   const [bodyLoading, setBodyLoading] = useState(false);
 
@@ -51,17 +51,17 @@ export default function TextbookPanel({ canChange }: TextbookPanelProps) {
     return () => { cancelled = true; };
   }, [pickerOpen, list.length]);
 
-  // Load full body when a material is selected
+  // Load full body when a material is selected (fetchMaterialDetail keys on slug)
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedSlug) return;
     let cancelled = false;
     setBodyLoading(true);
-    fetchMaterialDetail(getSupabaseClient(), selectedId)
+    fetchMaterialDetail(getSupabaseClient(), selectedSlug)
       .then((d) => { if (!cancelled) setMaterial(d); })
       .catch((e) => console.error('Failed to load material:', e))
       .finally(() => { if (!cancelled) setBodyLoading(false); });
     return () => { cancelled = true; };
-  }, [selectedId]);
+  }, [selectedSlug]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -181,10 +181,10 @@ export default function TextbookPanel({ canChange }: TextbookPanelProps) {
                   {filtered.map((m) => (
                     <button
                       key={m.id}
-                      onClick={() => { setSelectedId(m.id); setPickerOpen(false); }}
+                      onClick={() => { setSelectedSlug(m.slug); setPickerOpen(false); }}
                       className="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition-colors"
                       style={{
-                        background: m.id === selectedId ? 'var(--et-bg-4)' : 'var(--et-bg-3)',
+                        background: m.slug === selectedSlug ? 'var(--et-bg-4)' : 'var(--et-bg-3)',
                         border: '1px solid var(--et-line)',
                       }}
                     >
