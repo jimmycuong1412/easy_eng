@@ -253,7 +253,7 @@ export default function ClassRoom({
       <div className="flex flex-1 overflow-hidden">
         {/* Center: textbook / lesson material */}
         <div className="min-w-0 flex-1">
-          <TextbookPanel canChange={userRole === 'teacher'} />
+          <TextbookPanel canChange={true} />
         </div>
 
         {/* Right column */}

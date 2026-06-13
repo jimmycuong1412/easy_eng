@@ -74,11 +74,34 @@ export async function joinCallSession(
     const settings = new CometChatCalls.CallSettingsBuilder()
       .enableDefaultLayout(true)
       .setIsAudioOnlyCall(audioOnly)
+      .startWithAudioMuted(false) // explicitly publish the mic from the start
+      .startWithVideoMuted(false)
       .setCallListener(listener)
       .build();
 
-    CometChatCalls.startSession(tokenRes.token, settings, container);
+    // joinSession is the current API (startSession is deprecated). It returns a
+    // Result<void, VerifyTokenException> — surface failures instead of silently
+    // showing a half-connected call with no audio. Fall back to startSession on
+    // older SDK builds.
+    const start = CometChatCalls.joinSession ?? CometChatCalls.startSession;
+    const result = await start.call(CometChatCalls, tokenRes.token, settings, container);
+    if (result && result.error) {
+      console.error('Call session start failed:', result.error);
+      handlers.onError?.(result.error);
+      return false;
+    }
     inSession = true;
+
+    // Browsers may suspend the WebRTC AudioContext until a user gesture; resume
+    // it so remote audio actually plays. The join click is our gesture.
+    try {
+      const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (Ctx) {
+        const ctx = new Ctx();
+        if (ctx.state === 'suspended') await ctx.resume();
+      }
+    } catch { /* non-fatal */ }
+
     return true;
   } catch (err) {
     console.error('Failed to join call session:', err);
