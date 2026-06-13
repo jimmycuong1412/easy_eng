@@ -15,6 +15,7 @@ import { getDashboardData, getTeachers, getStudentProgress } from '@/lib/queries
 import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
 import StreakWidget from '@/components/dashboard/StreakWidget';
 import DailyLessonCard from '@/components/dashboard/DailyLessonCard';
+import PushReminderToggle from '@/components/dashboard/PushReminderToggle';
 import {
   ArrowRIcon,
   CalIcon,
@@ -195,7 +196,8 @@ export default function DashboardPage() {
               {t('welcomeSubtitle')}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: 10, flexShrink: 0, alignItems: 'center', flexWrap: 'wrap' }}>
+            <PushReminderToggle />
             <Link href={`/${locale}/student/bookings`} className="ed-btn">
               <CalIcon /> {t('viewAll')}
             </Link>
