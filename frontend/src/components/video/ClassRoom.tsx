@@ -21,9 +21,9 @@ const CometChatUI: React.ComponentType<any> = (() => {
 })();
 import type { ClassRoomProps } from '@/types/cometchat.types';
 import CallControls from './CallControls';
-import ParticipantList from './ParticipantList';
 import InCallChat from './InCallChat';
-import { Loader2, AlertCircle, Video, VideoOff } from 'lucide-react';
+import TextbookPanel from './TextbookPanel';
+import { Loader2, AlertCircle, Video, VideoOff, Users } from 'lucide-react';
 import { useCometChat } from '@/hooks/useCometChat';
 import {
   joinCallSession,
@@ -261,46 +261,64 @@ export default function ClassRoom({
   // ============================================================================
 
   return (
-    <div className="flex h-screen flex-col bg-gray-900">
+    <div className="flex h-screen flex-col" style={{ background: 'var(--et-bg)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-800 bg-gray-950 px-6 py-4">
-        <div className="flex items-center space-x-3">
-          <Video className="h-6 w-6 text-blue-500" />
+      <div
+        className="flex items-center justify-between px-6 py-3"
+        style={{ borderBottom: '1px solid var(--et-line)', background: 'var(--et-bg-2)' }}
+      >
+        <div className="flex items-center gap-3">
+          <Video className="h-5 w-5" style={{ color: 'var(--et-coral)' }} />
           <div>
-            <h1 className="text-lg font-semibold text-white">Live Class</h1>
-            <p className="text-sm text-gray-400">Session ID: {sessionId.slice(0, 8)}...</p>
+            <h1 className="text-base font-semibold" style={{ color: 'var(--et-fg)' }}>
+              Lớp học trực tuyến
+            </h1>
+            <p className="text-xs" style={{ color: 'var(--et-fg-2)' }}>
+              Session {sessionId.slice(0, 8)}…
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 text-sm text-gray-400">
-          <span className="flex items-center">
-            <span className="mr-2 h-2 w-2 rounded-full bg-green-500"></span>
-            Live
+        <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--et-fg-2)' }}>
+          <span className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full" style={{ background: '#22c55e' }} />
+            Đang diễn ra
           </span>
-          <span className="mx-2">•</span>
-          <span>{participants.length} participants</span>
+          <span className="flex items-center gap-1.5">
+            <Users className="h-4 w-4" />
+            {participants.length}
+          </span>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content — center textbook + right column (video over chat) */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Video Area */}
-        <div className="flex flex-1 flex-col">
-          {/* Main Video Container */}
+        {/* Center: textbook / lesson material */}
+        <div className="min-w-0 flex-1">
+          <TextbookPanel canChange={userRole === 'teacher'} />
+        </div>
+
+        {/* Right column */}
+        <div
+          className="flex w-[380px] shrink-0 flex-col"
+          style={{ borderLeft: '1px solid var(--et-line)', background: 'var(--et-bg-2)' }}
+        >
+          {/* Video — top right */}
           <div
             ref={videoContainerRef}
-            className="relative flex-1 bg-black"
+            className="relative shrink-0 bg-black"
+            style={{ height: 300, borderBottom: '1px solid var(--et-line)' }}
           >
             {/* CometChat Calls SDK renders the A/V grid into this node */}
             <div ref={callMountRef} id="cometchat-video-container" className="absolute inset-0" />
 
             {!isCallActive && (
-              <div className="flex h-full items-center justify-center text-gray-400">
+              <div className="flex h-full items-center justify-center" style={{ color: 'var(--et-fg-2)' }}>
                 <div className="text-center">
                   {isVideoOff ? (
                     <>
-                      <VideoOff className="mx-auto h-16 w-16" />
-                      <p className="mt-4">Camera is off</p>
+                      <VideoOff className="mx-auto h-12 w-12" />
+                      <p className="mt-3 text-sm">Camera đang tắt</p>
                     </>
                   ) : (
                     <video
@@ -315,16 +333,18 @@ export default function ClassRoom({
               </div>
             )}
 
-            {/* Screen Share Indicator */}
             {isScreenSharing && (
-              <div className="absolute left-4 top-4 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white">
-                Sharing Screen
+              <div
+                className="absolute left-3 top-3 rounded-lg px-2.5 py-1 text-xs text-white"
+                style={{ background: 'var(--et-coral)' }}
+              >
+                Đang chia sẻ màn hình
               </div>
             )}
           </div>
 
-          {/* Call Controls */}
-          <div className="border-t border-gray-800 bg-gray-950 px-6 py-4">
+          {/* Call controls strip */}
+          <div className="shrink-0 px-4 py-2.5" style={{ borderBottom: '1px solid var(--et-line)' }}>
             <CallControls
               isAudioMuted={isAudioMuted}
               isVideoOff={isVideoOff}
@@ -336,22 +356,9 @@ export default function ClassRoom({
               userRole={userRole}
             />
           </div>
-        </div>
 
-        {/* Sidebar */}
-        <div className="flex w-80 flex-col border-l border-gray-800 bg-gray-950">
-          {/* Participants */}
-          <div className="flex-1 overflow-y-auto border-b border-gray-800 p-4">
-            <h3 className="mb-4 text-sm font-semibold text-gray-400">PARTICIPANTS</h3>
-            <ParticipantList
-              participants={participants}
-              teacherId={userRole === 'teacher' ? 'current-user-id' : ''}
-              currentUserId="current-user-id"
-            />
-          </div>
-
-          {/* Chat */}
-          <div className="h-96">
+          {/* Chat — fills the rest of the right column */}
+          <div className="min-h-0 flex-1">
             <InCallChat
               groupId={groupId}
               currentUserId="current-user-id"
