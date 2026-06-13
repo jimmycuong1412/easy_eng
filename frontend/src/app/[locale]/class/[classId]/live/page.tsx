@@ -171,7 +171,7 @@ export default function LiveClassPage() {
   /* ---- Loading ---- */
   if (loading) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--ed-ink-2)' }}>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--et-bg)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: 48, height: 48, borderRadius: 999,
@@ -192,7 +192,7 @@ export default function LiveClassPage() {
   /* ---- Waiting for teacher to open the room ---- */
   if (waitingForTeacher && !session) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--ed-ink-2)' }}>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--et-bg)' }}>
         <div style={{ maxWidth: 440, textAlign: 'center', padding: 40 }}>
           <div style={{
             width: 48, height: 48, borderRadius: 999,
@@ -221,7 +221,7 @@ export default function LiveClassPage() {
   /* ---- Error ---- */
   if (error) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--ed-ink-2)' }}>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--et-bg)' }}>
         <div style={{ maxWidth: 420, textAlign: 'center', padding: 40 }}>
           <div style={{
             width: 64, height: 64, borderRadius: 16, background: 'var(--ed-coral-2)',
@@ -245,7 +245,7 @@ export default function LiveClassPage() {
 
   if (!session || !classDetails) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--ed-ink-2)' }}>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--et-bg)' }}>
         <p style={{ fontFamily: 'var(--ed-mono)', color: '#A3ADD0', fontSize: 13 }}>Session not found</p>
       </div>
     );
@@ -283,7 +283,7 @@ export default function LiveClassPage() {
     <div
       style={{
         display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--ed-ink-2)',
+        background: 'var(--et-bg)',
       }}
     >
       <div style={{ maxWidth: 440, textAlign: 'center', padding: 40 }}>
