@@ -1348,6 +1348,7 @@
       "empty": "Chưa có tài liệu nào phù hợp với bộ lọc của bạn.",
       "loading": "Đang tải…",
       "search": "Tìm kiếm tài liệu",
+      "filterCategory": "Danh mục",
       "filterLevel": "Trình độ",
       "filterType": "Loại tài liệu",
       "filterGoal": "Mục tiêu",
@@ -1389,6 +1390,16 @@
       "study_abroad": "Du học",
       "conversation": "Giao tiếp",
       "travel": "Du lịch"
+    },
+    "category": {
+      "daily_news_talk": "Tin tức & Thảo luận",
+      "callan_method": "Phương pháp Callan",
+      "grammar_basics": "Ngữ pháp & Giao tiếp cơ bản",
+      "business_english": "Tiếng Anh thương mại",
+      "daily_travel": "Giao tiếp đời sống & Du lịch",
+      "pronunciation": "Luyện phát âm",
+      "exam_prep": "Luyện thi chứng chỉ",
+      "kids_english": "Tiếng Anh trẻ em"
     },
     "detail": {
       "translationPending": "Bản dịch đang được biên soạn — hiển thị nội dung tiếng Việt",

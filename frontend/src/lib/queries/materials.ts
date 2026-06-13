@@ -36,6 +36,17 @@ export type MaterialGoal =
   | 'conversation'
   | 'travel';
 
+// Danh mục lớn theo taxonomy EasyEng (khớp enum material_category, migration 087).
+export type MaterialCategory =
+  | 'daily_news_talk'
+  | 'callan_method'
+  | 'grammar_basics'
+  | 'business_english'
+  | 'daily_travel'
+  | 'pronunciation'
+  | 'exam_prep'
+  | 'kids_english';
+
 /**
  * Catalog tile shape — what `<MaterialCard>` consumes.
  */
@@ -45,6 +56,8 @@ export interface MaterialSummary {
   type: MaterialType;
   level: MaterialLevel;
   goal: MaterialGoal | null;
+  category: MaterialCategory | null;
+  subcategory: string | null;
   title_vi: string;
   title_en: string | null;
   summary_vi: string;
@@ -86,6 +99,7 @@ export interface CatalogFilters {
   level?: MaterialLevel | MaterialLevel[];
   type?: MaterialType | MaterialType[];
   goal?: MaterialGoal | MaterialGoal[];
+  category?: MaterialCategory | MaterialCategory[];
   search?: string;
   /** Cursor: ISO timestamp of last item's published_at */
   cursor?: string;
@@ -99,7 +113,7 @@ export interface CatalogFilters {
 
 /** Columns selected for catalog tiles. Keeps the payload small. */
 const SUMMARY_COLUMNS =
-  'id, slug, type, level, goal, title_vi, title_en, summary_vi, summary_en, ' +
+  'id, slug, type, level, goal, category, subcategory, title_vi, title_en, summary_vi, summary_en, ' +
   'duration_min, gems_reward, xp_reward, cover_path, popularity_score, published_at';
 
 /**
@@ -136,6 +150,11 @@ export async function fetchMaterialsList(
     query = Array.isArray(filters.goal)
       ? query.in('goal', filters.goal)
       : query.eq('goal', filters.goal);
+  }
+  if (filters.category) {
+    query = Array.isArray(filters.category)
+      ? query.in('category', filters.category)
+      : query.eq('category', filters.category);
   }
   if (filters.search) {
     // Postgres FTS via `@@` tsquery. Use `simple` config so vi + en both work.

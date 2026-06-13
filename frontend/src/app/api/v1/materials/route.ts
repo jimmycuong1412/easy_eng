@@ -46,6 +46,18 @@ const MATERIAL_GOALS = [
   'travel',
 ] as const;
 
+// Danh mục lớn theo taxonomy EasyEng (khớp enum material_category, migration 087).
+const MATERIAL_CATEGORIES = [
+  'daily_news_talk',
+  'callan_method',
+  'grammar_basics',
+  'business_english',
+  'daily_travel',
+  'pronunciation',
+  'exam_prep',
+  'kids_english',
+] as const;
+
 type IngestPayload = {
   title_vi?: string;
   title_en?: string | null;
@@ -56,6 +68,8 @@ type IngestPayload = {
   type?: string;
   level?: string;
   goal?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
   duration_min?: number;
   status?: string;
   tags?: string[];
@@ -140,6 +154,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (goal !== null && !MATERIAL_GOALS.includes(goal as (typeof MATERIAL_GOALS)[number])) {
     errors.push(`goal must be null or one of: ${MATERIAL_GOALS.join(', ')}`);
   }
+  // category tùy chọn; nếu gửi thì phải hợp lệ. Bài từ script tin tức -> daily_news_talk.
+  const category = body.category ?? null;
+  if (category !== null && !MATERIAL_CATEGORIES.includes(category as (typeof MATERIAL_CATEGORIES)[number])) {
+    errors.push(`category must be null or one of: ${MATERIAL_CATEGORIES.join(', ')}`);
+  }
+  const subcategory = body.subcategory?.trim()?.slice(0, 64) || null;
 
   if (errors.length > 0) {
     return NextResponse.json({ message: 'Validation failed', errors }, { status: 422 });
@@ -196,6 +216,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     level,
     status: 'draft', // chốt cứng, không bao giờ publish
     goal,
+    category,
+    subcategory,
     title_vi: body.title_vi!.trim().slice(0, 200),
     title_en: body.title_en?.trim() || null,
     summary_vi: summaryVi || body.title_vi!.trim().slice(0, 200),

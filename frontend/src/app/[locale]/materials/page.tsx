@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/server';
 import {
   fetchMaterialsList,
   type CatalogFilters,
+  type MaterialCategory,
   type MaterialGoal,
   type MaterialLevel,
   type MaterialType,
@@ -36,6 +37,7 @@ interface PageProps {
     level?: string;
     type?: string;
     goal?: string;
+    category?: string;
     q?: string;
     cursor?: string;
   };
@@ -74,6 +76,16 @@ const VALID_GOALS: MaterialGoal[] = [
   'conversation',
   'travel',
 ];
+const VALID_CATEGORIES: MaterialCategory[] = [
+  'daily_news_talk',
+  'callan_method',
+  'grammar_basics',
+  'business_english',
+  'daily_travel',
+  'pronunciation',
+  'exam_prep',
+  'kids_english',
+];
 
 function parseFilters(sp: PageProps['searchParams']): CatalogFilters {
   const level = sp.level && VALID_LEVELS.includes(sp.level as MaterialLevel)
@@ -85,11 +97,15 @@ function parseFilters(sp: PageProps['searchParams']): CatalogFilters {
   const goal = sp.goal && VALID_GOALS.includes(sp.goal as MaterialGoal)
     ? (sp.goal as MaterialGoal)
     : undefined;
+  const category = sp.category && VALID_CATEGORIES.includes(sp.category as MaterialCategory)
+    ? (sp.category as MaterialCategory)
+    : undefined;
 
   return {
     level,
     type,
     goal,
+    category,
     search: sp.q?.trim() || undefined,
     cursor: sp.cursor || undefined,
   };

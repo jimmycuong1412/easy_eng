@@ -12,11 +12,23 @@ import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 
 import type {
+  MaterialCategory,
   MaterialGoal,
   MaterialLevel,
   MaterialType,
 } from '@/lib/queries/materials';
 
+// 8 danh mục lớn theo taxonomy EasyEng (hàng filter đầu tiên).
+const CATEGORIES: MaterialCategory[] = [
+  'daily_news_talk',
+  'callan_method',
+  'grammar_basics',
+  'business_english',
+  'daily_travel',
+  'pronunciation',
+  'exam_prep',
+  'kids_english',
+];
 const LEVELS: MaterialLevel[] = ['a1', 'a2', 'b1', 'b2', 'c1'];
 const TYPES: MaterialType[] = [
   'vocabulary_pack',
@@ -50,6 +62,7 @@ export function MaterialFilters({ className = '' }: MaterialFiltersProps) {
 
   const current = useMemo(
     () => ({
+      category: searchParams.get('category') ?? null,
       level: searchParams.get('level') ?? null,
       type: searchParams.get('type') ?? null,
       goal: searchParams.get('goal') ?? null,
@@ -57,7 +70,7 @@ export function MaterialFilters({ className = '' }: MaterialFiltersProps) {
     [searchParams],
   );
 
-  const updateFilter = (key: 'level' | 'type' | 'goal', value: string | null) => {
+  const updateFilter = (key: 'level' | 'type' | 'goal' | 'category', value: string | null) => {
     const next = new URLSearchParams(searchParams.toString());
     if (value === null || next.get(key) === value) {
       next.delete(key);
@@ -73,10 +86,16 @@ export function MaterialFilters({ className = '' }: MaterialFiltersProps) {
     router.push(pathname);
   };
 
-  const hasAnyFilter = current.level || current.type || current.goal;
+  const hasAnyFilter = current.category || current.level || current.type || current.goal;
 
   return (
     <div className={`flex flex-col gap-3 ${className}`} data-testid="material-filters">
+      <FilterRow
+        label={t('materials.catalog.filterCategory')}
+        options={CATEGORIES.map((c) => ({ value: c, label: t(`materials.category.${c}`) }))}
+        active={current.category}
+        onSelect={(v) => updateFilter('category', v)}
+      />
       <FilterRow
         label={t('materials.catalog.filterLevel')}
         options={LEVELS.map((l) => ({ value: l, label: t(`materials.level.${l}`) }))}

@@ -1348,6 +1348,7 @@
       "empty": "No materials match your filters yet.",
       "loading": "Loading…",
       "search": "Search materials",
+      "filterCategory": "Category",
       "filterLevel": "Level",
       "filterType": "Type",
       "filterGoal": "Goal",
@@ -1389,6 +1390,16 @@
       "study_abroad": "Study abroad",
       "conversation": "Conversation",
       "travel": "Travel"
+    },
+    "category": {
+      "daily_news_talk": "Daily News & Talk",
+      "callan_method": "Callan Method",
+      "grammar_basics": "Grammar & Basics",
+      "business_english": "Business English",
+      "daily_travel": "Daily Life & Travel",
+      "pronunciation": "Pronunciation",
+      "exam_prep": "Exam Preparation",
+      "kids_english": "Kids English"
     },
     "detail": {
       "translationPending": "English translation pending — showing Vietnamese content",
