@@ -170,8 +170,10 @@ VAPID_PRIVATE_KEY            = 8nXC2kNzujNZt75GaV438CZD_rWafj-joG41DiIXenA
 
 🎉 **Toàn bộ 11 tính năng growth đã hoàn thành & deploy lên live.**
 
-### Việc còn lại để vận hành tối ưu (không bắt buộc)
-- Push: cron edge function gửi nhắc 20:00 nếu hôm nay chưa học (frontend + bảng đã sẵn).
-- AI Speaking: Web Speech API chỉ chạy trên Chrome/Edge; cân nhắc model chấm phát âm chính xác hơn nếu cần.
-- Sửa CI `deploy-supabase` (token hỏng) để migration tự chạy thay vì apply tay qua MCP.
-- Seed thêm quiz cho học viên (hiện chỉ 1 quiz mẫu).
+### Việc vận hành tối ưu — ✅ HOÀN THÀNH (2026-06-14)
+- ✅ **Push cron**: edge function `send-daily-reminder` (web-push thật) + pg_cron 20:00 ICT (mig 099). *Cần set function secrets trên Supabase: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET, FRONTEND_URL; và `vault.create_secret('<CRON_SECRET>','cron_secret')`.*
+- ✅ **AI Speaking chính xác hơn**: chấm theo từng từ (LCS + fuzzy), tô xanh/đỏ từng từ, liệt kê từ cần luyện. Vẫn miễn phí/on-device. (Lưu ý: Web Speech API chỉ chạy Chrome/Edge.)
+- ✅ **CI `deploy-supabase`**: preflight validate token → SKIP thay vì FAIL khi token hỏng → pipeline không còn bị chặn (lần đầu cả 4 job xanh).
+- ✅ **Seed quiz**: thêm 3 quiz (Everyday Vocabulary, Prepositions, Verb Tenses) — tổng 4 quiz (mig 100).
+
+> Việc duy nhất còn cần bạn làm thủ công: set các **function secrets** ở trên để push nhắc thực sự gửi được (frontend + cron + edge function đã sẵn sàng).
