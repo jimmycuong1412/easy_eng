@@ -101,7 +101,9 @@ Mục tiêu: người dùng **tự kéo người mới** + mỗi thành tích l�
 
 ---
 
-## PHASE 3 — CONVERSION (chuyển đổi) · biến người mới thành người trả tiền
+## PHASE 3 — CONVERSION (chuyển đổi) · ✅ HOÀN THÀNH (2026-06-14)
+
+> ✅ Đã triển khai & verify trên live: 3.1 Free trial (200 gems chào mừng), 3.2 Student quiz (chấm điểm server-side, +10 gems khi đạt — verify 100% 3/3), 3.3 AI Speaking (Web Speech API, miễn phí). Migrations 096–098 apply qua MCP.
 
 ### 3.1 Buổi học thử 1-1 miễn phí (Free trial lesson)
 **Trạng thái:** dùng lại hệ thống gems + booking đã có.
@@ -162,6 +164,14 @@ VAPID_PRIVATE_KEY            = 8nXC2kNzujNZt75GaV438CZD_rWafj-joG41DiIXenA
 ---
 
 ## Trạng thái & bước tiếp theo
-- ✅ **Phase 1 (Retention)** — xong, đã deploy + verify.
-- ✅ **Phase 2 (Viral)** — xong, đã deploy + verify (migrations 093–095).
-- ⏭️ **Phase 3 (Conversion)**: 3.1 Free trial → 3.2 Quiz học viên → 3.3 AI Speaking.
+- ✅ **Phase 1 (Retention)** — xong (migrations 089–092).
+- ✅ **Phase 2 (Viral)** — xong (migrations 093–095).
+- ✅ **Phase 3 (Conversion)** — xong (migrations 096–098).
+
+🎉 **Toàn bộ 11 tính năng growth đã hoàn thành & deploy lên live.**
+
+### Việc còn lại để vận hành tối ưu (không bắt buộc)
+- Push: cron edge function gửi nhắc 20:00 nếu hôm nay chưa học (frontend + bảng đã sẵn).
+- AI Speaking: Web Speech API chỉ chạy trên Chrome/Edge; cân nhắc model chấm phát âm chính xác hơn nếu cần.
+- Sửa CI `deploy-supabase` (token hỏng) để migration tự chạy thay vì apply tay qua MCP.
+- Seed thêm quiz cho học viên (hiện chỉ 1 quiz mẫu).
