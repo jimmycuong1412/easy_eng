@@ -101,7 +101,7 @@ export default function LeaderboardPage() {
             avatar: (profile?.avatar_url as string) || '',
             level: (entry.current_level as number) || 1,
             xp: (entry.total_xp_earned as number) || 0,
-            streak: 0,
+            streak: (entry.current_streak as number) || 0,
             classes: 0,
             careerAvatar: (career?.name as string) || 'Student',
             isCurrentUser: (entry.student_id as string) === user?.id,

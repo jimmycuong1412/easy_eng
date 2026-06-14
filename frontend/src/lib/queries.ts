@@ -234,14 +234,27 @@ export async function getUserQuizAttempts(userId: string, quizId?: string) {
 // ============================================================================
 
 export async function getLeaderboard(limit = 50) {
-  const { data, error } = await supabase()
+  // Rank by current streak (career-independent — every learner appears).
+  // Falls back to the career-XP table only if the RPC is unavailable.
+  const sb = supabase() as any;
+  const { data, error } = await sb.rpc('get_streak_leaderboard', { p_limit: limit });
+  if (!error && data) {
+    return (data as Record<string, unknown>[]).map((r) => ({
+      student_id: r.user_id,
+      profiles: { full_name: r.full_name, avatar_url: r.avatar_url },
+      current_streak: r.current_streak,
+      longest_streak: r.longest_streak,
+      total_xp_earned: 0,
+      current_level: 1,
+    }));
+  }
+  const { data: fallback } = await sb
     .from('student_careers')
-    .select('*, profiles!student_careers_student_id_profiles_fkey(full_name, avatar_url), career_paths(name, slug, primary_color)')
+    .select('*, profiles!student_careers_student_id_profiles_fkey(full_name, avatar_url)')
     .eq('is_active', true)
     .order('total_xp_earned', { ascending: false })
     .limit(limit);
-  if (error) throw error;
-  return data;
+  return fallback ?? [];
 }
 
 export async function getStudentProgress(studentId: string) {
