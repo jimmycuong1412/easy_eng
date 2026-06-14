@@ -16,20 +16,60 @@ interface Props {
   lang?: string; // BCP-47, default en-US
 }
 
-// Levenshtein-based similarity (0–100) between two normalized strings.
-function similarity(a: string, b: string): number {
-  const norm = (s: string) => s.toLowerCase().replace(/[.,!?;:"'`()\[\]{}\-_/\\]/g, '').replace(/\s+/g, ' ').trim();
-  const s1 = norm(a), s2 = norm(b);
-  if (!s1 || !s2) return 0;
-  const m = s1.length, n = s2.length;
-  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
+const normWord = (w: string) => w.toLowerCase().replace(/[^a-z0-9']/g, '');
+const tokenize = (s: string) => s.split(/\s+/).map(normWord).filter(Boolean);
+
+// Character-level Levenshtein (for fuzzy per-word match — handles small ASR slips)
+function lev(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      cur[j] = a[i - 1] === b[j - 1] ? prev[j - 1]
+        : 1 + Math.min(prev[j], cur[j - 1], prev[j - 1]);
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+const wordClose = (a: string, b: string) => {
+  if (a === b) return true;
+  const d = lev(a, b);
+  return d <= Math.max(1, Math.floor(Math.max(a.length, b.length) * 0.2)); // ~80% similar
+};
+
+interface WordEval { word: string; ok: boolean }
+
+// Word-level alignment (LCS-style) → per-word correctness + overall score.
+// More accurate & actionable than raw string distance: shows which words to fix.
+function evaluate(target: string, spoken: string): { score: number; words: WordEval[] } {
+  const t = tokenize(target);
+  const s = tokenize(spoken);
+  if (t.length === 0) return { score: 0, words: [] };
+
+  // LCS with fuzzy equality to know which target words were matched, in order.
+  const m = t.length, n = s.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
   for (let i = 1; i <= m; i++)
     for (let j = 1; j <= n; j++)
-      dp[i][j] = s1[i - 1] === s2[j - 1] ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-  const dist = dp[m][n];
-  return Math.max(0, Math.round((1 - dist / Math.max(m, n)) * 100));
+      dp[i][j] = wordClose(t[i - 1], s[j - 1])
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+
+  // backtrack to flag matched target words
+  const matched = new Array(m).fill(false);
+  let i = m, j = n;
+  while (i > 0 && j > 0) {
+    if (wordClose(t[i - 1], s[j - 1])) { matched[i - 1] = true; i--; j--; }
+    else if (dp[i - 1][j] >= dp[i][j - 1]) i--; else j--;
+  }
+  const correct = matched.filter(Boolean).length;
+  return {
+    score: Math.round((correct / m) * 100),
+    words: t.map((w, k) => ({ word: target.split(/\s+/)[k] ?? w, ok: matched[k] })),
+  };
 }
 
 export default function PronunciationPractice({ text, lang = 'en-US' }: Props) {
@@ -37,6 +77,7 @@ export default function PronunciationPractice({ text, lang = 'en-US' }: Props) {
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState('');
   const [score, setScore] = useState<number | null>(null);
+  const [wordEval, setWordEval] = useState<WordEval[]>([]);
   const recRef = useRef<any>(null);
 
   useEffect(() => {
@@ -64,18 +105,20 @@ export default function PronunciationPractice({ text, lang = 'en-US' }: Props) {
     rec.onresult = (e: any) => {
       const transcript = e.results[0][0].transcript as string;
       setHeard(transcript);
-      setScore(similarity(text, transcript));
+      const { score: sc, words } = evaluate(text, transcript);
+      setScore(sc);
+      setWordEval(words);
     };
     rec.onend = () => setListening(false);
     rec.onerror = () => setListening(false);
     recRef.current = rec;
-    setHeard(''); setScore(null); setListening(true);
+    setHeard(''); setScore(null); setWordEval([]); setListening(true);
     rec.start();
   };
 
   const stop = () => { try { recRef.current?.stop(); } catch { /* ignore */ } setListening(false); };
 
-  const reset = () => { setHeard(''); setScore(null); };
+  const reset = () => { setHeard(''); setScore(null); setWordEval([]); };
 
   if (!supported) return null;
 
@@ -93,7 +136,15 @@ export default function PronunciationPractice({ text, lang = 'en-US' }: Props) {
         </button>
       </div>
 
-      <p className="mt-3 text-sm" style={{ color: 'var(--et-fg-2)' }}>{text}</p>
+      <p className="mt-3 text-sm" style={{ color: 'var(--et-fg-2)' }}>
+        {wordEval.length > 0 ? (
+          wordEval.map((w, i) => (
+            <span key={i} style={{ color: w.ok ? '#22c55e' : '#ef4444', fontWeight: w.ok ? 400 : 600 }}>
+              {w.word}{i < wordEval.length - 1 ? ' ' : ''}
+            </span>
+          ))
+        ) : text}
+      </p>
 
       <div className="mt-3 flex items-center gap-2">
         {!listening ? (
@@ -116,6 +167,11 @@ export default function PronunciationPractice({ text, lang = 'en-US' }: Props) {
         <div className="mt-3 text-sm">
           <p style={{ color: 'var(--et-fg-2)' }}>Bạn đọc: <span style={{ color: 'var(--et-fg)' }}>“{heard}”</span></p>
           <p className="mt-1 font-semibold" style={{ color }}>Độ chính xác: {score}% — {band}</p>
+          {wordEval.some((w) => !w.ok) && (
+            <p className="mt-1 text-xs" style={{ color: 'var(--et-fg-2)' }}>
+              Cần luyện thêm: {wordEval.filter((w) => !w.ok).map((w) => w.word).join(', ')}
+            </p>
+          )}
         </div>
       )}
     </div>
