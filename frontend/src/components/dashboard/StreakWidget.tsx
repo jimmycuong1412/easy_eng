@@ -10,6 +10,7 @@
 import React from 'react';
 import { useStreak } from '@/hooks/useStreak';
 import { useXpSummary } from '@/hooks/useXpSummary';
+import ShareAchievement from '@/components/common/ShareAchievement';
 
 const DAY_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
@@ -117,6 +118,12 @@ export default function StreakWidget() {
           </div>
         ))}
       </div>
+
+      {cur > 0 && (
+        <div className="mt-4 flex justify-end">
+          <ShareAchievement kind="streak" value={cur} compact />
+        </div>
+      )}
     </div>
   );
 }
