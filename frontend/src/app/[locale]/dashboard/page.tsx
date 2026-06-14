@@ -16,6 +16,7 @@ import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
 import StreakWidget from '@/components/dashboard/StreakWidget';
 import DailyLessonCard from '@/components/dashboard/DailyLessonCard';
 import PushReminderToggle from '@/components/dashboard/PushReminderToggle';
+import FreeTrialBanner from '@/components/dashboard/FreeTrialBanner';
 import {
   ArrowRIcon,
   CalIcon,
@@ -162,6 +163,11 @@ export default function DashboardPage() {
         {/* Active class reconnect banner — kept above the fold */}
         <div style={{ marginBottom: 18 }}>
           <ActiveClassBanner userId={user?.id} role="student" />
+        </div>
+
+        {/* Free trial — conversion nudge (only for new users) */}
+        <div style={{ marginBottom: 18 }}>
+          <FreeTrialBanner />
         </div>
 
         {/* Daily streak — retention hero */}

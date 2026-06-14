@@ -3,402 +3,187 @@
 export const dynamic = 'force-dynamic';
 
 import * as React from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import {
-  BookOpen,
-  Clock,
-  Trophy,
-  Star,
-  Filter,
-  Search,
-  ChevronRight,
-  Zap,
-  CheckCircle,
-  Lock,
-  Play,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Loader2, Trophy, CheckCircle, Play, ArrowLeft } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { GemImage } from '@/components/common/GemImage';
 
-import { formatNumber } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
-
-// Mock quizzes data
-const mockQuizzes = {
-  recommended: [
-    {
-      id: 'quiz-1',
-      title: 'Business Email Writing',
-      description: 'Master professional email communication',
-      category: 'Business English',
-      difficulty: 'medium',
-      questions: 10,
-      timeLimit: 10,
-      xpReward: 50,
-      cookiesReward: 5,
-      completedCount: 1250,
-      avgScore: 78,
-      isNew: true,
-    },
-    {
-      id: 'quiz-2',
-      title: 'Meeting Vocabulary',
-      description: 'Essential words for business meetings',
-      category: 'Business English',
-      difficulty: 'easy',
-      questions: 15,
-      timeLimit: 12,
-      xpReward: 60,
-      cookiesReward: 6,
-      completedCount: 980,
-      avgScore: 82,
-    },
-    {
-      id: 'quiz-3',
-      title: 'IELTS Speaking Part 1',
-      description: 'Practice common Part 1 topics',
-      category: 'IELTS',
-      difficulty: 'medium',
-      questions: 12,
-      timeLimit: 15,
-      xpReward: 70,
-      cookiesReward: 7,
-      completedCount: 2100,
-      avgScore: 75,
-    },
-  ],
-  byCategory: {
-    'Business English': [
-      { id: 'quiz-1', title: 'Business Email Writing', difficulty: 'medium', questions: 10, completed: false },
-      { id: 'quiz-2', title: 'Meeting Vocabulary', difficulty: 'easy', questions: 15, completed: true, score: 85 },
-      { id: 'quiz-4', title: 'Negotiation Skills', difficulty: 'hard', questions: 20, completed: false },
-      { id: 'quiz-5', title: 'Presentation Language', difficulty: 'medium', questions: 12, completed: true, score: 72 },
-    ],
-    'IELTS': [
-      { id: 'quiz-3', title: 'Speaking Part 1', difficulty: 'medium', questions: 12, completed: false },
-      { id: 'quiz-6', title: 'Speaking Part 2', difficulty: 'hard', questions: 10, completed: false },
-      { id: 'quiz-7', title: 'Listening Section 1', difficulty: 'easy', questions: 10, completed: true, score: 90 },
-      { id: 'quiz-8', title: 'Reading Passage Types', difficulty: 'medium', questions: 15, completed: false },
-    ],
-    'Grammar': [
-      { id: 'quiz-9', title: 'Conditionals', difficulty: 'medium', questions: 15, completed: true, score: 80 },
-      { id: 'quiz-10', title: 'Tenses Review', difficulty: 'easy', questions: 20, completed: true, score: 95 },
-      { id: 'quiz-11', title: 'Passive Voice', difficulty: 'medium', questions: 12, completed: false },
-      { id: 'quiz-12', title: 'Reported Speech', difficulty: 'hard', questions: 15, completed: false },
-    ],
-    'Vocabulary': [
-      { id: 'quiz-13', title: 'Academic Words', difficulty: 'hard', questions: 25, completed: false },
-      { id: 'quiz-14', title: 'Phrasal Verbs', difficulty: 'medium', questions: 20, completed: false },
-      { id: 'quiz-15', title: 'Idioms & Expressions', difficulty: 'hard', questions: 15, completed: false },
-    ],
-  },
-  completed: [
-    { id: 'quiz-2', title: 'Meeting Vocabulary', category: 'Business English', score: 85, completedAt: '2026-01-20', xpEarned: 60 },
-    { id: 'quiz-5', title: 'Presentation Language', category: 'Business English', score: 72, completedAt: '2026-01-18', xpEarned: 50 },
-    { id: 'quiz-7', title: 'Listening Section 1', category: 'IELTS', score: 90, completedAt: '2026-01-15', xpEarned: 70 },
-    { id: 'quiz-9', title: 'Conditionals', category: 'Grammar', score: 80, completedAt: '2026-01-12', xpEarned: 55 },
-    { id: 'quiz-10', title: 'Tenses Review', category: 'Grammar', score: 95, completedAt: '2026-01-10', xpEarned: 65 },
-  ],
-};
-
-// Stats
-const stats = {
-  totalCompleted: 5,
-  totalQuizzes: 15,
-  averageScore: 84,
-  totalXPEarned: 300,
-  currentStreak: 3,
-};
-
-function getDifficultyBadge(difficulty: string) {
-  switch (difficulty) {
-    case 'easy':
-      return <Badge className="bg-emerald-500/20 text-emerald-400 border-0">Dễ</Badge>;
-    case 'medium':
-      return <Badge className="bg-amber-500/20 text-amber-400 border-0">Trung bình</Badge>;
-    case 'hard':
-      return <Badge className="bg-red-500/20 text-red-400 border-0">Khó</Badge>;
-    default:
-      return null;
-  }
+interface QuizListItem {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  question_count: number;
+  passing_score: number;
+  best_score: number;
+  attempts: number;
+  passed: boolean;
 }
+interface PlayQuestion {
+  question_id: string;
+  question_text: string;
+  question_type: string;
+  options: string[];
+  points: number;
+}
+interface QuizResult { score: number; passed: boolean; correct: number; total_questions: number; gems_awarded: number }
 
-export default function QuizListPage() {
-  const [searchQuery, setSearchQuery] = React.useState('');
+export default function QuizPage() {
+  const supabase = createClient() as any;
+  const [quizzes, setQuizzes] = useState<QuizListItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  return (
-    <div className="min-h-screen bg-bg-primary">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold text-white mb-2">Bài kiểm tra 📝</h1>
-          <p className="text-slate-400">Ôn tập kiến thức và kiếm XP với các bài quiz</p>
-        </motion.div>
+  // player state
+  const [activeQuiz, setActiveQuiz] = useState<{ title: string; questions: PlayQuestion[] } | null>(null);
+  const [activeQuizId, setActiveQuizId] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<QuizResult | null>(null);
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
-        >
-          <Card className="bg-white/5 border-white/10">
-            <CardContent className="p-4 text-center">
-              <BookOpen className="w-5 h-5 text-[#3B82F6] mx-auto mb-2" />
-              <p className="text-xl font-bold text-white">
-                {stats.totalCompleted}/{stats.totalQuizzes}
+  const loadList = async () => {
+    setLoading(true);
+    const { data } = await supabase.rpc('list_quizzes');
+    setQuizzes((data ?? []) as QuizListItem[]);
+    setLoading(false);
+  };
+  useEffect(() => { loadList(); /* eslint-disable-next-line */ }, []);
+
+  const startQuiz = async (id: string, title: string) => {
+    setResult(null); setAnswers({});
+    const { data } = await supabase.rpc('get_quiz_for_play', { p_quiz_id: id });
+    const rows = (data ?? []) as any[];
+    const questions: PlayQuestion[] = rows.map((r) => ({
+      question_id: r.question_id,
+      question_text: r.question_text,
+      question_type: r.question_type,
+      options: Array.isArray(r.options) ? r.options : [],
+      points: r.points,
+    }));
+    setActiveQuiz({ title, questions });
+    setActiveQuizId(id);
+  };
+
+  const submit = async () => {
+    if (!activeQuizId) return;
+    setSubmitting(true);
+    const { data, error } = await supabase.rpc('submit_quiz', { p_quiz_id: activeQuizId, p_answers: answers });
+    setSubmitting(false);
+    if (!error && data?.ok) setResult(data as QuizResult);
+  };
+
+  const exit = () => { setActiveQuiz(null); setActiveQuizId(null); setResult(null); setAnswers({}); loadList(); };
+
+  // ---- Player view ----
+  if (activeQuiz) {
+    const allAnswered = activeQuiz.questions.every((q) => answers[q.question_id] != null);
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-8">
+        <button onClick={exit} className="mb-4 inline-flex items-center gap-1.5 text-sm" style={{ color: 'var(--et-fg-2)' }}>
+          <ArrowLeft className="h-4 w-4" /> Quay lại danh sách
+        </button>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--et-fg)' }}>{activeQuiz.title}</h1>
+
+        {result ? (
+          <div className="mt-6 rounded-2xl p-6 text-center" style={{ background: 'var(--et-bg-2)', border: '1px solid var(--et-line)' }}>
+            <div style={{ fontSize: 56 }}>{result.passed ? '🎉' : '💪'}</div>
+            <h2 className="mt-3 text-xl font-bold" style={{ color: result.passed ? '#22c55e' : 'var(--et-coral)' }}>
+              {result.passed ? 'Đạt yêu cầu!' : 'Chưa đạt — thử lại nhé!'}
+            </h2>
+            <p className="mt-2" style={{ color: 'var(--et-fg-2)' }}>
+              Điểm: <b style={{ color: 'var(--et-fg)' }}>{result.score}%</b> · Đúng {result.correct}/{result.total_questions} câu
+            </p>
+            {result.gems_awarded > 0 && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-sm" style={{ color: 'var(--et-coral)' }}>
+                +{result.gems_awarded} <GemImage size={16} className="inline-block" /> thưởng
               </p>
-              <p className="text-xs text-slate-400">Hoàn thành</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/5 border-white/10">
-            <CardContent className="p-4 text-center">
-              <Trophy className="w-5 h-5 text-amber-400 mx-auto mb-2" />
-              <p className="text-xl font-bold text-white">{stats.averageScore}%</p>
-              <p className="text-xs text-slate-400">Điểm TB</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/5 border-white/10">
-            <CardContent className="p-4 text-center">
-              <Zap className="w-5 h-5 text-emerald-400 mx-auto mb-2" />
-              <p className="text-xl font-bold text-emerald-400">{stats.totalXPEarned}</p>
-              <p className="text-xs text-slate-400">XP kiếm được</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/5 border-white/10">
-            <CardContent className="p-4 text-center">
-              <Star className="w-5 h-5 text-purple-400 mx-auto mb-2" />
-              <p className="text-xl font-bold text-white">{stats.currentStreak}</p>
-              <p className="text-xs text-slate-400">Ngày streak</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-[#3B82F6]/20 to-purple-500/20 border-[#3B82F6]/30 md:col-span-1 col-span-2">
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">Tiến độ</p>
-              <Progress value={(stats.totalCompleted / stats.totalQuizzes) * 100} className="h-2 bg-white/10 mb-2" />
-              <p className="text-sm text-white">{Math.round((stats.totalCompleted / stats.totalQuizzes) * 100)}%</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Search */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mb-6"
-        >
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <Input
-              placeholder="Tìm kiếm bài quiz..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-slate-500"
-            />
+            )}
+            <div className="mt-6 flex justify-center gap-3">
+              <button onClick={() => startQuiz(activeQuizId!, activeQuiz.title)} className="rounded-lg px-4 py-2 text-sm font-medium" style={{ background: 'var(--et-bg-3)', color: 'var(--et-fg)' }}>Làm lại</button>
+              <button onClick={exit} className="rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ background: 'var(--et-coral)' }}>Xong</button>
+            </div>
           </div>
-        </motion.div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="recommended" className="space-y-6">
-          <TabsList className="bg-white/5 border border-white/10">
-            <TabsTrigger value="recommended" className="data-[state=active]:bg-[#3B82F6]">
-              Đề xuất
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="data-[state=active]:bg-[#3B82F6]">
-              Theo chủ đề
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="data-[state=active]:bg-[#3B82F6]">
-              Đã làm
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Recommended Tab */}
-          <TabsContent value="recommended">
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-4"
-            >
-              {mockQuizzes.recommended.map((quiz) => (
-                <motion.div key={quiz.id} variants={itemVariants}>
-                  <Card className="bg-white/5 border-white/10 hover:border-[#3B82F6]/50 transition-colors">
-                    <CardContent className="p-5">
-                      <div className="flex flex-col md:flex-row md:items-center gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-white">{quiz.title}</h3>
-                            {quiz.isNew && (
-                              <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-xs">
-                                Mới
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-slate-400 mb-3">{quiz.description}</p>
-                          <div className="flex flex-wrap items-center gap-3 text-sm">
-                            <Badge variant="outline" className="border-slate-600 text-slate-400">
-                              {quiz.category}
-                            </Badge>
-                            {getDifficultyBadge(quiz.difficulty)}
-                            <span className="text-slate-500 flex items-center gap-1">
-                              <BookOpen className="w-4 h-4" />
-                              {quiz.questions} câu
-                            </span>
-                            <span className="text-slate-500 flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {quiz.timeLimit} phút
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                          <div className="text-center hidden md:block">
-                            <p className="text-lg font-bold text-white">{quiz.avgScore}%</p>
-                            <p className="text-xs text-slate-500">Điểm TB</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge className="bg-amber-500/20 text-amber-400 border-0">
-                                +{quiz.xpReward} XP
-                              </Badge>
-                              <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
-                                +{quiz.cookiesReward} 🍪
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-slate-500">
-                              {formatNumber(quiz.completedCount)} lượt làm
-                            </p>
-                          </div>
-                          <Button asChild className="bg-[#3B82F6] hover:bg-[#3B82F6]/90">
-                            <Link href={`/quiz/${quiz.id}`}>
-                              <Play className="w-4 h-4 mr-2" />
-                              Làm bài
-                            </Link>
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </motion.div>
-          </TabsContent>
-
-          {/* Categories Tab */}
-          <TabsContent value="categories">
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-6"
-            >
-              {Object.entries(mockQuizzes.byCategory).map(([category, quizzes]) => (
-                <motion.div key={category} variants={itemVariants}>
-                  <Card className="bg-white/5 border-white/10">
-                    <CardHeader>
-                      <CardTitle className="text-white flex items-center justify-between">
-                        <span>{category}</span>
-                        <Badge variant="outline" className="border-slate-600 text-slate-400">
-                          {quizzes.filter((q) => q.completed).length}/{quizzes.length}
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid md:grid-cols-2 gap-3">
-                      {quizzes.map((quiz) => (
-                        <Link
-                          key={quiz.id}
-                          href={`/quiz/${quiz.id}`}
-                          className={`p-4 rounded-lg transition-colors ${
-                            quiz.completed
-                              ? 'bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/40'
-                              : 'bg-white/5 hover:bg-white/10'
-                          }`}
+        ) : (
+          <>
+            <div className="mt-6 space-y-5">
+              {activeQuiz.questions.map((q, qi) => (
+                <div key={q.question_id} className="rounded-xl p-5" style={{ background: 'var(--et-bg-2)', border: '1px solid var(--et-line)' }}>
+                  <p className="font-medium" style={{ color: 'var(--et-fg)' }}>{qi + 1}. {q.question_text}</p>
+                  <div className="mt-3 space-y-2">
+                    {q.options.map((opt, oi) => {
+                      const val = String(oi);
+                      const selected = answers[q.question_id] === val;
+                      return (
+                        <button
+                          key={oi}
+                          onClick={() => setAnswers((a) => ({ ...a, [q.question_id]: val }))}
+                          className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-left text-sm transition-colors"
+                          style={{
+                            background: selected ? 'var(--et-coral)' : 'var(--et-bg-3)',
+                            color: selected ? '#fff' : 'var(--et-fg)',
+                            border: '1px solid var(--et-line)',
+                          }}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-white">{quiz.title}</h4>
-                            {quiz.completed ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-400" />
-                            ) : (
-                              getDifficultyBadge(quiz.difficulty)
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500">{quiz.questions} câu hỏi</span>
-                            {quiz.completed && (quiz as any).score && (
-                              <span className="text-emerald-400 font-semibold">{(quiz as any).score}%</span>
-                            )}
-                          </div>
-                        </Link>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                          <span className="grid h-5 w-5 place-items-center rounded-full text-xs"
+                                style={{ background: selected ? '#fff' : 'var(--et-bg-2)', color: selected ? 'var(--et-coral)' : 'var(--et-fg-2)' }}>
+                            {String.fromCharCode(65 + oi)}
+                          </span>
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
-            </motion.div>
-          </TabsContent>
-
-          {/* Completed Tab */}
-          <TabsContent value="completed">
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-3"
+            </div>
+            <button
+              onClick={submit}
+              disabled={!allAnswered || submitting}
+              className="mt-6 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              style={{ background: 'var(--et-coral)' }}
             >
-              {mockQuizzes.completed.map((quiz) => (
-                <motion.div key={quiz.id} variants={itemVariants}>
-                  <Card className="bg-white/5 border-white/10">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                        <CheckCircle className="w-6 h-6 text-emerald-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-white truncate">{quiz.title}</h4>
-                        <p className="text-sm text-slate-500">
-                          {quiz.category} • {quiz.completedAt}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-white">{quiz.score}%</p>
-                        <p className="text-xs text-slate-500">Điểm</p>
-                      </div>
-                      <Badge className="bg-amber-500/20 text-amber-400 border-0">
-                        +{quiz.xpEarned} XP
-                      </Badge>
-                      <Button variant="outline" size="sm" asChild className="border-white/20 text-white">
-                        <Link href={`/quiz/${quiz.id}`}>Làm lại</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </motion.div>
-          </TabsContent>
-        </Tabs>
+              {submitting ? 'Đang chấm…' : allAnswered ? 'Nộp bài' : 'Trả lời hết các câu để nộp'}
+            </button>
+          </>
+        )}
       </div>
+    );
+  }
+
+  // ---- List view ----
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <h1 className="text-3xl font-bold" style={{ color: 'var(--et-fg)' }}>Quiz luyện tập 📝</h1>
+      <p className="mt-1" style={{ color: 'var(--et-fg-2)' }}>Làm quiz để ôn tập và nhận thưởng Gems.</p>
+
+      {loading ? (
+        <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--et-coral)' }} /></div>
+      ) : quizzes.length === 0 ? (
+        <p className="py-16 text-center" style={{ color: 'var(--et-fg-2)' }}>Chưa có quiz nào. Quay lại sau nhé!</p>
+      ) : (
+        <div className="mt-6 space-y-3">
+          {quizzes.map((q) => (
+            <div key={q.id} className="flex items-center justify-between gap-4 rounded-2xl p-5"
+                 style={{ background: 'var(--et-bg-2)', border: '1px solid var(--et-line)' }}>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold" style={{ color: 'var(--et-fg)' }}>{q.title}</p>
+                  {q.passed && <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />}
+                </div>
+                <p className="mt-0.5 text-sm" style={{ color: 'var(--et-fg-2)' }}>
+                  {q.question_count} câu · đạt {q.passing_score}%
+                  {q.attempts > 0 ? ` · điểm cao nhất ${q.best_score}%` : ''}
+                </p>
+              </div>
+              <button onClick={() => startQuiz(q.id, q.title)}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white"
+                      style={{ background: q.passed ? 'var(--et-bg-4)' : 'var(--et-coral)' }}>
+                {q.passed ? <Trophy className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {q.passed ? 'Làm lại' : 'Bắt đầu'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

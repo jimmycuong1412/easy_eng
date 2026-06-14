@@ -9,10 +9,12 @@
 
 'use client';
 
+import * as React from 'react';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { MaterialBody } from './MaterialBody';
+import PronunciationPractice from './PronunciationPractice';
 import { ProgressRibbon } from './ProgressRibbon';
 import { useAwardCompletion } from './useAwardCompletion';
 
@@ -42,9 +44,20 @@ export function ReadingPassage({
     alreadyCompleted,
   });
 
+  // Pull the first substantial English sentence to use as a read-aloud target.
+  const practiceSentence = React.useMemo(() => {
+    const src = (material.body_en || material.body_vi || '')
+      .replace(/[#*`_>\-]/g, ' ')        // strip markdown
+      .replace(/\s+/g, ' ');
+    const m = src.match(/[A-Z][^.!?]{15,160}[.!?]/);
+    return m?.[0]?.trim() ?? null;
+  }, [material.body_en, material.body_vi]);
+
   return (
     <div className="space-y-6">
       <MaterialBody material={material} locale={locale} />
+
+      {practiceSentence && <PronunciationPractice text={practiceSentence} />}
 
       {alreadyCompleted ? (
         <ProgressRibbon gemsAwarded={0} xpAwarded={0} alreadyEarned />
