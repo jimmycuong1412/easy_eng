@@ -65,9 +65,12 @@ Mục tiêu: cho người dùng **lý do quay lại mỗi ngày**.
 
 ---
 
-## PHASE 2 — VIRAL (lan truyền) · tăng trưởng miễn phí
+## PHASE 2 — VIRAL (lan truyền) · ✅ HOÀN THÀNH (2026-06-14)
 
 Mục tiêu: người dùng **tự kéo người mới** + mỗi thành tích là một quảng cáo.
+
+> ✅ Đã triển khai & verify trên live: 2.1 Referral, 2.2 Leaderboard, 2.3 Share cards (OG), 2.4 Certificate.
+> Migrations 093–095 đã apply lên live qua MCP. Referral payout verify được (2 bên +100 gems, idempotent); OG image trả PNG; trang chứng chỉ công khai render đúng.
 
 ### 2.1 Referral "Mời bạn nhận Gems"
 **Trạng thái:** bảng + UI có, RPC chưa apply.
@@ -160,5 +163,5 @@ VAPID_PRIVATE_KEY            = 8nXC2kNzujNZt75GaV438CZD_rWafj-joG41DiIXenA
 
 ## Trạng thái & bước tiếp theo
 - ✅ **Phase 1 (Retention)** — xong, đã deploy + verify.
-- ⏭️ **Phase 2 (Viral)**: 2.1 Referral → 2.2 Leaderboard → 2.3 Share cards → 2.4 Certificate.
+- ✅ **Phase 2 (Viral)** — xong, đã deploy + verify (migrations 093–095).
 - ⏭️ **Phase 3 (Conversion)**: 3.1 Free trial → 3.2 Quiz học viên → 3.3 AI Speaking.
