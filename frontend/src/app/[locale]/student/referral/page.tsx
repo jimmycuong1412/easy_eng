@@ -137,7 +137,7 @@ export default function ReferralPage() {
 
           setReferralData({
             referralCode: code,
-            referralLink: `https://easyeng.vn/ref/${code}`,
+            referralLink: `${typeof window !== 'undefined' ? window.location.origin : 'https://easyeng-dev.vercel.app'}/vi/ref/${code}`,
             totalReferrals: referrals.length,
             pendingReferrals,
             successfulReferrals,

@@ -275,13 +275,26 @@ export async function getUserRecordings(userId: string) {
 // ============================================================================
 
 export async function getUserReferralData(userId: string) {
-  const { data, error } = await supabase()
-    .from('referral_codes')
-    .select('*, referrals!referrals_referrer_id_fkey(id, referred_id, referred_completed_first_class, gems_awarded_to_referrer, created_at)')
-    .eq('student_id', userId)
-    .single();
-  if (error) throw error;
-  return data;
+  // get_or_create_my_referral_code guarantees a code row exists for the caller
+  // (the old direct .single() select threw for new users with no code yet).
+  const sb = supabase();
+  const { data: codeRows, error: rpcError } = await (sb as any).rpc('get_or_create_my_referral_code');
+  if (rpcError) throw rpcError;
+  const code = Array.isArray(codeRows) ? codeRows[0] : codeRows;
+
+  const { data: refs } = await sb
+    .from('referrals')
+    .select('id, referred_id, referred_completed_first_class, gems_awarded_to_referrer, created_at')
+    .eq('referrer_id', userId)
+    .order('created_at', { ascending: false });
+
+  return {
+    code: code?.code ?? null,
+    total_referrals: code?.total_referrals ?? 0,
+    successful_referrals: code?.successful_referrals ?? 0,
+    gems_earned: code?.gems_earned ?? 0,
+    referrals: refs ?? [],
+  };
 }
 
 // ============================================================================

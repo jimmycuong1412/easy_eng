@@ -135,10 +135,19 @@ export default function LiveClassPage() {
           .eq('id', session.id);
         setSession({ ...session, status: 'live', actual_start_time: new Date().toISOString() });
       }
+      const joinUserId = (await supabase.auth.getUser()).data.user?.id;
       await (supabase as any).from('session_participants').upsert(
-        { session_id: session.id, user_id: (await supabase.auth.getUser()).data.user?.id, role: userRole, joined_at: new Date().toISOString() },
+        { session_id: session.id, user_id: joinUserId, role: userRole, joined_at: new Date().toISOString() },
         { onConflict: 'session_id,user_id' }
       );
+      // Referral payout: when a student attends a class, settle any pending
+      // referral (idempotent server-side — only fires on their first class).
+      if (userRole === 'student' && joinUserId) {
+        (supabase as any).rpc('complete_referral_if_pending', { p_referred_id: joinUserId })
+          .then(() => {}, (e: unknown) => console.error('referral settle failed:', e));
+        (supabase as any).rpc('record_daily_activity', { p_user_id: joinUserId })
+          .then(() => {}, () => {}); // also count class attendance toward streak
+      }
       setIsInWaitingRoom(false);
     } catch (err) {
       console.error('Failed to join class:', err);

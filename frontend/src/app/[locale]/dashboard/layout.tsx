@@ -20,6 +20,7 @@ import { GemImage } from '@/components/common/GemImage';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import NotificationBell from '@/components/layout/NotificationBell';
 import ClassReminderProvider from '@/components/class/ClassReminderProvider';
+import ReferralRedeemer from '@/components/student/ReferralRedeemer';
 
 interface NavItem {
   labelKey: string;
@@ -396,6 +397,7 @@ export default function DashboardLayout({
 
       {/* App-wide class join reminder */}
       <ClassReminderProvider />
+      <ReferralRedeemer />
     </div>
   );
 }
