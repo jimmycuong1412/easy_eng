@@ -29,14 +29,25 @@ export function useXpSummary() {
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : data;
       if (row) {
+        const level = row.level ?? 1;
         setXp({
           totalXp: row.total_xp ?? 0,
-          level: row.level ?? 1,
+          level,
           xpInLevel: row.xp_in_level ?? 0,
           xpForNext: row.xp_for_next ?? 0,
           progressPct: row.progress_pct ?? 0,
           careerLevel: row.career_level ?? null,
         });
+        // Issue a milestone certificate at levels 5/10/15/… (idempotent server-side)
+        if (level >= 5 && level % 5 === 0) {
+          supabase.rpc('issue_certificate', {
+            p_kind: 'level',
+            p_title: `Đạt Cấp ${level}`,
+            p_subtitle: `Tích lũy ${row.total_xp ?? 0} XP trên EasyEng`,
+            p_level: null,
+            p_metadata: {},
+          }).then(() => {}, () => {});
+        }
       }
     } catch (err) {
       console.error('Failed to fetch XP summary:', err);
