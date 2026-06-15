@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  */
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { CheckCircle, Calendar, User, Mail, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -42,7 +42,41 @@ interface PaymentDetails {
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
+  const params = useParams();
+  const locale = (params?.locale as string) ?? 'vi';
+  const isVi = locale === 'vi';
   const bookingId = searchParams.get('booking_id');
+
+  const T = {
+    error: isVi ? 'Lỗi' : 'Error',
+    notFound: isVi ? 'Không tìm thấy thanh toán' : 'Payment not found',
+    successTitle: isVi ? 'Thanh toán thành công!' : 'Payment Successful!',
+    successSub: isVi ? 'Lịch học của bạn đã được xác nhận.' : 'Your class booking has been confirmed',
+    bookingDetails: isVi ? 'Chi tiết lịch học' : 'Booking Details',
+    instructor: isVi ? 'Giáo viên của bạn' : 'Your Instructor',
+    teacherContact: isVi ? 'Liên hệ giáo viên' : 'Teacher Contact',
+    transactionId: isVi ? 'Mã giao dịch' : 'Transaction ID',
+    paymentMethod: isVi ? 'Phương thức thanh toán' : 'Payment Method',
+    amountPaid: isVi ? 'Số tiền đã thanh toán' : 'Amount Paid',
+    paymentDate: isVi ? 'Ngày thanh toán' : 'Payment Date',
+    minutes: isVi ? 'phút' : 'minutes',
+    nextSteps: isVi ? 'Bước tiếp theo' : 'Next Steps',
+    steps: isVi
+      ? [
+          'Email xác nhận đã được gửi đến địa chỉ email của bạn.',
+          'Bạn sẽ nhận được email nhắc nhở 24 giờ trước buổi học.',
+          'Vào lớp sớm 5 phút để kiểm tra kết nối.',
+          'Liên hệ giáo viên nếu bạn có thắc mắc.',
+        ]
+      : [
+          'A confirmation email has been sent to your registered email address.',
+          'You will receive a reminder email 24 hours before your class.',
+          'Join the class 5 minutes early to test your connection.',
+          'Contact your teacher if you have any questions.',
+        ],
+    dashboard: isVi ? 'Về trang chủ' : 'Go to Dashboard',
+    viewBookings: isVi ? 'Xem tất cả lịch học' : 'View All Bookings',
+  };
 
   const [details, setDetails] = useState<PaymentDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +153,7 @@ export default function PaymentSuccessPage() {
 
       if (bookingError) throw bookingError;
 
-      const { data: payment, error: paymentError } = await (supabase as any)
+    const { data: payment, error: paymentError } = await (supabase as any)
         .from('payments')
         .select('payment_provider_id, payment_method, updated_at')
         .eq('booking_id', bookingId)
@@ -153,9 +187,9 @@ export default function PaymentSuccessPage() {
       <div className="container mx-auto max-w-2xl px-4 py-12">
         <div className="rounded-lg bg-red-50 p-6 dark:bg-red-900/20">
           <h2 className="mb-2 text-lg font-semibold text-red-900 dark:text-red-100">
-            Error
+            {T.error}
           </h2>
-          <p className="text-red-700 dark:text-red-300">{error || 'Payment not found'}</p>
+          <p className="text-red-700 dark:text-red-300">{error || T.notFound}</p>
         </div>
       </div>
     );
@@ -175,17 +209,17 @@ export default function PaymentSuccessPage() {
       {/* Success Message */}
       <div className="mb-8 text-center">
         <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">
-          Payment Successful!
+          {T.successTitle}
         </h1>
         <p className="text-lg text-gray-600 dark:text-gray-400">
-          Your class booking has been confirmed
+          {T.successSub}
         </p>
       </div>
 
       {/* Booking Details Card */}
       <div className="mb-6 rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
         <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-          Booking Details
+          {T.bookingDetails}
         </h2>
 
         <div className="space-y-4">
@@ -204,7 +238,7 @@ export default function PaymentSuccessPage() {
             <Calendar className="h-5 w-5 text-gray-400" />
             <div>
               <p className="font-medium text-gray-900 dark:text-white">
-                {new Date((booking.class as any).start_time).toLocaleDateString('en-US', {
+                {new Date((booking.class as any).start_time).toLocaleDateString(isVi ? 'vi-VN' : 'en-US', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -212,11 +246,11 @@ export default function PaymentSuccessPage() {
                 })}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {new Date((booking.class as any).start_time).toLocaleTimeString('en-US', {
+                {new Date((booking.class as any).start_time).toLocaleTimeString(isVi ? 'vi-VN' : 'en-US', {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}{' '}
-                ({booking.class.duration_minutes} minutes)
+                ({booking.class.duration_minutes} {T.minutes})
               </p>
             </div>
           </div>
@@ -228,7 +262,7 @@ export default function PaymentSuccessPage() {
               <p className="font-medium text-gray-900 dark:text-white">
                 {(booking.class.teacher as any).full_name || 'Teacher'}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Your Instructor</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{T.instructor}</p>
             </div>
           </div>
 
@@ -239,7 +273,7 @@ export default function PaymentSuccessPage() {
               <p className="font-medium text-gray-900 dark:text-white">
                 {booking.class.teacher.email}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Teacher Contact</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{T.teacherContact}</p>
             </div>
           </div>
 
@@ -249,27 +283,27 @@ export default function PaymentSuccessPage() {
           {/* Payment Info */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Transaction ID</span>
+              <span className="text-gray-600 dark:text-gray-400">{T.transactionId}</span>
               <span className="font-mono text-gray-900 dark:text-white">
                 {(payment as any).payment_provider_id}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Payment Method</span>
+              <span className="text-gray-600 dark:text-gray-400">{T.paymentMethod}</span>
               <span className="uppercase text-gray-900 dark:text-white">
                 {payment.payment_method}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Amount Paid</span>
+              <span className="text-gray-600 dark:text-gray-400">{T.amountPaid}</span>
               <span className="text-lg font-bold text-green-600 dark:text-green-400">
                 ${booking.final_price.toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Payment Date</span>
+              <span className="text-gray-600 dark:text-gray-400">{T.paymentDate}</span>
               <span className="text-gray-900 dark:text-white">
-                {new Date((payment as any).updated_at).toLocaleString()}
+                {new Date((payment as any).updated_at).toLocaleString(isVi ? 'vi-VN' : 'en-US')}
               </span>
             </div>
           </div>
@@ -278,48 +312,30 @@ export default function PaymentSuccessPage() {
 
       {/* Next Steps */}
       <div className="mb-6 rounded-lg bg-blue-50 p-6 dark:bg-blue-900/20">
-        <h3 className="mb-3 font-semibold text-blue-900 dark:text-blue-100">Next Steps</h3>
+        <h3 className="mb-3 font-semibold text-blue-900 dark:text-blue-100">{T.nextSteps}</h3>
         <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5">✓</span>
-            <span>
-              A confirmation email has been sent to your registered email address
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5">✓</span>
-            <span>
-              You will receive a reminder email 24 hours before your class
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5">✓</span>
-            <span>
-              Join the class 5 minutes early to test your connection
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5">✓</span>
-            <span>
-              Contact your teacher if you have any questions
-            </span>
-          </li>
+          {T.steps.map((step, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="mt-0.5">✓</span>
+              <span>{step}</span>
+            </li>
+          ))}
         </ul>
       </div>
 
       {/* Action Buttons */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link
-          href="/student/dashboard"
+          href={`/${locale}/dashboard`}
           className="flex-1 rounded-lg bg-blue-500 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-blue-600"
         >
-          Go to Dashboard
+          {T.dashboard}
         </Link>
         <Link
-          href="/student/bookings"
+          href={`/${locale}/student/bookings`}
           className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-6 py-3 text-center font-semibold text-gray-900 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:hover:border-gray-500 dark:hover:bg-gray-700"
         >
-          View All Bookings
+          {T.viewBookings}
         </Link>
       </div>
     </div>
