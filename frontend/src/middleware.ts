@@ -106,7 +106,7 @@ export async function middleware(request: NextRequest) {
     if (profile.role !== requiredRole && profile.role !== 'admin') {
       // User doesn't have access, redirect to their dashboard
       const locale = request.nextUrl.pathname.split('/')[1];
-      const dashboardPath = `/${locale}/${profile.role}/dashboard`;
+      const dashboardPath = profile.role === 'teacher' ? `/${locale}/dashboard` : `/${locale}/${profile.role}/dashboard`;
       return NextResponse.redirect(new URL(dashboardPath, request.url));
     }
   }

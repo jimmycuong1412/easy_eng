@@ -72,6 +72,7 @@ export function getDashboardPath(user: UserProfile | null): string {
     case 'parent':
     default:
       return '/dashboard';
+
   }
 }
 

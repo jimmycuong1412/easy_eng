@@ -40,7 +40,7 @@ const ROLE_ROUTES: RouteConfig[] = [
 // Default dashboard routes by role
 const DEFAULT_DASHBOARD: Record<UserRole, string> = {
   student: '/dashboard',
-  teacher: '/dashboard/teacher',
+  teacher: '/dashboard',
   parent: '/dashboard/parent',
   admin: '/dashboard/admin',
 };

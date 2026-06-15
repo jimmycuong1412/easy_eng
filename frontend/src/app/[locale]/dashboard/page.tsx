@@ -61,7 +61,7 @@ export default function DashboardPage() {
   React.useEffect(() => {
     if (!profile) return;
     if (profile.role === 'admin') router.replace(`/${locale}/dashboard/admin`);
-    else if (profile.role === 'teacher') router.replace(`/${locale}/teacher/dashboard`);
+    else if (profile.role === 'teacher') router.replace(`/${locale}/dashboard`);
   }, [profile, router, locale]);
 
   const [upcomingClasses, setUpcomingClasses] = React.useState<UpcomingClass[]>([]);

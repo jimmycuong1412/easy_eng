@@ -38,7 +38,7 @@ export function EdTopBar({ role = 'student', initials = 'AL', locale = 'en' }: T
       style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 36 }}
     >
       <Link
-        href={`/${locale}/${role === 'teacher' ? 'teacher/dashboard' : 'student/dashboard'}`}
+        href={`/${locale}/dashboard`}
         className="et-brand"
       >
         <span className="et-mark">e</span>
