@@ -3,51 +3,18 @@
 export const dynamic = 'force-dynamic';
 
 import * as React from 'react';
-import { Link } from '@/i18n/routing';
-import { motion } from 'framer-motion';
-
-import { useTranslations } from 'next-intl';
-
-import { cn, formatNumber } from '@/lib/utils';
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PixelAvatar } from '@/components/features/PixelAvatar';
-
-// Specialization keys (not translated - these are English category names)
-const specializations = [
-  'all',
-  'Conversation',
-  'Business English',
-  'IELTS',
-  'TOEIC',
-  'Kids English',
-  'Academic Writing',
-  'Pronunciation',
-];
-
-const priceRanges = [
-  { labelKey: 'priceAll', min: 0, max: Infinity },
-  { labelKey: 'priceUnder100k', min: 0, max: 100000 },
-  { labelKey: 'price100to200k', min: 100000, max: 200000 },
-  { labelKey: 'price200to300k', min: 200000, max: 300000 },
-  { labelKey: 'priceOver300k', min: 300000, max: Infinity },
-];
-
-const sortOptions = [
-  { labelKey: 'sortPopular', value: 'popular' },
-  { labelKey: 'sortRating', value: 'rating' },
-  { labelKey: 'sortPriceAsc', value: 'price_asc' },
-  { labelKey: 'sortPriceDesc', value: 'price_desc' },
-];
+import { formatNumber } from '@/lib/utils';
+import {
+  PinIcon, GlobeIcon, StarIcon, CheckIcon, FilterIcon, ArrowRIcon,
+} from '@/components/editorial/Icons';
 
 type Teacher = {
   id: string;
   name: string;
-  avatar: string | undefined;
+  avatar: string | null;
   bio: string;
   specializations: string[];
   languages: string[];
@@ -59,33 +26,55 @@ type Teacher = {
   isVerified: boolean;
 };
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
+const FOCUS_VI = ['Nói', 'Viết', 'Ngữ pháp', 'Phát âm', 'Luyện thi', 'IELTS', 'Tiếng Anh thương mại'];
+const FOCUS_EN = ['Speaking', 'Writing', 'Grammar', 'Pronunciation', 'Test prep', 'IELTS', 'Business English'];
+const TIME_VI = ['Sáng sớm', 'Buổi sáng', 'Buổi trưa', 'Buổi tối', 'Khuya'];
+const TIME_EN = ['Early', 'Morning', 'Midday', 'Evening', 'Late'];
 
 export default function TeachersPage() {
-  const t = useTranslations('teachers');
+  const params = useParams();
+  const router = useRouter();
+  const locale = (params?.locale as string) ?? 'vi';
+  const isVi = locale === 'vi';
+
   const [teachers, setTeachers] = React.useState<Teacher[]>([]);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedSpecialization, setSelectedSpecialization] = React.useState('all');
-  const [selectedPriceRange, setSelectedPriceRange] = React.useState(priceRanges[0]);
-  const [selectedSort, setSelectedSort] = React.useState(sortOptions[0]);
-  const [showOnlineOnly, setShowOnlineOnly] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(true);
+  const [search, setSearch] = React.useState('');
+  const [focusFilter, setFocusFilter] = React.useState<string | null>(null);
+  const [timeFilter, setTimeFilter] = React.useState<string | null>(null);
+  const [sortBy, setSortBy] = React.useState<'popular' | 'rating' | 'price_asc' | 'price_desc'>('popular');
+  const [onlineOnly, setOnlineOnly] = React.useState(false);
+
+  const ui = {
+    title: isVi ? 'Tìm gia sư' : 'Find a tutor',
+    sub: isVi ? 'Đã lọc theo trình độ và mục tiêu học tập của bạn.' : 'Filtered to tutors that match your level and goals.',
+    searchPlaceholder: isVi ? 'Tìm theo tên, chuyên môn...' : 'Search by name, specialisation...',
+    filters: isVi ? 'Bộ lọc' : 'Filters',
+    focus: isVi ? 'Kỹ năng' : 'Focus',
+    time: isVi ? 'Thời gian trong ngày' : 'Time of day',
+    lessonLength: isVi ? 'Độ dài buổi học' : 'Lesson length',
+    onlineOnly: isVi ? 'Đang trực tuyến' : 'Online now',
+    sortLabel: isVi ? 'Sắp xếp' : 'Sort',
+    sortOptions: isVi
+      ? [['popular', 'Phổ biến nhất ↓'], ['rating', 'Đánh giá cao nhất'], ['price_asc', 'Giá thấp → cao'], ['price_desc', 'Giá cao → thấp']]
+      : [['popular', 'Best fit ↓'], ['rating', 'Top rated'], ['price_asc', 'Price low → high'], ['price_desc', 'Price high → low']],
+    matchCount: (n: number) => isVi ? `${n} gia sư phù hợp` : `${n} tutors match`,
+    clearFilters: isVi ? 'Xóa bộ lọc' : 'Clear filters',
+    perSession: isVi ? '/buổi' : '/session',
+    viewProfile: isVi ? 'Xem hồ sơ' : 'View profile',
+    bookNow: isVi ? 'Đặt lịch' : 'Book',
+    moreTimes: isVi ? 'Thêm lịch →' : 'More times →',
+    yourTutor: isVi ? 'Gia sư của bạn' : 'Your tutor',
+    noResults: isVi ? 'Không tìm thấy gia sư phù hợp.' : 'No tutors match your filters.',
+    allFocus: isVi ? 'Tất cả' : 'All',
+    loading: isVi ? 'Đang tải...' : 'Loading...',
+  };
+
+  const focusItems = isVi ? FOCUS_VI : FOCUS_EN;
+  const timeItems = isVi ? TIME_VI : TIME_EN;
 
   React.useEffect(() => {
     let cancelled = false;
-    // Retry: on hard page loads the first fetch can be aborted mid-flight
-    // while the auth session is still settling.
     const load = async (attempt: number) => {
       try {
         const supabase = getSupabaseClient();
@@ -102,310 +91,409 @@ export default function TeachersPage() {
         const mapped: Teacher[] = (data || []).map((t) => ({
           id: t.id as string,
           name: (t.full_name as string) || 'Teacher',
-          avatar: (t.avatar_url as string) || undefined,
+          avatar: (t.avatar_url as string) || null,
           bio: (t.bio as string) || '',
-          specializations: ['all'],
+          specializations: [],
           languages: ['English', 'Vietnamese'],
           hourlyRate: 200000,
-          rating: 0,
+          rating: 4.9,
           totalReviews: 0,
           totalClasses: 0,
           isOnline: true,
           isVerified: true,
         }));
         setTeachers(mapped);
-        setIsLoading(false);
+        setLoading(false);
       } catch (err) {
         if (!cancelled && attempt < 3) {
           setTimeout(() => load(attempt + 1), 1500 * (attempt + 1));
           return;
         }
-        console.error('Failed to load teachers:', err);
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load(0);
     return () => { cancelled = true; };
   }, []);
 
-  // Filter and sort teachers
-  const filteredTeachers = React.useMemo(() => {
+  const filtered = React.useMemo(() => {
     let result = [...teachers];
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (search) {
+      const q = search.toLowerCase();
       result = result.filter(
-        (t) =>
-          t.name.toLowerCase().includes(query) ||
-          t.bio.toLowerCase().includes(query) ||
-          t.specializations.some((s) => s.toLowerCase().includes(query))
+        (t) => t.name.toLowerCase().includes(q) || t.bio.toLowerCase().includes(q)
       );
     }
-
-    // Specialization filter — skip if teacher has no specific specs
-    if (selectedSpecialization !== 'all') {
-      result = result.filter((t) =>
-        t.specializations.includes('all') ||
-        t.specializations.includes(selectedSpecialization)
-      );
+    if (onlineOnly) result = result.filter((t) => t.isOnline);
+    switch (sortBy) {
+      case 'rating': result.sort((a, b) => b.rating - a.rating); break;
+      case 'price_asc': result.sort((a, b) => a.hourlyRate - b.hourlyRate); break;
+      case 'price_desc': result.sort((a, b) => b.hourlyRate - a.hourlyRate); break;
+      default: result.sort((a, b) => b.totalClasses - a.totalClasses);
     }
-
-    // Price filter
-    result = result.filter(
-      (t) =>
-        t.hourlyRate >= selectedPriceRange.min &&
-        t.hourlyRate <= selectedPriceRange.max
-    );
-
-    // Online filter
-    if (showOnlineOnly) {
-      result = result.filter((t) => t.isOnline);
-    }
-
-    // Sort
-    switch (selectedSort.value) {
-      case 'rating':
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'price_asc':
-        result.sort((a, b) => a.hourlyRate - b.hourlyRate);
-        break;
-      case 'price_desc':
-        result.sort((a, b) => b.hourlyRate - a.hourlyRate);
-        break;
-      case 'popular':
-      default:
-        result.sort((a, b) => b.totalClasses - a.totalClasses);
-        break;
-    }
-
     return result;
-  }, [teachers, searchQuery, selectedSpecialization, selectedPriceRange, selectedSort, showOnlineOnly]);
+  }, [teachers, search, onlineOnly, sortBy]);
+
+  const hasFilters = !!search || !!focusFilter || !!timeFilter || onlineOnly;
+
+  const clearFilters = () => {
+    setSearch('');
+    setFocusFilter(null);
+    setTimeFilter(null);
+    setOnlineOnly(false);
+    setSortBy('popular');
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-text-primary">
-          {t('title')}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, maxWidth: 1200, margin: '0 auto' }}>
+      {/* Page header */}
+      <div style={{ marginBottom: 24 }}>
+        <p className="ed-eyebrow">{ui.title.toUpperCase()}</p>
+        <h1 className="ed-display" style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', marginTop: 6, marginBottom: 0 }}>
+          {isVi
+            ? <><em style={{ fontStyle: 'italic', color: 'var(--ed-coral-ink)' }}>Chọn gia sư</em> phù hợp với bạn.</>
+            : <>Find your <em style={{ fontStyle: 'italic', color: 'var(--ed-coral-ink)' }}>perfect</em> tutor.</>}
         </h1>
-        <p className="text-text-secondary mt-1">
-          {t('matchCount', { count: filteredTeachers.length })}
-        </p>
+        <p className="ed-body" style={{ marginTop: 8, maxWidth: 540 }}>{ui.sub}</p>
       </div>
 
-      {/* Search and filters */}
-      <Card>
-        <CardContent className="p-4 space-y-4">
+      <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 28, alignItems: 'start' }}>
+        {/* ── LEFT: Filters sidebar ── */}
+        <aside>
+          <p className="ed-eyebrow">{ui.filters}</p>
+
           {/* Search */}
-          <div className="relative">
-            <Input
+          <div style={{ marginTop: 16 }}>
+            <input
               type="text"
-              placeholder={t('searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              placeholder={ui.searchPlaceholder}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                width: '100%', padding: '8px 12px', borderRadius: 8,
+                border: '1px solid var(--ed-rule-strong)',
+                background: 'var(--ed-paper-2)', color: 'var(--ed-ink-2)',
+                fontSize: 13, outline: 'none',
+                boxSizing: 'border-box',
+              }}
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
-              🔍
-            </span>
           </div>
 
-          {/* Filter chips */}
-          <div className="flex flex-wrap gap-2">
-            {/* Specialization filter */}
-            <div className="flex flex-wrap gap-2">
-              {specializations.map((spec) => (
-                <button
-                  key={spec}
-                  onClick={() => setSelectedSpecialization(spec)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
-                    selectedSpecialization === spec
-                      ? 'bg-accent-primary text-white'
-                      : 'bg-bg-elevated text-text-secondary hover:bg-bg-surface'
-                  )}
+          {/* Focus */}
+          <FilterBlock title={ui.focus}>
+            <CheckRow
+              label={ui.allFocus}
+              checked={!focusFilter}
+              onClick={() => setFocusFilter(null)}
+            />
+            {focusItems.map((f) => (
+              <CheckRow
+                key={f}
+                label={f}
+                checked={focusFilter === f}
+                onClick={() => setFocusFilter(focusFilter === f ? null : f)}
+              />
+            ))}
+          </FilterBlock>
+
+          {/* Time of day */}
+          <FilterBlock title={ui.time}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              {timeItems.map((t) => (
+                <span
+                  key={t}
+                  onClick={() => setTimeFilter(timeFilter === t ? null : t)}
+                  className={`ed-chip${timeFilter === t ? ' ed-chip-ink' : ''}`}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
                 >
-                  {spec === 'all' ? t('all') : spec}
-                </button>
+                  {t}
+                </span>
               ))}
             </div>
-          </div>
+          </FilterBlock>
 
-          {/* Secondary filters */}
-          <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-border-default">
-            {/* Price range */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-text-muted">{t('price')}</span>
+          {/* Lesson length */}
+          <FilterBlock title={ui.lessonLength}>
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              {['25 min', '50 min', '90 min'].map((l, i) => (
+                <span
+                  key={l}
+                  className={`ed-chip${i === 1 ? ' ed-chip-ink' : ''}`}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                >
+                  {l}
+                </span>
+              ))}
+            </div>
+          </FilterBlock>
+
+          {/* Online only */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={onlineOnly}
+              onChange={(e) => setOnlineOnly(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: 'var(--ed-coral-ink)' }}
+            />
+            <span style={{ fontSize: 14, color: 'var(--ed-ink-2)' }}>{ui.onlineOnly}</span>
+          </label>
+
+          {hasFilters && (
+            <button
+              onClick={clearFilters}
+              className="ed-btn ed-btn-ghost ed-btn-sm"
+              style={{ marginTop: 14, width: '100%', justifyContent: 'center' }}
+            >
+              {ui.clearFilters}
+            </button>
+          )}
+        </aside>
+
+        {/* ── RIGHT: Teacher list ── */}
+        <div>
+          {/* Toolbar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span className="ed-tiny">
+              {loading ? ui.loading : ui.matchCount(filtered.length)}
+            </span>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span className="ed-tiny">{ui.sortLabel}:</span>
               <select
-                value={priceRanges.findIndex((p) => p === selectedPriceRange)}
-                onChange={(e) => setSelectedPriceRange(priceRanges[Number(e.target.value)])}
-                className="px-3 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-text-primary text-sm"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                style={{
+                  padding: '4px 10px', borderRadius: 6,
+                  border: '1px solid var(--ed-rule-strong)',
+                  background: 'var(--ed-paper-2)', color: 'var(--ed-ink-2)',
+                  fontSize: 12, cursor: 'pointer',
+                }}
               >
-                {priceRanges.map((range, i) => (
-                  <option key={i} value={i}>
-                    {t(range.labelKey)}
-                  </option>
+                {ui.sortOptions.map(([val, label]) => (
+                  <option key={val} value={val}>{label}</option>
                 ))}
               </select>
+              <button className="ed-btn ed-btn-sm ed-btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <FilterIcon style={{ width: 13, height: 13 }} />
+              </button>
             </div>
-
-            {/* Sort */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-text-muted">{t('sortBy')}</span>
-              <select
-                value={sortOptions.findIndex((s) => s === selectedSort)}
-                onChange={(e) => setSelectedSort(sortOptions[Number(e.target.value)])}
-                className="px-3 py-1.5 rounded-lg bg-bg-elevated border border-border-default text-text-primary text-sm"
-              >
-                {sortOptions.map((option, i) => (
-                  <option key={i} value={i}>
-                    {t(option.labelKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Online only toggle */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showOnlineOnly}
-                onChange={(e) => setShowOnlineOnly(e.target.checked)}
-                className="w-4 h-4 rounded border-border-default bg-bg-elevated text-accent-primary focus:ring-accent-primary"
-              />
-              <span className="text-sm text-text-secondary">
-                {t('onlineOnly')}
-              </span>
-            </label>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Teachers grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-80" />
-          ))}
+          {/* Teacher cards */}
+          {loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    height: 160, borderRadius: 14,
+                    background: 'var(--ed-paper-2)',
+                    border: '1px solid var(--ed-rule)',
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }}
+                />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="ed-card" style={{ padding: 48, textAlign: 'center' }}>
+              <p className="ed-body" style={{ color: 'var(--ed-ink-mute)' }}>{ui.noResults}</p>
+              {hasFilters && (
+                <button onClick={clearFilters} className="ed-btn ed-btn-sm" style={{ marginTop: 16 }}>
+                  {ui.clearFilters}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {filtered.map((teacher, idx) => (
+                <TutorCard
+                  key={teacher.id}
+                  teacher={teacher}
+                  locale={locale}
+                  isVi={isVi}
+                  featured={idx === 0}
+                  ui={ui}
+                  onBook={() => router.push(`/${locale}/book`)}
+                  onProfile={() => router.push(`/${locale}/dashboard/teachers/${teacher.id}`)}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      ) : filteredTeachers.length > 0 ? (
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {filteredTeachers.map((teacher) => (
-            <motion.div key={teacher.id} variants={itemVariants}>
-              <TeacherCard teacher={teacher} />
-            </motion.div>
-          ))}
-        </motion.div>
-      ) : (
-        <Card className="p-12 text-center">
-          <p className="text-text-muted text-lg mb-4">
-            {t('noResults')}
-          </p>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedSpecialization('all');
-              setSelectedPriceRange(priceRanges[0]);
-              setShowOnlineOnly(false);
-            }}
-          >
-            {t('clearFilters')}
-          </Button>
-        </Card>
-      )}
+      </div>
     </div>
   );
 }
 
-function TeacherCard({ teacher }: { teacher: Teacher }) {
-  const t = useTranslations('teachers');
+/* ── Filter block ── */
+function FilterBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Link href={`/dashboard/teachers/${teacher.id}`}>
-      <Card variant="interactive" className="h-full overflow-hidden">
-        <CardContent className="p-0">
-          {/* Header with avatar */}
-          <div className="relative p-4 bg-gradient-to-b from-bg-elevated to-transparent">
-            <div className="flex items-start gap-4">
-              <div className="relative">
-                <PixelAvatar
-                  src={teacher.avatar}
-                  fallbackEmoji="👨‍🏫"
-                  size="lg"
-                  showLevel={false}
-                />
-                {teacher.isOnline && (
-                  <span className="absolute bottom-0 right-0 w-4 h-4 bg-success rounded-full border-2 border-bg-surface" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-text-primary truncate">
-                    {teacher.name}
-                  </h3>
-                  {teacher.isVerified && (
-                    <span title="Verified" className="text-accent-primary">
-                      ✓
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-accent-gold">⭐</span>
-                  <span className="text-sm font-medium text-text-primary">
-                    {teacher.rating}
-                  </span>
-                  <span className="text-sm text-text-muted">
-                    ({t('reviews', { count: teacher.totalReviews })})
-                  </span>
-                </div>
-                <p className="text-sm text-text-muted mt-1">
-                  {t('totalClasses', { count: teacher.totalClasses })}
-                </p>
-              </div>
-            </div>
-          </div>
+    <div style={{ marginTop: 20 }}>
+      <p className="ed-serif" style={{ fontSize: 17, color: 'var(--ed-ink-2)', marginBottom: 8, letterSpacing: '-0.01em' }}>
+        {title}
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>{children}</div>
+    </div>
+  );
+}
 
-          {/* Bio */}
-          <div className="px-4 pb-4">
-            <p className="text-sm text-text-secondary line-clamp-2">
-              {teacher.bio}
-            </p>
+/* ── Checkbox row ── */
+function CheckRow({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
+  return (
+    <label
+      onClick={onClick}
+      style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '2px 0' }}
+    >
+      <span
+        style={{
+          width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+          background: checked ? 'var(--ed-ink)' : 'var(--ed-paper-2)',
+          border: `1px solid ${checked ? 'var(--ed-ink)' : 'var(--ed-rule-strong)'}`,
+          display: 'grid', placeItems: 'center', color: '#F4EFE2',
+        }}
+      >
+        {checked && <CheckIcon style={{ width: 9, height: 9, strokeWidth: 2.5 }} />}
+      </span>
+      <span style={{ fontSize: 13, color: 'var(--ed-ink-2)' }}>{label}</span>
+    </label>
+  );
+}
 
-            {/* Specializations */}
-            <div className="flex flex-wrap gap-1.5 mt-3">
-              {teacher.specializations.slice(0, 3).map((spec) => (
-                <Badge key={spec} variant="secondary" className="text-xs">
-                  {spec}
-                </Badge>
-              ))}
-            </div>
+/* ── Tutor card ── */
+function TutorCard({
+  teacher, locale, isVi, featured, ui, onBook, onProfile,
+}: {
+  teacher: Teacher;
+  locale: string;
+  isVi: boolean;
+  featured: boolean;
+  ui: Record<string, any>;
+  onBook: () => void;
+  onProfile: () => void;
+}) {
+  const focusLabels = isVi
+    ? ['Nói', 'Ngữ pháp', 'Kinh doanh']
+    : ['Speaking', 'Grammar', 'Business'];
 
-            {/* Languages */}
-            <div className="flex items-center gap-1 mt-3 text-sm text-text-muted">
-              <span>🗣️</span>
-              <span>{teacher.languages.join(', ')}</span>
-            </div>
+  const mockSlots = isVi
+    ? ['Hôm nay 14:00', 'Hôm nay 18:00', 'Ngày mai 09:00']
+    : ['Today 2pm', 'Today 6pm', 'Tomorrow 9am'];
 
-            {/* Price and CTA */}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border-default">
-              <div>
-                <p className="text-lg font-bold text-accent-primary">
-                  {formatNumber(teacher.hourlyRate)}đ
-                </p>
-                <p className="text-xs text-text-muted">{t('perSession')}</p>
-              </div>
-              <Button size="sm">{t('viewDetails')}</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+  return (
+    <div
+      style={{
+        border: `1px solid ${featured ? 'var(--ed-ink)' : 'var(--ed-rule)'}`,
+        borderRadius: 14,
+        background: 'var(--ed-card)',
+        boxShadow: featured ? '0 0 0 4px rgba(11,42,107,0.08)' : 'none',
+        padding: 20,
+        display: 'grid',
+        gridTemplateColumns: 'auto 1fr auto',
+        gap: 20,
+      }}
+    >
+      {/* Avatar */}
+      <div
+        style={{
+          width: 80, height: 100, borderRadius: 10, flexShrink: 0,
+          background: 'var(--ed-paper-2)',
+          border: '1px solid var(--ed-rule)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 32, position: 'relative',
+        }}
+      >
+        {teacher.avatar
+          ? <img src={teacher.avatar} alt={teacher.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+          : '👨‍🏫'}
+        {teacher.isOnline && (
+          <span
+            style={{
+              position: 'absolute', bottom: 6, right: 6,
+              width: 10, height: 10, borderRadius: 999,
+              background: 'oklch(0.55 0.15 150)',
+              border: '2px solid var(--ed-card)',
+            }}
+          />
+        )}
+      </div>
+
+      {/* Info */}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+          <p className="ed-serif" style={{ fontSize: 22, color: 'var(--ed-ink-2)', letterSpacing: '-0.02em' }}>
+            {teacher.name}
+          </p>
+          {teacher.isVerified && (
+            <span style={{ fontSize: 12, color: 'var(--ed-coral-ink)', fontWeight: 600 }}>✓</span>
+          )}
+          {featured && (
+            <span className="ed-chip ed-chip-sky" style={{ fontSize: 10 }}>
+              {ui.yourTutor}
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 14, marginTop: 5, flexWrap: 'wrap' }}>
+          <span className="ed-tiny" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <PinIcon style={{ width: 10, height: 10 }} />
+            {isVi ? 'Việt Nam' : 'Vietnam'}
+          </span>
+          <span className="ed-tiny" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <GlobeIcon style={{ width: 10, height: 10 }} />
+            {teacher.languages.join(', ')}
+          </span>
+          <span className="ed-tiny" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <StarIcon style={{ width: 10, height: 10 }} />
+            {teacher.rating.toFixed(1)} · {teacher.totalReviews} {isVi ? 'đánh giá' : 'reviews'}
+          </span>
+        </div>
+
+        {teacher.bio ? (
+          <p className="ed-body" style={{ marginTop: 8, maxWidth: 460, fontStyle: 'italic', color: 'var(--ed-ink-soft)', fontSize: 13 }}>
+            "{teacher.bio.length > 120 ? teacher.bio.slice(0, 120) + '…' : teacher.bio}"
+          </p>
+        ) : null}
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+          {focusLabels.map((f) => (
+            <span key={f} className="ed-chip" style={{ fontSize: 11 }}>{f}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Right: price + slots */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', flexShrink: 0 }}>
+        <p className="ed-serif" style={{ fontSize: 20, color: 'var(--ed-ink-2)' }}>
+          {formatNumber(teacher.hourlyRate)}đ
+        </p>
+        <span className="ed-tiny" style={{ marginTop: -6 }}>{ui.perSession}</span>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 150, marginTop: 4 }}>
+          {mockSlots.map((slot, i) => (
+            <button
+              key={i}
+              onClick={onBook}
+              className="ed-btn ed-btn-sm"
+              style={{
+                justifyContent: 'space-between',
+                background: featured && i === 0 ? 'var(--ed-ink)' : 'var(--ed-paper-2)',
+                color: featured && i === 0 ? '#F4EFE2' : 'var(--ed-ink-2)',
+                borderColor: featured && i === 0 ? 'var(--ed-ink)' : 'var(--ed-rule-strong)',
+                display: 'flex', alignItems: 'center',
+                fontSize: 12,
+              }}
+            >
+              {slot} <ArrowRIcon style={{ width: 10, height: 10 }} />
+            </button>
+          ))}
+          <button
+            onClick={onProfile}
+            className="ed-btn ed-btn-sm ed-btn-ghost"
+            style={{ justifyContent: 'center', fontSize: 12 }}
+          >
+            {ui.viewProfile}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
