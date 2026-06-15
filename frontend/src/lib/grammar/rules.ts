@@ -198,7 +198,7 @@ const rules: Rule[] = [
   // 15. Missing apostrophe: "cant, dont, wont, isnt, arent, wasnt, werent, doesnt, didnt, havent, hasnt, couldnt, wouldnt, shouldnt"
   {
     id: 'missing-apostrophe',
-    pattern: /\b(cant|dont|wont|isnt|arent|wasnt|werent|doesnt|didnt|havent|hasnt|couldnt|wouldnt|shouldnt|Im|Ive|Ill|Iam|youre|theyre|hes|shes|weve|theyve)\b/gi,
+    pattern: /\b(cant|dont|wont|isnt|arent|wasnt|werent|doesnt|didnt|havent|hasnt|couldnt|wouldnt|shouldnt|Im|Ive|Ill|Iam|youre|theyre|hes|shes|weve|theyve|its)\b/gi,
     check: (m) => {
       const fixes: Record<string, string> = {
         cant: "can't", dont: "don't", wont: "won't", isnt: "isn't",
@@ -207,6 +207,7 @@ const rules: Rule[] = [
         wouldnt: "wouldn't", shouldnt: "shouldn't", im: "I'm", ive: "I've",
         ill: "I'll", iam: "I am", youre: "you're", theyre: "they're",
         hes: "he's", shes: "she's", weve: "we've", theyve: "they've",
+        its: "it's",
       };
       const key = m[0].toLowerCase();
       const fix = fixes[key];
