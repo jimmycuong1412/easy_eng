@@ -781,6 +781,44 @@ export default function DashboardPage() {
 
         <hr className="ed-divider" style={{ marginTop: 40 }} />
 
+        {/* AI Tools promo card */}
+        <section style={{ marginTop: 28 }}>
+          <div
+            className="ed-card"
+            style={{
+              padding: 24,
+              display: 'grid',
+              gridTemplateColumns: '1fr auto',
+              gap: 20,
+              alignItems: 'center',
+              background: 'linear-gradient(135deg, rgba(244,89,58,0.06) 0%, rgba(99,102,241,0.06) 100%)',
+            }}
+          >
+            <div>
+              <p className="ed-eyebrow">✨ Miễn phí · AI Local</p>
+              <p
+                className="ed-serif"
+                style={{
+                  fontSize: 22,
+                  color: 'var(--ed-ink-2)',
+                  letterSpacing: '-0.015em',
+                  marginTop: 6,
+                }}
+              >
+                Kiểm tra ngữ pháp & Luyện phát âm ngay trên máy bạn.
+              </p>
+              <p className="ed-body" style={{ marginTop: 6 }}>
+                Không cần kết nối internet · Không lưu dữ liệu · Không giới hạn lần dùng
+              </p>
+            </div>
+            <Link href={`/${locale}/ai-tools`} className="ed-btn ed-btn-primary" style={{ whiteSpace: 'nowrap' }}>
+              Thử ngay <ArrowRIcon />
+            </Link>
+          </div>
+        </section>
+
+        <hr className="ed-divider" style={{ marginTop: 28 }} />
+
         {/* Footer mini-CTA */}
         <section style={{ marginTop: 28, paddingBottom: 40 }}>
           <div
