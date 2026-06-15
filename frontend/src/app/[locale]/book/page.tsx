@@ -15,10 +15,11 @@ import {
 export default function BookClassesPage() {
   const params = useParams();
   const locale = (params?.locale as string) ?? 'en';
+  const isVi = locale === 'vi';
 
   const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [step] = useState(2); // design shows step 2
+  const [step] = useState(2);
 
   const handleSelectClass = (classData: ClassData) => {
     setSelectedClass(classData);
@@ -33,6 +34,41 @@ export default function BookClassesPage() {
       setSelectedClass(null);
       setBookingSuccess(false);
     }, 3000);
+  };
+
+  const ui = {
+    confirmed: isVi ? 'Đã xác nhận lịch học.' : 'Booking confirmed.',
+    confirmedSub: isVi ? 'Chúng tôi sẽ gửi chi tiết qua email của bạn.' : "We'll send details to your email.",
+    backToTutors: isVi ? '← Quay lại danh sách' : '← Back to tutors',
+    stepOf: isVi ? `Đặt lịch · Bước ${step} / 3` : `Book a session · Step ${step} of 3`,
+    headline: isVi ? 'Chọn người bạn muốn học cùng.' : "Pick someone you'd like to talk with.",
+    subHeadline: isVi
+      ? 'Chúng tôi đã lọc ra những gia sư phù hợp với trình độ và mục tiêu của bạn.'
+      : "We've narrowed it to tutors who match your level and the things you said you'd like to work on.",
+    filters: isVi ? 'Bộ lọc' : 'Filters',
+    focus: isVi ? 'Kỹ năng' : 'Focus',
+    focusItems: isVi
+      ? ['Nói', 'Viết', 'Ngữ pháp', 'Phát âm', 'Luyện thi']
+      : ['Speaking', 'Writing', 'Grammar', 'Pronunciation', 'Test prep'],
+    speaks: isVi ? 'Ngôn ngữ gia sư' : 'Speaks',
+    speaksItems: ['English', 'Spanish', 'Portuguese', 'Mandarin', 'Arabic'],
+    timeOfDay: isVi ? 'Thời gian trong ngày' : 'Time of day',
+    timeItems: isVi
+      ? ['Sáng sớm', 'Buổi sáng', 'Buổi trưa', 'Buổi tối', 'Khuya']
+      : ['Early', 'Morning', 'Midday', 'Evening', 'Late'],
+    lessonLength: isVi ? 'Độ dài buổi học' : 'Lesson length',
+    matchCount: isVi ? '12 gia sư phù hợp · sắp xếp theo độ phù hợp' : '12 tutors match · sorted by best fit',
+    bestFit: isVi ? 'Phù hợp nhất ↓' : 'Best fit ↓',
+    more: isVi ? 'Thêm' : 'More',
+    allClasses: isVi ? 'Tất cả các lớp học' : 'All available classes',
+    backFocus: isVi ? '← Quay lại kỹ năng' : '← Back to focus',
+    continueWith: isVi ? 'Tiếp tục với Maria' : 'Continue with Maria',
+    moreTimes: isVi ? 'Xem thêm →' : 'More times →',
+    yourTutor: isVi ? 'Gia sư của bạn' : 'Your tutor',
+    today: isVi ? 'Hôm nay' : 'Today',
+    tomorrow: isVi ? 'Ngày mai' : 'Tomorrow',
+    friday: isVi ? 'Thứ Sáu' : 'Friday',
+    saturday: isVi ? 'Thứ Bảy' : 'Sat',
   };
 
   return (
@@ -51,21 +87,20 @@ export default function BookClassesPage() {
           >
             <CheckIcon style={{ width: 18, height: 18, stroke: 'oklch(0.5 0.13 150)' }} />
             <div>
-              <p style={{ fontWeight: 600, color: 'var(--ed-ink-2)', fontSize: 15 }}>Booking confirmed.</p>
-              <p className="ed-body" style={{ marginTop: 2 }}>We'll send details to your email.</p>
+              <p style={{ fontWeight: 600, color: 'var(--ed-ink-2)', fontSize: 15 }}>{ui.confirmed}</p>
+              <p className="ed-body" style={{ marginTop: 2 }}>{ui.confirmedSub}</p>
             </div>
           </div>
         )}
 
         {selectedClass ? (
-          /* Hand off to existing booking flow — wrapped in editorial shell */
           <div>
             <button
               onClick={handleCancelBooking}
               className="ed-btn ed-btn-ghost"
               style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              ← Back to tutors
+              {ui.backToTutors}
             </button>
             <BookingFlow
               selectedClass={selectedClass}
@@ -78,18 +113,18 @@ export default function BookClassesPage() {
             {/* Wizard header */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
               <div>
-                <p className="ed-eyebrow">Book a session · Step {step} of 3</p>
+                <p className="ed-eyebrow">{ui.stepOf}</p>
                 <h1
                   className="ed-display"
                   style={{ fontSize: 'clamp(32px, 4vw, 52px)', marginTop: 8, marginBottom: 0 }}
                 >
-                  Pick someone you'd like to talk with.
+                  {ui.headline}
                 </h1>
                 <p className="ed-body" style={{ marginTop: 10, maxWidth: 560 }}>
-                  We've narrowed it to tutors who match your level and the things you said you'd like to work on.
+                  {ui.subHeadline}
                 </p>
               </div>
-              <BookingStepper step={step} />
+              <BookingStepper step={step} isVi={isVi} />
             </div>
 
             <hr className="ed-divider" style={{ marginTop: 28 }} />
@@ -97,23 +132,23 @@ export default function BookClassesPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 32, marginTop: 28 }}>
               {/* Filters */}
               <aside>
-                <p className="ed-eyebrow">Filters</p>
+                <p className="ed-eyebrow">{ui.filters}</p>
 
-                <FilterBlock title="Focus">
-                  {['Speaking', 'Writing', 'Grammar', 'Pronunciation', 'Test prep'].map((t, i) => (
+                <FilterBlock title={ui.focus}>
+                  {ui.focusItems.map((t, i) => (
                     <CheckRow key={i} label={t} checked={i === 0 || i === 2} />
                   ))}
                 </FilterBlock>
 
-                <FilterBlock title="Speaks">
-                  {['English', 'Spanish', 'Portuguese', 'Mandarin', 'Arabic'].map((t, i) => (
+                <FilterBlock title={ui.speaks}>
+                  {ui.speaksItems.map((t, i) => (
                     <CheckRow key={i} label={t} checked={i === 0 || i === 1} />
                   ))}
                 </FilterBlock>
 
-                <FilterBlock title="Time of day">
+                <FilterBlock title={ui.timeOfDay}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                    {['Early', 'Morning', 'Midday', 'Evening', 'Late'].map((t, i) => (
+                    {ui.timeItems.map((t, i) => (
                       <span
                         key={i}
                         className={`ed-chip ${i === 3 ? 'ed-chip-ink' : ''}`}
@@ -125,7 +160,7 @@ export default function BookClassesPage() {
                   </div>
                 </FilterBlock>
 
-                <FilterBlock title="Lesson length">
+                <FilterBlock title={ui.lessonLength}>
                   <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                     {['25 min', '50 min', '90 min'].map((t, i) => (
                       <span
@@ -143,11 +178,11 @@ export default function BookClassesPage() {
               {/* Tutor list */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <span className="ed-tiny">12 tutors match · sorted by best fit</span>
+                  <span className="ed-tiny">{ui.matchCount}</span>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="ed-btn ed-btn-sm">Best fit ↓</button>
+                    <button className="ed-btn ed-btn-sm">{ui.bestFit}</button>
                     <button className="ed-btn ed-btn-sm ed-btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <FilterIcon style={{ width: 13, height: 13 }} /> More
+                      <FilterIcon style={{ width: 13, height: 13 }} /> {ui.more}
                     </button>
                   </div>
                 </div>
@@ -156,41 +191,44 @@ export default function BookClassesPage() {
                   <TutorCard
                     selected
                     name="Maria Rojas" loc="Buenos Aires" speaks="EN, ES, PT"
-                    tag="Your tutor"
+                    tag={ui.yourTutor}
                     bio="Calm, patient, and very good with people who freeze up. Specialises in conversational fluency and writing for work."
                     rate="$24/h" rating="4.96" sessions="2,310"
-                    slots={['Today 2pm', 'Today 6pm', 'Tomorrow 9am']}
-                    focus={['Speaking', 'Writing', 'Business']}
+                    slots={[`${ui.today} 2pm`, `${ui.today} 6pm`, `${ui.tomorrow} 9am`]}
+                    focus={isVi ? ['Nói', 'Viết', 'Kinh doanh'] : ['Speaking', 'Writing', 'Business']}
+                    moreTimes={ui.moreTimes}
                     onSelect={() => {}}
                   />
                   <TutorCard
                     name="Daniel Khoury" loc="Beirut" speaks="EN, AR, FR"
                     bio="Former journalist. Loves working on argument structure, clarity, and finding your voice in writing."
                     rate="$28/h" rating="4.91" sessions="1,840"
-                    slots={['Today 8pm', 'Friday 7am', 'Friday 10am']}
-                    focus={['Writing', 'Grammar']}
+                    slots={[`${ui.today} 8pm`, `${ui.friday} 7am`, `${ui.friday} 10am`]}
+                    focus={isVi ? ['Viết', 'Ngữ pháp'] : ['Writing', 'Grammar']}
+                    moreTimes={ui.moreTimes}
                     onSelect={() => {}}
                   />
                   <TutorCard
                     name="Yuki Tanaka" loc="Kyoto" speaks="EN, JA"
                     bio="Direct and structured. Best for learners who want to drill and want feedback that doesn't sugar-coat."
                     rate="$22/h" rating="4.88" sessions="3,021"
-                    slots={['Friday 6am', 'Friday 8am', 'Sat 11am']}
-                    focus={['Pronunciation', 'Drills']}
+                    slots={[`${ui.friday} 6am`, `${ui.friday} 8am`, `${ui.saturday} 11am`]}
+                    focus={isVi ? ['Phát âm', 'Luyện tập'] : ['Pronunciation', 'Drills']}
+                    moreTimes={ui.moreTimes}
                     onSelect={() => {}}
                   />
                 </div>
 
                 {/* Also render the real class catalog below the editorial tutors */}
                 <div style={{ marginTop: 32 }}>
-                  <p className="ed-eyebrow" style={{ marginBottom: 14 }}>All available classes</p>
+                  <p className="ed-eyebrow" style={{ marginBottom: 14 }}>{ui.allClasses}</p>
                   <ClassCatalog onSelectClass={handleSelectClass} />
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
-                  <button className="ed-btn ed-btn-ghost">← Back to focus</button>
+                  <button className="ed-btn ed-btn-ghost">{ui.backFocus}</button>
                   <button className="ed-btn ed-btn-primary ed-btn-lg" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    Continue with Maria <ArrowRIcon />
+                    {ui.continueWith} <ArrowRIcon />
                   </button>
                 </div>
               </div>
@@ -205,8 +243,8 @@ export default function BookClassesPage() {
 }
 
 /* ---- Stepper ---- */
-function BookingStepper({ step }: { step: number }) {
-  const steps = ['Focus', 'Tutor', 'Time'];
+function BookingStepper({ step, isVi }: { step: number; isVi: boolean }) {
+  const steps = isVi ? ['Kỹ năng', 'Gia sư', 'Thời gian'] : ['Focus', 'Tutor', 'Time'];
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, marginLeft: 24 }}>
       {steps.map((s, i) => {
@@ -275,11 +313,11 @@ function CheckRow({ label, checked }: { label: string; checked: boolean }) {
 
 /* ---- Tutor card ---- */
 function TutorCard({
-  selected, name, loc, speaks, tag, bio, rate, rating, sessions, slots, focus, onSelect,
+  selected, name, loc, speaks, tag, bio, rate, rating, sessions, slots, focus, moreTimes, onSelect,
 }: {
   selected?: boolean; name: string; loc: string; speaks: string; tag?: string;
   bio: string; rate: string; rating: string; sessions: string;
-  slots: string[]; focus: string[]; onSelect: () => void;
+  slots: string[]; focus: string[]; moreTimes: string; onSelect: () => void;
 }) {
   return (
     <div
@@ -338,7 +376,7 @@ function TutorCard({
             </button>
           ))}
           <button className="ed-btn ed-btn-sm ed-btn-ghost" style={{ justifyContent: 'center' }}>
-            More times →
+            {moreTimes}
           </button>
         </div>
       </div>
