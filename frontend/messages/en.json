@@ -37,8 +37,8 @@
       "headline": "Master English.",
       "headlineAccent": "Fluency Without Limits.",
       "subhead": "Learn from world-class native-speaker tutors through structured conversational tracks. From your first \"hello\" to confident C2 — at your pace, on your terms.",
-      "exploreCourses": "Explore Courses",
-      "viewPricing": "View Pricing",
+      "exploreCourses": "Start for Free",
+      "viewPricing": "See Free Features",
       "fromReviews": "from 38k reviews",
       "moneyBack": "30-day money-back guarantee",
       "lifetimeAccess": "Lifetime access",
@@ -54,6 +54,22 @@
       "stat4Num": "95%",
       "stat4Label": "Fluency Success Rate",
       "stat4Sub": "goal completed in 6mo"
+    },
+    "freeFeatures": {
+      "eyebrow": "100% free, no credit card",
+      "heading": "Start today.",
+      "headingAccent": "Spend nothing.",
+      "subhead": "8 powerful English learning tools — completely free forever. No credit card, no commitment.",
+      "startFree": "Create your free account",
+      "learnMore": "See all features",
+      "items": [
+        { "icon": "check", "title": "AI Grammar Checker", "desc": "Instant sentence analysis, plain-English explanations, smart correction suggestions.", "badge": "Unlimited", "href": "/ai-tools" },
+        { "icon": "mic", "title": "Pronunciation Feedback", "desc": "Record your voice, get a pronunciation score and detailed improvement guidance.", "badge": "Unlimited", "href": "/ai-tools" },
+        { "icon": "book", "title": "Vocabulary Notebook + SRS Flashcards", "desc": "Save new words, review with a spaced-repetition algorithm so they stick.", "badge": "Free", "href": "/student/vocabulary" },
+        { "icon": "path", "title": "Personalized Learning Path", "desc": "The system auto-designs an A1→C2 roadmap based on your goals and level.", "badge": "Free", "href": "/learning-path" },
+        { "icon": "target", "title": "Weekly Learning Goals", "desc": "Set targets, track your streak and get reminders to keep the habit going.", "badge": "Free", "href": "/dashboard" },
+        { "icon": "chart", "title": "Progress Report", "desc": "Detailed stats: words learned, practice time, pronunciation scores month over month.", "badge": "Free", "href": "/student/report" }
+      ]
     },
     "categories": {
       "eyebrow": "Browse by topic",
@@ -148,7 +164,7 @@
       "billedMonthly": "Billed monthly{perSeat}",
       "perSeatSuffix": " / seat",
       "tiers": {
-        "free": { "name": "Free", "blurb": "Basic access. Forever free.", "cta": "Start free", "features": ["100+ beginner lessons (A1–A2)", "Daily practice exercises", "Mobile + desktop access", "Community forum"] },
+        "free": { "name": "Free", "blurb": "8 real tools. Forever free.", "cta": "Start free", "features": ["AI Grammar Checker (unlimited)", "Real-time Pronunciation Feedback", "Vocabulary Notebook + SRS Flashcards", "Personalized Learning Path A1→C2", "Weekly Learning Goals", "Monthly Progress Report", "100+ beginner lessons (A1–A2)", "Community forum"] },
         "pro": { "name": "Pro", "blurb": "Unlimited access. Most popular.", "cta": "Get Pro", "features": ["All courses A1 → C2", "4 hrs / mo 1-on-1 speaking time", "AI speaking practice (unlimited)", "Verified completion certificate", "Priority support"] },
         "team": { "name": "Team", "blurb": "For corporates & organizations.", "cta": "Contact sales", "features": ["Everything in Pro", "Admin dashboard & SSO", "Group reporting & analytics", "Custom learning paths", "Dedicated success manager"] }
       }

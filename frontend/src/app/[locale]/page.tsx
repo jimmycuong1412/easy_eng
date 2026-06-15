@@ -438,6 +438,196 @@ function Hero({ locale, t }: { locale: string; t: ReturnType<typeof useTranslati
 }
 
 // -----------------------------------------------------------------------------
+// Free Features Section
+// -----------------------------------------------------------------------------
+
+type FreeFeatureItem = { icon: string; title: string; desc: string; badge: string; href: string };
+
+function FreeFeatureIcon({ kind }: { kind: string }) {
+  const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  switch (kind) {
+    case 'check':
+      return <svg viewBox="0 0 24 24" width="20" height="20" {...common}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></svg>;
+    case 'mic':
+      return <svg viewBox="0 0 24 24" width="20" height="20" {...common}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3M9 21h6" /></svg>;
+    case 'book':
+      return <svg viewBox="0 0 24 24" width="20" height="20" {...common}><path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" /></svg>;
+    case 'path':
+      return <svg viewBox="0 0 24 24" width="20" height="20" {...common}><circle cx="5" cy="19" r="2" /><circle cx="19" cy="5" r="2" /><path d="M5 17V7a2 2 0 012-2h10" /><path d="M10 19h9" /></svg>;
+    case 'target':
+      return <svg viewBox="0 0 24 24" width="20" height="20" {...common}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>;
+    case 'chart':
+      return <svg viewBox="0 0 24 24" width="20" height="20" {...common}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
+    default:
+      return <svg viewBox="0 0 24 24" width="20" height="20" {...common}><circle cx="12" cy="12" r="9" /></svg>;
+  }
+}
+
+function FreeFeaturesSection({ locale, t }: { locale: string; t: ReturnType<typeof useTranslations<'landing'>> }) {
+  const isVi = locale === 'vi';
+  const COLORS = ['#7c5cff', '#34d399', '#4c6bff', '#ec4899', '#fbbf24', '#ff7a59'];
+
+  const items: FreeFeatureItem[] = isVi ? [
+    { icon: 'check', title: 'Kiểm tra ngữ pháp AI', desc: 'Phân tích câu tức thì, giải thích bằng tiếng Việt, gợi ý sửa lỗi thông minh.', badge: 'Không giới hạn', href: '/ai-tools' },
+    { icon: 'mic', title: 'Phản hồi phát âm', desc: 'Thu âm giọng nói, nhận điểm phát âm và hướng dẫn cải thiện chi tiết.', badge: 'Không giới hạn', href: '/ai-tools' },
+    { icon: 'book', title: 'Sổ từ vựng + Flashcard SRS', desc: 'Lưu từ mới, ôn tập theo thuật toán spaced-repetition để nhớ lâu hơn.', badge: 'Miễn phí', href: '/student/vocabulary' },
+    { icon: 'path', title: 'Lộ trình học cá nhân hóa', desc: 'Hệ thống tự động thiết kế lộ trình A1→C2 theo mục tiêu và trình độ của bạn.', badge: 'Miễn phí', href: '/learning-path' },
+    { icon: 'target', title: 'Mục tiêu học hàng tuần', desc: 'Đặt mục tiêu, theo dõi streak và nhận nhắc nhở để duy trì thói quen học.', badge: 'Miễn phí', href: '/dashboard' },
+    { icon: 'chart', title: 'Báo cáo tiến độ', desc: 'Xem thống kê chi tiết: số từ học, thời gian luyện, điểm phát âm qua từng tháng.', badge: 'Miễn phí', href: '/student/report' },
+  ] : [
+    { icon: 'check', title: 'AI Grammar Checker', desc: 'Instant sentence analysis, plain-English explanations, smart correction suggestions.', badge: 'Unlimited', href: '/ai-tools' },
+    { icon: 'mic', title: 'Pronunciation Feedback', desc: 'Record your voice, get a pronunciation score and detailed improvement guidance.', badge: 'Unlimited', href: '/ai-tools' },
+    { icon: 'book', title: 'Vocabulary Notebook + SRS Flashcards', desc: 'Save new words, review with a spaced-repetition algorithm so they stick.', badge: 'Free', href: '/student/vocabulary' },
+    { icon: 'path', title: 'Personalized Learning Path', desc: 'The system auto-designs an A1→C2 roadmap based on your goals and level.', badge: 'Free', href: '/learning-path' },
+    { icon: 'target', title: 'Weekly Learning Goals', desc: 'Set targets, track your streak and get reminders to keep the habit going.', badge: 'Free', href: '/dashboard' },
+    { icon: 'chart', title: 'Progress Report', desc: 'Detailed stats: words learned, practice time, pronunciation scores month over month.', badge: 'Free', href: '/student/report' },
+  ];
+
+  const ui = {
+    eyebrow: isVi ? '100% miễn phí, không cần thẻ' : '100% free, no credit card',
+    heading: isVi ? 'Bắt đầu ngay hôm nay.' : 'Start today.',
+    headingAccent: isVi ? 'Không tốn một đồng.' : 'Spend nothing.',
+    subhead: isVi
+      ? '6 công cụ học tiếng Anh mạnh mẽ — hoàn toàn miễn phí mãi mãi. Không cần thẻ tín dụng, không cần cam kết.'
+      : '6 powerful English learning tools — completely free forever. No credit card, no commitment.',
+    startFree: isVi ? 'Tạo tài khoản miễn phí' : 'Create your free account',
+    learnMore: isVi ? 'Xem tất cả tính năng' : 'See all features',
+    tryIt: isVi ? 'Dùng thử →' : 'Try it →',
+  };
+
+  return (
+    <section
+      className="et-section"
+      id="free-features"
+      style={{
+        paddingTop: 64,
+        paddingBottom: 64,
+        background: 'linear-gradient(180deg, #060f2e 0%, #0a1538 100%)',
+        borderTop: '1px solid rgba(91,141,255,0.13)',
+        borderBottom: '1px solid rgba(91,141,255,0.13)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div className="et-glow" style={{ width: 520, height: 520, background: '#34d399', top: -160, right: '5%', opacity: 0.07 }} />
+      <div className="et-glow" style={{ width: 420, height: 420, background: '#7c5cff', bottom: -120, left: '5%', opacity: 0.1 }} />
+
+      <div className="et-container" style={{ position: 'relative' }}>
+        <div className="et-col et-gap-4" style={{ alignItems: 'center', textAlign: 'center', marginBottom: 52 }}>
+          <span
+            className="et-chip"
+            style={{
+              background: 'rgba(52, 211, 153, 0.12)',
+              color: '#34d399',
+              border: '1px solid rgba(52, 211, 153, 0.35)',
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              padding: '5px 14px',
+            }}
+          >
+            {ui.eyebrow}
+          </span>
+          <h2 className="et-h2" style={{ maxWidth: 580 }}>
+            {ui.heading}{' '}
+            <span className="et-grad-text">{ui.headingAccent}</span>
+          </h2>
+          <p className="et-body" style={{ maxWidth: 520 }}>
+            {ui.subhead}
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 18,
+            marginBottom: 40,
+          }}
+        >
+          {items.map((item, i) => {
+            const color = COLORS[i % COLORS.length];
+            return (
+              <Link
+                key={item.title}
+                href={`/${locale}${item.href}`}
+                style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+              >
+                <div
+                  className="et-card hoverable"
+                  style={{
+                    padding: 24,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 14,
+                    height: '100%',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div className="et-row et-gap-3" style={{ alignItems: 'flex-start' }}>
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        flex: 'none',
+                        borderRadius: 12,
+                        background: `${color}1f`,
+                        border: `1px solid ${color}55`,
+                        display: 'grid',
+                        placeItems: 'center',
+                        color,
+                      }}
+                    >
+                      <FreeFeatureIcon kind={item.icon} />
+                    </div>
+                    <div className="et-col" style={{ flex: 1, gap: 4 }}>
+                      <div className="et-h3" style={{ fontSize: 15 }}>{item.title}</div>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          letterSpacing: '0.07em',
+                          padding: '2px 8px',
+                          borderRadius: 999,
+                          background: `${color}18`,
+                          color,
+                          border: `1px solid ${color}40`,
+                          alignSelf: 'flex-start',
+                        }}
+                      >
+                        {item.badge}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="et-meta" style={{ fontSize: 14, lineHeight: 1.55, margin: 0 }}>
+                    {item.desc}
+                  </p>
+                  <div
+                    className="et-row et-gap-2"
+                    style={{ marginTop: 'auto', color, fontSize: 13, fontWeight: 500 }}
+                  >
+                    <span>{ui.tryIt}</span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="et-row et-gap-3" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link href={`/${locale}/auth/signup`} className="et-btn primary lg">
+            {ui.startFree}
+          </Link>
+          <a href="#pricing" className="et-btn ghost lg">
+            {ui.learnMore}
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // Categories
 // -----------------------------------------------------------------------------
 
@@ -1954,6 +2144,7 @@ export default function HomePage() {
       <TopNav locale={locale} t={t} />
       <main id="main-content">
         <Hero locale={locale} t={t} />
+        <FreeFeaturesSection locale={locale} t={t} />
         <Categories t={t} />
         <Courses t={t} />
         <WhyEasyEng t={t} />

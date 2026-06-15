@@ -37,8 +37,8 @@
       "headline": "Nói tiếng Anh như người bản ngữ.",
       "headlineAccent": "Tự tin, lưu loát, không sợ sai.",
       "subhead": "Học từ các gia sư bản ngữ đẳng cấp thế giới qua các lộ trình hội thoại có cấu trúc. Từ lần đầu nói \"hello\" đến C2 tự tin — theo tốc độ của bạn, theo điều kiện của bạn.",
-      "exploreCourses": "Khám phá khóa học",
-      "viewPricing": "Xem bảng giá",
+      "exploreCourses": "Bắt đầu miễn phí",
+      "viewPricing": "Xem tính năng miễn phí",
       "fromReviews": "từ 38k đánh giá",
       "moneyBack": "Hoàn tiền trong 30 ngày",
       "lifetimeAccess": "Truy cập vĩnh viễn",
@@ -54,6 +54,22 @@
       "stat4Num": "92%",
       "stat4Label": "Học viên hài lòng",
       "stat4Sub": "tiếp tục học sau 3 tháng đầu"
+    },
+    "freeFeatures": {
+      "eyebrow": "100% miễn phí, không cần thẻ",
+      "heading": "Bắt đầu ngay hôm nay.",
+      "headingAccent": "Không tốn một đồng.",
+      "subhead": "8 công cụ học tiếng Anh mạnh mẽ — hoàn toàn miễn phí mãi mãi. Không cần thẻ tín dụng, không cần cam kết.",
+      "startFree": "Tạo tài khoản miễn phí",
+      "learnMore": "Xem tất cả tính năng",
+      "items": [
+        { "icon": "check", "title": "Kiểm tra ngữ pháp AI", "desc": "Phân tích câu tức thì, giải thích bằng tiếng Việt, gợi ý sửa lỗi thông minh.", "badge": "Không giới hạn", "href": "/ai-tools" },
+        { "icon": "mic", "title": "Phản hồi phát âm", "desc": "Thu âm giọng nói, nhận điểm phát âm và hướng dẫn cải thiện chi tiết.", "badge": "Không giới hạn", "href": "/ai-tools" },
+        { "icon": "book", "title": "Sổ từ vựng + Flashcard SRS", "desc": "Lưu từ mới, ôn tập theo thuật toán spaced-repetition để nhớ lâu hơn.", "badge": "Miễn phí", "href": "/student/vocabulary" },
+        { "icon": "path", "title": "Lộ trình học cá nhân hóa", "desc": "Hệ thống tự động thiết kế lộ trình A1→C2 theo mục tiêu và trình độ của bạn.", "badge": "Miễn phí", "href": "/learning-path" },
+        { "icon": "target", "title": "Mục tiêu học hàng tuần", "desc": "Đặt mục tiêu, theo dõi streak và nhận nhắc nhở để duy trì thói quen học.", "badge": "Miễn phí", "href": "/dashboard" },
+        { "icon": "chart", "title": "Báo cáo tiến độ", "desc": "Xem thống kê chi tiết: số từ học, thời gian luyện, điểm phát âm qua từng tháng.", "badge": "Miễn phí", "href": "/student/report" }
+      ]
     },
     "categories": {
       "eyebrow": "Duyệt theo chủ đề",
@@ -148,7 +164,7 @@
       "billedMonthly": "Thanh toán hàng tháng{perSeat}",
       "perSeatSuffix": " / chỗ",
       "tiers": {
-        "free": { "name": "Miễn phí", "blurb": "Truy cập cơ bản. Miễn phí mãi.", "cta": "Bắt đầu miễn phí", "features": ["100+ bài học cơ bản (A1–A2)", "Bài tập luyện tập hàng ngày", "Truy cập mobile + desktop", "Diễn đàn cộng đồng"] },
+        "free": { "name": "Miễn phí", "blurb": "8 công cụ thực sự miễn phí. Mãi mãi.", "cta": "Bắt đầu miễn phí", "features": ["Kiểm tra ngữ pháp AI (không giới hạn)", "Phản hồi phát âm thời gian thực", "Sổ từ vựng + Flashcard SRS", "Lộ trình học cá nhân hóa A1→C2", "Mục tiêu học tập hàng tuần", "Báo cáo tiến độ hàng tháng", "100+ bài học cơ bản (A1–A2)", "Diễn đàn cộng đồng"] },
         "pro": { "name": "Pro", "blurb": "Truy cập không giới hạn. Phổ biến nhất.", "cta": "Dùng Pro", "features": ["Tất cả khóa học A1 → C2", "4 giờ/tháng nói 1-on-1", "Thực hành nói AI (không giới hạn)", "Chứng chỉ hoàn thành được xác minh", "Hỗ trợ ưu tiên"] },
         "team": { "name": "Nhóm", "blurb": "Cho doanh nghiệp & tổ chức.", "cta": "Liên hệ sales", "features": ["Tất cả tính năng Pro", "Bảng điều khiển Admin & SSO", "Báo cáo & phân tích nhóm", "Lộ trình học tập tùy chỉnh", "Người quản lý thành công riêng"] }
       }
