@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserBookings } from '@/lib/queries';
+import { ClassNoteEditor } from '@/components/student/ClassNoteEditor';
 
 // Animation variants
 const containerVariants = {
@@ -419,6 +420,7 @@ export default function MyBookingsPage() {
                           ) : null}
                         </div>
                       </div>
+                      <ClassNoteEditor bookingId={booking.id} />
                     </CardContent>
                   </Card>
                 </motion.div>

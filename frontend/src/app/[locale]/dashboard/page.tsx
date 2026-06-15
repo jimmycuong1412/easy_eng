@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getDashboardData, getTeachers, getStudentProgress } from '@/lib/queries';
 import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
 import StreakWidget from '@/components/dashboard/StreakWidget';
+import WeeklyGoalWidget from '@/components/dashboard/WeeklyGoalWidget';
 import DailyLessonCard from '@/components/dashboard/DailyLessonCard';
 import PushReminderToggle from '@/components/dashboard/PushReminderToggle';
 import FreeTrialBanner from '@/components/dashboard/FreeTrialBanner';
@@ -170,10 +171,28 @@ export default function DashboardPage() {
           <FreeTrialBanner />
         </div>
 
-        {/* Daily streak — retention hero */}
+        {/* Daily streak + weekly goal */}
         <div style={{ marginBottom: 18 }}>
           <StreakWidget />
         </div>
+        <div style={{ marginBottom: 18 }}>
+          <WeeklyGoalWidget />
+        </div>
+
+        {/* Quick links: vocab, quiz, report */}
+        {profile?.role === 'student' && (
+          <div style={{ marginBottom: 18, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <a href={`/${locale}/student/vocabulary`} className="rounded-lg px-3 py-2 text-[12px] font-medium flex items-center gap-1.5" style={{ background: 'var(--et-bg-2)', color: 'var(--et-fg-2)', border: '1px solid var(--et-line)' }}>
+              ⭐ Từ vựng của tôi
+            </a>
+            <a href={`/${locale}/student/onboarding/quiz`} className="rounded-lg px-3 py-2 text-[12px] font-medium flex items-center gap-1.5" style={{ background: 'var(--et-bg-2)', color: 'var(--et-fg-2)', border: '1px solid var(--et-line)' }}>
+              🎯 Kiểm tra trình độ
+            </a>
+            <a href={`/${locale}/student/report`} className="rounded-lg px-3 py-2 text-[12px] font-medium flex items-center gap-1.5" style={{ background: 'var(--et-bg-2)', color: 'var(--et-fg-2)', border: '1px solid var(--et-line)' }}>
+              📊 Báo cáo tiến bộ
+            </a>
+          </div>
+        )}
 
         {/* Bài học hôm nay — daily lesson */}
         <div style={{ marginBottom: 18 }}>

@@ -15,6 +15,8 @@ import { Volume2 } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
 import { ProgressRibbon } from './ProgressRibbon';
+import { SaveWordButton } from '@/components/vocabulary/SaveWordButton';
+import { useSavedWords } from '@/hooks/useSavedWords';
 
 export interface VocabularyItem {
   id: string;
@@ -51,6 +53,7 @@ export function VocabularyTable({
   const [known, setKnown] = useState<Set<string>>(new Set());
   const [awarded, setAwarded] = useState<{ gems: number; xp: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { savedIds, toggle: toggleSave } = useSavedWords(false);
 
   const completionPct = useMemo(
     () => (items.length === 0 ? 0 : Math.round((known.size / items.length) * 100)),
@@ -175,16 +178,27 @@ export function VocabularyTable({
                 <p className="mt-1">{it.example_vi}</p>
               </details>
 
-              <button
-                type="button"
-                onClick={() => toggle(it.id)}
-                aria-pressed={isKnown}
-                className={`ed-chip mt-1 self-start text-[11px] transition-colors ${
-                  isKnown ? 'ed-chip-coral' : ''
-                }`}
-              >
-                {isKnown ? '✓ Đã thuộc' : 'Tôi đã thuộc'}
-              </button>
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => toggle(it.id)}
+                  aria-pressed={isKnown}
+                  className={`ed-chip text-[11px] transition-colors ${
+                    isKnown ? 'ed-chip-coral' : ''
+                  }`}
+                >
+                  {isKnown ? '✓ Đã thuộc' : 'Tôi đã thuộc'}
+                </button>
+                {userId && (
+                  <SaveWordButton
+                    vocabularyItemId={it.id}
+                    materialId={materialId}
+                    isSaved={savedIds.has(it.id)}
+                    onToggle={toggleSave}
+                    compact
+                  />
+                )}
+              </div>
             </li>
           );
         })}
