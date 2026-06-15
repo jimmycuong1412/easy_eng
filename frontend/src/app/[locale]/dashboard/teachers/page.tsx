@@ -312,7 +312,6 @@ export default function TeachersPage() {
                   isVi={isVi}
                   featured={idx === 0}
                   ui={ui}
-                  onBook={() => router.push(`/${locale}/book`)}
                   onProfile={() => router.push(`/${locale}/dashboard/teachers/${teacher.id}`)}
                 />
               ))}
@@ -360,23 +359,18 @@ function CheckRow({ label, checked, onClick }: { label: string; checked: boolean
 
 /* ── Tutor card ── */
 function TutorCard({
-  teacher, locale, isVi, featured, ui, onBook, onProfile,
+  teacher, locale, isVi, featured, ui, onProfile,
 }: {
   teacher: Teacher;
   locale: string;
   isVi: boolean;
   featured: boolean;
   ui: Record<string, any>;
-  onBook: () => void;
   onProfile: () => void;
 }) {
   const focusLabels = isVi
     ? ['Nói', 'Ngữ pháp', 'Kinh doanh']
     : ['Speaking', 'Grammar', 'Business'];
-
-  const mockSlots = isVi
-    ? ['Hôm nay 14:00', 'Hôm nay 18:00', 'Ngày mai 09:00']
-    : ['Today 2pm', 'Today 6pm', 'Tomorrow 9am'];
 
   return (
     <div
@@ -460,31 +454,28 @@ function TutorCard({
         </div>
       </div>
 
-      {/* Right: price + slots */}
+      {/* Right: price + CTA */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', flexShrink: 0 }}>
         <p className="ed-serif" style={{ fontSize: 20, color: 'var(--ed-ink-2)' }}>
           {formatNumber(teacher.hourlyRate)}đ
         </p>
         <span className="ed-tiny" style={{ marginTop: -6 }}>{ui.perSession}</span>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 150, marginTop: 4 }}>
-          {mockSlots.map((slot, i) => (
-            <button
-              key={i}
-              onClick={onBook}
-              className="ed-btn ed-btn-sm"
-              style={{
-                justifyContent: 'space-between',
-                background: featured && i === 0 ? 'var(--ed-ink)' : 'var(--ed-paper-2)',
-                color: featured && i === 0 ? '#F4EFE2' : 'var(--ed-ink-2)',
-                borderColor: featured && i === 0 ? 'var(--ed-ink)' : 'var(--ed-rule-strong)',
-                display: 'flex', alignItems: 'center',
-                fontSize: 12,
-              }}
-            >
-              {slot} <ArrowRIcon style={{ width: 10, height: 10 }} />
-            </button>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 150, marginTop: 4 }}>
+          <button
+            onClick={onProfile}
+            className="ed-btn"
+            style={{
+              justifyContent: 'center', fontSize: 13,
+              background: 'var(--ed-coral-ink)',
+              color: '#fff',
+              borderColor: 'transparent',
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 18px',
+            }}
+          >
+            {ui.bookNow} <ArrowRIcon style={{ width: 11, height: 11 }} />
+          </button>
           <button
             onClick={onProfile}
             className="ed-btn ed-btn-sm ed-btn-ghost"
