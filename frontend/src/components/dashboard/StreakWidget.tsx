@@ -3,15 +3,16 @@
 /**
  * StreakWidget
  *
- * Dashboard hero card: 🔥 streak + calendar view (tuần / tháng / năm).
- * Per-day history is reconstructed from last_attendance_date + current_streak
- * (the DB stores only aggregate data, no per-row log).
+ * Dashboard hero card: 🔥 streak + calendar views (Tuần / Tháng / Năm).
+ * Active dates come from daily_activity_log via useActivityDates (real per-day
+ * history). Falls back gracefully to empty set if DB is unavailable.
  */
 
 import React, { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStreak } from '@/hooks/useStreak';
 import { useXpSummary } from '@/hooks/useXpSummary';
+import { useActivityDates } from '@/hooks/useActivityDates';
 import ShareAchievement from '@/components/common/ShareAchievement';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -27,28 +28,14 @@ const VIEW_LABELS: Record<View, string> = {
 const VI_MONTHS = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
 const VI_DAYS   = ['T2','T3','T4','T5','T6','T7','CN'];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Date helpers (Vietnam TZ) ────────────────────────────────────────────────
 
-/** Returns YYYY-MM-DD in Vietnam timezone */
 function toVNDate(d: Date): string {
   return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
 function vnToday(): string {
   return toVNDate(new Date());
-}
-
-/** Build the Set of active dates from last_attendance_date + current_streak */
-function buildActiveDates(lastDate: string | null, streak: number): Set<string> {
-  const active = new Set<string>();
-  if (!lastDate || streak <= 0) return active;
-  const base = new Date(lastDate + 'T00:00:00+07:00');
-  for (let i = 0; i < streak; i++) {
-    const d = new Date(base);
-    d.setDate(d.getDate() - i);
-    active.add(toVNDate(d));
-  }
-  return active;
 }
 
 function addDays(dateStr: string, n: number): string {
@@ -69,23 +56,40 @@ function addYears(dateStr: string, n: number): string {
   return toVNDate(d);
 }
 
+/** Returns [from, to] date strings for the range needed by the current view+anchor */
+function rangeForView(view: View, anchor: string): [string, string] {
+  const d = new Date(anchor + 'T00:00:00+07:00');
+  if (view === 'week') {
+    const dow = (d.getDay() + 6) % 7;
+    const mon = new Date(d); mon.setDate(mon.getDate() - dow);
+    const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+    return [toVNDate(mon), toVNDate(sun)];
+  }
+  if (view === 'month') {
+    const y = d.getFullYear(), m = d.getMonth();
+    const first = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+    const last  = toVNDate(new Date(y, m + 1, 0));
+    return [first, last];
+  }
+  // year
+  const y = d.getFullYear();
+  return [`${y}-01-01`, `${y}-12-31`];
+}
+
 // ─── Week View ────────────────────────────────────────────────────────────────
 
 function WeekView({ anchor, activeDates }: { anchor: string; activeDates: Set<string> }) {
-  // anchor = any date in the week; build Mon–Sun
   const anchorDate = new Date(anchor + 'T00:00:00+07:00');
-  const dow = (anchorDate.getDay() + 6) % 7; // 0=Mon
+  const dow = (anchorDate.getDay() + 6) % 7;
   const monday = new Date(anchorDate);
   monday.setDate(monday.getDate() - dow);
+  const today = vnToday();
 
   const cells = VI_DAYS.map((label, i) => {
     const d = new Date(monday);
     d.setDate(d.getDate() + i);
     const key = toVNDate(d);
-    const isToday = key === vnToday();
-    const lit = activeDates.has(key);
-    const isFuture = key > vnToday();
-    return { label, key, isToday, lit, isFuture };
+    return { label, key, isToday: key === today, lit: activeDates.has(key), isFuture: key > today };
   });
 
   return (
@@ -96,10 +100,10 @@ function WeekView({ anchor, activeDates }: { anchor: string; activeDates: Set<st
             className="grid h-9 w-9 place-items-center rounded-lg text-xs font-medium transition-all"
             style={{
               background: c.lit ? 'var(--et-coral)' : 'var(--et-bg-3)',
-              color: c.lit ? '#fff' : c.isFuture ? 'var(--et-fg-2)' : 'var(--et-fg)',
+              color: c.lit ? '#fff' : 'var(--et-fg)',
               outline: c.isToday ? '2px solid var(--et-coral)' : 'none',
               outlineOffset: 2,
-              opacity: c.isFuture ? 0.35 : 1,
+              opacity: c.isFuture ? 0.3 : 1,
             }}
           >
             {c.lit ? '🔥' : c.isToday ? '·' : ''}
@@ -118,15 +122,12 @@ function WeekView({ anchor, activeDates }: { anchor: string; activeDates: Set<st
 function MonthView({ anchor, activeDates }: { anchor: string; activeDates: Set<string> }) {
   const anchorDate = new Date(anchor + 'T00:00:00+07:00');
   const year = anchorDate.getFullYear();
-  const month = anchorDate.getMonth(); // 0-based
-
-  // First day of month and its weekday (Mon=0)
+  const month = anchorDate.getMonth();
   const firstDay = new Date(year, month, 1);
   const startDow = (firstDay.getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const today = vnToday();
 
-  // Build grid: leading empty slots + days
   const slots: Array<{ day: number | null; key: string | null }> = [];
   for (let i = 0; i < startDow; i++) slots.push({ day: null, key: null });
   for (let d = 1; d <= daysInMonth; d++) {
@@ -136,13 +137,11 @@ function MonthView({ anchor, activeDates }: { anchor: string; activeDates: Set<s
 
   return (
     <div className="mt-4">
-      {/* Weekday headers */}
       <div className="grid grid-cols-7 mb-1">
         {VI_DAYS.map((l) => (
           <div key={l} className="text-center text-[10px]" style={{ color: 'var(--et-fg-2)' }}>{l}</div>
         ))}
       </div>
-      {/* Day cells */}
       <div className="grid grid-cols-7 gap-y-1">
         {slots.map((s, i) => {
           if (!s.key) return <div key={`e-${i}`} />;
@@ -193,19 +192,13 @@ function YearView({ anchor, activeDates }: { anchor: string; activeDates: Set<st
         return (
           <div key={mLabel}>
             <div className="flex items-center justify-between mb-1.5">
-              <span
-                className="text-xs font-medium"
-                style={{ color: isCurrent ? 'var(--et-coral)' : 'var(--et-fg)' }}
-              >
+              <span className="text-xs font-medium" style={{ color: isCurrent ? 'var(--et-coral)' : 'var(--et-fg)' }}>
                 {mLabel}
               </span>
               {fireCount > 0 && (
-                <span className="text-[10px]" style={{ color: 'var(--et-fg-2)' }}>
-                  {fireCount}🔥
-                </span>
+                <span className="text-[10px]" style={{ color: 'var(--et-fg-2)' }}>{fireCount}🔥</span>
               )}
             </div>
-            {/* Mini bar grid: 1 square per day */}
             <div className="flex flex-wrap gap-0.5">
               {Array.from({ length: daysInMonth }, (_, d) => {
                 const key = `${year}-${String(monthNum).padStart(2, '0')}-${String(d + 1).padStart(2, '0')}`;
@@ -217,18 +210,13 @@ function YearView({ anchor, activeDates }: { anchor: string; activeDates: Set<st
                     className="h-2 w-2 rounded-sm"
                     title={key}
                     style={{
-                      background: lit
-                        ? 'var(--et-coral)'
-                        : isFuture
-                          ? 'var(--et-bg-3)'
-                          : 'var(--et-bg-3)',
-                      opacity: lit ? 1 : isFuture ? 0.2 : 0.4,
+                      background: lit ? 'var(--et-coral)' : 'var(--et-bg-3)',
+                      opacity: lit ? 1 : isFuture ? 0.15 : 0.4,
                     }}
                   />
                 );
               })}
             </div>
-            {/* Completion bar */}
             <div className="mt-1.5 h-1 w-full rounded-full overflow-hidden" style={{ background: 'var(--et-bg-3)' }}>
               <div
                 className="h-full rounded-full transition-all"
@@ -245,18 +233,15 @@ function YearView({ anchor, activeDates }: { anchor: string; activeDates: Set<st
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 
 export default function StreakWidget() {
-  const { streak, loading } = useStreak();
+  const { streak, loading: streakLoading } = useStreak();
   const { xp } = useXpSummary();
 
   const [view, setView] = useState<View>('week');
   const [anchor, setAnchor] = useState<string>(vnToday);
 
-  const activeDates = useMemo(
-    () => buildActiveDates(streak?.lastDate ?? null, streak?.currentStreak ?? 0),
-    [streak?.lastDate, streak?.currentStreak],
-  );
+  const [from, to] = useMemo(() => rangeForView(view, anchor), [view, anchor]);
+  const { dates: activeDates } = useActivityDates(from, to);
 
-  // Navigation
   const navigate = (dir: 1 | -1) => {
     if (view === 'week')  setAnchor((a) => addDays(a, dir * 7));
     if (view === 'month') setAnchor((a) => addMonths(a, dir));
@@ -275,20 +260,19 @@ export default function StreakWidget() {
     return `${d.getFullYear()}`;
   }, [anchor, view]);
 
-  const isAtToday = useMemo(() => {
+  const isAtPresent = useMemo(() => {
     const today = vnToday();
     if (view === 'week') {
       const d = new Date(anchor + 'T00:00:00+07:00');
       const dow = (d.getDay() + 6) % 7;
-      const mon = new Date(d); mon.setDate(mon.getDate() - dow);
-      const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
-      return today >= toVNDate(mon) && today <= toVNDate(sun);
+      const sun = new Date(d); sun.setDate(sun.getDate() + (6 - dow));
+      return today <= toVNDate(sun);
     }
-    if (view === 'month') return anchor.slice(0, 7) === today.slice(0, 7);
-    return anchor.slice(0, 4) === today.slice(0, 4);
+    if (view === 'month') return anchor.slice(0, 7) >= today.slice(0, 7);
+    return anchor.slice(0, 4) >= today.slice(0, 4);
   }, [anchor, view]);
 
-  if (loading) {
+  if (streakLoading) {
     return (
       <div
         className="rounded-2xl p-5 animate-pulse"
@@ -301,11 +285,9 @@ export default function StreakWidget() {
   const longest = streak?.longestStreak ?? 0;
 
   return (
-    <div
-      className="rounded-2xl p-5"
-      style={{ background: 'var(--et-bg-2)', border: '1px solid var(--et-line)' }}
-    >
-      {/* Header row */}
+    <div className="rounded-2xl p-5" style={{ background: 'var(--et-bg-2)', border: '1px solid var(--et-line)' }}>
+
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span style={{ fontSize: 34, lineHeight: 1 }}>{cur > 0 ? '🔥' : '✨'}</span>
@@ -328,18 +310,11 @@ export default function StreakWidget() {
           {xp && (
             <div className="hidden sm:block min-w-[140px]">
               <div className="flex items-baseline justify-between">
-                <span className="text-xs font-semibold" style={{ color: 'var(--et-fg)' }}>
-                  Cấp {xp.level}
-                </span>
-                <span className="text-[10px]" style={{ color: 'var(--et-fg-2)' }}>
-                  {xp.xpInLevel}/{xp.xpForNext} XP
-                </span>
+                <span className="text-xs font-semibold" style={{ color: 'var(--et-fg)' }}>Cấp {xp.level}</span>
+                <span className="text-[10px]" style={{ color: 'var(--et-fg-2)' }}>{xp.xpInLevel}/{xp.xpForNext} XP</span>
               </div>
               <div className="mt-1 h-2 w-full overflow-hidden rounded-full" style={{ background: 'var(--et-bg-3)' }}>
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${xp.progressPct}%`, background: 'var(--et-coral)' }}
-                />
+                <div className="h-full rounded-full transition-all" style={{ width: `${xp.progressPct}%`, background: 'var(--et-coral)' }} />
               </div>
               <div className="mt-1 text-[10px]" style={{ color: 'var(--et-fg-2)' }}>Tổng {xp.totalXp} XP</div>
             </div>
@@ -351,30 +326,23 @@ export default function StreakWidget() {
         </div>
       </div>
 
-      {/* View switcher + nav */}
+      {/* ── View switcher + navigator ── */}
       <div className="mt-4 flex items-center justify-between gap-2">
-        {/* Tab buttons */}
-        <div
-          className="flex rounded-lg p-0.5 gap-0.5"
-          style={{ background: 'var(--et-bg-3)' }}
-        >
+        <div className="flex rounded-lg p-0.5 gap-0.5" style={{ background: 'var(--et-bg-3)' }}>
           {(['week', 'month', 'year'] as View[]).map((v) => (
             <button
               key={v}
               onClick={() => { setView(v); setAnchor(vnToday()); }}
               className="rounded-md px-3 py-1 text-xs font-medium transition-all"
-              style={
-                view === v
-                  ? { background: 'var(--et-coral)', color: '#fff' }
-                  : { color: 'var(--et-fg-2)' }
-              }
+              style={view === v
+                ? { background: 'var(--et-coral)', color: '#fff' }
+                : { color: 'var(--et-fg-2)' }}
             >
               {VIEW_LABELS[v]}
             </button>
           ))}
         </div>
 
-        {/* Period navigator */}
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => navigate(-1)}
@@ -389,7 +357,7 @@ export default function StreakWidget() {
           </span>
           <button
             onClick={() => navigate(1)}
-            disabled={isAtToday}
+            disabled={isAtPresent}
             className="rounded-md p-1 transition-colors disabled:opacity-30"
             style={{ color: 'var(--et-fg-2)', background: 'var(--et-bg-3)' }}
             aria-label="Kỳ sau"
@@ -399,12 +367,11 @@ export default function StreakWidget() {
         </div>
       </div>
 
-      {/* Calendar body */}
+      {/* ── Calendar body ── */}
       {view === 'week'  && <WeekView  anchor={anchor} activeDates={activeDates} />}
       {view === 'month' && <MonthView anchor={anchor} activeDates={activeDates} />}
       {view === 'year'  && <YearView  anchor={anchor} activeDates={activeDates} />}
 
-      {/* Share */}
       {cur > 0 && (
         <div className="mt-4 flex justify-end">
           <ShareAchievement kind="streak" value={cur} compact />
