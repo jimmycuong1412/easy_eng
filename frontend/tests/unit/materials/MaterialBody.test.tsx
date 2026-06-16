@@ -43,6 +43,18 @@ describe('<MaterialBody>', () => {
     expect(strong.tagName.toLowerCase()).toBe('strong');
   });
 
+  it('renders body_vi that contains literal backslash-n (SQL seed data)', () => {
+    // SQL strings without E'' prefix store literal \n instead of real newlines.
+    // The parser must unescape them so headings and paragraphs render correctly.
+    const material: Partial<MaterialDetail> = {
+      body_vi: '# Chào hỏi cơ bản\\n\\nĐây là nội dung.',
+      body_en: null,
+    };
+    render(<MaterialBody material={material as MaterialDetail} locale="vi" />);
+    expect(screen.getByText('Chào hỏi cơ bản')).toBeInTheDocument();
+    expect(screen.getByText(/Đây là nội dung/)).toBeInTheDocument();
+  });
+
   it('renders ordered and unordered lists', () => {
     const material: Partial<MaterialDetail> = {
       body_vi: '## Danh sách\n\n- Mục 1\n- Mục 2\n\n1. Bước 1\n2. Bước 2',

@@ -64,7 +64,9 @@ type Block =
 
 function parseBlocks(source: string): Block[] {
   const blocks: Block[] = [];
-  const lines = source.replace(/\r\n/g, '\n').split('\n');
+  // Some DB rows contain literal backslash-n (from SQL string literals without E'' prefix).
+  // Unescape them so the parser sees real newlines regardless of how data was inserted.
+  const lines = source.replace(/\r\n/g, '\n').replace(/\\n/g, '\n').split('\n');
 
   let i = 0;
   while (i < lines.length) {
