@@ -11,7 +11,7 @@ const NAV: Record<Role, { label: string; href: string }[]> = {
     { label: 'Today',     href: '/student/dashboard' },
     { label: 'Lessons',   href: '/learning-path' },
     { label: 'Practice',  href: '/practice' },
-    { label: 'Book',      href: '/book' },
+    { label: 'Book',      href: '/dashboard/teachers' },
     { label: 'Community', href: '/community' },
   ],
   teacher: [

@@ -183,7 +183,7 @@ export default function ProgressReportPage() {
           Ôn từ vựng
         </Link>
         <Link
-          href={`/${locale}/book`}
+          href={`/${locale}/dashboard/teachers`}
           className="flex-1 text-center rounded-xl py-2.5 text-sm font-semibold"
           style={{ background: 'var(--et-bg-2)', color: 'var(--et-fg)', border: '1px solid var(--et-line)' }}
         >

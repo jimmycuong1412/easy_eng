@@ -349,7 +349,7 @@ export default async function StudentDashboardPage({
               </div>
 
               <Link
-                href={`/${locale}/book`}
+                href={`/${locale}/dashboard/teachers`}
                 className="ed-btn"
                 style={{ width: '100%', marginTop: 16, display: 'flex', justifyContent: 'center' }}
               >

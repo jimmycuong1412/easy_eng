@@ -394,7 +394,7 @@ export default function DashboardPage() {
                   </Link>
                 </>
               ) : (
-                <Link href={`/${locale}/book`} className="ed-btn ed-btn-coral" style={{ borderColor: 'transparent' }}>
+                <Link href={`/${locale}/dashboard/teachers`} className="ed-btn ed-btn-coral" style={{ borderColor: 'transparent' }}>
                   Find a tutor <ArrowRIcon />
                 </Link>
               )}
@@ -580,7 +580,7 @@ export default function DashboardPage() {
                     Pick a tutor; book a session; the page fills itself in.
                   </p>
                   <Link
-                    href={`/${locale}/book`}
+                    href={`/${locale}/dashboard/teachers`}
                     className="ed-btn ed-btn-primary"
                     style={{ marginTop: 16, display: 'inline-flex' }}
                   >
@@ -662,7 +662,7 @@ export default function DashboardPage() {
             }}
           >
             <h2 className="ed-h2">{t('recommendedTeachers')}</h2>
-            <Link href={`/${locale}/book`} className="ed-linkpair">
+            <Link href={`/${locale}/dashboard/teachers`} className="ed-linkpair">
               {t('viewAll')} <ArrowRIcon />
             </Link>
           </div>
