@@ -8,7 +8,7 @@
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type {
   Profile,
-} from '@/types/database';
+} from '@easyeng/types';
 
 function supabase() {
   return getSupabaseClient();

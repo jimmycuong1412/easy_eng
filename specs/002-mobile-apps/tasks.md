@@ -72,22 +72,22 @@
 
 ### 2.1 Tạo package
 
-- [ ] T025 Tạo `packages/types/` với `package.json` (`name: "@easyeng/types"`, `"main": "src/index.ts"`, `"types": "src/index.ts"`); `tsconfig.json` extends base
-- [ ] T026 `git mv apps/web/src/types/database.ts packages/types/src/database.ts` và `git mv apps/web/src/types/globals.d.ts packages/types/src/globals.d.ts` (giữ history)
-- [ ] T027 Tạo `packages/types/src/index.ts` export barrel re-export từ `database.ts` (export các type DB, Row, Insert, Update, RPC)
-- [ ] T028 **KHÔNG move** `cometchat*.d.ts`, `cometchat.types.ts`, `sentry.d.ts` — để lại trong `apps/web/src/types/` (chúng bind vào SDK web)
+- [x] T025 Tạo `packages/types/` với `package.json` (`name: "@easyeng/types"`, `"main": "src/index.ts"`, `"types": "src/index.ts"`, `exports`); `tsconfig.json` extends base
+- [x] T026 `git mv apps/web/src/types/database.ts packages/types/src/database.ts` (giữ history). **THAY ĐỔI so với plan**: KHÔNG move `globals.d.ts` — nó là ambient global declaration (augment `Window` với plausible/gtag/Sentry/webkitAudioContext), chỉ hoạt động qua tsconfig `include` chứ không qua import, và là web-only. Để lại trong `apps/web/src/types/`.
+- [x] T027 Tạo `packages/types/src/index.ts` barrel `export * from './database'`
+- [x] T028 **KHÔNG move** `cometchat*.d.ts`, `cometchat.types.ts`, `sentry.d.ts`, `globals.d.ts` — để lại trong `apps/web/src/types/` (SDK-binding + ambient web globals)
 
 ### 2.2 Wire vào web
 
-- [ ] T029 Thêm `"@easyeng/types": "workspace:*"` vào `apps/web/package.json` dependencies; chạy `pnpm install`
-- [ ] T030 Find-replace toàn bộ import `@/types/database` → `@easyeng/types` trong `apps/web/src/**`; dùng Grep verify không còn import cũ sót lại
-- [ ] T031 [P] Cập nhật script regen Supabase types (tìm trong `package.json`/scripts) để output đích thành `packages/types/src/database.ts` thay vì `frontend/src/types/database.ts` — giữ một nguồn sự thật
+- [x] T029 Thêm `"@easyeng/types": "workspace:*"` vào `apps/web/package.json` dependencies; `pnpm install`. `database.ts` self-contained (0 internal imports).
+- [x] T030 Find-replace 8 file import `@/types/database` → `@easyeng/types` trong `apps/web/src/**`; Grep verify 0 import cũ
+- [x] T031 [P] N/A — không có script regen tự động (database.ts gen thủ công từ migrations). Đã ghi note trong research.md: regen tương lai output thẳng `packages/types/src/database.ts`.
 
 ### Verification Gate — Phase 2
 
-- [ ] T032 `turbo run type-check` pass cho toàn workspace (web + types)
-- [ ] T033 `turbo run build --filter=web` pass
-- [ ] T034 Grep xác nhận 0 import `@/types/database` còn lại trong `apps/web`
+- [x] T032 `turbo run type-check --filter=web` pass
+- [ ] T033 `turbo run build --filter=web` pass (đang chạy)
+- [x] T034 Grep xác nhận 0 import `@/types/database` còn lại trong `apps/web`
 - [ ] T035 Commit: `refactor(types): extract shared DB types into @easyeng/types`
 
 ---

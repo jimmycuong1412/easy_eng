@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-import type { UserRole } from '@/types/database';
+import type { UserRole } from '@easyeng/types';
 
 const locales = ['vi', 'en'];
 

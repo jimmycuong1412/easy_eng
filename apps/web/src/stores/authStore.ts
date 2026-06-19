@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import type { Profile, UserRole } from '@/types/database';
+import type { Profile, UserRole } from '@easyeng/types';
 
 interface AuthState {
   user: {

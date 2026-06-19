@@ -27,7 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserProfile, updateUserProfile } from '@/lib/queries';
 import { useGemsBalance } from '@/hooks/useGemsBalance';
-import type { Profile } from '@/types/database';
+import type { Profile } from '@easyeng/types';
 
 const containerVariants = {
   hidden: { opacity: 0 },

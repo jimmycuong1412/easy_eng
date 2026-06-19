@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { Profile } from '@/types/database';
+import type { Profile } from '@easyeng/types';
 
 interface UseAuthReturn {
   user: User | null;

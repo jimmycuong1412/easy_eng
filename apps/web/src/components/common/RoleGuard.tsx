@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuthStore } from '@/stores/authStore';
-import type { UserRole } from '@/types/database';
+import type { UserRole } from '@easyeng/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface RoleGuardProps {

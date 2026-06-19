@@ -6,7 +6,7 @@ import {
   updateUserPreferences,
   type UpdatePreferencesInput,
 } from '@/app/[locale]/settings/preferences/actions';
-import type { Profile } from '@/types/database';
+import type { Profile } from '@easyeng/types';
 
 export interface UserPreferences {
   locale: string;

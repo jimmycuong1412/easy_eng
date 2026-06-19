@@ -40,3 +40,9 @@ Packages with strict version/peer requirements to watch during pnpm hoist:
 - `@cometchat/chat-sdk-javascript@^4.1.6`, `@cometchat/calls-sdk-javascript@^5.0.1` (web SDKs)
 - `next@^14.2.0` + `react@^18.2.0`/`react-dom@^18.2.0` (must stay aligned with eslint-config-next)
 - When mobile is added, RN pins React to a specific version — watch for React version conflict between Next (web, React 18) and Expo (mobile, its own React). Mitigated by per-app `node_modules` (pnpm isolates by default; do NOT force a single hoisted React across both apps).
+
+## Phase 2 outcome (types)
+- Extracted ONLY `database.ts` → `packages/types/src/database.ts` (43KB, Supabase DB types). Self-contained, 0 internal imports. 8 web files re-pointed to `@easyeng/types`.
+- **`globals.d.ts` deliberately NOT moved** — it is an ambient global declaration (augments `Window`), applies via tsconfig `include` not import, and is web-only (plausible/gtag/Sentry/webkitAudioContext). Stays in `apps/web/src/types/`.
+- **No automated Supabase type-regen script exists** — `database.ts` was hand-generated from migrations. Future regen should target `packages/types/src/database.ts` to keep one source of truth.
+- TODO (CI follow-up, deferred from Phase 1): `accessibility.yml` and `perf-regression.yml` still use npm + (now non-existent) `apps/web/package-lock.json`. They only run on deploy branches, not `002-mobile-apps`. Convert to pnpm before merging to a deploy branch.
