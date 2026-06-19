@@ -1,0 +1,97 @@
+[
+  {
+    "step": "Teacher login",
+    "status": "PASS",
+    "detail": "jimmycuong1414@gmail.com / 123456"
+  },
+  {
+    "step": "Student login",
+    "status": "PASS",
+    "detail": "jimmycuong1413@gmail.com / 123456"
+  },
+  {
+    "step": "S3 teacher list",
+    "status": "PASS",
+    "detail": "1 teacher(s)"
+  },
+  {
+    "step": "S5 select slot",
+    "status": "PASS",
+    "detail": "slot 03:00, 107 available, 8 cells marked Đã đặt"
+  },
+  {
+    "step": "S5b booked-slot marking",
+    "status": "PASS",
+    "detail": "8 booked cells rendered as disabled"
+  },
+  {
+    "step": "S6 confirm page",
+    "status": "PASS",
+    "detail": "date=2026-06-14 time=03:00"
+  },
+  {
+    "step": "S7 booking created",
+    "status": "PASS",
+    "detail": "201, bookingId=8b6cfd20-cf8c-4bbe-acc7-cec7b67193df (slot 03:00)"
+  },
+  {
+    "step": "S9 duplicate guard",
+    "status": "PASS",
+    "detail": "409 \"You already have a booking for this time slot\""
+  },
+  {
+    "step": "S10 locale prefix (Fix 3)",
+    "status": "PASS",
+    "detail": "25 links all /vi/class/..."
+  },
+  {
+    "step": "T7 teacher live page",
+    "status": "PASS",
+    "detail": "WaitingRoom rendered — session created"
+  },
+  {
+    "step": "T9 teacher join",
+    "status": "PASS",
+    "detail": "clicked; now: Skip to main content | Live Class | Session ID: 1922fdb5... | Live | • | 1 participants | 00:00 | TU"
+  },
+  {
+    "step": "T9b teacher A/V call UI",
+    "status": "PASS",
+    "detail": "call container children=1"
+  },
+  {
+    "step": "S11 student live page (Fix 2)",
+    "status": "PASS",
+    "detail": "waiting-room"
+  },
+  {
+    "step": "S13 student join",
+    "status": "PASS",
+    "detail": "joined"
+  },
+  {
+    "step": "S13b student A/V call UI",
+    "status": "PASS",
+    "detail": "call container children=1"
+  },
+  {
+    "step": "S14 participants count",
+    "status": "PASS",
+    "detail": "teacher sees 1, student sees 2"
+  },
+  {
+    "step": "S15 chat student→teacher",
+    "status": "PASS",
+    "detail": "\"e2e-hello-1781248697809\" visible on teacher side"
+  },
+  {
+    "step": "T10 teacher end call",
+    "status": "PASS",
+    "detail": "End Call clicked"
+  },
+  {
+    "step": "P3 locale redirect",
+    "status": "PASS",
+    "detail": "307 → /vi/class/5196d623-f16e-4f97-b230-bbbaeac87415/live"
+  }
+]

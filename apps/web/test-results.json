@@ -1,0 +1,42 @@
+[
+  {
+    "step": "T-CLEAR",
+    "url": "about:blank",
+    "description": "Cookies and storage cleared"
+  },
+  {
+    "step": "T-LOGIN",
+    "url": "http://localhost:3000/en/dashboard",
+    "description": "Title: \"EasyEng - Learn English with Fun\" | Headings: \"Hello, you! 👋 | Upcoming classes | Recommended teachers | Your avatar | 🍪\nYour Cookies\" | Role keywords: \"Student, Student\" | Nav: \"🍪\nEasyEng, 🏠\nHome, 👨‍🏫\nFind Teachers, 📅\nSchedule, 🎮\nAvatar, 🎯\nProgress, 📹\nRecordings, ⚙️\nSettings, 🚪\nLog out\""
+  },
+  {
+    "step": "T-SCHEDULE",
+    "url": "http://localhost:3000/en/dashboard",
+    "description": "Title: \"EasyEng - Learn English with Fun\" | Headings: \"Hello, you! 👋 | Upcoming classes | Recommended teachers | Your avatar | 🍪\nYour Cookies\" | Content: \"Skip to main content 🍪 EasyEng ?  User  Student  🏠 Home 👨‍🏫 Find Teachers 📅 Schedule 🎮 Avatar 🎯 Progress 📹 Recordings ⚙️ Settings 🚪 Log out 🔍 🔔 Hello, you! 👋  Continue your English learnin\""
+  },
+  {
+    "step": "T-QUIZ",
+    "url": "http://localhost:3000/en/dashboard",
+    "description": "Title: \"EasyEng - Learn English with Fun\" | Headings: \"Hello, you! 👋 | Upcoming classes | Recommended teachers | Your avatar | 🍪\nYour Cookies\" | Content: \"Skip to main content 🍪 EasyEng ?  User  Student  🏠 Home 👨‍🏫 Find Teachers 📅 Schedule 🎮 Avatar 🎯 Progress 📹 Recordings ⚙️ Settings 🚪 Log out 🔍 🔔 Hello, you! 👋  Continue your English learnin\""
+  },
+  {
+    "step": "A-CLEAR",
+    "url": "about:blank",
+    "description": "Cookies and storage cleared"
+  },
+  {
+    "step": "A-LOGIN",
+    "url": "http://localhost:3000/en/dashboard",
+    "description": "Title: \"EasyEng - Learn English with Fun\" | Headings: \"Hello, you! 👋 | Upcoming classes | Recommended teachers | Your avatar | 🍪\nYour Cookies\" | Role keywords: \"Student, Student\" | Nav: \"🍪\nEasyEng, 🏠\nHome, 👨‍🏫\nFind Teachers, 📅\nSchedule, 🎮\nAvatar, 🎯\nProgress, 📹\nRecordings, ⚙️\nSettings, 🚪\nLog out\""
+  },
+  {
+    "step": "A-DASH",
+    "url": "http://localhost:3000/en/unauthorized?from=%2Fen%2Fdashboard%2Fadmin",
+    "description": "Title: \"EasyEng - Learn English with Fun\" | Headings: \"Truy cập bị từ chối\" | Content: \"Skip to main content Truy cập bị từ chối  Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị viên nếu bạn cho rằng đây là lỗi.  Đường dẫn yêu cầu  /en/dashboard/admin Quay lại Về trang c\""
+  },
+  {
+    "step": "A-ANALYTICS",
+    "url": "http://localhost:3000/en/dashboard",
+    "description": "Title: \"EasyEng - Learn English with Fun\" | Headings: \"Hello, you! 👋 | Upcoming classes | Recommended teachers | Your avatar | 🍪\nYour Cookies\" | Content: \"Skip to main content 🍪 EasyEng ?  User  Student  🏠 Home 👨‍🏫 Find Teachers 📅 Schedule 🎮 Avatar 🎯 Progress 📹 Recordings ⚙️ Settings 🚪 Log out 🔍 🔔 Hello, you! 👋  Continue your English learnin\""
+  }
+]

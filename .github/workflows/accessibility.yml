@@ -16,29 +16,29 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
-        working-directory: frontend
+        working-directory: apps/web
         run: npm install
 
       - name: Run accessibility unit tests
-        working-directory: frontend
+        working-directory: apps/web
         run: npm run test -- --testMatch="**/*.a11y.test.tsx" --passWithNoTests
 
       - name: Install Playwright
-        working-directory: frontend
+        working-directory: apps/web
         run: npx playwright install --with-deps
 
       - name: Run accessibility E2E tests
-        working-directory: frontend
+        working-directory: apps/web
         run: npx playwright test tests/e2e/accessibility.spec.ts
         env:
           CI: true
 
       - name: Generate accessibility report
         if: always()
-        working-directory: frontend
+        working-directory: apps/web
         run: npx playwright show-report
 
       - name: Upload accessibility report
@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: accessibility-report
-          path: frontend/playwright-report/
+          path: apps/web/playwright-report/
           retention-days: 30
 
       - name: Upload test results
@@ -54,7 +54,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: accessibility-test-results
-          path: frontend/test-results/
+          path: apps/web/test-results/
           retention-days: 30
 
       - name: Comment PR with accessibility results
@@ -69,7 +69,7 @@ jobs:
             let comment = '### Accessibility Test Results (WCAG 2.1 Level AA)\n\n';
 
             try {
-              const junitPath = path.join(process.cwd(), 'frontend/test-results/junit.xml');
+              const junitPath = path.join(process.cwd(), 'apps/web/test-results/junit.xml');
               if (fs.existsSync(junitPath)) {
                 const junitContent = fs.readFileSync(junitPath, 'utf8');
                 const testsMatch = junitContent.match(/tests="(\d+)"/);
@@ -111,7 +111,7 @@ jobs:
 
       - name: Fail on violations
         if: failure()
-        working-directory: frontend
+        working-directory: apps/web
         run: |
           echo "::error::Accessibility violations detected! WCAG 2.1 Level AA compliance is required."
           echo "::error::Please review the accessibility test report and fix all violations."

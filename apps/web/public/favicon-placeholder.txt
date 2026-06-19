@@ -1,0 +1,56 @@
+# Favicon Instructions
+
+The application needs a favicon.ico file in the public directory.
+
+## Quick Fix Options:
+
+### Option 1: Use an online converter
+1. Go to https://favicon.io/favicon-converter/ or https://convertio.co/svg-ico/
+2. Upload the `favicon.svg` file from this directory
+3. Download the generated `favicon.ico`
+4. Place it in this `public` folder
+5. Delete this placeholder file
+
+### Option 2: Use an emoji favicon
+1. Go to https://favicon.io/emoji-favicons/
+2. Search for a book or education emoji (📚, 📖, ✏️)
+3. Download the favicon package
+4. Extract `favicon.ico` to this directory
+
+### Option 3: Create custom favicon
+1. Design a 16x16 or 32x32 pixel icon
+2. Save as PNG
+3. Convert to ICO format using an online tool
+4. Place `favicon.ico` in this directory
+
+The 404 error for favicon is harmless but fixing it will:
+- Remove the console error
+- Show a proper icon in browser tabs
+- Improve the professional appearance of the app
+1. Create or obtain a favicon.ico file (16x16 or 32x32 pixel icon)
+2. Place it in: frontend/public/favicon.ico
+
+## Alternative: Use Next.js metadata
+Add to app/layout.tsx:
+
+```tsx
+export const metadata = {
+  icons: {
+    icon: '/favicon.ico',
+  },
+}
+```
+
+## Quick fix: Generate a simple favicon
+You can use online tools like:
+- https://favicon.io/
+- https://www.favicon-generator.org/
+
+Or use an emoji as favicon by creating favicon.svg in public/:
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <text y=".9em" font-size="90">📚</text>
+</svg>
+```
+
+This is a non-critical error and won't affect functionality.
