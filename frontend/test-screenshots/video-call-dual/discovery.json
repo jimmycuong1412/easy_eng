@@ -1,9 +1,0 @@
-{
-  "classId": "",
-  "teacherSupabaseId": "7a46e4e2-782c-471a-ba1b-cea449e75028",
-  "tokenResp": {
-    "success": true,
-    "userId": "7a46e4e2-782c-471a-ba1b-cea449e75028",
-    "authToken": "7a46e4e2-782c-471a-ba1b-cea449e75028_17724702575123528a549389af1aafe002ff0c72"
-  }
-}
