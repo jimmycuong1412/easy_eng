@@ -23,6 +23,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="vocabulary"
+        options={{
+          title: 'Từ vựng',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📝</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="lessons"
         options={{
           title: 'Bài học',
