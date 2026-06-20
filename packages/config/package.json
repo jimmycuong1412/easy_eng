@@ -5,6 +5,7 @@
   "main": "index.js",
   "files": [
     "tsconfig.base.json",
-    "prettier-preset.js"
+    "prettier-preset.js",
+    "tailwind-preset.js"
   ]
 }

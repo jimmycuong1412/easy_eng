@@ -1,0 +1,16 @@
+# Expo / RN
+.expo/
+.expo-export-check/
+dist/
+web-build/
+*.orig.*
+
+# Native
+ios/
+android/
+
+# Env
+.env*.local
+
+# Metro
+.metro-health-check*

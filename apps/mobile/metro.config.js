@@ -1,7 +1,8 @@
 // Metro config for the EasyEng mobile app inside a pnpm + Turborepo monorepo.
-// Watches the workspace root so changes in packages/* are picked up, and enables
-// symlink resolution (pnpm stores deps as symlinks under node_modules/.pnpm).
+// Watches the workspace root so changes in packages/* are picked up, enables
+// symlink resolution (pnpm), and wires NativeWind (Tailwind for React Native).
 const { getDefaultConfig } = require('expo/metro-config');
+const { withNativeWind } = require('nativewind/metro');
 const path = require('path');
 
 const projectRoot = __dirname;
@@ -22,4 +23,4 @@ config.resolver.nodeModulesPaths = [
 config.resolver.unstable_enableSymlinks = true;
 config.resolver.unstable_enablePackageExports = true;
 
-module.exports = config;
+module.exports = withNativeWind(config, { input: './global.css' });
