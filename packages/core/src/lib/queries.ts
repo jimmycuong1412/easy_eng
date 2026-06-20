@@ -118,6 +118,27 @@ export async function bookSlot(args: {
   return row as { booking_id: string; class_id: string };
 }
 
+/**
+ * Persist the onboarding level-assessment result via the save_learning_profile
+ * RPC. Shared by web and mobile.
+ */
+export async function saveLearningProfile(args: {
+  assessedLevel: string;
+  quizScore: number;
+  weakAreas: string[];
+  focusSkills?: string[];
+  dailyGoalMins?: number;
+}): Promise<void> {
+  const { error } = await (supabase() as any).rpc('save_learning_profile', {
+    p_assessed_level: args.assessedLevel,
+    p_quiz_score: args.quizScore,
+    p_weak_areas: args.weakAreas,
+    p_focus_skills: args.focusSkills ?? [],
+    p_daily_goal_mins: args.dailyGoalMins ?? 15,
+  });
+  if (error) throw error;
+}
+
 export async function getTeacherById(teacherId: string) {
   const db = supabase();
 
