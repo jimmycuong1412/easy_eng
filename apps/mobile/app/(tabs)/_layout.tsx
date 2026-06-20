@@ -30,6 +30,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="progress"
+        options={{
+          title: 'Tiến độ',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📈</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="lessons"
         options={{
           title: 'Bài học',

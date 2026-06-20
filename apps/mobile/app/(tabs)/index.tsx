@@ -166,8 +166,8 @@ export default function HomeScreen() {
         <Text className="text-text-primary text-base font-semibold">Khám phá</Text>
         <View className="flex-row gap-3">
           <NavLink icon="📖" label="Bài học" onPress={() => router.push('/(tabs)/lessons')} />
-          <NavLink icon="📝" label="Từ vựng" onPress={() => router.push('/(tabs)/lessons')} />
-          <NavLink icon="📈" label="Tiến độ" onPress={() => router.push('/(tabs)/lessons')} />
+          <NavLink icon="📝" label="Từ vựng" onPress={() => router.push('/(tabs)/vocabulary')} />
+          <NavLink icon="📈" label="Tiến độ" onPress={() => router.push('/(tabs)/progress')} />
         </View>
       </View>
 
