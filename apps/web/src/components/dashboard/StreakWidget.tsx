@@ -2,9 +2,9 @@
 
 import React, { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useStreak } from '@/hooks/useStreak';
-import { useXpSummary } from '@/hooks/useXpSummary';
-import { useActivityDates } from '@/hooks/useActivityDates';
+import { useStreak } from '@easyeng/core';
+import { useXpSummary } from '@easyeng/core';
+import { useActivityDates } from '@easyeng/core';
 import ShareAchievement from '@/components/common/ShareAchievement';
 
 type View = 'week' | 'month' | 'year';

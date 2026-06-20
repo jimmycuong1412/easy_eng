@@ -26,8 +26,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-import { useAuth } from '@/hooks/useAuth';
-import { getLeaderboard } from '@/lib/queries';
+import { useAuth } from '@easyeng/core';
+import { getLeaderboard } from '@easyeng/core';
 
 type LeaderboardEntry = {
   rank: number;

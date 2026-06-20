@@ -18,8 +18,8 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PixelAvatar } from '@/components/features/PixelAvatar';
 import { GemImage } from '@/components/common/GemImage';
-import { getTeacherById } from '@/lib/queries';
-import { useAuth } from '@/hooks/useAuth';
+import { getTeacherById } from '@easyeng/core';
+import { useAuth } from '@easyeng/core';
 import { createClient } from '@/lib/supabase/client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

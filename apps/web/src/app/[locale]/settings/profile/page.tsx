@@ -24,9 +24,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/hooks/useAuth';
-import { getUserProfile, updateUserProfile } from '@/lib/queries';
-import { useGemsBalance } from '@/hooks/useGemsBalance';
+import { useAuth } from '@easyeng/core';
+import { getUserProfile, updateUserProfile } from '@easyeng/core';
+import { useGemsBalance } from '@easyeng/core';
 import type { Profile } from '@easyeng/types';
 
 const containerVariants = {

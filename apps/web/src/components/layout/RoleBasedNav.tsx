@@ -25,7 +25,7 @@ import {
 import NotificationBell from '@/components/layout/NotificationBell';
 
 import { Link } from '@/i18n/routing';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {

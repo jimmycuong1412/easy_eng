@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { AlertCircle } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
-import type { MaterialType, MaterialLevel, MaterialGoal, MaterialStatus } from '@/lib/queries/materials';
+import type { MaterialType, MaterialLevel, MaterialGoal, MaterialStatus } from '@easyeng/core';
 import { SectionEditor, type SectionDraft } from './SectionEditor';
 import { VocabularyItemsEditor, type VocabItemDraft } from './VocabularyItemsEditor';
 import { MockTestItemsEditor, type TestItemDraft } from './MockTestItemsEditor';

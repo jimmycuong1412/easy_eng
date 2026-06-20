@@ -1,9 +1,8 @@
-'use client';
-
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 import type { Profile, UserRole } from '@easyeng/types';
+import { getStorage } from '../adapters/storage';
 
 interface AuthState {
   user: {
@@ -61,6 +60,9 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      // Storage is injected per-platform (web: localStorage, mobile: AsyncStorage).
+      // Resolved lazily so the app's setStorage() call at startup is picked up.
+      storage: createJSONStorage(() => getStorage()),
       partialize: (state) => ({
         user: state.user,
         profile: state.profile,

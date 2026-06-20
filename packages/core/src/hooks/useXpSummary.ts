@@ -1,11 +1,11 @@
+'use client';
 /**
  * useXpSummary — career-independent XP/level for the dashboard (get_my_xp_summary).
  */
 
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../adapters/supabase';
 
 export interface XpSummary {
   totalXp: number;

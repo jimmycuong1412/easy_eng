@@ -1,3 +1,4 @@
+'use client';
 /**
  * Realtime Notifications Hook
  *
@@ -5,17 +6,16 @@
  * Task: T171 - Setup Supabase Realtime for notifications
  */
 
-'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../adapters/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface Notification {
+export interface RealtimeNotification {
   id: string;
   user_id: string;
   type: string;
@@ -37,7 +37,7 @@ export interface Notification {
 }
 
 export interface UseRealtimeNotificationsReturn {
-  notifications: Notification[];
+  notifications: RealtimeNotification[];
   unreadCount: number;
   loading: boolean;
   error: string | null;
@@ -54,7 +54,7 @@ export interface UseRealtimeNotificationsReturn {
 export function useRealtimeNotifications(userId?: string): UseRealtimeNotificationsReturn {
   const supabase = createClient();
 
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +131,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
             },
             (payload) => {
               // New notification received
-              const newNotification = payload.new as Notification;
+              const newNotification = payload.new as RealtimeNotification;
 
               setNotifications(prev => [newNotification, ...prev]);
               if (!newNotification.read) {
@@ -158,7 +158,7 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
             },
             (payload) => {
               // Notification updated
-              const updatedNotification = payload.new as Notification;
+              const updatedNotification = payload.new as RealtimeNotification;
 
               setNotifications(prev =>
                 prev.map(n => (n.id === updatedNotification.id ? updatedNotification : n))
@@ -180,12 +180,12 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
             },
             (payload) => {
               // Notification deleted
-              const deletedId = (payload.old as Notification).id;
+              const deletedId = (payload.old as RealtimeNotification).id;
 
               setNotifications(prev => prev.filter(n => n.id !== deletedId));
 
               // Update unread count if deleted notification was unread
-              if (!(payload.old as Notification).read) {
+              if (!(payload.old as RealtimeNotification).read) {
                 setUnreadCount(prev => Math.max(0, prev - 1));
               }
             }

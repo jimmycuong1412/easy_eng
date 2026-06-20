@@ -19,7 +19,7 @@ import {
   fetchMaterialDetail,
   type MaterialSummary,
   type MaterialDetail,
-} from '@/lib/queries/materials';
+} from '@easyeng/core';
 import { MaterialBody } from '@/components/materials/MaterialBody';
 
 interface TextbookPanelProps {

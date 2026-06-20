@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from '@easyeng/core';
 import {
   updateUserPreferences,
   type UpdatePreferencesInput,

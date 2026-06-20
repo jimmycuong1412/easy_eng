@@ -1,3 +1,4 @@
+'use client';
 /**
  * useClassReminder
  *
@@ -10,10 +11,9 @@
  * dismissed it won't reappear for that class in the same session.
  */
 
-'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { getSupabaseClient } from '@/lib/supabase/client';
+import { getSupabaseClient } from '../adapters/supabase';
 
 export type ReminderKind = 'starting_soon' | 'live_waiting';
 

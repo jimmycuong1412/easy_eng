@@ -1,3 +1,4 @@
+'use client';
 /**
  * useStreak
  *
@@ -7,10 +8,9 @@
  * class, finishing a quiz. Idempotent per day on the server.
  */
 
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../adapters/supabase';
 
 export interface StreakState {
   currentStreak: number;

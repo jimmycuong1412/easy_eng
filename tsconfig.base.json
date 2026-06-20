@@ -22,6 +22,7 @@
       "@easyeng/types": ["./packages/types/src"],
       "@easyeng/types/*": ["./packages/types/src/*"],
       "@easyeng/core": ["./packages/core/src"],
+      "@easyeng/core/adapters": ["./packages/core/src/adapters/index.ts"],
       "@easyeng/core/*": ["./packages/core/src/*"]
     },
     "baseUrl": "."

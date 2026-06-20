@@ -24,8 +24,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useAuth } from '@/hooks/useAuth';
-import { getUserReferralData } from '@/lib/queries';
+import { useAuth } from '@easyeng/core';
+import { getUserReferralData } from '@easyeng/core';
 
 const containerVariants = {
   hidden: { opacity: 0 },

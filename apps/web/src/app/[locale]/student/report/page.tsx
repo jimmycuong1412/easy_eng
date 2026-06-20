@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Printer, BookOpen, Brain, Flame, Trophy, Star, Calendar, CheckCircle } from 'lucide-react';
-import { useProgressReport } from '@/hooks/useProgressReport';
+import { useProgressReport } from '@easyeng/core';
 
 const LEVEL_LABELS: Record<string, string> = {
   beginner: 'Sơ cấp',

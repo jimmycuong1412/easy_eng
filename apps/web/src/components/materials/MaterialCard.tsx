@@ -19,7 +19,7 @@ import {
   type MaterialSummary,
   type MaterialProgressLite,
   type MaterialType,
-} from '@/lib/queries/materials';
+} from '@easyeng/core';
 
 export type Locale = 'vi' | 'en';
 

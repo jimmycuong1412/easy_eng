@@ -19,7 +19,7 @@ import { ProgressRibbon } from './ProgressRibbon';
 import { useAwardCompletion } from './useAwardCompletion';
 
 import type { Locale } from './MaterialCard';
-import type { MaterialDetail } from '@/lib/queries/materials';
+import type { MaterialDetail } from '@easyeng/core';
 
 export interface DialoguePlayerProps {
   material: MaterialDetail;

@@ -11,7 +11,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Video, X, Clock } from 'lucide-react';
-import type { ClassReminder } from '@/hooks/useClassReminder';
+import type { ClassReminder } from '@easyeng/core';
 
 interface Props {
   reminder: ClassReminder | null;

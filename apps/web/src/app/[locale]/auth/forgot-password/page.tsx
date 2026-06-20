@@ -6,7 +6,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',

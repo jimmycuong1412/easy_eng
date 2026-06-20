@@ -1,26 +1,25 @@
-import { createBrowserClient } from '@supabase/ssr';
-import { env } from '@/lib/env';
+import {
+  createClient as coreCreateClient,
+  getSupabaseClient as coreGetSupabaseClient,
+} from '@easyeng/core';
+
+// Importing the bootstrap registers the Supabase client factory (and the
+// storage/platform adapters) with @easyeng/core. Every client component that
+// touches Supabase imports this module, so the factory is always registered
+// before core's createClient()/getSupabaseClient() run.
+import '@/lib/core-bootstrap';
 
 /**
- * Creates a Supabase client for use in Client Components.
- * This client is configured with the browser's cookie storage.
+ * Creates a Supabase client for use in Client Components (cookie storage).
+ * Kept as a named export for the 80+ existing call sites; delegates to core.
  */
 export function createClient() {
-  return createBrowserClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+  return coreCreateClient();
 }
 
 /**
- * Singleton instance for client-side usage.
- * Use this in components that need a persistent client.
+ * Singleton instance for client-side usage. Delegates to core.
  */
-let clientInstance: ReturnType<typeof createClient> | null = null;
-
 export function getSupabaseClient() {
-  if (!clientInstance) {
-    clientInstance = createClient();
-  }
-  return clientInstance;
+  return coreGetSupabaseClient();
 }

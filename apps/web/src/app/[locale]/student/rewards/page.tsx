@@ -23,7 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { GemImage } from '@/components/common/GemImage';
 import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 import { useTranslations, useLocale } from 'next-intl';
 
 const containerVariants = {

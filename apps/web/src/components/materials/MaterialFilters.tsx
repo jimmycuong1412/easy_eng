@@ -16,7 +16,7 @@ import type {
   MaterialGoal,
   MaterialLevel,
   MaterialType,
-} from '@/lib/queries/materials';
+} from '@easyeng/core';
 
 // 8 danh mục lớn theo taxonomy EasyEng (hàng filter đầu tiên).
 const CATEGORIES: MaterialCategory[] = [

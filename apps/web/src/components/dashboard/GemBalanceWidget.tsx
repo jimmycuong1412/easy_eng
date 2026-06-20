@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { Sparkles, TrendingUp, Gift } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useGemsBalance } from '@/hooks/useGemsBalance';
-import { useAuthStore } from '@/stores/authStore';
+import { useGemsBalance } from '@easyeng/core';
+import { useAuthStore } from '@easyeng/core';
 import { gemsToUSD } from '@/constants/gems';
 
 /**

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../adapters/supabase';
 
 export function useActivityDates(from: string, to: string) {
   const [dates, setDates] = useState<Set<string>>(new Set());

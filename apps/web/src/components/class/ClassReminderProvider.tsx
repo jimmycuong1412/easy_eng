@@ -9,8 +9,8 @@
  */
 
 import React from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useClassReminder } from '@/hooks/useClassReminder';
+import { useAuth } from '@easyeng/core';
+import { useClassReminder } from '@easyeng/core';
 import ClassReminderPopup from '@/components/class/ClassReminderPopup';
 
 export default function ClassReminderProvider() {

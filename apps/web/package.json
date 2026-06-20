@@ -23,6 +23,7 @@
   "dependencies": {
     "@cometchat/calls-sdk-javascript": "^5.0.1",
     "@cometchat/chat-sdk-javascript": "^4.1.6",
+    "@easyeng/core": "workspace:*",
     "@easyeng/types": "workspace:*",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",

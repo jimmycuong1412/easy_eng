@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { SavedWord } from '@/hooks/useSavedWords';
+import type { SavedWord } from '@easyeng/core';
 
 interface FlashcardSessionProps {
   words: SavedWord[];

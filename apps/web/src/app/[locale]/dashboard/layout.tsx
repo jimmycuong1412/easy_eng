@@ -9,10 +9,10 @@ import { ChevronLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { useAuthStore } from '@/stores/authStore';
-import { useGemsBalance } from '@/hooks/useGemsBalance';
+import { useAuthStore } from '@easyeng/core';
+import { useGemsBalance } from '@easyeng/core';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GemBadge } from '@/components/features/CookieBadge';
 import { Skeleton } from '@/components/ui/skeleton';

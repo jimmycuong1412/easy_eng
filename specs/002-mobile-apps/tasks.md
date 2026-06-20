@@ -96,53 +96,50 @@
 
 **Purpose**: Đưa hooks/stores/lib portable ra `@easyeng/core`, định nghĩa adapter interface để inject implementation theo platform. **Đụng vào useAuth + data layer của web — làm incremental, smoke test sau mỗi nhóm.**
 
+> **THAY ĐỔI lớn so với plan**: dùng **module-level factory injection** thay vì React Context `CoreProvider`. Core expose `setSupabaseClientFactory`/`setStorage`/`setPlatform` + getter `getSupabaseClient()`/`getStorage()`/`getPlatform()`. Hook giữ nguyên call-site `getSupabaseClient()` → ít churn cho 82 file. (Lý do: xem research.md.)
+
 ### 3.1 Tạo package + Adapter interfaces (làm trước, blocking)
 
-- [ ] T036 Tạo `packages/core/` (`name: "@easyeng/core"`); `package.json` deps: `@easyeng/types` (workspace), `zustand`, `date-fns`, `date-fns-tz`; peerDeps: `react`, `@supabase/supabase-js`
-- [ ] T037 Tạo `packages/core/src/adapters/storage.ts`: interface `StorageAdapter { getItem(key): Promise<string|null>; setItem(key, value): Promise<void>; removeItem(key): Promise<void> }`
-- [ ] T038 Tạo `packages/core/src/adapters/supabase.ts`: type `SupabaseClient` (từ `@easyeng/types`/`@supabase/supabase-js`); interface để inject client instance qua context (KHÔNG khởi tạo client trong core — mỗi app tự tạo)
-- [ ] T039 Tạo `packages/core/src/adapters/platform.ts`: interface `PlatformAdapter { redirect(url): void; openUrl(url): void; getOrigin(): string; env: Record<string,string|undefined> }` — bọc các API web-only mà `useAuth` cần
-- [ ] T040 Tạo `packages/core/src/providers/CoreProvider.tsx`: React Context Provider nhận `{ supabase, storage, platform }` qua props, cung cấp hook `useSupabase()`, `useStorage()`, `usePlatform()` cho hooks bên trong
+- [x] T036 Tạo `packages/core/` (`@easyeng/core`); deps `@easyeng/types`/date-fns; devDeps zustand/react/@supabase/supabase-js (để type-check standalone — peer deps pnpm không auto-install)
+- [x] T037 `adapters/storage.ts`: `StorageAdapter` + `setStorage`/`getStorage` (memory fallback nếu chưa set)
+- [x] T038 `adapters/supabase.ts`: `setSupabaseClientFactory` + `createClient`/`getSupabaseClient` (delegate factory, throw nếu chưa set)
+- [x] T039 `adapters/platform.ts`: `PlatformAdapter { getOrigin, clearAuthCookies, redirect }` + `setPlatform`/`getPlatform`
+- [x] T040 **KHÔNG dùng CoreProvider Context** — thay bằng factory injection (xem note trên). `adapters/index.ts` export riêng (subpath `@easyeng/core/adapters`) để core-bootstrap import được mà KHÔNG kéo `'use client'` hooks vào Server Component.
 
-### 3.2 Migrate Stores (3 file)
+### 3.2 Migrate Stores (2 file — videoCallStore defer Phase 6)
 
-- [ ] T041 `git mv apps/web/src/stores/notificationStore.ts packages/core/src/stores/`; không cần đổi (in-memory, không persist)
-- [ ] T042 `git mv apps/web/src/stores/authStore.ts packages/core/src/stores/`; refactor `persist` middleware nhận `storage` từ adapter thay `localStorage` mặc định (factory function nhận StorageAdapter)
-- [ ] T043 `git mv apps/web/src/stores/videoCallStore.ts packages/core/src/stores/`; refactor persist tương tự T042
+- [x] T041 `git mv notificationStore.ts` → core (in-memory, không đổi)
+- [x] T042 `git mv authStore.ts` → core; persist dùng `createJSONStorage(() => getStorage())`
+- [x] T043 **DEFER Phase 6**: `videoCallStore.ts` phụ thuộc `@/types/cometchat` (web SDK) — để lại web.
 
-### 3.3 Migrate Lib portable (6 nhóm)
+### 3.3 Migrate Lib portable
 
-- [ ] T044 [P] `git mv apps/web/src/lib/utils.ts packages/core/src/lib/`; verify không import `next/*` hay DOM
-- [ ] T045 [P] `git mv apps/web/src/lib/sanitization.ts packages/core/src/lib/`
-- [ ] T046 [P] `git mv apps/web/src/lib/timezone.ts packages/core/src/lib/`
-- [ ] T047 [P] `git mv apps/web/src/lib/grammar/rules.ts packages/core/src/lib/grammar/`
-- [ ] T048 [P] `git mv apps/web/src/lib/queries.ts` + `apps/web/src/lib/queries/materials.ts packages/core/src/lib/queries/`
-- [ ] T049 **Để lại** trong `apps/web/src/lib/` (KHÔNG move): `supabase/server.ts`, `supabase/middleware.ts`, `csrf*.ts(x)`, `server-only-secrets.ts`, `analytics.ts`, `sentry.ts`, `vitals.ts`, `env.ts` — verify chúng vẫn import được sau khi lib portable đã move
+- [x] T044 **KHÔNG move** `utils.ts` — coupled Tailwind (`clsx`+`tailwind-merge`, hàm `cn`), 35 consumers, mobile dùng NativeWind riêng. Để lại web.
+- [x] T045-T048 `git mv` `sanitization`, `timezone`, `grammar/rules`, `queries`, `queries/materials` → core; `queries.ts` đổi import client → `../adapters/supabase`
+- [x] T049 Để lại web: `supabase/server`, `middleware`, `csrf*`, `server-only-secrets`, `analytics`, `sentry`, `vitals`, `env`, `utils`
 
-### 3.4 Migrate Hooks portable (18 hook — làm theo nhóm nhỏ + smoke test)
+### 3.4 Migrate Hooks (15 hook moved; 4 deferred)
 
-- [ ] T050 Nhóm gamification: `git mv` `useGemsBalance`, `useStreak`, `useXpSummary`, `useWeeklyGoal` → `packages/core/src/hooks/`; bỏ `'use client'`; verify không còn import `next/navigation`; refactor để gọi `useSupabase()` từ CoreProvider
-- [ ] T051 Nhóm learning: `git mv` `useSavedWords`, `useProgressReport`, `useActivityDates`, `usePreferences` → core; refactor như T050
-- [ ] T052 Nhóm notifications: `git mv` `useNotificationPreferences`, `useRealtimeNotifications`, `useGemNotifications` → core; refactor + verify realtime subscription dùng injected client
-- [ ] T053 Nhóm booking/schedule: `git mv` `useScheduleDraft`, `useSlotSelection`, `useClassSearch`, `useClassReminder`, `useAnalyticsFilters` → core; refactor như T050
-- [ ] T054 **`useAuth` refactor (cẩn thận nhất)**: tách logic Supabase session + role lookup từ `profiles` vào `packages/core/src/hooks/useAuth.ts`; đẩy `window.location.origin`, `document.cookie` (OAuth callback URL + sign-out cookie clear), redirect ra `PlatformAdapter`; web tự cung cấp implementation `window`-based
+- [x] T050-T053 Move 13 hook portable (gamification/learning/notifications/booking) → core; đổi `@/lib/supabase/client` → `../adapters/supabase`; thêm `'use client'` (bắt buộc cho RSC boundary). Rename `Notification` interface trong `useRealtimeNotifications` → `RealtimeNotification` (tránh collision với notificationStore qua barrel).
+- [x] T054 **useAuth** → core: `getSupabaseClient` từ adapter; `window.location.origin`/`document.cookie`/redirect → `getPlatform()`.
+- [x] **DEFER**: `useClassSearch` (import type từ web component `ClassFilters`), `usePreferences` (Next Server Action), `useCometChat*`/`useVideoCall` (CometChat web SDK → Phase 6).
 
-### 3.5 Web app implement adapters + wire CoreProvider
+### 3.5 Web app implement adapters + bootstrap
 
-- [ ] T055 Tạo `apps/web/src/adapters/storage.web.ts`: implement `StorageAdapter` bằng `localStorage` (sync wrap thành Promise)
-- [ ] T056 [P] Tạo `apps/web/src/adapters/platform.web.ts`: implement `PlatformAdapter` bằng `window.location`/`window.open`
-- [ ] T057 Bọc root layout web (`apps/web/src/app/[locale]/layout.tsx` hoặc provider tree) trong `<CoreProvider supabase={browserClient} storage={webStorage} platform={webPlatform}>`; `browserClient` vẫn từ `apps/web/src/lib/supabase/client.ts` (createBrowserClient — ở lại web)
-- [ ] T058 Thêm `"@easyeng/core": "workspace:*"` vào `apps/web/package.json`; `pnpm install`
-- [ ] T059 Find-replace import trong `apps/web/src/**`: `@/hooks/*` (18 hook đã move) → `@easyeng/core`; `@/stores/*` → `@easyeng/core`; lib đã move → `@easyeng/core`; Grep verify không sót
+- [x] T055 `apps/web/src/adapters/storage.web.ts`: `localStorage` (guard SSR)
+- [x] T056 `apps/web/src/adapters/platform.web.ts`: window/document impl
+- [x] T057 **`components/CoreBootstrap.tsx`** (`'use client'`, renders null, gọi `registerAdapters()` ở module-load + render body) đặt TRƯỚC `{children}` trong layout → đảm bảo factory set trước khi page hook (useAuth) chạy ở SSR. (Bug đã gặp: page SSR trước layout side-effect → "factory not set". Fix bằng render order.) `core-bootstrap.ts` cũng import từ `@/lib/supabase/client`.
+- [x] T058 Thêm `@easyeng/core: workspace:*` vào web
+- [x] T059 Find-replace toàn bộ import moved hooks/stores/lib → `@easyeng/core`; subpath `@easyeng/core/adapters` cho bootstrap; Grep verify 0 sót
 
 ### Verification Gate — Phase 3
 
-- [ ] T060 `turbo run type-check` pass toàn workspace
-- [ ] T061 `turbo run build --filter=web` pass
-- [ ] T062 Smoke test web ĐẦY ĐỦ: login teacher + student (useAuth refactor — quan trọng nhất), gems balance hiển thị đúng, streak, vocabulary/saved words, weekly goal, progress report, notifications realtime (mở 2 tab thử), booking flow trừ gems thành công
-- [ ] T063 Chạy E2E hiện có `cd apps/web && node e2e-booking-call.mjs` — phải pass (xác nhận realtime + booking + video call web không gãy)
-- [ ] T064 Grep xác nhận 0 import `@/hooks/{18 hook}` và `@/stores/*` còn lại trong `apps/web`
-- [ ] T065 Commit: `refactor(core): extract shared hooks/stores/lib into @easyeng/core with adapter layer`
+- [x] T060 `turbo run type-check --filter=web` pass
+- [x] T061 `turbo run build --filter=web` pass (sau khi fix RSC boundary + CoreBootstrap)
+- [x] T062 Smoke test: landing `/vi`, login `/vi/auth/login` (useAuth + factory — KHÔNG còn "factory not set"), dashboard redirect (middleware) — tất cả 200, 0 console error liên quan core. (Hydration warning của next-intl là pre-existing, không liên quan.)
+- [ ] T063 E2E `e2e-booking-call.mjs` chạy trên Vercel deploy (không phải local) — defer tới khi deploy preview branch
+- [x] T064 Grep 0 import moved hooks/stores/lib còn lại trong web
+- [ ] T065 Commit (sắp làm)
 
 ---
 

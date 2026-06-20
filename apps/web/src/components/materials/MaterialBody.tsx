@@ -15,7 +15,7 @@
 
 import { useTranslations } from 'next-intl';
 
-import { resolveBody, type MaterialDetail } from '@/lib/queries/materials';
+import { resolveBody, type MaterialDetail } from '@easyeng/core';
 
 import type { Locale } from './MaterialCard';
 

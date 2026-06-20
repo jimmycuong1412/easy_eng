@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ClassData } from './ClassCard';
-import { useGemsBalance } from '@/hooks/useGemsBalance';
+import { useGemsBalance } from '@easyeng/core';
 
 const CLASS_GEM_PRICE = 100;
 

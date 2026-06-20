@@ -16,7 +16,7 @@ import { Volume2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ProgressRibbon } from './ProgressRibbon';
 import { SaveWordButton } from '@/components/vocabulary/SaveWordButton';
-import { useSavedWords } from '@/hooks/useSavedWords';
+import { useSavedWords } from '@easyeng/core';
 
 export interface VocabularyItem {
   id: string;

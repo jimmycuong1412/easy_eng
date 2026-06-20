@@ -20,8 +20,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GemImage } from '@/components/common/GemImage';
-import { useAuth } from '@/hooks/useAuth';
-import { useGemsBalance } from '@/hooks/useGemsBalance';
+import { useAuth } from '@easyeng/core';
+import { useGemsBalance } from '@easyeng/core';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 interface GemPackage {

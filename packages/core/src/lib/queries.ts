@@ -5,7 +5,7 @@
  * Client-side: call from Client Components via useEffect or useSWR
  */
 
-import { getSupabaseClient } from '@/lib/supabase/client';
+import { getSupabaseClient } from '../adapters/supabase';
 import type {
   Profile,
 } from '@easyeng/types';

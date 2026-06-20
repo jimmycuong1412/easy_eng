@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GemImage } from '@/components/common/GemImage';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { useGemsBalance } from '@/hooks/useGemsBalance';
+import { useGemsBalance } from '@easyeng/core';
 
 const GEMS_PER_SESSION = 200;
 

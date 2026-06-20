@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { BookOpen, Brain, ArrowLeft, Bookmark, Calendar } from 'lucide-react';
-import { useSavedWords } from '@/hooks/useSavedWords';
+import { useSavedWords } from '@easyeng/core';
 
 const FlashcardSession = nextDynamic(
   () => import('@/components/vocabulary/FlashcardSession').then((m) => m.FlashcardSession),

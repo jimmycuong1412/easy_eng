@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/routing';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 
 export default function LoginPage() {
   const t = useTranslations('auth.login');

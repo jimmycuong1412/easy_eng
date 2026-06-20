@@ -9,7 +9,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
-import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { useRealtimeNotifications } from '@easyeng/core';
 import NotificationList from '../common/NotificationList';
 
 // ============================================================================

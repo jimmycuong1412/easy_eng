@@ -8,10 +8,10 @@ import { useTranslations } from 'next-intl';
 import { useRouter, useParams } from 'next/navigation';
 
 import { formatNumber } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
-import { useGemsBalance } from '@/hooks/useGemsBalance';
+import { useAuth } from '@easyeng/core';
+import { useGemsBalance } from '@easyeng/core';
 import { createClient } from '@/lib/supabase/client';
-import { getDashboardData, getTeachers, getStudentProgress } from '@/lib/queries';
+import { getDashboardData, getTeachers, getStudentProgress } from '@easyeng/core';
 import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
 import StreakWidget from '@/components/dashboard/StreakWidget';
 import WeeklyGoalWidget from '@/components/dashboard/WeeklyGoalWidget';

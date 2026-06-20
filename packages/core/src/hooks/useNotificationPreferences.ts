@@ -1,3 +1,4 @@
+'use client';
 /**
  * useNotificationPreferences hook
  *
@@ -5,11 +6,10 @@
  * via the notification_preferences table (replaces localStorage toggles).
  */
 
-'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { createClient } from '../adapters/supabase';
+import { useAuth } from './useAuth';
 
 // ============================================================================
 // Types

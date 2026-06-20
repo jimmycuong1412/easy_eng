@@ -1,13 +1,13 @@
+'use client';
 /**
  * Real-time Gem Notifications Hook
  * Listens to gem_transactions table for new gem earnings
  * Triggers toast notifications when gems are earned
  */
 
-'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../adapters/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface GemNotification {

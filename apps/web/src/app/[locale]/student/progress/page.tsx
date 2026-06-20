@@ -20,8 +20,8 @@ import {
 } from 'lucide-react';
 
 import { formatNumber } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
-import { getStudentProgress, getLeaderboard } from '@/lib/queries';
+import { useAuth } from '@easyeng/core';
+import { getStudentProgress, getLeaderboard } from '@easyeng/core';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@easyeng/core';
 import type { UserRole } from '@easyeng/types';
 import { Skeleton } from '@/components/ui/skeleton';
 

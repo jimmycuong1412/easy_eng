@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { GemImage } from '@/components/common/GemImage';
-import { useAnalyticsFilters } from '@/hooks/useAnalyticsFilters';
+import { useAnalyticsFilters } from '@easyeng/core';
 import DateRangePicker from '@/components/admin/DateRangePicker';
 import UserGrowthChart from '@/components/admin/UserGrowthChart';
 import BookingTrendsChart from '@/components/admin/BookingTrendsChart';

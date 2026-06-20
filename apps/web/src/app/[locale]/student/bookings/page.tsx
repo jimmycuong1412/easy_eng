@@ -22,8 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useParams } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { getUserBookings } from '@/lib/queries';
+import { useAuth } from '@easyeng/core';
+import { getUserBookings } from '@easyeng/core';
 import { ClassNoteEditor } from '@/components/student/ClassNoteEditor';
 
 // Animation variants

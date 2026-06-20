@@ -17,7 +17,7 @@ import { Plus, Loader2, FileText } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import type { MaterialType, MaterialLevel, MaterialStatus } from '@/lib/queries/materials';
+import type { MaterialType, MaterialLevel, MaterialStatus } from '@easyeng/core';
 
 interface AdminMaterialRow {
   id: string;

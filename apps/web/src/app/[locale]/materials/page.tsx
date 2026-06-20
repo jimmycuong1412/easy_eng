@@ -23,7 +23,7 @@ import {
   type MaterialGoal,
   type MaterialLevel,
   type MaterialType,
-} from '@/lib/queries/materials';
+} from '@easyeng/core';
 import { locales, type Locale } from '@/i18n/config';
 
 import { MaterialCard } from '@/components/materials/MaterialCard';

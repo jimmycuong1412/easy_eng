@@ -1,3 +1,4 @@
+'use client';
 /**
  * useGemsBalance Hook
  * Updated: 2026-02-20
@@ -5,10 +6,9 @@
  * via Supabase RPC get_gems_balance.
  */
 
-'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../adapters/supabase';
 
 export interface GemsBalanceDetails {
   user_id: string;

@@ -6,6 +6,7 @@ import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
 
 import { locales, type Locale } from '@/i18n/config';
+import { CoreBootstrap } from '@/components/CoreBootstrap';
 import DevDebugPopup from '@/components/DevDebugPopup';
 import { GlobalHomeButton } from '@/components/common';
 import { OfflineIndicator } from '@/components/common/OfflineIndicator';
@@ -138,6 +139,10 @@ export default async function LocaleLayout({
     >
       <body className="min-h-screen bg-bg-primary font-sans antialiased" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
+          {/* Register @easyeng/core platform adapters before any descendant
+              client hook (useAuth, stores) runs — SSR and client. */}
+          <CoreBootstrap />
+
           {/* Skip to main content link for accessibility */}
           <a
             href="#main-content"

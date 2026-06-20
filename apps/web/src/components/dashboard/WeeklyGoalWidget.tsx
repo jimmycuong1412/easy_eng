@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Target, Pencil, Check, X } from 'lucide-react';
-import { useWeeklyGoal } from '@/hooks/useWeeklyGoal';
+import { useWeeklyGoal } from '@easyeng/core';
 
 function GoalBar({
   label, actual, target, color,

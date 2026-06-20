@@ -31,9 +31,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
-import { useAuth } from '@/hooks/useAuth';
-import { getUserNotifications, markNotificationRead } from '@/lib/queries';
-import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
+import { useAuth } from '@easyeng/core';
+import { getUserNotifications, markNotificationRead } from '@easyeng/core';
+import { useNotificationPreferences } from '@easyeng/core';
 
 const notificationIconMap: Record<string, { icon: typeof Bell; color: string; bgColor: string }> = {
   class_reminder: { icon: Video, color: 'text-[#3B82F6]', bgColor: 'bg-[#3B82F6]/10' },

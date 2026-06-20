@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Calendar, Clock, User, ArrowRight, BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@easyeng/core';
 import { format } from 'date-fns';
 import { getSupabaseClient } from '@/lib/supabase/client';
 

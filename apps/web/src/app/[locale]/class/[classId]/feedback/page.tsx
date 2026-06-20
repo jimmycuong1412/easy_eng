@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getClassById } from '@/lib/queries';
+import { getClassById } from '@easyeng/core';
 
 export default function ClassFeedbackPage({ params }: { params: { classId: string } }) {
   const t = useTranslations('feedback');

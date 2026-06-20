@@ -10,7 +10,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { X, ExternalLink } from 'lucide-react';
-import type { Notification } from '@/hooks/useRealtimeNotifications';
+import type { RealtimeNotification as Notification } from '@easyeng/core';
 
 // ============================================================================
 // Types

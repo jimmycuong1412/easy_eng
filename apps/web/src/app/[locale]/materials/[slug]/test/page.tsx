@@ -19,7 +19,7 @@ import {
   fetchMockTestQuestions,
   resolveSummary,
   resolveTitle,
-} from '@/lib/queries/materials';
+} from '@easyeng/core';
 import { locales, type Locale } from '@/i18n/config';
 
 import { MockTestPlayer } from '@/components/materials/MockTestPlayer';

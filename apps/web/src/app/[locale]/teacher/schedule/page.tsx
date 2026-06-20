@@ -18,11 +18,11 @@ import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 import { usePreferences } from '@/hooks/usePreferences';
-import { getTeacherSchedule } from '@/lib/queries';
+import { getTeacherSchedule } from '@easyeng/core';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { formatTime, getTimezoneLabel } from '@/lib/timezone';
+import { formatTime, getTimezoneLabel } from '@easyeng/core';
 import AvailabilityCalendar from '@/components/teacher/AvailabilityCalendar';
 
 interface UpcomingClass {

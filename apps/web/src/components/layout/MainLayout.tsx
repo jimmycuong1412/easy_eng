@@ -11,7 +11,7 @@ import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 
 import RoleBasedNav from './RoleBasedNav';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 
 interface MainLayoutProps {
   children: React.ReactNode;

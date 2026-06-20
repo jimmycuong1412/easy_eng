@@ -22,7 +22,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { getBookingById } from '@/lib/queries';
+import { getBookingById } from '@easyeng/core';
 
 function formatVND(amount: number): string {
   return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';

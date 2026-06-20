@@ -9,7 +9,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertCircle, Info, X } from 'lucide-react';
-import { useNotificationStore } from '@/stores/notificationStore';
+import { useNotificationStore } from '@easyeng/core';
 
 const iconMap = {
   success: CheckCircle2,

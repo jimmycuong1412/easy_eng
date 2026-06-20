@@ -32,7 +32,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { GemImage } from '@/components/common/GemImage';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { useGemsBalance } from '@/hooks/useGemsBalance';
+import { useGemsBalance } from '@easyeng/core';
 
 const CLASS_GEM_PRICE = 100;
 

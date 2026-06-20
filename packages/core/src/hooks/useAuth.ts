@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 
-import { getSupabaseClient } from '@/lib/supabase/client';
+import { getSupabaseClient } from '../adapters/supabase';
+import { getPlatform } from '../adapters/platform';
 import type { Profile } from '@easyeng/types';
 
 interface UseAuthReturn {
@@ -165,7 +166,7 @@ export function useAuth(): UseAuthReturn {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${getPlatform().getOrigin()}/auth/callback`,
       },
     });
 
@@ -188,16 +189,12 @@ export function useAuth(): UseAuthReturn {
       // swallow — we still need to clear cookies and redirect
     }
 
-    // Always clear Supabase auth cookies so the middleware doesn't see a
-    // stale session and bounce the user back to the dashboard.
-    document.cookie.split(';').forEach((cookie) => {
-      const name = cookie.split('=')[0].trim();
-      if (name.startsWith('sb-')) {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-      }
-    });
+    // Always clear Supabase auth credentials so the middleware doesn't see a
+    // stale session and bounce the user back to the dashboard. (web: sb-* cookies;
+    // mobile: no-op — session lives in AsyncStorage and signOut() cleared it.)
+    getPlatform().clearAuthCookies();
 
-    window.location.href = '/en/auth/login';
+    getPlatform().redirect('/en/auth/login');
   }, [supabase]);
 
   // Reset password
@@ -206,7 +203,7 @@ export function useAuth(): UseAuthReturn {
       setError(null);
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${getPlatform().getOrigin()}/auth/reset-password`,
       });
 
       if (error) {

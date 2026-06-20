@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { getBookingById } from '@/lib/queries';
+import { getBookingById } from '@easyeng/core';
 import { GemImage } from '@/components/common/GemImage';
 
 // Cancellation policy

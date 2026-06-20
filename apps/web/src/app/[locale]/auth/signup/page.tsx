@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 
 type UserRole = 'student' | 'teacher' | 'parent';
 

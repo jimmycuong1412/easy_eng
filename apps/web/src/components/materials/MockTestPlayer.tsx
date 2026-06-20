@@ -22,7 +22,7 @@ import { createClient } from '@/lib/supabase/client';
 import type {
   MockTestGradeResult,
   MockTestQuestion,
-} from '@/lib/queries/materials';
+} from '@easyeng/core';
 
 import type { Locale } from './MaterialCard';
 

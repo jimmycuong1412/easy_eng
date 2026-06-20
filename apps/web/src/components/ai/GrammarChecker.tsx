@@ -8,7 +8,7 @@
 
 import React, { useCallback, useDeferredValue, useMemo, useState } from 'react';
 import { CheckCircle2, AlertCircle, Info, Lightbulb, X } from 'lucide-react';
-import { checkGrammar, type GrammarIssue } from '@/lib/grammar/rules';
+import { checkGrammar, type GrammarIssue } from '@easyeng/core';
 
 interface Props {
   placeholder?: string;

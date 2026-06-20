@@ -19,7 +19,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { MaterialEditor, type MaterialEditorDraft } from '@/components/materials/editor/MaterialEditor';
 import type { VocabItemDraft } from '@/components/materials/editor/VocabularyItemsEditor';
 import type { TestItemDraft } from '@/components/materials/editor/MockTestItemsEditor';
-import { fetchMaterialForEditor, fetchVocabItemsForEditor, fetchTestItemsForEditor } from '@/lib/queries/materials';
+import { fetchMaterialForEditor, fetchVocabItemsForEditor, fetchTestItemsForEditor } from '@easyeng/core';
 
 export default function MaterialEditorPage() {
   return (

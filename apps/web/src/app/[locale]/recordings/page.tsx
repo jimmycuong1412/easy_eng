@@ -30,9 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 import { useTranslations, useLocale } from 'next-intl';
-import { getUserRecordings } from '@/lib/queries';
+import { getUserRecordings } from '@easyeng/core';
 
 interface RecordingItem {
   id: string;

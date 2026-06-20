@@ -21,8 +21,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth } from '@/hooks/useAuth';
-import { getUserReferralData } from '@/lib/queries';
+import { useAuth } from '@easyeng/core';
+import { getUserReferralData } from '@easyeng/core';
 import { GemImage } from '@/components/common/GemImage';
 
 // Animation variants

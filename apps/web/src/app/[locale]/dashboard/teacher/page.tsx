@@ -18,10 +18,10 @@ import {
   BookOpen,
 } from 'lucide-react';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@easyeng/core';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { getTeacherSchedule } from '@/lib/queries';
+import { getTeacherSchedule } from '@easyeng/core';
 import { ActiveClassBanner } from '@/components/common/ActiveClassBanner';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

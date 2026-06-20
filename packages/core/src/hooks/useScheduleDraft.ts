@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../adapters/supabase';
 
 // key format: "dayOfWeek:HH:MM" (e.g. "1:08:25") → enabled/disabled
 type DraftOverrides = Record<string, boolean>;
