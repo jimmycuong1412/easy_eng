@@ -99,6 +99,25 @@ export async function getTeachers(filters?: { limit?: number; offset?: number })
   return data;
 }
 
+/**
+ * Book a 1-on-1 session via the book_slot RPC (SECURITY DEFINER). Shared by web
+ * and mobile. Throws on insufficient_gems / duplicate_booking / not_authenticated.
+ */
+export async function bookSlot(args: {
+  teacherId: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM (VN local)
+}): Promise<{ booking_id: string; class_id: string }> {
+  const { data, error } = await (supabase() as any).rpc('book_slot', {
+    p_teacher_id: args.teacherId,
+    p_date: args.date,
+    p_time: args.time,
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row as { booking_id: string; class_id: string };
+}
+
 export async function getTeacherById(teacherId: string) {
   const db = supabase();
 

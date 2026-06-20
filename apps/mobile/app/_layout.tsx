@@ -36,6 +36,7 @@ function AuthGate() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="vocabulary/review" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="teachers/[id]" options={{ presentation: 'card' }} />
     </Stack>
   );
 }

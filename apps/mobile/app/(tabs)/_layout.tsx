@@ -30,6 +30,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="teachers"
+        options={{
+          title: 'Tìm GV',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>👨‍🏫</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="progress"
         options={{
           title: 'Tiến độ',
