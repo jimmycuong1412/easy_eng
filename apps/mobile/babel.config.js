@@ -11,5 +11,10 @@ module.exports = function (api) {
       ['babel-preset-expo', { jsxImportSource: 'nativewind', reanimated: false }],
       'nativewind/babel',
     ],
+    plugins: [
+      // gluestack-ui's React Aria deps (react-stately) ship static class blocks
+      // (`static { ... }`) which babel-preset-expo doesn't transform by default.
+      '@babel/plugin-transform-class-static-block',
+    ],
   };
 };

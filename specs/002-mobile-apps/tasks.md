@@ -187,11 +187,13 @@
 ### Verification Gate — Phase 5
 - [x] T082 `pnpm --filter mobile type-check` pass (Node 20) — dashboard + router + nativewind className type OK
 - [x] T083 Web không gãy: `pnpm --filter web type-check` pass
-- [ ] T084 **BLOCKED — Metro bundle (`expo export`)**: version-matrix mismatch trong toolchain Expo SDK 52, KHÔNG phải lỗi code (type-check pass cả 2 app). Đã debug sâu, peel từng layer:
-  - **Config phase fix (đã làm)**: `app.json` bỏ `expo-linking` khỏi `plugins` (nó không phải config plugin → `@expo/config-plugins` require fail). `@easyeng/config` thêm `exports` map cho `./tailwind-preset` (NativeWind require được). → Metro vào được transform phase.
-  - **Blocker còn lại (transform phase)**: `babel-preset-expo@12.0.12` (resolve từ `expo@52.0.49`) + NativeWind's `react-native-css-interop@0.2.5` yêu cầu `react-native-worklets/plugin`. Nhưng SDK 52 `bundledNativeModules` nói reanimated `~3.16.1`, **worklets = (none)** — reanimated 3.16 plugin self-contained, không cần worklets. Cài `react-native-worklets@0.9.2` (bản duy nhất có) thì babel load được nhưng **crash khi traverse** (0.9.2 dành cho reanimated 4 / RN 0.83, không tương thích RN 0.76). → mâu thuẫn không gỡ tay được.
-  - Đã thử: Node 24/22/20, pnpm 11/9, node-linker isolated/hoisted, `babel reanimated:false`, pnpm override babel-preset-expo (không apply được do exact-pin của expo), cài/gỡ worklets.
-  - **Fix đúng**: chạy `expo install --fix` để Expo align đồng bộ babel-preset-expo ↔ reanimated ↔ worklets — nhưng nó dùng `npm install` → fail trên `workspace:*` của pnpm. Cần: (a) môi trường Expo+pnpm sạch chạy `pnpm dlx expo-doctor` + align thủ công versions theo bundledNativeModules, hoặc (b) tạm bỏ NativeWind reanimated dependency. Để lại cho bước có thời gian + môi trường mobile chuẩn.
+- [x] T084 **✅ Metro bundle (`expo export`) PASS** — `expo export --platform ios` xuất bundle 7.1 MB thành công (Node 20 + pnpm 9). Chuỗi fix root-cause (mỗi cái bóc 1 layer):
+  1. `app.json`: bỏ `expo-linking` khỏi `plugins` (không phải config plugin → resolver crash).
+  2. `@easyeng/config`: thêm `exports` map cho `./tailwind-preset` (NativeWind require được).
+  3. `babel.config`: `babel-preset-expo { reanimated: false }`.
+  4. **Culprit chính**: `nativewind@4.2.5` kéo `react-native-css-interop@0.2.5` — bản cho **reanimated 4**, hard-ref `"react-native-worklets/plugin"` trong `babel.js`. SDK 52 dùng reanimated 3.16 (không có worklets). → **pin `nativewind@4.1.23`** (exact, bỏ caret) + pnpm override `react-native-css-interop@0.1.22` (bản cho reanimated 3.x, không ref worklets).
+  5. `babel.config`: thêm plugin `@babel/plugin-transform-class-static-block` (gluestack-ui's react-stately dùng static class blocks).
+  - **Toolchain bắt buộc**: Node 20 (Expo SDK 52 không chạy Node 22.18+/24), pnpm 9 (pnpm 11 cần Node ≥22.13).
 - [x] T085 Commit (auto-push) — Phase 5.5 dashboard (commit trước) + Phase 5 toolchain/config fixes (commit này)
 
 ---
