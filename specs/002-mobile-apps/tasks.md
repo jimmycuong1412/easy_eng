@@ -168,6 +168,30 @@
 
 ---
 
+## Phase 5: UI mobile (foundation + dashboard) — IN PROGRESS
+
+**Purpose**: NativeWind + gluestack-ui + Expo Router làm nền, rồi build từng màn hình mobile dùng core hooks.
+
+- [x] T076 Shared Tailwind preset `packages/config/tailwind-preset.js` (editorial color tokens) — web + mobile dùng chung
+- [x] T077 NativeWind 4: tailwind.config (extends preset), global.css, babel jsxImportSource, metro withNativeWind, nativewind-env.d.ts
+- [x] T078 gluestack-ui Providers (theme + safe-area) ở app root
+- [x] T079 Expo Router: root `_layout` + AuthGate (route theo session giữa (auth)/(tabs)), `(auth)/login` (NativeWind + core useAuth), `(tabs)` skeleton; entry → `expo-router/entry`
+- [x] T080 **Dashboard student** `(tabs)/index.tsx`: gems, streak, XP, buổi đã học, weekly goal (progress bars), nav links — dùng useGemsBalance/useStreak/useWeeklyGoal/useProgressReport từ core
+- [x] T081 Pin Node <21 (.nvmrc=20, engines) + RN 0.76.9 (expo install --fix align SDK 52)
+
+### ⚠️ Toolchain saga (đã giải quyết phần verify được)
+- Expo SDK 52 CLI KHÔNG chạy trên Node 22.18+/24 (auto type-strip `.ts`). → Node 20.
+- pnpm 11 cần Node ≥22.13 → trên Node 20 dùng **pnpm 9** (global hoặc npx). Lockfile tương thích.
+- nvm-windows: tool shells phải prepend `C:\nvm4w\nodejs` vào PATH.
+
+### Verification Gate — Phase 5
+- [x] T082 `pnpm --filter mobile type-check` pass (Node 20) — dashboard + router + nativewind className type OK
+- [x] T083 Web không gãy: `pnpm --filter web type-check` pass
+- [ ] T084 **BLOCKED — Metro bundle (`expo export`)**: upstream Expo SDK 52.0.0 bug — `expo-modules-core@2.2.3` ship **`.ts`-only, KHÔNG có `.js` build** (chỉ `build/*.d.ts`), `main: "src/index.ts"`. Expo CLI `import()` nó trong plain Node khi export → `ERR_UNKNOWN_FILE_EXTENSION`/`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`. Đã thử Node 24/22/20 + pnpm 11/9 + node-linker isolated/hoisted — đều fail vì package thiếu JS build. **Fix: bump Expo SDK 52 lên patch mới hơn (52.0.x có expo-modules-core build JS) rồi `expo install --fix`**, hoặc bundle ở môi trường Expo+pnpm đã setup sẵn. KHÔNG phải lỗi code (type-check pass cả 2 app).
+- [x] T085 Commit (auto-push)
+
+---
+
 ## Tổng kết Phase 1-3
 
 | Phase | Tasks | Effort | Gate chính |
