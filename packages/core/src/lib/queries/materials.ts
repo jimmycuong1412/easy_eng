@@ -345,13 +345,39 @@ export interface MaterialEditorFull extends MaterialDetail {
 }
 
 /**
+ * Editor draft shape returned by fetchMaterialForEditor. Pure data — lives in
+ * core so both the shared query and the web editor component reference one type.
+ */
+export interface MaterialEditorDraft {
+  id: string | null;
+  type: MaterialType;
+  level: MaterialLevel;
+  goal: MaterialGoal | null;
+  status: MaterialStatus;
+  title_vi: string;
+  title_en: string | null;
+  summary_vi: string;
+  summary_en: string | null;
+  body_vi: string;
+  body_en: string | null;
+  duration_min: number;
+  gems_reward: number;
+  xp_reward: number;
+  min_completion_pct: number;
+  cover_path: string | null;
+  author_id: string;
+  updated_at: string;
+  scheduled_publish_at: string | null;
+}
+
+/**
  * Fetch a material by its UUID for the editor. Returns null if not found or
  * access denied (RLS). Does NOT filter by status — authors need to see drafts.
  */
 export async function fetchMaterialForEditor(
   supabase: SupabaseClient,
   materialId: string,
-): Promise<import('@/components/materials/editor/MaterialEditor').MaterialEditorDraft | null> {
+): Promise<MaterialEditorDraft | null> {
   const { data, error } = await supabase
     .from('materials')
     .select(

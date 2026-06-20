@@ -5,7 +5,13 @@ import { useTranslations } from 'next-intl';
 import { AlertCircle } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
-import type { MaterialType, MaterialLevel, MaterialGoal, MaterialStatus } from '@easyeng/core';
+import type {
+  MaterialType,
+  MaterialLevel,
+  MaterialGoal,
+  MaterialStatus,
+  MaterialEditorDraft,
+} from '@easyeng/core';
 import { SectionEditor, type SectionDraft } from './SectionEditor';
 import { VocabularyItemsEditor, type VocabItemDraft } from './VocabularyItemsEditor';
 import { MockTestItemsEditor, type TestItemDraft } from './MockTestItemsEditor';
@@ -14,27 +20,10 @@ import { MockTestItemsEditor, type TestItemDraft } from './MockTestItemsEditor';
 // Types
 // ============================================================
 
-export interface MaterialEditorDraft {
-  id: string | null;
-  type: MaterialType;
-  level: MaterialLevel;
-  goal: MaterialGoal | null;
-  status: MaterialStatus;
-  title_vi: string;
-  title_en: string | null;
-  summary_vi: string;
-  summary_en: string | null;
-  body_vi: string;
-  body_en: string | null;
-  duration_min: number;
-  gems_reward: number;
-  xp_reward: number;
-  min_completion_pct: number;
-  cover_path: string | null;
-  author_id: string;
-  updated_at: string;
-  scheduled_publish_at: string | null;
-}
+// MaterialEditorDraft now lives in @easyeng/core (shared with fetchMaterialForEditor).
+// Re-exported here so existing `import('.../MaterialEditor').MaterialEditorDraft`
+// references keep resolving.
+export type { MaterialEditorDraft } from '@easyeng/core';
 
 interface ValidationErrors {
   title_vi?: string;

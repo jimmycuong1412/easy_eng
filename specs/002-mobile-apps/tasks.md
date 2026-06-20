@@ -139,7 +139,32 @@
 - [x] T062 Smoke test: landing `/vi`, login `/vi/auth/login` (useAuth + factory — KHÔNG còn "factory not set"), dashboard redirect (middleware) — tất cả 200, 0 console error liên quan core. (Hydration warning của next-intl là pre-existing, không liên quan.)
 - [ ] T063 E2E `e2e-booking-call.mjs` chạy trên Vercel deploy (không phải local) — defer tới khi deploy preview branch
 - [x] T064 Grep 0 import moved hooks/stores/lib còn lại trong web
-- [ ] T065 Commit (sắp làm)
+- [x] T065 Commit `refactor(core): extract shared hooks/stores/lib into @easyeng/core` (f397310)
+
+---
+
+## Phase 4: Khởi tạo Expo app (DONE)
+
+**Purpose**: Dựng `apps/mobile` (Expo SDK 52, RN 0.76) kết nối Supabase qua `@easyeng/core` bằng adapter mobile.
+
+- [x] T066 Scaffold `apps/mobile` thủ công (tránh prompt interactive của `create expo`): package.json (expo ~52, react 18.3.1, RN 0.76.5, async-storage, expo-linking, url-polyfill), app.json, babel.config.js, index.ts
+- [x] T067 `metro.config.js` cho monorepo: `watchFolders=[workspaceRoot]`, `nodeModulesPaths` app+root, `unstable_enableSymlinks` + `unstable_enablePackageExports` (pnpm symlink)
+- [x] T068 `src/adapters/storage.native.ts` (AsyncStorage), `src/adapters/platform.native.ts` (expo-linking deep-link getOrigin/redirect, clearAuthCookies no-op)
+- [x] T069 `src/lib/core-bootstrap.ts`: register factory `createClient` (supabase-js) + AsyncStorage auth storage + `detectSessionInUrl:false` + url-polyfill; import ở `index.ts` trước App
+- [x] T070 `App.tsx` smoke screen: login bằng `useAuth` + hiển thị `useGemsBalance` từ core (chứng minh data layer share chạy trên RN)
+- [x] T071 `.env.local.example` (EXPO_PUBLIC_SUPABASE_*)
+
+### 2 bug cross-platform phát hiện qua `tsc` mobile (đã fix):
+1. `queries/materials.ts` có inline `import('@/components/materials/editor/MaterialEditor').MaterialEditorDraft` — web component type rò vào core. Fix: move interface `MaterialEditorDraft` vào core `materials.ts`, web component re-export từ core.
+2. `useRealtimeNotifications.ts` dùng browser global `window`/`Notification` (không có DOM lib ở RN). Fix: access qua `globalThis.window` có guard → web vẫn chạy, native skip (mobile push để Phase 7).
+
+### Verification Gate — Phase 4
+- [x] T072 `pnpm --filter mobile type-check` pass (core hooks + types resolve trên RN qua adapter)
+- [x] T073 Web không gãy: `turbo type-check --filter=web` pass, `turbo build --filter=web` pass
+- [ ] T074 Chạy thật trên simulator/device — CẦN MÁY (Xcode/Android Studio) + EAS dev-client cho native module. Defer (môi trường hiện tại không có simulator).
+- [x] T075 Commit (auto-push)
+
+> **Phase 4 chứng minh kiến trúc adapter hoạt động**: cùng `useAuth`/`useGemsBalance` chạy được trên cả web (Next) và mobile (RN), chỉ khác adapter inject. Chạy runtime trên thiết bị thật là bước tiếp theo cần môi trường có simulator.
 
 ---
 

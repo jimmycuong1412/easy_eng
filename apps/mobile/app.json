@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "EasyEng",
+    "slug": "easyeng",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "easyeng",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.easyeng.app"
+    },
+    "android": {
+      "package": "com.easyeng.app"
+    },
+    "plugins": ["expo-linking"]
+  }
+}

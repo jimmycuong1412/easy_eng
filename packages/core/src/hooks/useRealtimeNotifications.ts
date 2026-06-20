@@ -138,9 +138,20 @@ export function useRealtimeNotifications(userId?: string): UseRealtimeNotificati
                 setUnreadCount(prev => prev + 1);
               }
 
-              // Show browser notification if supported
-              if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(newNotification.title, {
+              // Show a browser notification on web if supported. Accessed via
+              // globalThis so this compiles without the DOM lib (React Native);
+              // on native `window`/Notification are absent and the block is
+              // skipped (mobile push will use expo-notifications in Phase 7).
+              const w = (globalThis as { window?: unknown }).window as
+                | {
+                    Notification?: {
+                      new (title: string, opts?: unknown): unknown;
+                      permission: string;
+                    };
+                  }
+                | undefined;
+              if (w?.Notification && w.Notification.permission === 'granted') {
+                new w.Notification(newNotification.title, {
                   body: newNotification.message,
                   icon: '/icon-192x192.png',
                   tag: newNotification.id,

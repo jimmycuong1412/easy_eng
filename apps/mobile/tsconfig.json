@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["esnext"],
+    "moduleResolution": "bundler",
+    "paths": {
+      "@easyeng/types": ["../../packages/types/src"],
+      "@easyeng/core": ["../../packages/core/src"],
+      "@easyeng/core/adapters": ["../../packages/core/src/adapters/index.ts"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}
