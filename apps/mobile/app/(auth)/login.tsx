@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { Link } from 'expo-router';
 import { useAuth } from '@easyeng/core';
 
 /**
@@ -53,6 +54,19 @@ export default function LoginScreen() {
             <Text className="text-white text-base font-semibold">Đăng nhập</Text>
           )}
         </Pressable>
+
+        <View className="items-center mt-1">
+          <Link href="/(auth)/forgot-password" className="text-text-muted text-sm">
+            Quên mật khẩu?
+          </Link>
+        </View>
+
+        <View className="flex-row justify-center gap-1 mt-1">
+          <Text className="text-text-muted text-sm">Chưa có tài khoản?</Text>
+          <Link href="/(auth)/register" className="text-accent-primary text-sm font-semibold">
+            Đăng ký
+          </Link>
+        </View>
       </View>
     </View>
   );
