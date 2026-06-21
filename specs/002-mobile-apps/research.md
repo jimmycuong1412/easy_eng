@@ -46,3 +46,20 @@ Packages with strict version/peer requirements to watch during pnpm hoist:
 - **`globals.d.ts` deliberately NOT moved** — it is an ambient global declaration (augments `Window`), applies via tsconfig `include` not import, and is web-only (plausible/gtag/Sentry/webkitAudioContext). Stays in `apps/web/src/types/`.
 - **No automated Supabase type-regen script exists** — `database.ts` was hand-generated from migrations. Future regen should target `packages/types/src/database.ts` to keep one source of truth.
 - TODO (CI follow-up, deferred from Phase 1): `accessibility.yml` and `perf-regression.yml` still use npm + (now non-existent) `apps/web/package-lock.json`. They only run on deploy branches, not `002-mobile-apps`. Convert to pnpm before merging to a deploy branch.
+
+## Phase 6-7 outcome + Release runbook (needs device/store accounts to finish)
+
+**Done (device-independent):**
+- Phase 6 CometChat: edge function `cometchat-auth-token` (deployed), core `getCometChatAuthToken()`, mobile RN SDK deps + cam/mic perms + `class/[id]` token-fetch screen. Video/chat UI = TODO (native module, needs dev-client).
+- Phase 7 payments: gems sold web-only (no IAP) — mobile `app/gems.tsx` opens web purchase via expo-web-browser. Mobile shows balance + uses gems (booking).
+- Phase 7 push: `expo_push_tokens` table + `register_expo_push_token` RPC (applied), core `registerExpoPushToken()`, mobile `src/lib/push.ts` (expo-notifications) called from AuthGate after login.
+- Phase 7 release: `apps/mobile/eas.json` with development(dev-client, ios simulator)/preview/production profiles.
+
+**Prerequisites to actually ship (need device + accounts):**
+1. **Supabase function secrets** for cometchat-auth-token: set `COMETCHAT_APP_ID`, `COMETCHAT_REGION`, `COMETCHAT_API_KEY` (copy from web env). Function returns "not configured" until set.
+2. **EAS**: `eas login`; `eas init` to set the projectId (also add to app.json `extra.eas.projectId` so push tokens mint); set EAS secrets `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_COMETCHAT_APP_ID`, `EXPO_PUBLIC_COMETCHAT_REGION`.
+3. **Dev client build** (for native CometChat + push test): `cd apps/mobile && eas build --profile development --platform ios|android`; install on device; `pnpm --filter mobile start`.
+4. **CometChat video/chat UI**: implement with `@cometchat/chat-sdk-react-native` + calls SDK in `class/[id]` (init with appId/region, login via authToken from getCometChatAuthToken, join call). Test A/V on 2 devices (mirror web e2e-booking-call.mjs).
+5. **Store accounts**: Apple Developer ($99/yr) + Google Play ($25). `eas submit --profile production`. Provide icon/splash/screenshots.
+
+**Note on newArchEnabled**: app.json has `newArchEnabled: true` (SDK 52 default). Verify CometChat calls SDK works with new arch on the dev-client build; if it crashes, set false and rebuild.
