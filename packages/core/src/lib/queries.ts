@@ -139,6 +139,23 @@ export async function saveLearningProfile(args: {
   if (error) throw error;
 }
 
+/**
+ * Register/refresh the current user's Expo push token (mobile). Calls the
+ * register_expo_push_token RPC. Web has its own web-push subscribe flow.
+ */
+export async function registerExpoPushToken(args: {
+  token: string;
+  platform?: string;
+  deviceName?: string;
+}): Promise<void> {
+  const { error } = await (supabase() as any).rpc('register_expo_push_token', {
+    p_token: args.token,
+    p_platform: args.platform ?? null,
+    p_device_name: args.deviceName ?? null,
+  });
+  if (error) throw error;
+}
+
 export async function getTeacherById(teacherId: string) {
   const db = supabase();
 

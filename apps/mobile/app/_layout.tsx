@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '@easyeng/core';
 
 import { Providers } from '../src/components/Providers';
+import { registerForPushNotifications } from '../src/lib/push';
 
 /**
  * Routes the user between the (auth) and (tabs) groups based on session state.
@@ -31,6 +32,13 @@ function AuthGate() {
     }
   }, [user, isLoading, segments, router]);
 
+  // Register for push notifications once the user is authenticated.
+  useEffect(() => {
+    if (user) {
+      void registerForPushNotifications();
+    }
+  }, [user]);
+
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#060f33' } }}>
       <Stack.Screen name="(auth)" />
@@ -39,6 +47,7 @@ function AuthGate() {
       <Stack.Screen name="teachers/[id]" options={{ presentation: 'card' }} />
       <Stack.Screen name="onboarding/quiz" options={{ presentation: 'modal' }} />
       <Stack.Screen name="class/[id]" options={{ presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="gems" options={{ presentation: 'card' }} />
     </Stack>
   );
 }

@@ -101,14 +101,11 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      {/* Top stats: gems + streak */}
+      {/* Top stats: gems (tap → top-up screen) + streak */}
       <View className="flex-row gap-3">
-        <StatCard
-          label="Gems"
-          value={balance}
-          color="#ec4899"
-          loading={gemsLoading}
-        />
+        <Pressable className="flex-1" onPress={() => router.push('/gems')}>
+          <StatCard label="Gems" value={balance} color="#ec4899" loading={gemsLoading} />
+        </Pressable>
         <StatCard
           label="Streak"
           value={`${streak?.currentStreak ?? 0}🔥`}
