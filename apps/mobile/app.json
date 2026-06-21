@@ -9,10 +9,19 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.easyeng.app"
+      "bundleIdentifier": "com.easyeng.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "EasyEng dùng camera cho lớp học video 1-1.",
+        "NSMicrophoneUsageDescription": "EasyEng dùng micro cho lớp học video 1-1."
+      }
     },
     "android": {
-      "package": "com.easyeng.app"
+      "package": "com.easyeng.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "plugins": ["expo-router"]
   }

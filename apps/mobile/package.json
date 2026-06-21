@@ -11,6 +11,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@cometchat/chat-sdk-react-native": "^4.0.0",
+    "@cometchat/calls-sdk-react-native": "^4.0.0",
     "@easyeng/core": "workspace:*",
     "@easyeng/types": "workspace:*",
     "@gluestack-ui/config": "^1.1.0",
