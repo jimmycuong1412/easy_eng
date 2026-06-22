@@ -1,7 +1,16 @@
 # EasyEng Mobile — Handoff
 
-**Branch**: `002-mobile-apps` (18 commits, all pushed) · **Base**: `001-english-learning-platform`
+**Branch**: merged into `001-english-learning-platform` (the deploy branch) at commit `40c6f40`.
 **Status**: Phase 1–7 foundation complete. App type-checks and Metro-bundles on every commit. Native runtime (CometChat video, push on device) + store release require a device/EAS/accounts — see [Outstanding](#outstanding-needs-device--accounts).
+
+> ## ⚡ Quick start for a new session
+> This dev machine: nvm-windows, **Node 20 + pnpm 9 required for mobile** (web works on any). Tool shells don't inherit nvm PATH. For any node/pnpm/git command, prefix PowerShell with:
+> ```powershell
+> $env:PATH = "C:\nvm4w\nodejs;" + $env:PATH
+> ```
+> Verify: `node --version` → v20.x. If pnpm missing on Node 20: `npm i -g pnpm@9`.
+> **Commit/push from PowerShell** (Git Bash has no node → husky pre-commit + auto-push hooks fail).
+> Checks: `pnpm --filter mobile type-check` · `pnpm --filter web type-check` · bundle: `cd apps/mobile && pnpm exec expo export --platform ios --output-dir .expo-export-check`.
 
 ---
 
