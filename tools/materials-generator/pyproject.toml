@@ -1,0 +1,19 @@
+[project]
+name = "easyeng-materials-generator"
+version = "0.1.0"
+description = "Generate Vietnamese-first English learning materials via the Claude Agent SDK"
+requires-python = ">=3.12"
+dependencies = [
+    "claude-agent-sdk>=0.1.29",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

@@ -1,0 +1,1 @@
+"""EasyEng AI materials generator."""
