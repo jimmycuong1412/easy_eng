@@ -90,7 +90,7 @@ class Material:
         errs: list[str] = []
 
         if not SLUG_RE.match(self.slug) or len(self.slug) > 96:
-            errs.append(f"slug '{self.slug}' invalid (regex ^[a-z0-9-]+$, <=96 chars)")
+            errs.append(f"slug '{self.slug}' invalid (regex ^[a-z0-9-]+\\Z, <=96 chars)")
         if self.type not in VALID_TYPES:
             errs.append(f"type '{self.type}' invalid")
         if self.level not in VALID_LEVELS:

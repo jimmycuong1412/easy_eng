@@ -95,3 +95,17 @@ def test_parse_missing_required_keys_raises():
     incomplete = {"title_vi": "x", "title_en": "x"}  # missing summary/body/numbers
     with pytest.raises(ValueError):
         parse_response(VOCAB_SPEC, json.dumps(incomplete))
+
+
+def test_parse_null_numeric_field_raises_valueerror():
+    payload = _vocab_payload()
+    payload["duration_min"] = None
+    with pytest.raises(ValueError):
+        parse_response(VOCAB_SPEC, json.dumps(payload))
+
+
+def test_parse_non_numeric_string_field_raises_valueerror():
+    payload = _vocab_payload()
+    payload["gems_reward"] = "abc"
+    with pytest.raises(ValueError):
+        parse_response(VOCAB_SPEC, json.dumps(payload))

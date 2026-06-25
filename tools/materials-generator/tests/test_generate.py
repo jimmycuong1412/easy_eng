@@ -65,3 +65,11 @@ def test_run_skips_file_when_nothing_generated(tmp_path):
     summary = asyncio.run(run([VOCAB_SPEC], fake_query, out))
     assert summary == {"generated": 0, "failed": 1, "specs": 1}
     assert not out.exists()
+
+
+def test_generate_one_skips_on_null_numeric():
+    import json as _json
+    payload = _json.loads(_good_payload())
+    payload["duration_min"] = None
+    async def fake_query(prompt): return _json.dumps(payload)
+    assert asyncio.run(generate_one(VOCAB_SPEC, fake_query)) is None

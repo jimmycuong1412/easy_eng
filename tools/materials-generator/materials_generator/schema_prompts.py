@@ -141,6 +141,13 @@ def _extract_json(raw: str) -> dict:
     raise ValueError("no JSON object found in model response")
 
 
+def _coerce_int(data: dict, key: str) -> int:
+    try:
+        return int(data[key])
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"field '{key}' is not an integer: {data.get(key)!r}") from e
+
+
 def parse_response(spec: MaterialSpec, raw: str) -> Material:
     data = _extract_json(raw)
 
@@ -187,10 +194,10 @@ def parse_response(spec: MaterialSpec, raw: str) -> Material:
         summary_en=data["summary_en"],
         body_vi=data["body_vi"],
         body_en=data["body_en"],
-        duration_min=int(data["duration_min"]),
-        gems_reward=int(data["gems_reward"]),
-        xp_reward=int(data["xp_reward"]),
-        min_completion_pct=int(data["min_completion_pct"]),
+        duration_min=_coerce_int(data, "duration_min"),
+        gems_reward=_coerce_int(data, "gems_reward"),
+        xp_reward=_coerce_int(data, "xp_reward"),
+        min_completion_pct=_coerce_int(data, "min_completion_pct"),
         vocab_items=vocab_items,
         sections=sections,
     )
