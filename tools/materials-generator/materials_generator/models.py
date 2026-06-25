@@ -22,7 +22,7 @@ VALID_SECTION_KINDS = {
     "intro", "pattern", "drill", "passage",
     "audio", "dialogue_line", "test_block",
 }
-SLUG_RE = re.compile(r"^[a-z0-9-]+$")
+SLUG_RE = re.compile(r"^[a-z0-9-]+\Z")
 
 
 @dataclass

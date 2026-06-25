@@ -81,3 +81,7 @@ def test_vocab_item_missing_required_fields():
 def test_non_vocab_type_requires_sections():
     m = _base_material(type="grammar_lesson", vocab_items=[], sections=[])
     assert any("section" in e.lower() for e in m.validate())
+
+
+def test_slug_with_trailing_newline_rejected():
+    assert any("slug" in e for e in _base_material(slug="vocab-airport-a1\n").validate())
