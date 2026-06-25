@@ -74,3 +74,24 @@ def test_parse_grammar_sections():
 def test_parse_no_json_raises():
     with pytest.raises(ValueError):
         parse_response(VOCAB_SPEC, "I cannot help with that.")
+
+
+def test_parse_unfenced_json_with_prose_braces():
+    # No code fence; prose before the real JSON contains stray braces.
+    raw = ("Note: the shape {like this} is just an example. "
+           "Here is the result: " + json.dumps(_vocab_payload()) + " -- done.")
+    m = parse_response(VOCAB_SPEC, raw)
+    assert m.title_en == "Airport vocabulary"
+    assert len(m.vocab_items) == 1
+
+
+def test_parse_unfenced_json_with_trailing_braces():
+    raw = json.dumps(_vocab_payload()) + " Note: {trailing} commentary."
+    m = parse_response(VOCAB_SPEC, raw)
+    assert m.title_en == "Airport vocabulary"
+
+
+def test_parse_missing_required_keys_raises():
+    incomplete = {"title_vi": "x", "title_en": "x"}  # missing summary/body/numbers
+    with pytest.raises(ValueError):
+        parse_response(VOCAB_SPEC, json.dumps(incomplete))

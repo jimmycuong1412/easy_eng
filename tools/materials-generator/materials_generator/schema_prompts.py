@@ -115,23 +115,30 @@ def build_prompt(spec: MaterialSpec) -> str:
     )
 
 
-_JSON_OBJ_RE = re.compile(r"\{.*\}", re.DOTALL)
-
-
 def _extract_json(raw: str) -> dict:
     text = raw.strip()
-    # Strip ```json ... ``` or ``` ... ``` fences if present.
+    # Prefer an explicit ```json ... ``` or ``` ... ``` fenced block.
     fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
-    candidate = fence.group(1) if fence else None
-    if candidate is None:
-        m = _JSON_OBJ_RE.search(text)
-        if not m:
-            raise ValueError("no JSON object found in model response")
-        candidate = m.group(0)
-    try:
-        return json.loads(candidate)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"invalid JSON in model response: {e}") from e
+    if fence:
+        try:
+            return json.loads(fence.group(1))
+        except json.JSONDecodeError as e:
+            raise ValueError(f"invalid JSON in model response: {e}") from e
+
+    # No fence: scan for the first balanced JSON object. raw_decode parses a
+    # single JSON value starting at a given index and ignores trailing text,
+    # so we try each '{' until one decodes to a dict.
+    decoder = json.JSONDecoder()
+    for start in range(len(text)):
+        if text[start] != "{":
+            continue
+        try:
+            obj, _ = decoder.raw_decode(text, start)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict):
+            return obj
+    raise ValueError("no JSON object found in model response")
 
 
 def parse_response(spec: MaterialSpec, raw: str) -> Material:
