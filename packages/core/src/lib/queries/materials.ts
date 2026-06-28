@@ -250,6 +250,36 @@ export async function fetchVocabularyItems(supabase: SupabaseClient, materialId:
 }
 
 /**
+ * A single structured section of a material (grammar pattern/drill, dialogue
+ * line, reading passage/comprehension). Mirrors the `material_sections` table.
+ */
+export interface MaterialSection {
+  id: string;
+  idx: number;
+  kind: string;
+  body_vi: string | null;
+  body_en: string | null;
+  meta: Record<string, unknown>;
+}
+
+/**
+ * Fetch ordered sections for a section-based material (grammar/dialogue/reading).
+ */
+export async function fetchMaterialSections(
+  supabase: SupabaseClient,
+  materialId: string,
+): Promise<MaterialSection[]> {
+  const { data, error } = await supabase
+    .from('material_sections')
+    .select('id, idx, kind, body_vi, body_en, meta')
+    .eq('material_id', materialId)
+    .order('idx', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as unknown as MaterialSection[];
+}
+
+/**
  * Fetch material assets (audio, images) for a given material.
  */
 export async function fetchMaterialAssets(supabase: SupabaseClient, materialId: string) {
