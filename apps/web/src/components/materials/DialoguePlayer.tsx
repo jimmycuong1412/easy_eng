@@ -15,17 +15,19 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { MaterialBody } from './MaterialBody';
+import { DialogueLines } from './DialogueLines';
 import { ProgressRibbon } from './ProgressRibbon';
 import { useAwardCompletion } from './useAwardCompletion';
 
 import type { Locale } from './MaterialCard';
-import type { MaterialDetail } from '@easyeng/core';
+import type { MaterialDetail, MaterialSection } from '@easyeng/core';
 
 export interface DialoguePlayerProps {
   material: MaterialDetail;
   locale: Locale;
   userId: string | null;
   alreadyCompleted: boolean;
+  sections: MaterialSection[];
 }
 
 export function DialoguePlayer({
@@ -33,6 +35,7 @@ export function DialoguePlayer({
   locale,
   userId,
   alreadyCompleted,
+  sections,
 }: DialoguePlayerProps) {
   const t = useTranslations();
   const [shadowed, setShadowed] = useState(false);
@@ -47,6 +50,8 @@ export function DialoguePlayer({
   return (
     <div className="space-y-6">
       <MaterialBody material={material} locale={locale} />
+
+      <DialogueLines sections={sections} locale={locale} />
 
       {alreadyCompleted ? (
         <ProgressRibbon gemsAwarded={0} xpAwarded={0} alreadyEarned />

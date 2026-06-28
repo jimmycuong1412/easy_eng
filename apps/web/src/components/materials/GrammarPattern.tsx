@@ -16,13 +16,14 @@ import { ProgressRibbon } from './ProgressRibbon';
 import { useAwardCompletion } from './useAwardCompletion';
 
 import type { Locale } from './MaterialCard';
-import type { MaterialDetail } from '@easyeng/core';
+import type { MaterialDetail, MaterialSection } from '@easyeng/core';
 
 export interface GrammarPatternProps {
   material: MaterialDetail;
   locale: Locale;
   userId: string | null;
   alreadyCompleted: boolean;
+  sections: MaterialSection[];
 }
 
 export function GrammarPattern({
@@ -30,6 +31,7 @@ export function GrammarPattern({
   locale,
   userId,
   alreadyCompleted,
+  sections,
 }: GrammarPatternProps) {
   const t = useTranslations();
   const [marked, setMarked] = useState(false);

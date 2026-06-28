@@ -19,10 +19,12 @@ import { createClient } from '@/lib/supabase/server';
 import {
   fetchMaterialAssets,
   fetchMaterialDetail,
+  fetchMaterialSections,
   fetchUserProgress,
   fetchVocabularyItems,
   resolveSummary,
   resolveTitle,
+  type MaterialSection,
 } from '@easyeng/core';
 import { locales, type Locale } from '@/i18n/config';
 
@@ -88,7 +90,7 @@ export default async function MaterialDetailPage({ params }: PageProps) {
   const userId = user?.id ?? null;
 
   // 3. Parallel: progress + type-specific items
-  const [progress, vocabularyItems, assets] = await Promise.all([
+  const [progress, vocabularyItems, assets, sections] = await Promise.all([
     userId ? fetchUserProgress(supabase as any, userId, material.id) : Promise.resolve(null),
     material.type === 'vocabulary_pack'
       ? fetchVocabularyItems(supabase as any, material.id)
@@ -96,6 +98,9 @@ export default async function MaterialDetailPage({ params }: PageProps) {
     material.type === 'listening_audio'
       ? fetchMaterialAssets(supabase as any, material.id)
       : Promise.resolve([]),
+    ['grammar_lesson', 'dialogue', 'reading_passage'].includes(material.type)
+      ? fetchMaterialSections(supabase as any, material.id)
+      : Promise.resolve([] as MaterialSection[]),
   ]);
 
   const alreadyCompleted = progress?.state === 'completed';
@@ -173,6 +178,7 @@ export default async function MaterialDetailPage({ params }: PageProps) {
             alreadyCompleted={alreadyCompleted}
             vocabularyItems={vocabularyItems}
             audioUrl={audioUrl}
+            sections={sections}
           />
         </Suspense>
       </div>
@@ -187,6 +193,7 @@ interface RendererProps {
   alreadyCompleted: boolean;
   vocabularyItems: Awaited<ReturnType<typeof fetchVocabularyItems>>;
   audioUrl: string | null;
+  sections: MaterialSection[];
 }
 
 function MaterialRenderer({
@@ -196,6 +203,7 @@ function MaterialRenderer({
   alreadyCompleted,
   vocabularyItems,
   audioUrl,
+  sections,
 }: RendererProps) {
   if (!material) return null;
 
@@ -217,6 +225,7 @@ function MaterialRenderer({
           locale={locale}
           userId={userId}
           alreadyCompleted={alreadyCompleted}
+          sections={sections}
         />
       );
     case 'reading_passage':
@@ -226,6 +235,7 @@ function MaterialRenderer({
           locale={locale}
           userId={userId}
           alreadyCompleted={alreadyCompleted}
+          sections={sections}
         />
       );
     case 'listening_audio':
@@ -245,6 +255,7 @@ function MaterialRenderer({
           locale={locale}
           userId={userId}
           alreadyCompleted={alreadyCompleted}
+          sections={sections}
         />
       );
     default:
