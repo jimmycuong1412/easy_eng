@@ -11,6 +11,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { GrammarSections } from './GrammarSections';
 import { MaterialBody } from './MaterialBody';
 import { ProgressRibbon } from './ProgressRibbon';
 import { useAwardCompletion } from './useAwardCompletion';
@@ -46,6 +47,8 @@ export function GrammarPattern({
   return (
     <div className="space-y-6">
       <MaterialBody material={material} locale={locale} />
+
+      <GrammarSections sections={sections} locale={locale} />
 
       {alreadyCompleted ? (
         <ProgressRibbon gemsAwarded={0} xpAwarded={0} alreadyEarned />
