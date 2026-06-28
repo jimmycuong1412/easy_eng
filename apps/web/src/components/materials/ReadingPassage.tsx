@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { MaterialBody } from './MaterialBody';
+import { ReadingComprehension } from './ReadingComprehension';
 import PronunciationPractice from './PronunciationPractice';
 import { ProgressRibbon } from './ProgressRibbon';
 import { useAwardCompletion } from './useAwardCompletion';
@@ -58,6 +59,8 @@ export function ReadingPassage({
   return (
     <div className="space-y-6">
       <MaterialBody material={material} locale={locale} />
+
+      <ReadingComprehension sections={sections} locale={locale} />
 
       {practiceSentence && <PronunciationPractice text={practiceSentence} />}
 
