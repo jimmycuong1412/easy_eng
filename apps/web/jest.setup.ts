@@ -1,5 +1,15 @@
 import '@testing-library/jest-dom';
 import React from 'react';
+import { TextEncoder, TextDecoder } from 'util';
+
+// jsdom does not provide TextEncoder/TextDecoder, which react-dom/server needs
+// (used by hydration tests). Polyfill from Node's util before anything imports it.
+if (typeof globalThis.TextEncoder === 'undefined') {
+  globalThis.TextEncoder = TextEncoder as typeof globalThis.TextEncoder;
+}
+if (typeof globalThis.TextDecoder === 'undefined') {
+  globalThis.TextDecoder = TextDecoder as unknown as typeof globalThis.TextDecoder;
+}
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({

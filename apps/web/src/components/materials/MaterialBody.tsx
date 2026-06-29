@@ -11,7 +11,19 @@
  *
  * Locale fallback rule (research.md R10): on `en`, fall back to `body_vi`
  * with a "translation pending" eyebrow.
+ *
+ * Marked `'use client'`: this component calls the client `useTranslations`
+ * hook and is rendered as the first child of the `'use client'` material
+ * players (Dialogue/Grammar/Reading). Without an explicit client boundary it
+ * was pulled into the client bundle implicitly by its importers, giving it an
+ * unstable client-reference identity. Under React 18 streaming hydration that
+ * instability caused React to discard the player's subtree after <article>
+ * (losing section content + the completion button). An explicit directive
+ * pins a stable client reference — matching every other interactive material
+ * component (VocabularyTable, ReadingComprehension, …) which hydrate fine.
  */
+
+'use client';
 
 import { useTranslations } from 'next-intl';
 
