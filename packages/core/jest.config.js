@@ -4,29 +4,30 @@
  * The package had no test runner wired up; its `.test.ts` files were dormant
  * (turbo skipped the package for lack of a `test` script). This config runs them.
  *
- * moduleNameMapper: two hook tests (useScheduleDraft, useSlotSelection) were moved
- * into core during the f397310 refactor but still `jest.mock('@/lib/supabase/client')`
- * — the pre-refactor web alias. In core the hook imports `../adapters/supabase`, so we
- * map that stale alias onto the real core adapter module so the mock applies.
+ * testEnvironment 'jsdom' + @babel/preset-react: the two hook tests
+ * (useScheduleDraft, useSlotSelection) render hooks via @testing-library/react's
+ * `renderHook`, which needs a DOM (jsdom) and react-dom. preset-react transforms
+ * the JSX in any React test/helper code.
  *
- * testPathIgnorePatterns: those same two hook tests have deeper pre-existing breakage
- * beyond the alias — they need a jsdom + react-dom test-renderer setup (Invalid hook
- * call / React-version mismatch) that this package has never had. They were dormant
- * (un-run) before core gained a `test` script. Quarantined here so the suite is green;
- * fixing their renderer infra is tracked separately and is out of scope for materials
- * work. (The mapper above is kept so they resolve once that infra lands.)
+ * moduleNameMapper: useScheduleDraft.test.ts `jest.mock('@/lib/supabase/client')`
+ * — the pre-refactor web alias. In core the hook imports `../adapters/supabase`,
+ * so we map that stale alias onto the real core adapter module so the mock applies.
  */
 module.exports = {
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
-  testPathIgnorePatterns: [
-    '<rootDir>/src/hooks/useScheduleDraft.test.ts',
-    '<rootDir>/src/hooks/useSlotSelection.test.ts',
-  ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   moduleNameMapper: {
     '^@/lib/supabase/client$': '<rootDir>/src/adapters/supabase',
+    // Pin react + react-dom to a single resolved copy. Under pnpm, core and
+    // @testing-library/react otherwise resolve React via different paths (the
+    // .pnpm virtual store vs the hoisted top-level), yielding two React
+    // instances and a null hook dispatcher ("Invalid hook call").
+    '^react$': '<rootDir>/../../node_modules/react',
+    '^react-dom$': '<rootDir>/../../node_modules/react-dom',
+    '^react/(.*)$': '<rootDir>/../../node_modules/react/$1',
+    '^react-dom/(.*)$': '<rootDir>/../../node_modules/react-dom/$1',
   },
   transformIgnorePatterns: [],
   transform: {
@@ -37,6 +38,7 @@ module.exports = {
         presets: [
           '@babel/preset-typescript',
           ['@babel/preset-env', { targets: { node: 'current' } }],
+          ['@babel/preset-react', { runtime: 'automatic' }],
         ],
       },
     ],
