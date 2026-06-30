@@ -29,6 +29,7 @@ import { useTranslations } from 'next-intl';
 
 import { resolveBody, type MaterialDetail } from '@easyeng/core';
 
+import { renderInline } from './markdownInline';
 import type { Locale } from './MaterialCard';
 
 export interface MaterialBodyProps {
@@ -158,34 +159,8 @@ function parseBlocks(source: string): Block[] {
   return blocks;
 }
 
-/** Render inline `**bold**` + `_italic_` markers. */
-function renderInline(text: string, keyPrefix = ''): React.ReactNode[] {
-  const parts: React.ReactNode[] = [];
-  // Match **bold** or _italic_ (non-greedy)
-  const regex = /(\*\*[^*]+\*\*|_[^_]+_)/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  let counter = 0;
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-    const token = match[1];
-    if (token.startsWith('**') && token.endsWith('**')) {
-      parts.push(
-        <strong key={`${keyPrefix}-b-${counter}`}>{token.slice(2, -2)}</strong>,
-      );
-    } else if (token.startsWith('_') && token.endsWith('_')) {
-      parts.push(<em key={`${keyPrefix}-i-${counter}`}>{token.slice(1, -1)}</em>);
-    }
-    counter++;
-    lastIndex = regex.lastIndex;
-  }
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-  return parts;
-}
+// `renderInline` lives in ./markdownInline (dependency-free) so section
+// components can share it without importing this client/next-intl module.
 
 function MarkdownTree({ source }: { source: string }) {
   const blocks = parseBlocks(source);

@@ -5,6 +5,8 @@
  * blocks. Display-only; sits below the lesson body.
  */
 
+import { renderInline } from './markdownInline';
+
 import type { Locale } from './MaterialCard';
 import type { MaterialSection } from '@easyeng/core';
 
@@ -36,7 +38,7 @@ export function GrammarSections({ sections, locale }: GrammarSectionsProps) {
               {label}
             </h3>
             <p className="whitespace-pre-line text-base text-[color:var(--ed-ink-2,#0A1F4F)]">
-              {body}
+              {renderInline(body ?? '', `gs-${s.id}`)}
             </p>
           </section>
         );

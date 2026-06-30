@@ -6,6 +6,8 @@
  * the other language is shown as a muted translation beneath it.
  */
 
+import { renderInline } from './markdownInline';
+
 import type { Locale } from './MaterialCard';
 import type { MaterialSection } from '@easyeng/core';
 
@@ -40,9 +42,13 @@ export function DialogueLines({ sections, locale }: DialogueLinesProps) {
                 {speaker}
               </div>
             )}
-            <p className="text-base text-[color:var(--ed-ink-2,#0A1F4F)]">{primary}</p>
+            <p className="text-base text-[color:var(--ed-ink-2,#0A1F4F)]">
+              {renderInline(primary ?? '', `dl-p-${line.id}`)}
+            </p>
             {secondary && (
-              <p className="mt-1 text-sm text-[color:var(--ed-ink-mute,#6B7280)]">{secondary}</p>
+              <p className="mt-1 text-sm text-[color:var(--ed-ink-mute,#6B7280)]">
+                {renderInline(secondary, `dl-s-${line.id}`)}
+              </p>
             )}
           </div>
         );

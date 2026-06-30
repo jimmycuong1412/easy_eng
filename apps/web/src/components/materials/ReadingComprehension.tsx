@@ -11,6 +11,8 @@
 
 import { useState } from 'react';
 
+import { renderInline } from './markdownInline';
+
 import type { Locale } from './MaterialCard';
 import type { MaterialSection } from '@easyeng/core';
 
@@ -54,7 +56,7 @@ export function ReadingComprehension({ sections, locale }: ReadingComprehensionP
     <div className="space-y-5" data-testid="reading-comprehension">
       {passageBody && (
         <p className="whitespace-pre-line text-base leading-relaxed text-[color:var(--ed-ink-2,#0A1F4F)]">
-          {passageBody}
+          {renderInline(passageBody, 'rc-passage')}
         </p>
       )}
 
