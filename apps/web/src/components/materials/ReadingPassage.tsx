@@ -14,7 +14,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { MaterialBody } from './MaterialBody';
-import { ReadingComprehension } from './ReadingComprehension';
+import { ReadingComprehension, hasComprehensionQuestions } from './ReadingComprehension';
 import PronunciationPractice from './PronunciationPractice';
 import { ProgressRibbon } from './ProgressRibbon';
 import { useAwardCompletion } from './useAwardCompletion';
@@ -56,33 +56,45 @@ export function ReadingPassage({
     return m?.[0]?.trim() ?? null;
   }, [material.body_en, material.body_vi]);
 
+  const graded = hasComprehensionQuestions(sections);
+
   return (
     <div className="space-y-6">
       <MaterialBody material={material} locale={locale} />
 
-      <ReadingComprehension sections={sections} locale={locale} />
+      <ReadingComprehension
+        sections={sections}
+        locale={locale}
+        userId={userId}
+        materialId={material.id}
+        alreadyCompleted={alreadyCompleted}
+      />
 
       {practiceSentence && <PronunciationPractice text={practiceSentence} />}
 
-      {alreadyCompleted ? (
-        <ProgressRibbon gemsAwarded={0} xpAwarded={0} alreadyEarned />
-      ) : awarded ? (
-        <ProgressRibbon gemsAwarded={awarded.gems} xpAwarded={awarded.xp} />
-      ) : userId ? (
-        <button
-          type="button"
-          onClick={() => setMarked(true)}
-          disabled={marked}
-          className="ed-btn"
-          data-testid="reading-mark-done"
-        >
-          {marked ? '…' : 'Tôi đã đọc xong'}
-        </button>
-      ) : (
-        <p className="text-sm text-[color:var(--ed-ink-mute,#6B7280)]">
-          {t('materials.detail.signInCta')}
-        </p>
-      )}
+      {/* Passage-only readings keep the manual mark-done completion. When the
+          reading has comprehension questions, ReadingComprehension owns the
+          score-based completion and we render no button/ribbon here. */}
+      {!graded &&
+        (alreadyCompleted ? (
+          <ProgressRibbon gemsAwarded={0} xpAwarded={0} alreadyEarned />
+        ) : awarded ? (
+          <ProgressRibbon gemsAwarded={awarded.gems} xpAwarded={awarded.xp} />
+        ) : userId ? (
+          <button
+            type="button"
+            onClick={() => setMarked(true)}
+            disabled={marked}
+            className="ed-btn"
+            data-testid="reading-mark-done"
+          >
+            {marked ? '…' : 'Tôi đã đọc xong'}
+          </button>
+        ) : (
+          <p className="text-sm text-[color:var(--ed-ink-mute,#6B7280)]">
+            {t('materials.detail.signInCta')}
+          </p>
+        ))}
     </div>
   );
 }
