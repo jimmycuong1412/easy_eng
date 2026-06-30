@@ -134,4 +134,13 @@ describe('ReadingComprehension self-grading', () => {
       { id: 'p', idx: 0, kind: 'passage', body_vi: 'x', body_en: 'y', meta: {} },
     ])).toBe(false);
   });
+
+  it('already-completed: passes alreadyCompleted to the award hook (no double award) and shows earned ribbon', () => {
+    render(<ReadingComprehension sections={sectionsWith(fiveQ())} {...base} alreadyCompleted />);
+    markAll(['right', 'right', 'right', 'right', 'right']);
+    // hook is called with alreadyCompleted=true so it no-ops the RPC
+    expect(awardSpy.mock.calls.at(-1)![0].alreadyCompleted).toBe(true);
+    // the mock returns awarded=null when alreadyCompleted, so the "already earned" ribbon renders
+    expect(screen.getByTestId('comprehension-score')).toHaveTextContent('100%');
+  });
 });
