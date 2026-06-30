@@ -7,7 +7,7 @@ import {
   resolveBody,
   type MaterialSummary,
   type MaterialDetail,
-} from '@/lib/queries/materials';
+} from '@easyeng/core';
 
 /**
  * These tests exercise the query helpers against a thin Supabase mock — they
