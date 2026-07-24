@@ -1022,3 +1022,161 @@
   .et-quickstats { grid-template-columns: repeat(2, 1fr) !important; }
   .et-footer-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
 }
+
+/* ============================================================
+   .bright — Direction D light theme (opt-in per migrated page).
+   Redefines the same variable names as :root with light values,
+   plus overrides for component-layer and et-* hardcoded hexes.
+   Placed last so it wins the cascade over the dark defaults.
+   ============================================================ */
+.bright {
+  /* Surface — white canvas, blue-tinted off-whites */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f7fd;
+  --bg-surface: #eef0fb;
+  --bg-elevated: #ffffff;
+
+  /* Brand — deepened for contrast on white */
+  --accent-primary: #6d4aff;
+  --accent-secondary: #3b5bff;
+  --accent-gold: #f59e0b;
+  --accent-gem: #ec4899;
+  --accent-cookie: #ff7a59;
+
+  /* Status — darkened for white bg (AA) */
+  --color-success: #10b981;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+
+  /* Text — ink navy */
+  --text-primary: #0f1436;
+  --text-secondary: #4a5178;
+  --text-muted: #7c82a8;
+  --text-subtle: #9aa0c4;
+
+  /* Lines — blue-tinted, never neutral gray */
+  --border-default: rgba(15, 20, 54, 0.08);
+  --border-focus: #6d4aff;
+
+  /* Shadows — soft violet, low opacity (replace neon glows) */
+  --shadow-glow: 0 8px 24px -8px rgba(109, 74, 255, 0.22);
+  --shadow-glow-lg: 0 20px 40px -20px rgba(109, 74, 255, 0.28);
+  --shadow-card-hover: 0 20px 40px -20px rgba(15, 20, 54, 0.12);
+
+  /* et-* aliases */
+  --et-bg: #ffffff;
+  --et-bg-2: #f6f7fd;
+  --et-bg-3: #eef0fb;
+  --et-bg-4: #ffffff;
+  --et-line: rgba(15, 20, 54, 0.08);
+  --et-line-2: rgba(109, 74, 255, 0.18);
+  --et-fg: #0f1436;
+  --et-fg-2: #4a5178;
+  --et-fg-3: #7c82a8;
+  --et-fg-4: #9aa0c4;
+  --et-violet: #6d4aff;
+  --et-violet-2: #8b6bff;
+  --et-blue: #3b5bff;
+  --et-green: #10b981;
+  --et-amber: #f59e0b;
+
+  /* ed-* aliases used by legacy inline styles */
+  --ed-ink: #6d4aff;
+  --ed-card: #ffffff;
+  --ed-rule: rgba(15, 20, 54, 0.08);
+  --ed-rule-strong: rgba(15, 20, 54, 0.14);
+  --ed-sky-ink: #3b5bff;
+
+  /* Shadcn aliases */
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #0f1436;
+  --accent-foreground: #0f1436;
+  --input: rgba(15, 20, 54, 0.12);
+
+  color-scheme: light;
+  color: var(--text-primary);
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(109, 74, 255, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 100% 20%, rgba(59, 91, 255, 0.05) 0%, transparent 60%),
+    #ffffff;
+  min-height: 100vh;
+}
+
+.bright :focus-visible { --tw-ring-offset-color: #ffffff; }
+
+/* Component layer — .bright overrides */
+.bright .btn-secondary {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--text-primary);
+}
+.bright .btn-secondary:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
+.bright .btn-ghost { color: var(--text-secondary); }
+.bright .btn-ghost:hover { background: #f6f7fd; color: var(--text-primary); }
+
+.bright .card,
+.bright .glass {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.08);
+  box-shadow: 0 1px 3px rgba(15, 20, 54, 0.06), 0 8px 24px -16px rgba(15, 20, 54, 0.12);
+}
+.bright .card:hover { box-shadow: var(--shadow-card-hover); }
+.bright .card-elevated { background: #ffffff; }
+
+.bright .input {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--text-primary);
+}
+
+.bright .skeleton {
+  background: linear-gradient(90deg, #eef0fb 0%, #f6f7fd 50%, #eef0fb 100%);
+  background-size: 400% 100%;
+}
+
+.bright .text-gradient,
+.bright .et-grad-text {
+  background: linear-gradient(120deg, #6d4aff 0%, #5b4bff 50%, #3b5bff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bright .glow-gold { box-shadow: 0 4px 12px -4px rgba(245, 158, 11, 0.35); }
+.bright .glow-gem  { box-shadow: 0 4px 12px -4px rgba(236, 72, 153, 0.30); }
+.bright .glow-cookie { box-shadow: 0 4px 12px -4px rgba(255, 122, 89, 0.30); }
+
+/* et-* component overrides for .bright */
+.bright .et-topbar {
+  border-bottom: 1px solid rgba(15, 20, 54, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.72) 100%);
+}
+.bright .et-iconbtn {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--et-fg-2);
+}
+.bright .et-iconbtn:hover { background: #f6f7fd; color: var(--et-fg); border-color: rgba(109, 74, 255, 0.33); }
+
+.bright .et-btn.secondary { background: #ffffff; border-color: rgba(15, 20, 54, 0.12); color: var(--et-fg); }
+.bright .et-btn.secondary:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
+.bright .et-btn.outline { border-color: rgba(15, 20, 54, 0.16); color: var(--et-fg); }
+.bright .et-btn.outline:hover { border-color: #6d4aff; background: rgba(109, 74, 255, 0.06); }
+.bright .et-btn.white { background: #0f1436; color: #ffffff; box-shadow: 0 8px 24px -8px rgba(15, 20, 54, 0.30); }
+.bright .et-btn.white:hover { box-shadow: 0 12px 32px -8px rgba(15, 20, 54, 0.40); }
+
+.bright .et-input { background: #ffffff; border: 1px solid rgba(15, 20, 54, 0.12); color: var(--et-fg); }
+
+.bright .et-stars .et-stars-empty { color: rgba(15, 20, 54, 0.14); }
+
+.bright .et-gridlines {
+  background-image:
+    linear-gradient(to right, rgba(15, 20, 54, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 20, 54, 0.05) 1px, transparent 1px);
+}
+
+.bright .et-section::before {
+  background:
+    radial-gradient(ellipse 50% 40% at 0% 30%, rgba(59, 91, 255, 0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 100% 70%, rgba(109, 74, 255, 0.05) 0%, transparent 70%);
+}
