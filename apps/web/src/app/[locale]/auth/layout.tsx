@@ -10,7 +10,7 @@ export default async function AuthLayout({
 
   return (
     <div
-      className="edtech"
+      className="edtech bright"
       style={{
         minHeight: '100vh',
         display: 'flex',
@@ -19,16 +19,16 @@ export default async function AuthLayout({
         overflow: 'hidden',
       }}
     >
-      {/* Ambient glows */}
+      {/* Ambient glows — lower opacity so they read as a soft wash on white */}
       <div
         className="et-glow"
         style={{
           width: 600,
           height: 600,
-          background: '#7c5cff',
+          background: '#6d4aff',
           top: -200,
           left: '-10%',
-          opacity: 0.30,
+          opacity: 0.12,
         }}
       />
       <div
@@ -36,10 +36,10 @@ export default async function AuthLayout({
         style={{
           width: 500,
           height: 500,
-          background: '#4c6bff',
+          background: '#3b5bff',
           bottom: -160,
           right: '-8%',
-          opacity: 0.25,
+          opacity: 0.10,
         }}
       />
 
