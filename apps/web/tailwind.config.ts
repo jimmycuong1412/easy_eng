@@ -10,49 +10,51 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Primary backgrounds — Direction C (deep indigo canvas)
-        'bg-primary': '#060f33',     // page canvas
-        'bg-secondary': '#0d1a4a',   // default card body
-        'bg-surface': '#15235e',     // card hover / input
-        'bg-elevated': '#1d2e75',    // raised / pressed
+        // Theme-driven tokens — values come from CSS variables so a
+        // `.bright` / `.dark` scope can reskin every utility at once.
+        // Primary backgrounds
+        'bg-primary': 'var(--bg-primary)',     // page canvas
+        'bg-secondary': 'var(--bg-secondary)', // default card body
+        'bg-surface': 'var(--bg-surface)',     // card hover / input
+        'bg-elevated': 'var(--bg-elevated)',   // raised / pressed
 
         // Accent colors — violet / blue brand
-        'accent-primary': '#7c5cff',  // violet
-        'accent-secondary': '#4c6bff', // blue
-        'accent-gold': '#fbbf24',     // amber (bestseller / cert badges)
-        'accent-gem': '#ec4899',      // pink (gem accent stays warm)
-        'accent-cookie': '#ff7a59',   // coral (discount/urgency)
+        'accent-primary': 'var(--accent-primary)',
+        'accent-secondary': 'var(--accent-secondary)',
+        'accent-gold': 'var(--accent-gold)',
+        'accent-gem': 'var(--accent-gem)',
+        'accent-cookie': 'var(--accent-cookie)',
 
         // Semantic colors
-        success: '#34d399',
-        warning: '#fbbf24',
-        error: '#ef4444',
+        success: 'var(--color-success)',
+        warning: 'var(--color-warning)',
+        error: 'var(--color-error)',
 
-        // Text colors — light-on-dark
-        'text-primary': '#f5f7ff',
-        'text-secondary': '#c8ccea',
-        'text-muted': '#8a90b8',
+        // Text colors
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        'text-muted': 'var(--text-muted)',
 
-        // Border colors — blue-tinted, never neutral
-        'border-default': 'rgba(91, 141, 255, 0.13)',
-        'border-focus': '#7c5cff',
+        // Border colors
+        'border-default': 'var(--border-default)',
+        'border-focus': 'var(--border-focus)',
 
-        // Shadcn/ui foreground & semantic tokens (navy-friendly)
-        'primary-foreground': '#ffffff',
-        'secondary-foreground': '#f5f7ff',
-        'destructive': '#ef4444',
-        'destructive-foreground': '#ffffff',
-        'accent-foreground': '#f5f7ff',
-        'accent': '#15235e',          // card hover bg — used for ghost hover
-        'background': '#0d1a4a',      // card surface
-        'foreground': '#f5f7ff',      // default text
-        'input': 'rgba(91, 141, 255, 0.20)',
-        'ring': '#7c5cff',
+        // Shadcn/ui foreground & semantic tokens
+        'primary-foreground': 'var(--primary-foreground, #ffffff)',
+        'secondary-foreground': 'var(--secondary-foreground, #f5f7ff)',
+        'destructive': 'var(--color-error)',
+        'destructive-foreground': 'var(--destructive-foreground, #ffffff)',
+        'accent-foreground': 'var(--accent-foreground, #f5f7ff)',
+        'accent': 'var(--bg-surface)',        // card hover bg — used for ghost hover
+        'background': 'var(--bg-secondary)',  // card surface
+        'foreground': 'var(--text-primary)',  // default text
+        'input': 'var(--input, rgba(91, 141, 255, 0.20))',
+        'ring': 'var(--border-focus)',
 
         // Surface aliases (used by some layouts/UI components)
-        'surface-base': '#060f33',
-        'surface-elevated': '#0d1a4a',
-        'text-subtle': '#5b6093',
+        'surface-base': 'var(--bg-primary)',
+        'surface-elevated': 'var(--bg-secondary)',
+        'text-subtle': 'var(--text-subtle, #5b6093)',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

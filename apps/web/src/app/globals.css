@@ -36,6 +36,14 @@
   --border-default: rgba(91, 141, 255, 0.13);
   --border-focus: #7c5cff;
 
+  /* Shadcn alias tokens (values match the previous literal hexes) */
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #f5f7ff;
+  --destructive-foreground: #ffffff;
+  --accent-foreground: #f5f7ff;
+  --input: rgba(91, 141, 255, 0.20);
+  --text-subtle: #5b6093;
+
   /* Shadows */
   --shadow-glow: 0 8px 24px -8px rgba(124, 92, 255, 0.50);
   --shadow-glow-lg: 0 20px 40px -20px rgba(124, 92, 255, 0.60);
