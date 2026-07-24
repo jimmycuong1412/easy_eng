@@ -8,6 +8,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { LanguageSwitcher } from '@/components/common';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 // -----------------------------------------------------------------------------
 // Primitives
@@ -207,6 +208,7 @@ function TopNav({ locale, t }: { locale: string; t: ReturnType<typeof useTransla
       </div>
       <div className="et-row et-gap-2">
         <LanguageSwitcher />
+        <ThemeToggle className="et-iconbtn" />
         <button className="et-iconbtn" aria-label="Search" type="button">
           <svg
             width="16"
@@ -497,14 +499,13 @@ function FreeFeaturesSection({ locale, t }: { locale: string; t: ReturnType<type
 
   return (
     <section
-      className="et-section"
+      className="et-section et-section-free"
       id="free-features"
       style={{
         paddingTop: 64,
         paddingBottom: 64,
-        background: 'linear-gradient(180deg, #060f2e 0%, #0a1538 100%)',
-        borderTop: '1px solid rgba(91,141,255,0.13)',
-        borderBottom: '1px solid rgba(91,141,255,0.13)',
+        borderTop: '1px solid var(--et-line)',
+        borderBottom: '1px solid var(--et-line)',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -2140,7 +2141,7 @@ export default function HomePage() {
   const t = useTranslations('landing');
 
   return (
-    <div className="edtech" style={{ minHeight: '100vh' }}>
+    <div className="edtech bright" style={{ minHeight: '100vh' }}>
       <TopNav locale={locale} t={t} />
       <main id="main-content">
         <Hero locale={locale} t={t} />

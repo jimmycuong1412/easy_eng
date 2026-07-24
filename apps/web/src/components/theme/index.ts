@@ -1,3 +1,10 @@
-export { ThemeProvider, useTheme, type Theme } from './ThemeProvider';
 export { ThemeToggle } from './ThemeToggle';
-export { THEME_SCRIPT, THEME_STORAGE_KEY } from './theme-script';
+export { useTheme } from './useTheme';
+export { THEME_SCRIPT } from './theme-script';
+export {
+  getTheme,
+  setTheme,
+  toggleTheme,
+  THEME_STORAGE_KEY,
+  type Theme,
+} from './theme-store';
