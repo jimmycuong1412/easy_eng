@@ -1464,18 +1464,45 @@ html[data-theme='dark'] .text-yellow-400  { color: rgb(250 204 21); }
 html[data-theme='dark'] .text-blue-400    { color: rgb(96 165 250); }
 html[data-theme='dark'] .text-emerald-400 { color: rgb(52 211 153); }
 
-/* Floating "home" pill — was a white glass chip that only worked on the dark
-   canvas. Give it an ink-on-white treatment by default, glass in dark. */
-.global-home-btn {
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--text-primary);
-  border: 1px solid rgba(15, 20, 54, 0.12);
-}
-.global-home-btn:hover { background: #ffffff; border-color: rgba(109, 74, 255, 0.35); }
 
-html[data-theme='dark'] .global-home-btn {
-  background: rgba(255, 255, 255, 0.10);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+/* ------------------------------------------------------------
+   text-white on flow text (p / span / div / li / td) that is NOT
+   inside a coloured surface. Those elements were relying on the
+   old dark canvas. Buttons, links-as-buttons and anything with an
+   explicit bg-* utility are excluded so white-on-colour survives.
+   ------------------------------------------------------------ */
+p.text-white,
+li.text-white,
+td.text-white,
+dd.text-white,
+dt.text-white {
+  color: var(--text-primary);
 }
-html[data-theme='dark'] .global-home-btn:hover { background: rgba(255, 255, 255, 0.20); }
+
+/* Restore white where the element genuinely sits on a coloured
+   surface (an ancestor button / element carrying a bg utility). */
+button .text-white,
+a[class*='bg-'] .text-white,
+[class*='bg-gradient'] .text-white,
+[class*='bg-blue'] .text-white,
+[class*='bg-indigo'] .text-white,
+[class*='bg-violet'] .text-white,
+[class*='bg-purple'] .text-white,
+[class*='bg-red'] .text-white,
+[class*='bg-green'] .text-white,
+[class*='bg-emerald'] .text-white,
+[class*='bg-amber'] .text-white,
+[class*='bg-orange'] .text-white,
+[class*='bg-slate-7'] .text-white,
+[class*='bg-slate-8'] .text-white,
+[class*='bg-slate-9'] .text-white,
+.et-btn .text-white,
+.ed-btn .text-white {
+  color: #ffffff;
+}
+
+html[data-theme='dark'] p.text-white,
+html[data-theme='dark'] li.text-white,
+html[data-theme='dark'] td.text-white,
+html[data-theme='dark'] dd.text-white,
+html[data-theme='dark'] dt.text-white { color: #ffffff; }
