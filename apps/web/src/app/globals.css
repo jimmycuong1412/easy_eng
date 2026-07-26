@@ -1443,3 +1443,39 @@ html[data-theme='dark'] .text-slate-300 { color: rgb(203 213 225); }
 html[data-theme='dark'] .text-slate-400 { color: rgb(148 163 184); }
 html[data-theme='dark'] .text-slate-500 { color: rgb(100 116 139); }
 html[data-theme='dark'] .text-slate-600 { color: rgb(71 85 105); }
+
+/* ============================================================
+   Status text utilities (-400 shades) were picked for the old
+   dark canvas and fail contrast on white. Remap to AA-passing
+   shades in the bright theme; restore Tailwind's values in dark.
+   Contrast on #fff shown per line.
+   ============================================================ */
+.text-red-400     { color: #dc2626; } /* 4.83:1 */
+.text-green-400   { color: #15803d; } /* 5.02:1 */
+.text-amber-400   { color: #b45309; } /* 5.02:1 */
+.text-yellow-400  { color: #a16207; } /* 4.92:1 */
+.text-blue-400    { color: #2563eb; } /* 5.17:1 */
+.text-emerald-400 { color: #047857; } /* 5.48:1 */
+
+html[data-theme='dark'] .text-red-400     { color: rgb(248 113 113); }
+html[data-theme='dark'] .text-green-400   { color: rgb(74 222 128); }
+html[data-theme='dark'] .text-amber-400   { color: rgb(251 191 36); }
+html[data-theme='dark'] .text-yellow-400  { color: rgb(250 204 21); }
+html[data-theme='dark'] .text-blue-400    { color: rgb(96 165 250); }
+html[data-theme='dark'] .text-emerald-400 { color: rgb(52 211 153); }
+
+/* Floating "home" pill — was a white glass chip that only worked on the dark
+   canvas. Give it an ink-on-white treatment by default, glass in dark. */
+.global-home-btn {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary);
+  border: 1px solid rgba(15, 20, 54, 0.12);
+}
+.global-home-btn:hover { background: #ffffff; border-color: rgba(109, 74, 255, 0.35); }
+
+html[data-theme='dark'] .global-home-btn {
+  background: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+html[data-theme='dark'] .global-home-btn:hover { background: rgba(255, 255, 255, 0.20); }
