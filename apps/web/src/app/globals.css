@@ -1131,6 +1131,7 @@
   --ed-rule: rgba(15, 20, 54, 0.08);
   --ed-rule-strong: rgba(15, 20, 54, 0.14);
   --ed-sky-ink: #3b5bff;
+  --ed-coral-ink: #c2410c;  /* AA 5.18:1 on white (coral used as TEXT) */
 
   /* Shadcn aliases */
   --primary-foreground: #ffffff;
@@ -1368,11 +1369,24 @@ html[data-theme='dark'] .theme-icon-moon { display: none; }
 
 .ed-chip-ink { background: #6d4aff; color: #fff; border-color: transparent; }
 
+/* .ed-ink-panel is an intentional dark "ink" accent panel (teacher earnings,
+   dashboard hero). It stays dark in BOTH themes — its child text colours are
+   light-on-dark by design — so it just needs a shadow that reads on white. */
 .ed-ink-panel {
-  background: linear-gradient(135deg, #f6f7fd 0%, #eef0fb 100%);
-  border: 1px solid rgba(15, 20, 54, 0.10);
-  box-shadow: 0 20px 40px -20px rgba(15, 20, 54, 0.14);
-  color: var(--text-primary);
+  background: linear-gradient(135deg, #1d2762 0%, #11205a 100%);
+  color: #f5f7ff;
+  border: 1px solid rgba(15, 20, 54, 0.14);
+  box-shadow: 0 20px 40px -20px rgba(15, 20, 54, 0.35);
+}
+/* Flow text inside the ink panel must stay light — the global bright-theme
+   remaps (p.text-white, headings) would otherwise turn it dark on dark. */
+.ed-ink-panel p,
+.ed-ink-panel li,
+.ed-ink-panel h1,
+.ed-ink-panel h2,
+.ed-ink-panel h3,
+.ed-ink-panel h4 {
+  color: #f5f7ff;
 }
 
 .ed-bar { background: rgba(15, 20, 54, 0.08); }
@@ -1537,4 +1551,35 @@ html[data-theme='dark'] .et-card.hoverable:hover {
   border-color: rgba(91, 141, 255, 0.50);
   background: linear-gradient(180deg, #1a2b6f 0%, #122257 100%);
   box-shadow: 0 20px 40px -20px rgba(124, 92, 255, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ------------------------------------------------------------
+   Brand gradient on surfaces that carry WHITE text. The original
+   stops (#7c5cff -> #4c6bff) give white only ~4.35:1. Use the
+   bright palette's deeper stops (5.15:1) by default; dark keeps
+   the lighter, more luminous original.
+   ------------------------------------------------------------ */
+.et-btn-primary,
+.ed-btn-primary,
+.ed-topnav a.active,
+.et-toggle .et-toggle-pill,
+.et-brand .et-mark,
+.ed-brand-mark {
+  background: linear-gradient(135deg, #6d4aff 0%, #3b5bff 100%);
+}
+.ed-topnav a.active,
+.ed-cal-today {
+  background: linear-gradient(180deg, #6d4aff 0%, #3b5bff 100%);
+}
+
+html[data-theme='dark'] .et-btn-primary,
+html[data-theme='dark'] .ed-btn-primary,
+html[data-theme='dark'] .et-toggle .et-toggle-pill,
+html[data-theme='dark'] .et-brand .et-mark,
+html[data-theme='dark'] .ed-brand-mark {
+  background: linear-gradient(135deg, #7c5cff 0%, #4c6bff 100%);
+}
+html[data-theme='dark'] .ed-topnav a.active,
+html[data-theme='dark'] .ed-cal-today {
+  background: linear-gradient(180deg, #7c5cff 0%, #4c6bff 100%);
 }
