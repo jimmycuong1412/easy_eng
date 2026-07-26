@@ -110,6 +110,10 @@
 
   html {
     @apply scroll-smooth;
+    color-scheme: light;
+  }
+
+  html[data-theme='dark'] {
     color-scheme: dark;
   }
 
@@ -118,14 +122,22 @@
     color: var(--text-primary);
     font-family: var(--font-sans);
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    /* Bright canvas: white with faint violet/blue radial tints at the edges */
+    background:
+      radial-gradient(ellipse 70% 45% at 50% 0%, rgba(109, 74, 255, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 40% at 100% 20%, rgba(59, 91, 255, 0.05) 0%, transparent 60%),
+      #ffffff;
+    background-attachment: fixed;
+    min-height: 100vh;
+    letter-spacing: -0.005em;
+  }
+
+  html[data-theme='dark'] body {
     background:
       radial-gradient(ellipse 80% 50% at 50% 0%, rgba(29, 46, 117, 0.33) 0%, transparent 60%),
       radial-gradient(ellipse 60% 40% at 100% 30%, rgba(76, 107, 255, 0.13) 0%, transparent 60%),
       radial-gradient(ellipse 60% 40% at 0% 70%, rgba(124, 92, 255, 0.12) 0%, transparent 60%),
       linear-gradient(180deg, #060f33 0%, #050d2e 50%, #060f33 100%);
-    background-attachment: fixed;
-    min-height: 100vh;
-    letter-spacing: -0.005em;
   }
 
   /* Scrollbar (webkit) */
@@ -157,7 +169,37 @@
   /* Focus */
   :focus-visible {
     @apply outline-none ring-2 ring-border-focus ring-offset-2;
+    --tw-ring-offset-color: #ffffff;
+  }
+
+  html[data-theme='dark'] :focus-visible {
     --tw-ring-offset-color: #060f33;
+  }
+
+  /* Scrollbar + selection tuned for the bright canvas */
+  ::-webkit-scrollbar-track {
+    background: rgba(15, 20, 54, 0.04);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(109, 74, 255, 0.30);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(109, 74, 255, 0.55);
+  }
+  ::selection {
+    background: rgba(109, 74, 255, 0.22);
+    color: #0f1436;
+  }
+
+  html[data-theme='dark'] ::-webkit-scrollbar-track {
+    background: rgba(91, 141, 255, 0.04);
+  }
+  html[data-theme='dark'] ::-webkit-scrollbar-thumb {
+    background: rgba(124, 92, 255, 0.35);
+  }
+  html[data-theme='dark'] ::selection {
+    background: rgba(124, 92, 255, 0.35);
+    color: #ffffff;
   }
 }
 
@@ -1024,11 +1066,14 @@
 }
 
 /* ============================================================
-   .bright — Direction D light theme (opt-in per migrated page).
-   Redefines the same variable names as :root with light values,
-   plus overrides for component-layer and et-* hardcoded hexes.
-   Placed last so it wins the cascade over the dark defaults.
+   Direction D — bright light theme. This is the app-wide DEFAULT.
+   It redeclares the same variable names as the legacy :root block
+   above with light values; because it comes later in the file it
+   wins the cascade. Dark is opt-in via html[data-theme='dark'].
+   `.bright` is kept as an alias so any page still carrying the
+   class renders identically.
    ============================================================ */
+:root,
 .bright {
   /* Surface — white canvas, blue-tinted off-whites */
   --bg-primary: #ffffff;
@@ -1051,7 +1096,7 @@
   /* Text — ink navy */
   --text-primary: #0f1436;
   --text-secondary: #4a5178;
-  --text-muted: #7c82a8;
+  --text-muted: #6b7194;  /* AA 4.76:1 on white */
   --text-subtle: #9aa0c4;
 
   /* Lines — blue-tinted, never neutral gray */
@@ -1072,7 +1117,7 @@
   --et-line-2: rgba(109, 74, 255, 0.18);
   --et-fg: #0f1436;
   --et-fg-2: #4a5178;
-  --et-fg-3: #7c82a8;
+  --et-fg-3: #6b7194;
   --et-fg-4: #9aa0c4;
   --et-violet: #6d4aff;
   --et-violet-2: #8b6bff;
@@ -1102,80 +1147,80 @@
   min-height: 100vh;
 }
 
-.bright :focus-visible { --tw-ring-offset-color: #ffffff; }
+:focus-visible { --tw-ring-offset-color: #ffffff; }
 
 /* Component layer — .bright overrides */
-.bright .btn-secondary {
+.btn-secondary {
   background: #ffffff;
   border: 1px solid rgba(15, 20, 54, 0.12);
   color: var(--text-primary);
 }
-.bright .btn-secondary:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
-.bright .btn-ghost { color: var(--text-secondary); }
-.bright .btn-ghost:hover { background: #f6f7fd; color: var(--text-primary); }
+.btn-secondary:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
+.btn-ghost { color: var(--text-secondary); }
+.btn-ghost:hover { background: #f6f7fd; color: var(--text-primary); }
 
-.bright .card,
-.bright .glass {
+.card,
+.glass {
   background: #ffffff;
   border: 1px solid rgba(15, 20, 54, 0.08);
   box-shadow: 0 1px 3px rgba(15, 20, 54, 0.06), 0 8px 24px -16px rgba(15, 20, 54, 0.12);
 }
-.bright .card:hover { box-shadow: var(--shadow-card-hover); }
-.bright .card-elevated { background: #ffffff; }
+.card:hover { box-shadow: var(--shadow-card-hover); }
+.card-elevated { background: #ffffff; }
 
-.bright .input {
+.input {
   background: #ffffff;
   border: 1px solid rgba(15, 20, 54, 0.12);
   color: var(--text-primary);
 }
 
-.bright .skeleton {
+.skeleton {
   background: linear-gradient(90deg, #eef0fb 0%, #f6f7fd 50%, #eef0fb 100%);
   background-size: 400% 100%;
 }
 
-.bright .text-gradient,
-.bright .et-grad-text {
+.text-gradient,
+.et-grad-text {
   background: linear-gradient(120deg, #6d4aff 0%, #5b4bff 50%, #3b5bff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.bright .glow-gold { box-shadow: 0 4px 12px -4px rgba(245, 158, 11, 0.35); }
-.bright .glow-gem  { box-shadow: 0 4px 12px -4px rgba(236, 72, 153, 0.30); }
-.bright .glow-cookie { box-shadow: 0 4px 12px -4px rgba(255, 122, 89, 0.30); }
+.glow-gold { box-shadow: 0 4px 12px -4px rgba(245, 158, 11, 0.35); }
+.glow-gem  { box-shadow: 0 4px 12px -4px rgba(236, 72, 153, 0.30); }
+.glow-cookie { box-shadow: 0 4px 12px -4px rgba(255, 122, 89, 0.30); }
 
 /* et-* component overrides for .bright */
-.bright .et-topbar {
+.et-topbar {
   border-bottom: 1px solid rgba(15, 20, 54, 0.08);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.72) 100%);
 }
-.bright .et-iconbtn {
+.et-iconbtn {
   background: #ffffff;
   border: 1px solid rgba(15, 20, 54, 0.12);
   color: var(--et-fg-2);
 }
-.bright .et-iconbtn:hover { background: #f6f7fd; color: var(--et-fg); border-color: rgba(109, 74, 255, 0.33); }
+.et-iconbtn:hover { background: #f6f7fd; color: var(--et-fg); border-color: rgba(109, 74, 255, 0.33); }
 
-.bright .et-btn.secondary { background: #ffffff; border-color: rgba(15, 20, 54, 0.12); color: var(--et-fg); }
-.bright .et-btn.secondary:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
-.bright .et-btn.outline { border-color: rgba(15, 20, 54, 0.16); color: var(--et-fg); }
-.bright .et-btn.outline:hover { border-color: #6d4aff; background: rgba(109, 74, 255, 0.06); }
-.bright .et-btn.white { background: #0f1436; color: #ffffff; box-shadow: 0 8px 24px -8px rgba(15, 20, 54, 0.30); }
-.bright .et-btn.white:hover { box-shadow: 0 12px 32px -8px rgba(15, 20, 54, 0.40); }
+.et-btn.secondary { background: #ffffff; border-color: rgba(15, 20, 54, 0.12); color: var(--et-fg); }
+.et-btn.secondary:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
+.et-btn.outline { border-color: rgba(15, 20, 54, 0.16); color: var(--et-fg); }
+.et-btn.outline:hover { border-color: #6d4aff; background: rgba(109, 74, 255, 0.06); }
+.et-btn.white { background: #0f1436; color: #ffffff; box-shadow: 0 8px 24px -8px rgba(15, 20, 54, 0.30); }
+.et-btn.white:hover { box-shadow: 0 12px 32px -8px rgba(15, 20, 54, 0.40); }
 
-.bright .et-input { background: #ffffff; border: 1px solid rgba(15, 20, 54, 0.12); color: var(--et-fg); }
+.et-input { background: #ffffff; border: 1px solid rgba(15, 20, 54, 0.12); color: var(--et-fg); }
 
-.bright .et-stars .et-stars-empty { color: rgba(15, 20, 54, 0.14); }
+.et-stars .et-stars-empty { color: rgba(15, 20, 54, 0.14); }
 
-.bright .et-gridlines {
+.et-gridlines {
   background-image:
     linear-gradient(to right, rgba(15, 20, 54, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(15, 20, 54, 0.05) 1px, transparent 1px);
 }
 
-.bright .et-section::before {
+.et-section::before {
   background:
     radial-gradient(ellipse 50% 40% at 0% 30%, rgba(59, 91, 255, 0.05) 0%, transparent 70%),
     radial-gradient(ellipse 50% 40% at 100% 70%, rgba(109, 74, 255, 0.05) 0%, transparent 70%);
@@ -1187,7 +1232,7 @@
    The base `.bright` block above is the light default; these
    rules win only under html[data-theme="dark"].
    ============================================================ */
-html[data-theme='dark'] .bright {
+html[data-theme='dark'] {
   --bg-primary: #060f33;
   --bg-secondary: #0d1a4a;
   --bg-surface: #15235e;
@@ -1251,32 +1296,32 @@ html[data-theme='dark'] .bright {
 }
 
 /* Revert component-layer overrides to dark under the toggle */
-html[data-theme='dark'] .bright .btn-secondary { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
-html[data-theme='dark'] .bright .card,
-html[data-theme='dark'] .bright .glass {
+html[data-theme='dark'] .btn-secondary { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .glass {
   background: linear-gradient(180deg, #11205a 0%, #0a1845 100%);
   border: 1px solid var(--et-line);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
-html[data-theme='dark'] .bright .input { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
-html[data-theme='dark'] .bright .et-topbar {
+html[data-theme='dark'] .input { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .et-topbar {
   border-bottom: 1px solid rgba(91, 141, 255, 0.13);
   background: linear-gradient(180deg, rgba(6, 15, 51, 0.93) 0%, rgba(6, 15, 51, 0.69) 100%);
 }
-html[data-theme='dark'] .bright .et-iconbtn { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); color: var(--et-fg-2); }
-html[data-theme='dark'] .bright .et-btn.white { background: #fff; color: #0a1538; box-shadow: 0 8px 24px -8px rgba(255, 255, 255, 0.25); }
-html[data-theme='dark'] .bright .et-stars .et-stars-empty { color: rgba(255, 255, 255, 0.13); }
-html[data-theme='dark'] .bright .et-gridlines {
+html[data-theme='dark'] .et-iconbtn { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); color: var(--et-fg-2); }
+html[data-theme='dark'] .et-btn.white { background: #fff; color: #0a1538; box-shadow: 0 8px 24px -8px rgba(255, 255, 255, 0.25); }
+html[data-theme='dark'] .et-stars .et-stars-empty { color: rgba(255, 255, 255, 0.13); }
+html[data-theme='dark'] .et-gridlines {
   background-image:
     linear-gradient(to right, rgba(91, 141, 255, 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(91, 141, 255, 0.08) 1px, transparent 1px);
 }
 
 /* Free-features section — subtle themed wash (light default, dark under toggle) */
-.bright .et-section-free {
+.et-section-free {
   background: linear-gradient(180deg, #ffffff 0%, #f6f7fd 100%);
 }
-html[data-theme='dark'] .bright .et-section-free {
+html[data-theme='dark'] .et-section-free {
   background: linear-gradient(180deg, #060f2e 0%, #0a1538 100%);
 }
 
@@ -1286,3 +1331,115 @@ html[data-theme='dark'] .bright .et-section-free {
 .theme-icon-moon { display: inline-block; }
 html[data-theme='dark'] .theme-icon-sun { display: inline-block; }
 html[data-theme='dark'] .theme-icon-moon { display: none; }
+
+/* ============================================================
+   Legacy ed-* shim — bright defaults. These classes were authored
+   with baked-in dark surfaces; give them light equivalents for the
+   default theme and restore the originals under data-theme=dark.
+   ============================================================ */
+.ed-card,
+.ed-kpi {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.08);
+  box-shadow: 0 1px 3px rgba(15, 20, 54, 0.06), 0 8px 24px -16px rgba(15, 20, 54, 0.12);
+}
+.ed-card:hover,
+.ed-kpi:hover { box-shadow: var(--shadow-card-hover); }
+
+.ed-topbar {
+  border-bottom: 1px solid rgba(15, 20, 54, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.72) 100%);
+}
+
+.ed-iconbtn {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--et-fg-2);
+}
+.ed-iconbtn:hover { background: #f6f7fd; color: var(--et-fg); border-color: rgba(109, 74, 255, 0.33); }
+
+.ed-btn {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--et-fg);
+}
+.ed-btn:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
+.ed-btn-ghost:hover { background: #f6f7fd; }
+
+.ed-chip-ink { background: #6d4aff; color: #fff; border-color: transparent; }
+
+.ed-ink-panel {
+  background: linear-gradient(135deg, #f6f7fd 0%, #eef0fb 100%);
+  border: 1px solid rgba(15, 20, 54, 0.10);
+  box-shadow: 0 20px 40px -20px rgba(15, 20, 54, 0.14);
+  color: var(--text-primary);
+}
+
+.ed-bar { background: rgba(15, 20, 54, 0.08); }
+
+.ed-divider      { border-top-color: rgba(15, 20, 54, 0.12); }
+.ed-thin-divider { border-top-color: rgba(15, 20, 54, 0.10); }
+
+/* Dark restorations */
+html[data-theme='dark'] .ed-card,
+html[data-theme='dark'] .ed-kpi {
+  background: linear-gradient(180deg, #11205a 0%, #0a1845 100%);
+  border: 1px solid var(--et-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+html[data-theme='dark'] .ed-topbar {
+  border-bottom: 1px solid rgba(91, 141, 255, 0.13);
+  background: linear-gradient(180deg, rgba(6, 15, 51, 0.93) 0%, rgba(6, 15, 51, 0.69) 100%);
+}
+html[data-theme='dark'] .ed-iconbtn { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .ed-iconbtn:hover { background: #15235e; color: #fff; }
+html[data-theme='dark'] .ed-btn { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .ed-btn:hover { background: #15235e; border-color: rgba(91, 141, 255, 0.40); }
+html[data-theme='dark'] .ed-btn-ghost:hover { background: #0a1845; }
+html[data-theme='dark'] .ed-chip-ink { background: #1d2e75; }
+html[data-theme='dark'] .ed-ink-panel {
+  background: linear-gradient(135deg, #1d2762 0%, #11205a 100%);
+  border: 1px solid rgba(91, 141, 255, 0.27);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+html[data-theme='dark'] .ed-bar { background: rgba(255, 255, 255, 0.08); }
+html[data-theme='dark'] .ed-divider      { border-top-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .ed-thin-divider { border-top-color: rgba(91, 141, 255, 0.18); }
+
+/* ============================================================
+   Dark-theme text utilities used as de-facto theme tokens.
+   These were authored against the old indigo canvas. In the
+   bright theme remap them to the ink palette so page copy stays
+   readable; under data-theme=dark they keep Tailwind's values.
+
+   text-white is only remapped on headings and standalone copy —
+   NOT on elements sitting inside a coloured surface (buttons,
+   badges, gradient chips), which are matched by the :not() guard
+   below so white-on-colour keeps working.
+   ============================================================ */
+h1.text-white,
+h2.text-white,
+h3.text-white,
+h4.text-white,
+h5.text-white,
+h6.text-white {
+  color: var(--text-primary);
+}
+
+.text-slate-300 { color: var(--text-secondary); }
+.text-slate-400 { color: var(--text-muted); }
+.text-slate-500 { color: var(--text-muted); }
+.text-slate-600 { color: var(--text-secondary); }
+
+/* Dark theme: restore the original Tailwind slate ramp + white headings */
+html[data-theme='dark'] h1.text-white,
+html[data-theme='dark'] h2.text-white,
+html[data-theme='dark'] h3.text-white,
+html[data-theme='dark'] h4.text-white,
+html[data-theme='dark'] h5.text-white,
+html[data-theme='dark'] h6.text-white { color: #ffffff; }
+
+html[data-theme='dark'] .text-slate-300 { color: rgb(203 213 225); }
+html[data-theme='dark'] .text-slate-400 { color: rgb(148 163 184); }
+html[data-theme='dark'] .text-slate-500 { color: rgb(100 116 139); }
+html[data-theme='dark'] .text-slate-600 { color: rgb(71 85 105); }
