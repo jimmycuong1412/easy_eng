@@ -50,7 +50,7 @@ export default async function AuthLayout({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(91, 141, 255, 0.13)',
+          borderBottom: '1px solid var(--border-default)',
           position: 'relative',
           zIndex: 1,
         }}
@@ -82,7 +82,7 @@ export default async function AuthLayout({
         style={{
           padding: '20px 40px',
           textAlign: 'center',
-          borderTop: '1px solid rgba(91, 141, 255, 0.13)',
+          borderTop: '1px solid var(--border-default)',
           position: 'relative',
           zIndex: 1,
         }}
