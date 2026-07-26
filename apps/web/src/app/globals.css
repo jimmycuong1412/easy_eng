@@ -1506,3 +1506,11 @@ html[data-theme='dark'] li.text-white,
 html[data-theme='dark'] td.text-white,
 html[data-theme='dark'] dd.text-white,
 html[data-theme='dark'] dt.text-white { color: #ffffff; }
+
+/* ed-chip colour variants: the -400-ish text was picked for dark surfaces and
+   only reaches ~2.6:1 on the light tinted chip. Darken for the bright theme. */
+.ed-chip-coral { background: rgba(255, 122, 89, 0.14); color: #c2410c; } /* 4.65:1 */
+.ed-chip-sky   { background: rgba(76, 107, 255, 0.12); color: #1d4ed8; } /* 5.95:1 */
+
+html[data-theme='dark'] .ed-chip-coral { background: rgba(255, 122, 89, 0.18); color: #ff7a59; }
+html[data-theme='dark'] .ed-chip-sky   { background: rgba(76, 107, 255, 0.18); color: #a4c0ff; }
