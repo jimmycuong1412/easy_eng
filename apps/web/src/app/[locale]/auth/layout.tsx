@@ -19,16 +19,16 @@ export default async function AuthLayout({
         overflow: 'hidden',
       }}
     >
-      {/* Ambient glows */}
+      {/* Ambient glows — lower opacity so they read as a soft wash on white */}
       <div
         className="et-glow"
         style={{
           width: 600,
           height: 600,
-          background: '#7c5cff',
+          background: '#6d4aff',
           top: -200,
           left: '-10%',
-          opacity: 0.30,
+          opacity: 0.12,
         }}
       />
       <div
@@ -36,10 +36,10 @@ export default async function AuthLayout({
         style={{
           width: 500,
           height: 500,
-          background: '#4c6bff',
+          background: '#3b5bff',
           bottom: -160,
           right: '-8%',
-          opacity: 0.25,
+          opacity: 0.10,
         }}
       />
 
@@ -50,7 +50,7 @@ export default async function AuthLayout({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(91, 141, 255, 0.13)',
+          borderBottom: '1px solid var(--border-default)',
           position: 'relative',
           zIndex: 1,
         }}
@@ -82,7 +82,7 @@ export default async function AuthLayout({
         style={{
           padding: '20px 40px',
           textAlign: 'center',
-          borderTop: '1px solid rgba(91, 141, 255, 0.13)',
+          borderTop: '1px solid var(--border-default)',
           position: 'relative',
           zIndex: 1,
         }}

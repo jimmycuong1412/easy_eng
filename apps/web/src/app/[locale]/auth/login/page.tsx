@@ -132,7 +132,7 @@ export default function LoginPage() {
             color: 'var(--et-fg-3)',
           }}
         >
-          <span style={{ flex: 1, height: 1, background: 'rgba(91, 141, 255, 0.20)' }} />
+          <span style={{ flex: 1, height: 1, background: 'var(--border-default)' }} />
           <span
             style={{
               fontFamily: 'var(--et-mono)',
@@ -143,7 +143,7 @@ export default function LoginPage() {
           >
             {tCommon('or')}
           </span>
-          <span style={{ flex: 1, height: 1, background: 'rgba(91, 141, 255, 0.20)' }} />
+          <span style={{ flex: 1, height: 1, background: 'var(--border-default)' }} />
         </div>
 
         <form
@@ -255,8 +255,8 @@ const authInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '11px 14px',
   borderRadius: 10,
-  border: '1px solid rgba(91, 141, 255, 0.20)',
-  background: '#0a1845',
+  border: '1px solid var(--border-default)',
+  background: 'var(--bg-secondary)',
   color: 'var(--et-fg)',
   fontSize: 14,
   outline: 'none',

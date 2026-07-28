@@ -56,10 +56,10 @@ export function EdTopBar({ role = 'student', initials = 'AL', locale = 'en' }: T
               style={
                 active
                   ? {
-                      background: 'linear-gradient(180deg, #7c5cff 0%, #4c6bff 100%)',
+                      background:
+                        'linear-gradient(180deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
                       color: '#fff',
-                      boxShadow:
-                        '0 8px 24px -8px rgba(124, 92, 255, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.18)',
+                      boxShadow: 'var(--shadow-glow)',
                     }
                   : undefined
               }

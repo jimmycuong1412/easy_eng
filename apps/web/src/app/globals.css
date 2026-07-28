@@ -36,6 +36,14 @@
   --border-default: rgba(91, 141, 255, 0.13);
   --border-focus: #7c5cff;
 
+  /* Shadcn alias tokens (values match the previous literal hexes) */
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #f5f7ff;
+  --destructive-foreground: #ffffff;
+  --accent-foreground: #f5f7ff;
+  --input: rgba(91, 141, 255, 0.20);
+  --text-subtle: #5b6093;
+
   /* Shadows */
   --shadow-glow: 0 8px 24px -8px rgba(124, 92, 255, 0.50);
   --shadow-glow-lg: 0 20px 40px -20px rgba(124, 92, 255, 0.60);
@@ -102,6 +110,10 @@
 
   html {
     @apply scroll-smooth;
+    color-scheme: light;
+  }
+
+  html[data-theme='dark'] {
     color-scheme: dark;
   }
 
@@ -110,14 +122,22 @@
     color: var(--text-primary);
     font-family: var(--font-sans);
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    /* Bright canvas: white with faint violet/blue radial tints at the edges */
+    background:
+      radial-gradient(ellipse 70% 45% at 50% 0%, rgba(109, 74, 255, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 40% at 100% 20%, rgba(59, 91, 255, 0.05) 0%, transparent 60%),
+      #ffffff;
+    background-attachment: fixed;
+    min-height: 100vh;
+    letter-spacing: -0.005em;
+  }
+
+  html[data-theme='dark'] body {
     background:
       radial-gradient(ellipse 80% 50% at 50% 0%, rgba(29, 46, 117, 0.33) 0%, transparent 60%),
       radial-gradient(ellipse 60% 40% at 100% 30%, rgba(76, 107, 255, 0.13) 0%, transparent 60%),
       radial-gradient(ellipse 60% 40% at 0% 70%, rgba(124, 92, 255, 0.12) 0%, transparent 60%),
       linear-gradient(180deg, #060f33 0%, #050d2e 50%, #060f33 100%);
-    background-attachment: fixed;
-    min-height: 100vh;
-    letter-spacing: -0.005em;
   }
 
   /* Scrollbar (webkit) */
@@ -149,7 +169,37 @@
   /* Focus */
   :focus-visible {
     @apply outline-none ring-2 ring-border-focus ring-offset-2;
+    --tw-ring-offset-color: #ffffff;
+  }
+
+  html[data-theme='dark'] :focus-visible {
     --tw-ring-offset-color: #060f33;
+  }
+
+  /* Scrollbar + selection tuned for the bright canvas */
+  ::-webkit-scrollbar-track {
+    background: rgba(15, 20, 54, 0.04);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(109, 74, 255, 0.30);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(109, 74, 255, 0.55);
+  }
+  ::selection {
+    background: rgba(109, 74, 255, 0.22);
+    color: #0f1436;
+  }
+
+  html[data-theme='dark'] ::-webkit-scrollbar-track {
+    background: rgba(91, 141, 255, 0.04);
+  }
+  html[data-theme='dark'] ::-webkit-scrollbar-thumb {
+    background: rgba(124, 92, 255, 0.35);
+  }
+  html[data-theme='dark'] ::selection {
+    background: rgba(124, 92, 255, 0.35);
+    color: #ffffff;
   }
 }
 
@@ -1014,3 +1064,572 @@
   .et-quickstats { grid-template-columns: repeat(2, 1fr) !important; }
   .et-footer-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
 }
+
+/* ============================================================
+   Direction D — bright light theme. This is the app-wide DEFAULT.
+   It redeclares the same variable names as the legacy :root block
+   above with light values; because it comes later in the file it
+   wins the cascade. Dark is opt-in via html[data-theme='dark'].
+   (A `.bright` alias was removed: declaring the light variables on a
+   DESCENDANT beat html[data-theme='dark'], leaving wrapped pages light.)
+   ============================================================ */
+:root {
+  /* Surface — white canvas, blue-tinted off-whites */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f7fd;
+  --bg-surface: #eef0fb;
+  --bg-elevated: #ffffff;
+
+  /* Brand — deepened for contrast on white */
+  --accent-primary: #6d4aff;
+  --accent-secondary: #3b5bff;
+  --accent-gold: #f59e0b;
+  --accent-gem: #ec4899;
+  --accent-cookie: #ff7a59;
+
+  /* Status — darkened for white bg (AA) */
+  --color-success: #10b981;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+
+  /* Text — ink navy */
+  --text-primary: #0f1436;
+  --text-secondary: #4a5178;
+  --text-muted: #6b7194;  /* AA 4.76:1 on white */
+  --text-subtle: #9aa0c4;
+
+  /* Lines — blue-tinted, never neutral gray */
+  --border-default: rgba(15, 20, 54, 0.08);
+  --border-focus: #6d4aff;
+
+  /* Shadows — soft violet, low opacity (replace neon glows) */
+  --shadow-glow: 0 8px 24px -8px rgba(109, 74, 255, 0.22);
+  --shadow-glow-lg: 0 20px 40px -20px rgba(109, 74, 255, 0.28);
+  --shadow-card-hover: 0 20px 40px -20px rgba(15, 20, 54, 0.12);
+
+  /* et-* aliases */
+  --et-bg: #ffffff;
+  --et-bg-2: #f6f7fd;
+  --et-bg-3: #eef0fb;
+  --et-bg-4: #ffffff;
+  --et-line: rgba(15, 20, 54, 0.08);
+  --et-line-2: rgba(109, 74, 255, 0.18);
+  --et-fg: #0f1436;
+  --et-fg-2: #4a5178;
+  --et-fg-3: #6b7194;
+  --et-fg-4: #6b7194;      /* AA 4.76:1 on white */
+  --et-violet: #6d4aff;
+  --et-violet-2: #5b32f5;  /* AA 6.52:1 on white (links) */
+  --et-blue: #3b5bff;
+  --et-green: #10b981;
+  --et-amber: #f59e0b;
+
+  /* ed-* aliases used by legacy inline styles */
+  --ed-ink: #6d4aff;
+  --ed-card: #ffffff;
+  --ed-rule: rgba(15, 20, 54, 0.08);
+  --ed-rule-strong: rgba(15, 20, 54, 0.14);
+  --ed-sky-ink: #3b5bff;
+  --ed-coral-ink: #c2410c;  /* AA 5.18:1 on white (coral used as TEXT) */
+
+  /* Shadcn aliases */
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #0f1436;
+  --accent-foreground: #0f1436;
+  --input: rgba(15, 20, 54, 0.12);
+
+  color-scheme: light;
+  color: var(--text-primary);
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(109, 74, 255, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 100% 20%, rgba(59, 91, 255, 0.05) 0%, transparent 60%),
+    #ffffff;
+  min-height: 100vh;
+}
+
+:focus-visible { --tw-ring-offset-color: #ffffff; }
+
+/* Component layer — .bright overrides */
+.btn-secondary {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--text-primary);
+}
+.btn-secondary:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
+.btn-ghost { color: var(--text-secondary); }
+.btn-ghost:hover { background: #f6f7fd; color: var(--text-primary); }
+
+.card,
+.glass {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.08);
+  box-shadow: 0 1px 3px rgba(15, 20, 54, 0.06), 0 8px 24px -16px rgba(15, 20, 54, 0.12);
+}
+.card:hover { box-shadow: var(--shadow-card-hover); }
+.card-elevated { background: #ffffff; }
+
+.input {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--text-primary);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #eef0fb 0%, #f6f7fd 50%, #eef0fb 100%);
+  background-size: 400% 100%;
+}
+
+.text-gradient,
+.et-grad-text {
+  background: linear-gradient(120deg, #6d4aff 0%, #5b4bff 50%, #3b5bff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glow-gold { box-shadow: 0 4px 12px -4px rgba(245, 158, 11, 0.35); }
+.glow-gem  { box-shadow: 0 4px 12px -4px rgba(236, 72, 153, 0.30); }
+.glow-cookie { box-shadow: 0 4px 12px -4px rgba(255, 122, 89, 0.30); }
+
+/* et-* component overrides for .bright */
+.et-topbar {
+  border-bottom: 1px solid rgba(15, 20, 54, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.72) 100%);
+}
+.et-iconbtn {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--et-fg-2);
+}
+.et-iconbtn:hover { background: #f6f7fd; color: var(--et-fg); border-color: rgba(109, 74, 255, 0.33); }
+
+.et-btn.secondary { background: #ffffff; border-color: rgba(15, 20, 54, 0.12); color: var(--et-fg); }
+.et-btn.secondary:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
+.et-btn.outline { border-color: rgba(15, 20, 54, 0.16); color: var(--et-fg); }
+.et-btn.outline:hover { border-color: #6d4aff; background: rgba(109, 74, 255, 0.06); }
+.et-btn.white { background: #0f1436; color: #ffffff; box-shadow: 0 8px 24px -8px rgba(15, 20, 54, 0.30); }
+.et-btn.white:hover { box-shadow: 0 12px 32px -8px rgba(15, 20, 54, 0.40); }
+
+.et-input { background: #ffffff; border: 1px solid rgba(15, 20, 54, 0.12); color: var(--et-fg); }
+
+.et-stars .et-stars-empty { color: rgba(15, 20, 54, 0.14); }
+
+.et-gridlines {
+  background-image:
+    linear-gradient(to right, rgba(15, 20, 54, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 20, 54, 0.05) 1px, transparent 1px);
+}
+
+.et-section::before {
+  background:
+    radial-gradient(ellipse 50% 40% at 0% 30%, rgba(59, 91, 255, 0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 100% 70%, rgba(109, 74, 255, 0.05) 0%, transparent 70%);
+}
+
+/* ============================================================
+   Toggle support: when the user switches to dark, a migrated
+   `.bright` subtree reverts to the dark (Direction C) palette.
+   The base `.bright` block above is the light default; these
+   rules win only under html[data-theme="dark"].
+   ============================================================ */
+html[data-theme='dark'] {
+  --bg-primary: #060f33;
+  --bg-secondary: #0d1a4a;
+  --bg-surface: #15235e;
+  --bg-elevated: #1d2e75;
+
+  --accent-primary: #7c5cff;
+  --accent-secondary: #4c6bff;
+  --accent-gold: #fbbf24;
+  --accent-gem: #ec4899;
+  --accent-cookie: #ff7a59;
+
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #ef4444;
+
+  --text-primary: #f5f7ff;
+  --text-secondary: #c8ccea;
+  --text-muted: #8a90b8;
+  --text-subtle: #5b6093;
+
+  --border-default: rgba(91, 141, 255, 0.13);
+  --border-focus: #7c5cff;
+
+  --shadow-glow: 0 8px 24px -8px rgba(124, 92, 255, 0.50);
+  --shadow-glow-lg: 0 20px 40px -20px rgba(124, 92, 255, 0.60);
+  --shadow-card-hover: 0 20px 40px -20px rgba(124, 92, 255, 0.60);
+
+  --et-bg: #060f33;
+  --et-bg-2: #0d1a4a;
+  --et-bg-3: #15235e;
+  --et-bg-4: #1d2e75;
+  --et-line: rgba(91, 141, 255, 0.10);
+  --et-line-2: rgba(124, 168, 255, 0.20);
+  --et-fg: #f5f7ff;
+  --et-fg-2: #c8ccea;
+  --et-fg-3: #8a90b8;
+  --et-fg-4: #5b6093;
+  --et-violet: #7c5cff;
+  --et-violet-2: #a48bff;
+  --et-blue: #4c6bff;
+  --et-green: #34d399;
+  --et-amber: #fbbf24;
+
+  --ed-ink: #7c5cff;
+  --ed-card: #0d1a4a;
+  --ed-rule: rgba(91, 141, 255, 0.13);
+  --ed-rule-strong: rgba(91, 141, 255, 0.25);
+  --ed-sky-ink: #a4c0ff;
+
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #f5f7ff;
+  --accent-foreground: #f5f7ff;
+  --input: rgba(91, 141, 255, 0.20);
+
+  color-scheme: dark;
+  color: var(--text-primary);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(29, 46, 117, 0.33) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 30%, rgba(76, 107, 255, 0.13) 0%, transparent 60%),
+    linear-gradient(180deg, #060f33 0%, #050d2e 50%, #060f33 100%);
+}
+
+/* Revert component-layer overrides to dark under the toggle */
+html[data-theme='dark'] .btn-secondary { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .glass {
+  background: linear-gradient(180deg, #11205a 0%, #0a1845 100%);
+  border: 1px solid var(--et-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+html[data-theme='dark'] .input { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .et-topbar {
+  border-bottom: 1px solid rgba(91, 141, 255, 0.13);
+  background: linear-gradient(180deg, rgba(6, 15, 51, 0.93) 0%, rgba(6, 15, 51, 0.69) 100%);
+}
+html[data-theme='dark'] .et-iconbtn { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); color: var(--et-fg-2); }
+html[data-theme='dark'] .et-btn.white { background: #fff; color: #0a1538; box-shadow: 0 8px 24px -8px rgba(255, 255, 255, 0.25); }
+html[data-theme='dark'] .et-stars .et-stars-empty { color: rgba(255, 255, 255, 0.13); }
+html[data-theme='dark'] .et-gridlines {
+  background-image:
+    linear-gradient(to right, rgba(91, 141, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(91, 141, 255, 0.08) 1px, transparent 1px);
+}
+
+/* Free-features section — subtle themed wash (light default, dark under toggle) */
+.et-section-free {
+  background: linear-gradient(180deg, #ffffff 0%, #f6f7fd 100%);
+}
+html[data-theme='dark'] .et-section-free {
+  background: linear-gradient(180deg, #060f2e 0%, #0a1538 100%);
+}
+
+/* Theme toggle icons — visibility driven by html[data-theme] (no JS branch in
+   render, so no hydration mismatch). Default (bright): moon shown. */
+.theme-icon-sun { display: none; }
+.theme-icon-moon { display: inline-block; }
+html[data-theme='dark'] .theme-icon-sun { display: inline-block; }
+html[data-theme='dark'] .theme-icon-moon { display: none; }
+
+/* ============================================================
+   Legacy ed-* shim — bright defaults. These classes were authored
+   with baked-in dark surfaces; give them light equivalents for the
+   default theme and restore the originals under data-theme=dark.
+   ============================================================ */
+.ed-card,
+.ed-kpi {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.08);
+  box-shadow: 0 1px 3px rgba(15, 20, 54, 0.06), 0 8px 24px -16px rgba(15, 20, 54, 0.12);
+}
+.ed-card:hover,
+.ed-kpi:hover { box-shadow: var(--shadow-card-hover); }
+
+.ed-topbar {
+  border-bottom: 1px solid rgba(15, 20, 54, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.72) 100%);
+}
+
+.ed-iconbtn {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--et-fg-2);
+}
+.ed-iconbtn:hover { background: #f6f7fd; color: var(--et-fg); border-color: rgba(109, 74, 255, 0.33); }
+
+.ed-btn {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.12);
+  color: var(--et-fg);
+}
+.ed-btn:hover { background: #f6f7fd; border-color: rgba(109, 74, 255, 0.40); }
+.ed-btn-ghost:hover { background: #f6f7fd; }
+
+.ed-chip-ink { background: #6d4aff; color: #fff; border-color: transparent; }
+
+/* .ed-ink-panel is an intentional dark "ink" accent panel (teacher earnings,
+   dashboard hero). It stays dark in BOTH themes — its child text colours are
+   light-on-dark by design — so it just needs a shadow that reads on white. */
+.ed-ink-panel {
+  background: linear-gradient(135deg, #1d2762 0%, #11205a 100%);
+  color: #f5f7ff;
+  border: 1px solid rgba(15, 20, 54, 0.14);
+  box-shadow: 0 20px 40px -20px rgba(15, 20, 54, 0.35);
+}
+/* Flow text inside the ink panel must stay light — the global bright-theme
+   remaps (p.text-white, headings) would otherwise turn it dark on dark. */
+.ed-ink-panel p,
+.ed-ink-panel li,
+.ed-ink-panel h1,
+.ed-ink-panel h2,
+.ed-ink-panel h3,
+.ed-ink-panel h4 {
+  color: #f5f7ff;
+}
+
+.ed-bar { background: rgba(15, 20, 54, 0.08); }
+
+.ed-divider      { border-top-color: rgba(15, 20, 54, 0.12); }
+.ed-thin-divider { border-top-color: rgba(15, 20, 54, 0.10); }
+
+/* Dark restorations */
+html[data-theme='dark'] .ed-card,
+html[data-theme='dark'] .ed-kpi {
+  background: linear-gradient(180deg, #11205a 0%, #0a1845 100%);
+  border: 1px solid var(--et-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+html[data-theme='dark'] .ed-topbar {
+  border-bottom: 1px solid rgba(91, 141, 255, 0.13);
+  background: linear-gradient(180deg, rgba(6, 15, 51, 0.93) 0%, rgba(6, 15, 51, 0.69) 100%);
+}
+html[data-theme='dark'] .ed-iconbtn { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .ed-iconbtn:hover { background: #15235e; color: #fff; }
+html[data-theme='dark'] .ed-btn { background: #0a1845; border-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .ed-btn:hover { background: #15235e; border-color: rgba(91, 141, 255, 0.40); }
+html[data-theme='dark'] .ed-btn-ghost:hover { background: #0a1845; }
+html[data-theme='dark'] .ed-chip-ink { background: #1d2e75; }
+html[data-theme='dark'] .ed-ink-panel {
+  background: linear-gradient(135deg, #1d2762 0%, #11205a 100%);
+  border: 1px solid rgba(91, 141, 255, 0.27);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+html[data-theme='dark'] .ed-bar { background: rgba(255, 255, 255, 0.08); }
+html[data-theme='dark'] .ed-divider      { border-top-color: rgba(91, 141, 255, 0.20); }
+html[data-theme='dark'] .ed-thin-divider { border-top-color: rgba(91, 141, 255, 0.18); }
+
+/* ============================================================
+   Dark-theme text utilities used as de-facto theme tokens.
+   These were authored against the old indigo canvas. In the
+   bright theme remap them to the ink palette so page copy stays
+   readable; under data-theme=dark they keep Tailwind's values.
+
+   text-white is only remapped on headings and standalone copy —
+   NOT on elements sitting inside a coloured surface (buttons,
+   badges, gradient chips), which are matched by the :not() guard
+   below so white-on-colour keeps working.
+   ============================================================ */
+h1.text-white,
+h2.text-white,
+h3.text-white,
+h4.text-white,
+h5.text-white,
+h6.text-white {
+  color: var(--text-primary);
+}
+
+.text-slate-300 { color: var(--text-secondary); }
+.text-slate-400 { color: var(--text-muted); }
+.text-slate-500 { color: var(--text-muted); }
+.text-slate-600 { color: var(--text-secondary); }
+
+/* Dark theme: restore the original Tailwind slate ramp + white headings */
+html[data-theme='dark'] h1.text-white,
+html[data-theme='dark'] h2.text-white,
+html[data-theme='dark'] h3.text-white,
+html[data-theme='dark'] h4.text-white,
+html[data-theme='dark'] h5.text-white,
+html[data-theme='dark'] h6.text-white { color: #ffffff; }
+
+html[data-theme='dark'] .text-slate-300 { color: rgb(203 213 225); }
+html[data-theme='dark'] .text-slate-400 { color: rgb(148 163 184); }
+html[data-theme='dark'] .text-slate-500 { color: rgb(100 116 139); }
+html[data-theme='dark'] .text-slate-600 { color: rgb(71 85 105); }
+
+/* ============================================================
+   Status text utilities (-400 shades) were picked for the old
+   dark canvas and fail contrast on white. Remap to AA-passing
+   shades in the bright theme; restore Tailwind's values in dark.
+   Contrast on #fff shown per line.
+   ============================================================ */
+.text-red-400     { color: #dc2626; } /* 4.83:1 */
+.text-green-400   { color: #15803d; } /* 5.02:1 */
+.text-amber-400   { color: #b45309; } /* 5.02:1 */
+.text-yellow-400  { color: #a16207; } /* 4.92:1 */
+.text-blue-400    { color: #2563eb; } /* 5.17:1 */
+.text-emerald-400 { color: #047857; } /* 5.48:1 */
+
+html[data-theme='dark'] .text-red-400     { color: rgb(248 113 113); }
+html[data-theme='dark'] .text-green-400   { color: rgb(74 222 128); }
+html[data-theme='dark'] .text-amber-400   { color: rgb(251 191 36); }
+html[data-theme='dark'] .text-yellow-400  { color: rgb(250 204 21); }
+html[data-theme='dark'] .text-blue-400    { color: rgb(96 165 250); }
+html[data-theme='dark'] .text-emerald-400 { color: rgb(52 211 153); }
+
+
+/* ------------------------------------------------------------
+   text-white on flow text (p / span / div / li / td) that is NOT
+   inside a coloured surface. Those elements were relying on the
+   old dark canvas. Buttons, links-as-buttons and anything with an
+   explicit bg-* utility are excluded so white-on-colour survives.
+   ------------------------------------------------------------ */
+p.text-white,
+li.text-white,
+td.text-white,
+dd.text-white,
+dt.text-white {
+  color: var(--text-primary);
+}
+
+/* Restore white where the element genuinely sits on a coloured
+   surface (an ancestor button / element carrying a bg utility). */
+button .text-white,
+a[class*='bg-'] .text-white,
+[class*='bg-gradient'] .text-white,
+[class*='bg-blue'] .text-white,
+[class*='bg-indigo'] .text-white,
+[class*='bg-violet'] .text-white,
+[class*='bg-purple'] .text-white,
+[class*='bg-red'] .text-white,
+[class*='bg-green'] .text-white,
+[class*='bg-emerald'] .text-white,
+[class*='bg-amber'] .text-white,
+[class*='bg-orange'] .text-white,
+[class*='bg-slate-7'] .text-white,
+[class*='bg-slate-8'] .text-white,
+[class*='bg-slate-9'] .text-white,
+.et-btn .text-white,
+.ed-btn .text-white {
+  color: #ffffff;
+}
+
+html[data-theme='dark'] p.text-white,
+html[data-theme='dark'] li.text-white,
+html[data-theme='dark'] td.text-white,
+html[data-theme='dark'] dd.text-white,
+html[data-theme='dark'] dt.text-white { color: #ffffff; }
+
+/* ed-chip colour variants: the -400-ish text was picked for dark surfaces and
+   only reaches ~2.6:1 on the light tinted chip. Darken for the bright theme. */
+.ed-chip-coral { background: rgba(255, 122, 89, 0.14); color: #c2410c; } /* 4.65:1 */
+.ed-chip-sky   { background: rgba(76, 107, 255, 0.12); color: #1d4ed8; } /* 5.95:1 */
+
+html[data-theme='dark'] .ed-chip-coral { background: rgba(255, 122, 89, 0.18); color: #ff7a59; }
+html[data-theme='dark'] .ed-chip-sky   { background: rgba(76, 107, 255, 0.18); color: #a4c0ff; }
+
+/* .et-card — the mockup card surface (auth forms, landing cards). Bright by
+   default, original indigo gradient under data-theme=dark. */
+.et-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 20, 54, 0.08);
+  box-shadow: 0 1px 3px rgba(15, 20, 54, 0.06), 0 8px 24px -16px rgba(15, 20, 54, 0.12);
+}
+.et-card.hoverable:hover {
+  border-color: rgba(109, 74, 255, 0.35);
+  background: #ffffff;
+  box-shadow: 0 20px 40px -20px rgba(15, 20, 54, 0.16);
+}
+
+html[data-theme='dark'] .et-card {
+  background: linear-gradient(180deg, #11205a 0%, #0a1845 100%);
+  border: 1px solid var(--et-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+html[data-theme='dark'] .et-card.hoverable:hover {
+  border-color: rgba(91, 141, 255, 0.50);
+  background: linear-gradient(180deg, #1a2b6f 0%, #122257 100%);
+  box-shadow: 0 20px 40px -20px rgba(124, 92, 255, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ------------------------------------------------------------
+   Brand gradient on surfaces that carry WHITE text. The original
+   stops (#7c5cff -> #4c6bff) give white only ~4.35:1. Use the
+   bright palette's deeper stops (5.15:1) by default; dark keeps
+   the lighter, more luminous original.
+   ------------------------------------------------------------ */
+.et-btn-primary,
+.ed-btn-primary,
+.et-toggle .et-toggle-pill,
+.et-brand .et-mark,
+.ed-brand-mark {
+  background: linear-gradient(135deg, #6d4aff 0%, #3b5bff 100%);
+}
+.ed-topnav a.active,
+.ed-cal-today {
+  background: linear-gradient(180deg, #6d4aff 0%, #3b5bff 100%);
+}
+
+html[data-theme='dark'] .et-btn-primary,
+html[data-theme='dark'] .ed-btn-primary,
+html[data-theme='dark'] .et-toggle .et-toggle-pill,
+html[data-theme='dark'] .et-brand .et-mark,
+html[data-theme='dark'] .ed-brand-mark {
+  background: linear-gradient(135deg, #7c5cff 0%, #4c6bff 100%);
+}
+html[data-theme='dark'] .ed-topnav a.active,
+html[data-theme='dark'] .ed-cal-today {
+  background: linear-gradient(180deg, #7c5cff 0%, #4c6bff 100%);
+}
+
+/* ------------------------------------------------------------
+   Dark restorations for bright overrides that were declared with
+   equal specificity LATER in this file than the original rules.
+   Without these the bright values leak into the dark theme.
+   ------------------------------------------------------------ */
+html[data-theme='dark'] .et-btn.outline {
+  background: transparent;
+  color: var(--et-fg);
+  border-color: rgba(91, 141, 255, 0.33);
+}
+html[data-theme='dark'] .et-btn.outline:hover {
+  border-color: #7c5cff;
+  background: rgba(124, 92, 255, 0.08);
+}
+html[data-theme='dark'] .et-btn.secondary {
+  background: #0a1845;
+  color: var(--et-fg);
+  border-color: rgba(91, 141, 255, 0.20);
+}
+html[data-theme='dark'] .et-btn.secondary:hover {
+  background: #15235e;
+  border-color: rgba(91, 141, 255, 0.40);
+}
+html[data-theme='dark'] .et-btn.white {
+  background: #fff;
+  color: #0a1538;
+  box-shadow: 0 8px 24px -8px rgba(255, 255, 255, 0.25);
+}
+html[data-theme='dark'] .et-btn.white:hover {
+  box-shadow: 0 12px 32px -8px rgba(255, 255, 255, 0.38);
+}
+html[data-theme='dark'] .et-input {
+  background: #0a1845;
+  border: 1px solid rgba(91, 141, 255, 0.20);
+  color: var(--et-fg);
+}
+html[data-theme='dark'] .card-elevated {
+  background: linear-gradient(180deg, #1a2b6f 0%, #122257 100%);
+}
+html[data-theme='dark'] .et-grad-text,
+html[data-theme='dark'] .text-gradient {
+  background: linear-gradient(120deg, #a48bff 0%, #7c5cff 50%, #4c6bff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+html[data-theme='dark'] .btn-ghost { color: var(--text-secondary); }
+html[data-theme='dark'] .btn-ghost:hover { background: #0a1845; color: var(--text-primary); }
+html[data-theme='dark'] .ed-kpi:hover { box-shadow: var(--shadow-card-hover); }
+html[data-theme='dark'] .glow-gem { box-shadow: 0 0 20px rgba(236, 72, 153, 0.40); }
+html[data-theme='dark'] .glow-cookie { box-shadow: 0 0 20px rgba(255, 122, 89, 0.40); }

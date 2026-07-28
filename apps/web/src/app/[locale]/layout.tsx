@@ -11,6 +11,7 @@ import DevDebugPopup from '@/components/DevDebugPopup';
 import { GlobalHomeButton } from '@/components/common';
 import { OfflineIndicator } from '@/components/common/OfflineIndicator';
 import Analytics from '@/components/Analytics';
+import { THEME_SCRIPT } from '@/components/theme/theme-script';
 import '../globals.css';
 
 // Fonts
@@ -102,12 +103,12 @@ export async function generateMetadata({
 }
 
 export const viewport: Viewport = {
-  themeColor: '#060f33',
+  themeColor: '#ffffff',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  colorScheme: 'dark',
+  colorScheme: 'light',
 };
 
 export function generateStaticParams() {
@@ -134,10 +135,14 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
+      data-theme="bright"
       className={`${inter.variable} ${jetbrainsMono.variable} ${GeistSans.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-bg-primary font-sans antialiased" suppressHydrationWarning>
+        {/* Pre-hydration theme: server renders data-theme="bright"; this only
+            swaps to "dark" when the user chose it, before paint (no flash). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <NextIntlClientProvider messages={messages}>
           {/* Register @easyeng/core platform adapters before any descendant
               client hook (useAuth, stores) runs — SSR and client. */}

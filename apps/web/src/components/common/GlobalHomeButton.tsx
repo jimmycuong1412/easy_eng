@@ -43,7 +43,7 @@ export function GlobalHomeButton() {
       <Button
         variant="secondary"
         size="sm"
-        className="rounded-full shadow-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 backdrop-blur-md gap-1.5"
+        className="global-home-btn rounded-full shadow-lg backdrop-blur-md gap-1.5 bg-bg-secondary text-text-primary border border-border-default hover:bg-bg-surface"
         asChild
       >
         <Link href="/dashboard">
