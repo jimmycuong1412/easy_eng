@@ -10,7 +10,7 @@ export default async function AuthLayout({
 
   return (
     <div
-      className="edtech bright"
+      className="edtech"
       style={{
         minHeight: '100vh',
         display: 'flex',

@@ -61,23 +61,9 @@ export function toggleTheme() {
   setTheme(currentTheme === 'bright' ? 'dark' : 'bright');
 }
 
-// Read the persisted choice and adopt it. Called once on the client after mount.
-export function initThemeFromStorage() {
-  if (typeof window === 'undefined') return;
-  let stored: Theme = 'bright';
-  try {
-    stored = localStorage.getItem(THEME_STORAGE_KEY) === 'dark' ? 'dark' : 'bright';
-  } catch (_) {
-    stored = 'bright';
-  }
-  if (stored !== currentTheme) {
-    setTheme(stored);
-  } else {
-    applyToDocument(stored);
-  }
-}
-
 export function subscribe(listener: () => void): () => void {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }

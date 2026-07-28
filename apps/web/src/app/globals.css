@@ -1070,11 +1070,10 @@
    It redeclares the same variable names as the legacy :root block
    above with light values; because it comes later in the file it
    wins the cascade. Dark is opt-in via html[data-theme='dark'].
-   `.bright` is kept as an alias so any page still carrying the
-   class renders identically.
+   (A `.bright` alias was removed: declaring the light variables on a
+   DESCENDANT beat html[data-theme='dark'], leaving wrapped pages light.)
    ============================================================ */
-:root,
-.bright {
+:root {
   /* Surface — white canvas, blue-tinted off-whites */
   --bg-primary: #ffffff;
   --bg-secondary: #f6f7fd;
@@ -1561,7 +1560,6 @@ html[data-theme='dark'] .et-card.hoverable:hover {
    ------------------------------------------------------------ */
 .et-btn-primary,
 .ed-btn-primary,
-.ed-topnav a.active,
 .et-toggle .et-toggle-pill,
 .et-brand .et-mark,
 .ed-brand-mark {
@@ -1583,3 +1581,55 @@ html[data-theme='dark'] .ed-topnav a.active,
 html[data-theme='dark'] .ed-cal-today {
   background: linear-gradient(180deg, #7c5cff 0%, #4c6bff 100%);
 }
+
+/* ------------------------------------------------------------
+   Dark restorations for bright overrides that were declared with
+   equal specificity LATER in this file than the original rules.
+   Without these the bright values leak into the dark theme.
+   ------------------------------------------------------------ */
+html[data-theme='dark'] .et-btn.outline {
+  background: transparent;
+  color: var(--et-fg);
+  border-color: rgba(91, 141, 255, 0.33);
+}
+html[data-theme='dark'] .et-btn.outline:hover {
+  border-color: #7c5cff;
+  background: rgba(124, 92, 255, 0.08);
+}
+html[data-theme='dark'] .et-btn.secondary {
+  background: #0a1845;
+  color: var(--et-fg);
+  border-color: rgba(91, 141, 255, 0.20);
+}
+html[data-theme='dark'] .et-btn.secondary:hover {
+  background: #15235e;
+  border-color: rgba(91, 141, 255, 0.40);
+}
+html[data-theme='dark'] .et-btn.white {
+  background: #fff;
+  color: #0a1538;
+  box-shadow: 0 8px 24px -8px rgba(255, 255, 255, 0.25);
+}
+html[data-theme='dark'] .et-btn.white:hover {
+  box-shadow: 0 12px 32px -8px rgba(255, 255, 255, 0.38);
+}
+html[data-theme='dark'] .et-input {
+  background: #0a1845;
+  border: 1px solid rgba(91, 141, 255, 0.20);
+  color: var(--et-fg);
+}
+html[data-theme='dark'] .card-elevated {
+  background: linear-gradient(180deg, #1a2b6f 0%, #122257 100%);
+}
+html[data-theme='dark'] .et-grad-text,
+html[data-theme='dark'] .text-gradient {
+  background: linear-gradient(120deg, #a48bff 0%, #7c5cff 50%, #4c6bff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+html[data-theme='dark'] .btn-ghost { color: var(--text-secondary); }
+html[data-theme='dark'] .btn-ghost:hover { background: #0a1845; color: var(--text-primary); }
+html[data-theme='dark'] .ed-kpi:hover { box-shadow: var(--shadow-card-hover); }
+html[data-theme='dark'] .glow-gem { box-shadow: 0 0 20px rgba(236, 72, 153, 0.40); }
+html[data-theme='dark'] .glow-cookie { box-shadow: 0 0 20px rgba(255, 122, 89, 0.40); }

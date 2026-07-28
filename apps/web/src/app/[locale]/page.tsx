@@ -2141,7 +2141,7 @@ export default function HomePage() {
   const t = useTranslations('landing');
 
   return (
-    <div className="edtech bright" style={{ minHeight: '100vh' }}>
+    <div className="edtech" style={{ minHeight: '100vh' }}>
       <TopNav locale={locale} t={t} />
       <main id="main-content">
         <Hero locale={locale} t={t} />

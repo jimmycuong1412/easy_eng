@@ -1,8 +1,9 @@
 import {
   getTheme,
+  getServerTheme,
   setTheme,
   toggleTheme,
-  initThemeFromStorage,
+  subscribe,
   THEME_STORAGE_KEY,
 } from '../theme-store';
 
@@ -32,10 +33,22 @@ describe('theme-store', () => {
     expect(getTheme()).toBe('bright');
   });
 
-  it('initThemeFromStorage adopts a persisted dark choice', () => {
-    localStorage.setItem(THEME_STORAGE_KEY, 'dark');
-    initThemeFromStorage();
-    expect(getTheme()).toBe('dark');
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+  it('always reports bright as the server snapshot', () => {
+    setTheme('dark');
+    // SSR renders data-theme="bright"; the server snapshot must match that so
+    // useSyncExternalStore hydrates without a mismatch.
+    expect(getServerTheme()).toBe('bright');
+  });
+
+  it('notifies subscribers on change and stops after unsubscribe', () => {
+    const seen: string[] = [];
+    const unsubscribe = subscribe(() => seen.push(getTheme()));
+
+    setTheme('dark');
+    expect(seen).toEqual(['dark']);
+
+    unsubscribe();
+    setTheme('bright');
+    expect(seen).toEqual(['dark']);
   });
 });
