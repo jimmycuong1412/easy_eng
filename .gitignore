@@ -94,3 +94,6 @@ test-results/
 playwright-report/
 playwright/.cache/
 .gitnexus
+
+# Superpowers brainstorming scratch
+.superpowers/
