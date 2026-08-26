@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 import { createClient } from '@/lib/supabase/server';
-import { fetchShadowingPack } from '@easyeng/core';
+import { fetchShadowingPack, fetchShadowingPacks } from '@easyeng/core';
 import type { Locale } from '@/i18n/config';
 
 import { ShadowingRep } from '@/components/shadowing/ShadowingRep';
@@ -26,12 +26,42 @@ interface PageProps {
   params: { locale: Locale; packSlug: string };
 }
 
+const DEFAULT_DESCRIPTION =
+  'Nghe người bản xứ, nói theo và nhận điểm phát âm cùng nhịp điệu ngay lập tức. Miễn phí, không cần đăng ký.';
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  return {
+  const fallback: Metadata = {
     title: `Luyện nói theo: ${params.packSlug} | EasyEng`,
-    description:
-      'Nghe người bản xứ, nói theo và nhận điểm phát âm cùng nhịp điệu ngay lập tức. Miễn phí, không cần đăng ký.',
+    description: DEFAULT_DESCRIPTION,
   };
+
+  try {
+    const supabase = await createClient();
+    const packs = await fetchShadowingPacks(supabase);
+    const pack = packs.find((p) => p.slug === params.packSlug);
+    if (!pack) return fallback;
+
+    const title = pack.titleVi || pack.titleEn;
+    if (!title) return fallback;
+
+    return {
+      title: `Luyện nói theo: ${title} | EasyEng`,
+      description: pack.summaryVi || DEFAULT_DESCRIPTION,
+    };
+  } catch {
+    // A metadata lookup must never break the page — fall back to the slug.
+    return fallback;
+  }
+}
+
+// NEXT_PUBLIC_SUPABASE_URL must be defined at build/boot time. Without it,
+// every clip URL silently becomes "undefined/storage/...", audio.play()
+// rejects, and playReference() falls back to robotic browser TTS with no
+// visible error — on the exact page paid ads point at. Fail loudly instead.
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  throw new Error(
+    'NEXT_PUBLIC_SUPABASE_URL is not set — required to build shadowing clip audio URLs.',
+  );
 }
 
 const AUDIO_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/material-assets/`;

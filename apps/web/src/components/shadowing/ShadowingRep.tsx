@@ -33,6 +33,8 @@ export interface ShadowingRepProps {
   isAuthenticated: boolean;
 }
 
+const FALLBACK_ERROR_COPY = 'Đã có lỗi xảy ra khi ghi âm. Hãy thử lại nhé.';
+
 const ERROR_COPY: Record<string, string> = {
   'mic-denied':
     'Chúng tôi cần quyền dùng micro để chấm điểm. Hãy cho phép trong trình duyệt rồi thử lại.',
@@ -155,7 +157,7 @@ export function ShadowingRep({
           className="rounded-lg px-3 py-2 text-xs"
           style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
         >
-          {ERROR_COPY[recorder.error] ?? ERROR_COPY.unsupported}
+          {ERROR_COPY[recorder.error] ?? FALLBACK_ERROR_COPY}
         </p>
       )}
 

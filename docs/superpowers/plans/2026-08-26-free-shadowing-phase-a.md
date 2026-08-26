@@ -1650,6 +1650,12 @@ export function useRecorder(lang = 'en-US') {
     transcriptRef.current = null;
     setLiveSamples([]);
 
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('unsupported');
+      setState('idle');
+      return;
+    }
+
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -2313,6 +2319,8 @@ export interface ShadowingRepProps {
   isAuthenticated: boolean;
 }
 
+const FALLBACK_ERROR_COPY = 'Đã có lỗi xảy ra khi ghi âm. Hãy thử lại nhé.';
+
 const ERROR_COPY: Record<string, string> = {
   'mic-denied':
     'Chúng tôi cần quyền dùng micro để chấm điểm. Hãy cho phép trong trình duyệt rồi thử lại.',
@@ -2435,7 +2443,7 @@ export function ShadowingRep({
           className="rounded-lg px-3 py-2 text-xs"
           style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
         >
-          {ERROR_COPY[recorder.error] ?? ERROR_COPY.unsupported}
+          {ERROR_COPY[recorder.error] ?? FALLBACK_ERROR_COPY}
         </p>
       )}
 
@@ -2726,7 +2734,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 import { createClient } from '@/lib/supabase/server';
-import { fetchShadowingPack } from '@easyeng/core';
+import { fetchShadowingPack, fetchShadowingPacks } from '@easyeng/core';
 import type { Locale } from '@/i18n/config';
 
 import { ShadowingRep } from '@/components/shadowing/ShadowingRep';
@@ -2743,12 +2751,42 @@ interface PageProps {
   params: { locale: Locale; packSlug: string };
 }
 
+const DEFAULT_DESCRIPTION =
+  'Nghe người bản xứ, nói theo và nhận điểm phát âm cùng nhịp điệu ngay lập tức. Miễn phí, không cần đăng ký.';
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  return {
+  const fallback: Metadata = {
     title: `Luyện nói theo: ${params.packSlug} | EasyEng`,
-    description:
-      'Nghe người bản xứ, nói theo và nhận điểm phát âm cùng nhịp điệu ngay lập tức. Miễn phí, không cần đăng ký.',
+    description: DEFAULT_DESCRIPTION,
   };
+
+  try {
+    const supabase = await createClient();
+    const packs = await fetchShadowingPacks(supabase);
+    const pack = packs.find((p) => p.slug === params.packSlug);
+    if (!pack) return fallback;
+
+    const title = pack.titleVi || pack.titleEn;
+    if (!title) return fallback;
+
+    return {
+      title: `Luyện nói theo: ${title} | EasyEng`,
+      description: pack.summaryVi || DEFAULT_DESCRIPTION,
+    };
+  } catch {
+    // A metadata lookup must never break the page — fall back to the slug.
+    return fallback;
+  }
+}
+
+// NEXT_PUBLIC_SUPABASE_URL must be defined at build/boot time. Without it,
+// every clip URL silently becomes "undefined/storage/...", audio.play()
+// rejects, and playReference() falls back to robotic browser TTS with no
+// visible error — on the exact page paid ads point at. Fail loudly instead.
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  throw new Error(
+    'NEXT_PUBLIC_SUPABASE_URL is not set — required to build shadowing clip audio URLs.',
+  );
 }
 
 const AUDIO_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/material-assets/`;
@@ -2953,7 +2991,17 @@ function decodeToPcm(mp3Path: string): Float32Array {
     ['-v', 'quiet', '-i', mp3Path, '-f', 'f32le', '-ac', '1', '-ar', '16000', '-'],
     { maxBuffer: 1024 * 1024 * 64, encoding: 'buffer' },
   );
-  return new Float32Array(raw.buffer, raw.byteOffset, Math.floor(raw.length / 4));
+  // `raw` is a Node Buffer, which is a view into a shared, pooled
+  // ArrayBuffer — its byteOffset is not guaranteed to be a multiple of 4.
+  // Float32Array requires a 4-byte-aligned offset into its backing buffer,
+  // so constructing one directly over `raw.buffer` throws intermittently
+  // (RangeError) depending on where the pool happened to place this
+  // allocation. Copying into a fresh, tightly-sized buffer guarantees a
+  // zero (aligned) offset. Do not "optimise" this back to a zero-copy view.
+  const sampleCount = Math.floor(raw.length / 4);
+  const aligned = Buffer.alloc(sampleCount * 4);
+  raw.copy(aligned, 0, 0, sampleCount * 4);
+  return new Float32Array(aligned.buffer, aligned.byteOffset, sampleCount);
 }
 
 interface Row {

@@ -80,6 +80,12 @@ export function useRecorder(lang = 'en-US') {
     transcriptRef.current = null;
     setLiveSamples([]);
 
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('unsupported');
+      setState('idle');
+      return;
+    }
+
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });

@@ -83,7 +83,17 @@ function decodeToPcm(mp3Path: string): Float32Array {
     ['-v', 'quiet', '-i', mp3Path, '-f', 'f32le', '-ac', '1', '-ar', '16000', '-'],
     { maxBuffer: 1024 * 1024 * 64, encoding: 'buffer' },
   );
-  return new Float32Array(raw.buffer, raw.byteOffset, Math.floor(raw.length / 4));
+  // `raw` is a Node Buffer, which is a view into a shared, pooled
+  // ArrayBuffer — its byteOffset is not guaranteed to be a multiple of 4.
+  // Float32Array requires a 4-byte-aligned offset into its backing buffer,
+  // so constructing one directly over `raw.buffer` throws intermittently
+  // (RangeError) depending on where the pool happened to place this
+  // allocation. Copying into a fresh, tightly-sized buffer guarantees a
+  // zero (aligned) offset. Do not "optimise" this back to a zero-copy view.
+  const sampleCount = Math.floor(raw.length / 4);
+  const aligned = Buffer.alloc(sampleCount * 4);
+  raw.copy(aligned, 0, 0, sampleCount * 4);
+  return new Float32Array(aligned.buffer, aligned.byteOffset, sampleCount);
 }
 
 interface Row {
