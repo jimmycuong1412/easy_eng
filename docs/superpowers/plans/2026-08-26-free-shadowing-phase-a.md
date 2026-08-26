@@ -2649,7 +2649,17 @@ interface PageProps {
 export default async function ShadowingHubPage({ params }: PageProps) {
   // createClient() is async in this app (see lib/supabase/server.ts).
   const supabase = await createClient();
-  const packs = await fetchShadowingPacks(supabase);
+
+  // fetchShadowingPacks() throws on any Supabase error (by design). This page
+  // is the hub for a paid-ads campaign, so a transient DB failure must degrade
+  // to the same "no packs" empty state below rather than 500 the whole page —
+  // still logged here so the failure stays visible server-side.
+  let packs: Awaited<ReturnType<typeof fetchShadowingPacks>> = [];
+  try {
+    packs = await fetchShadowingPacks(supabase);
+  } catch (error) {
+    console.error('[shadowing hub] fetchShadowingPacks failed:', error);
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
