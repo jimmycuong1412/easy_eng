@@ -19,19 +19,40 @@ const STORAGE_KEY = 'easyeng.shadowing.anon';
  */
 export const ANON_DAILY_CLIP_LIMIT = 3;
 
+/**
+ * Fixed timezone the daily quota resets in, matching the rest of the app's
+ * "what day is it for this user" logic (see StreakWidget.tsx and the
+ * `AT TIME ZONE 'Asia/Ho_Chi_Minh'` streak RPCs). The audience is
+ * Vietnam-based, so the day boundary is pinned to Vietnam local time rather
+ * than the visitor's own browser timezone or UTC — a traveller abroad should
+ * still see the quota reset on the same schedule as everyone else, and this
+ * stays consistent with server-side day logic that uses the same fixed zone.
+ */
+const ANON_PROGRESS_TIMEZONE = 'Asia/Ho_Chi_Minh';
+
 export interface AnonAttempt {
   clipId: string;
   overall: number;
 }
 
 export interface AnonProgress {
-  /** ISO date (YYYY-MM-DD) the attempts belong to. */
+  /** Date (YYYY-MM-DD) the attempts belong to, in ANON_PROGRESS_TIMEZONE. */
   date: string;
   attempts: AnonAttempt[];
 }
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: ANON_PROGRESS_TIMEZONE });
+}
+
+function isValidAttempt(a: unknown): a is AnonAttempt {
+  return (
+    typeof a === 'object' &&
+    a !== null &&
+    typeof (a as AnonAttempt).clipId === 'string' &&
+    typeof (a as AnonAttempt).overall === 'number' &&
+    Number.isFinite((a as AnonAttempt).overall)
+  );
 }
 
 function empty(): AnonProgress {
@@ -60,7 +81,7 @@ export function readAnonProgress(): AnonProgress {
       // Missing, malformed, or from a previous day — start fresh.
       return empty();
     }
-    return { date: parsed.date, attempts: parsed.attempts as AnonAttempt[] };
+    return { date: parsed.date, attempts: parsed.attempts.filter(isValidAttempt) };
   } catch {
     return empty();
   }
