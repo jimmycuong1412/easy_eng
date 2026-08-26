@@ -2151,9 +2151,14 @@ describe('ShadowingRep', () => {
   beforeEach(() => {
     window.localStorage.clear();
     jest.clearAllMocks();
+    // Reset EVERY mutable mock field here, not in test bodies: a test that
+    // throws before its cleanup line would otherwise leak state into the rest
+    // of the file.
     mockRecorder.result = null;
     mockRecorder.error = null;
     mockRecorder.state = 'idle';
+    mockRecorder.hasRecognition = true;
+    mockRecorder.liveSamples = [];
   });
 
   it('shows the first clip text and position', () => {
@@ -2193,7 +2198,6 @@ describe('ShadowingRep', () => {
       <ShadowingRep clips={clips} audioBaseUrl="https://cdn.test/" locale="vi" isAuthenticated={false} />,
     );
     expect(screen.getAllByTestId('live-bar')).toHaveLength(3);
-    mockRecorder.liveSamples = [];
   });
 
   it('explains a denied mic instead of dead-ending', () => {
@@ -2219,7 +2223,6 @@ describe('ShadowingRep', () => {
       <ShadowingRep clips={clips} audioBaseUrl="https://cdn.test/" locale="vi" isAuthenticated={false} />,
     );
     expect(screen.getByTestId('rep-rhythm-only')).toBeInTheDocument();
-    mockRecorder.hasRecognition = true;
   });
 
   it('walls an anonymous user after the daily clip limit', () => {
