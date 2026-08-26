@@ -1446,8 +1446,16 @@ export interface AnonProgress {
   attempts: AnonAttempt[];
 }
 
+/**
+ * Day boundary is fixed to Vietnam time, matching the rest of the app
+ * (StreakWidget.tsx and migrations 089/102 both use Asia/Ho_Chi_Minh).
+ * Using UTC here would reset the quota at 07:00 local instead of midnight.
+ */
+const ANON_PROGRESS_TIMEZONE = 'Asia/Ho_Chi_Minh';
+
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  // 'en-CA' yields YYYY-MM-DD.
+  return new Date().toLocaleDateString('en-CA', { timeZone: ANON_PROGRESS_TIMEZONE });
 }
 
 function empty(): AnonProgress {
