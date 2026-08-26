@@ -17,7 +17,14 @@ const ROLE_ROUTES: Record<string, string[]> = {
 };
 
 // Public routes that don't require authentication
-const PUBLIC_ROUTES = ['/auth/login', '/auth/register', '/auth/forgot-password'];
+// '/shadowing' is public on purpose: it is the paid-ads landing surface and
+// must work with no session at all.
+const PUBLIC_ROUTES = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/shadowing',
+];
 
 export async function middleware(request: NextRequest) {
   // First, handle internationalization
