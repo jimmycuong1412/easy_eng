@@ -461,9 +461,15 @@ GRANT EXECUTE ON FUNCTION public.record_shadowing_attempt(uuid, int, int, int, t
 
 Run:
 ```bash
-grep -n "gem_transactions\|award_material_completion" supabase/migrations/104_shadowing.sql
+grep -vn '^\s*--' supabase/migrations/104_shadowing.sql | grep -nE "gem_transactions|award_material_completion\("
 ```
 Expected: no output (exit code 1). Any match is a bug — shadowing must never touch the gem ledger.
+
+Comment lines are excluded because the file's own explanatory comments name
+`award_material_completion` to record why it is NOT used; a bare grep would
+match its own documentation. `gems_awarded = 0` written to `material_progress`
+is expected and is not a gem grant — that column is NOT NULL on an existing
+table.
 
 - [ ] **Step 3: Verify the XP insert uses the real column names**
 
@@ -3108,9 +3114,14 @@ Expected: no new errors (pre-existing `no-explicit-any` warnings elsewhere are u
 
 Run:
 ```bash
-grep -rn "gem" supabase/migrations/104_shadowing.sql apps/web/src/components/shadowing packages/core/src/lib/shadowing
+grep -rn --exclude-dir=__tests__ -E "gem_transactions|award_material_completion\(" supabase/migrations/104_shadowing.sql apps/web/src/components/shadowing packages/core/src/lib/shadowing
 ```
 Expected: no output. Shadowing must never touch the gem ledger.
+
+Matches `gem_transactions` and calls to `award_material_completion` only —
+not the substring "gem". The migration legitimately writes `gems_awarded = 0`
+to `material_progress` (a NOT NULL column on an existing table) and names
+`award_material_completion` in a comment explaining why it is not used.
 
 - [ ] **Step 6: Commit**
 
