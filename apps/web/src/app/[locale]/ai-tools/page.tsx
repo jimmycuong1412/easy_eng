@@ -57,6 +57,19 @@ export default function AIToolsPage() {
         </p>
       </div>
 
+      <a
+        href="/vi/shadowing"
+        className="block rounded-xl p-4"
+        style={{ background: 'var(--et-bg-2)', border: '1px solid var(--et-line)' }}
+      >
+        <span className="text-sm font-semibold" style={{ color: 'var(--et-fg)' }}>
+          🎧 Luyện nói theo người bản xứ
+        </span>
+        <p className="mt-1 text-xs" style={{ color: 'var(--et-fg-2)' }}>
+          Chấm điểm cả từ vựng và nhịp điệu — miễn phí, không cần đăng ký.
+        </p>
+      </a>
+
       {/* Tab switcher */}
       <div
         className="flex rounded-xl p-1 gap-1"
