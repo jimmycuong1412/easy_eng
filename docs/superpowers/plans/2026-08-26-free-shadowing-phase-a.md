@@ -2226,7 +2226,8 @@ describe('ShadowingRep', () => {
     window.localStorage.setItem(
       'easyeng.shadowing.anon',
       JSON.stringify({
-        date: new Date().toISOString().slice(0, 10),
+        // Vietnam-local date, matching anonProgress.today() (see Task 7).
+        date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }),
         attempts: [
           { clipId: 'c0', overall: 80 },
           { clipId: 'c1', overall: 70 },
@@ -2244,7 +2245,8 @@ describe('ShadowingRep', () => {
     window.localStorage.setItem(
       'easyeng.shadowing.anon',
       JSON.stringify({
-        date: new Date().toISOString().slice(0, 10),
+        // Vietnam-local date, matching anonProgress.today() (see Task 7).
+        date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }),
         attempts: [
           { clipId: 'c0', overall: 80 },
           { clipId: 'c1', overall: 70 },
@@ -3032,7 +3034,8 @@ test.describe('anonymous shadowing', () => {
     await page.goto(`/vi/shadowing/${PACK_SLUG}`);
 
     await page.evaluate(() => {
-      const today = new Date().toISOString().slice(0, 10);
+      // Vietnam-local date, matching anonProgress.today() (see Task 7).
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
       window.localStorage.setItem(
         'easyeng.shadowing.anon',
         JSON.stringify({
