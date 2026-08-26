@@ -23,13 +23,21 @@ export interface Envelope {
  *
  * @param samples   Mono PCM in [-1, 1].
  * @param sampleRate Samples per second.
- * @param binCount  Number of bins; defaults to BIN_COUNT.
+ * @param binCount  Number of bins; defaults to BIN_COUNT. Must be a positive
+ *   integer — a reference envelope and an attempt envelope are only
+ *   comparable when built with the same bin count, so an invalid value is
+ *   rejected rather than silently coerced or substituted.
+ * @throws {RangeError} If `binCount` is not a positive integer.
  */
 export function extractEnvelope(
   samples: Float32Array,
   sampleRate: number,
   binCount: number = BIN_COUNT,
 ): Envelope {
+  if (!Number.isInteger(binCount) || binCount <= 0) {
+    throw new RangeError(`binCount must be a positive integer, got ${binCount}`);
+  }
+
   const bins = new Array<number>(binCount).fill(0);
 
   if (samples.length === 0 || sampleRate <= 0) {
@@ -50,7 +58,10 @@ export function extractEnvelope(
     bins[b] = n > 0 ? Math.sqrt(sumSquares / n) : 0;
   }
 
-  const peak = Math.max(...bins);
+  let peak = 0;
+  for (let b = 0; b < binCount; b++) {
+    if (bins[b] > peak) peak = bins[b];
+  }
   if (peak > 0) {
     for (let b = 0; b < binCount; b++) bins[b] = bins[b] / peak;
   }
