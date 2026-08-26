@@ -4,11 +4,24 @@
  * Reads a pack manifest, generates one audio file per clip, computes each
  * clip's reference envelope, and emits a seed migration.
  *
- * Usage:
- *   node scripts/shadowing/build-clips.mjs scripts/shadowing/packs/job-interview.json
+ * This script imports `extractEnvelope` directly from `@easyeng/core`
+ * (shipped as raw TypeScript, no build step) so the reference envelopes it
+ * generates are always produced by the exact same code that scores attempts
+ * in the browser. Do not inline or duplicate that function here.
+ *
+ * Usage (run under ts-node, via the root npm script):
+ *   npm run shadowing:build -- scripts/shadowing/packs/job-interview.json
+ * or directly:
+ *   node_modules/.bin/ts-node -P scripts/shadowing/tsconfig.json scripts/shadowing/build-clips.ts scripts/shadowing/packs/job-interview.json
  *
  * TTS: set SHADOWING_TTS_CMD to a command template that writes an MP3.
- * {{text}} and {{out}} are substituted. Example using piper:
+ * The template is split into argv tokens (double-quoted segments are kept
+ * together as one token; unquoted whitespace separates tokens) and each
+ * token containing {{text}} or {{out}} has that placeholder substituted as
+ * a literal string value — the whole thing is then run WITHOUT a shell
+ * (execFileSync), so no shell-escaping is needed or possible: quote a
+ * token in the template only to keep embedded spaces together, never to
+ * guard against $, `, or \. Example using piper:
  *   SHADOWING_TTS_CMD='piper --text "{{text}}" --output_file "{{out}}"'
  *
  * Hero clips (those used in ads and on the landing page) are re-recorded by a
@@ -16,17 +29,17 @@
  * with --envelopes-only to recompute envelopes without regenerating audio.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
-import { extractEnvelope } from '../../packages/core/src/lib/shadowing/envelope.ts';
+import { extractEnvelope } from '../../packages/core/src/lib/shadowing/envelope';
 
 const manifestPath = process.argv[2];
 const envelopesOnly = process.argv.includes('--envelopes-only');
 
 if (!manifestPath) {
-  console.error('Usage: node build-clips.mjs <manifest.json> [--envelopes-only]');
+  console.error('Usage: npm run shadowing:build -- <manifest.json> [--envelopes-only]');
   process.exit(1);
 }
 
@@ -40,26 +53,58 @@ if (!envelopesOnly && !ttsTemplate) {
   process.exit(1);
 }
 
+/**
+ * Split a command template into argv tokens without invoking a shell.
+ * A double-quoted run (`"..."`) is kept as a single token with the quotes
+ * stripped; everything else is split on runs of whitespace. This is
+ * intentionally minimal — just enough to let a template like
+ * `piper --text "{{text}}" --output_file "{{out}}"` name its placeholders,
+ * not a general shell-syntax parser.
+ */
+function tokenizeTemplate(template: string): string[] {
+  const tokens: string[] = [];
+  const re = /"([^"]*)"|(\S+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(template)) !== null) {
+    tokens.push(match[1] !== undefined ? match[1] : match[2]);
+  }
+  return tokens;
+}
+
+/** Substitute {{text}} / {{out}} placeholders into one argv token. */
+function fillToken(token: string, text: string, out: string): string {
+  return token.replaceAll('{{text}}', text).replaceAll('{{out}}', out);
+}
+
 /** Decode an MP3 to mono Float32 PCM at 16 kHz using ffmpeg. */
-function decodeToPcm(mp3Path) {
-  const raw = execSync(
-    `ffmpeg -v quiet -i "${mp3Path}" -f f32le -ac 1 -ar 16000 -`,
+function decodeToPcm(mp3Path: string): Float32Array {
+  const raw = execFileSync(
+    'ffmpeg',
+    ['-v', 'quiet', '-i', mp3Path, '-f', 'f32le', '-ac', '1', '-ar', '16000', '-'],
     { maxBuffer: 1024 * 1024 * 64, encoding: 'buffer' },
   );
   return new Float32Array(raw.buffer, raw.byteOffset, Math.floor(raw.length / 4));
 }
 
-const rows = [];
+interface Row {
+  idx: number;
+  textEn: string;
+  textVi: string;
+  audioPath: string;
+  durationMs: number;
+  envelope: unknown;
+}
 
-manifest.clips.forEach((clip, idx) => {
+const rows: Row[] = [];
+
+manifest.clips.forEach((clip: { en: string; vi: string }, idx: number) => {
   const filename = `${String(idx).padStart(2, '0')}.mp3`;
   const outPath = join(outDir, filename);
 
   if (!envelopesOnly || !existsSync(outPath)) {
-    const cmd = ttsTemplate
-      .replaceAll('{{text}}', clip.en.replaceAll('"', '\\"'))
-      .replaceAll('{{out}}', outPath);
-    execSync(cmd, { stdio: 'inherit' });
+    const tokens = tokenizeTemplate(ttsTemplate as string).map((t) => fillToken(t, clip.en, outPath));
+    const [cmd, ...args] = tokens;
+    execFileSync(cmd, args, { stdio: 'inherit' });
   }
 
   const pcm = decodeToPcm(outPath);
@@ -77,7 +122,12 @@ manifest.clips.forEach((clip, idx) => {
   console.log(`[${idx}] ${basename(outPath)}  ${envelope.durationMs}ms`);
 });
 
-const sql = `-- 105_shadowing_seed.sql (generated by scripts/shadowing/build-clips.mjs)
+function sqlStr(v: unknown): string {
+  if (v === null || v === undefined) return 'NULL';
+  return `'${String(v).replaceAll("'", "''")}'`;
+}
+
+const sql = `-- 105_shadowing_seed.sql (generated by scripts/shadowing/build-clips.ts)
 -- Pack: ${manifest.slug}
 -- Regenerate rather than hand-editing.
 
@@ -117,11 +167,6 @@ ${rows
   .join('\n')}
 END $$;
 `;
-
-function sqlStr(v) {
-  if (v === null || v === undefined) return 'NULL';
-  return `'${String(v).replaceAll("'", "''")}'`;
-}
 
 writeFileSync('supabase/migrations/105_shadowing_seed.sql', sql, 'utf8');
 console.log(`\nWrote supabase/migrations/105_shadowing_seed.sql (${rows.length} clips)`);

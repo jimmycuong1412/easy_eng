@@ -46,7 +46,7 @@
 - `apps/web/src/app/[locale]/shadowing/page.tsx` — hub
 - `apps/web/src/app/[locale]/shadowing/[packSlug]/page.tsx` — pack page
 - `apps/web/e2e/shadowing-anonymous.spec.ts` — E2E
-- `scripts/shadowing/build-clips.mjs` — content pipeline
+- `scripts/shadowing/build-clips.ts` — content pipeline (run under `ts-node`; see Task 13)
 
 **Modify:**
 - `apps/web/src/middleware.ts:20` — add `/shadowing` to `PUBLIC_ROUTES`
@@ -2809,12 +2809,16 @@ git commit -m "feat(web): add public shadowing hub and pack pages"
 Turns a JSON manifest of clip texts into audio files plus precomputed envelopes and a seed migration. The repeatable script matters more than the first batch — clip libraries grow, and hand-running envelope computation will not scale.
 
 **Files:**
-- Create: `scripts/shadowing/build-clips.mjs`
+- Create: `scripts/shadowing/build-clips.ts`
+- Create: `scripts/shadowing/tsconfig.json`
 - Create: `scripts/shadowing/packs/job-interview.json`
+- Edit: root `package.json` — add a `shadowing:build` script
 
 **Interfaces:**
-- Consumes: `extractEnvelope` from `@easyeng/core`.
+- Consumes: `extractEnvelope` from `@easyeng/core` (imported directly from `packages/core/src/lib/shadowing/envelope`, not duplicated — the same function scores attempts in the browser, so a copy would silently drift).
 - Produces: `.mp3` files under `scripts/shadowing/out/<slug>/`, and `supabase/migrations/105_shadowing_seed.sql`.
+
+**Why TypeScript, not `.mjs`:** `@easyeng/core` ships raw TypeScript with no build step (`"main": "src/index.ts"`), so any Node script that imports it needs a TS loader regardless. Plain `node` cannot load a `.ts` file — importing `envelope.ts` from a `.mjs` script crashes with `ERR_UNKNOWN_FILE_EXTENSION` before the script's own logic ever runs. Write the script as `.ts` and run it under `ts-node` (already a dependency in this repo) using a tsconfig scoped to `scripts/shadowing/` — do not change `packages/core`'s or the web app's tsconfig for this.
 
 - [ ] **Step 1: Write the manifest**
 
@@ -2849,20 +2853,35 @@ Create `scripts/shadowing/packs/job-interview.json`:
 
 - [ ] **Step 2: Write the build script**
 
-Create `scripts/shadowing/build-clips.mjs`:
+Create `scripts/shadowing/build-clips.ts`. It is written as TypeScript (not `.mjs`) because it imports `extractEnvelope` straight from `@easyeng/core`'s source, and `@easyeng/core` ships raw `.ts` with no build step — plain `node` cannot load that import. Run it under `ts-node` instead of `node`.
 
-```js
+The TTS command handling avoids the shell entirely: the `SHADOWING_TTS_CMD` template is tokenized into argv (double-quoted runs become one token, no other shell syntax is interpreted), placeholders are substituted per-token, and the result is invoked with `execFileSync(cmd, args)` — never `execSync` on a concatenated string. That way a clip's text can contain `$`, backticks, or anything else without it ever being interpreted by a shell, because there is no shell in the loop.
+
+```ts
 /**
  * Shadowing content pipeline.
  *
  * Reads a pack manifest, generates one audio file per clip, computes each
  * clip's reference envelope, and emits a seed migration.
  *
- * Usage:
- *   node scripts/shadowing/build-clips.mjs scripts/shadowing/packs/job-interview.json
+ * This script imports `extractEnvelope` directly from `@easyeng/core`
+ * (shipped as raw TypeScript, no build step) so the reference envelopes it
+ * generates are always produced by the exact same code that scores attempts
+ * in the browser. Do not inline or duplicate that function here.
+ *
+ * Usage (run under ts-node, via the root npm script):
+ *   npm run shadowing:build -- scripts/shadowing/packs/job-interview.json
+ * or directly:
+ *   node_modules/.bin/ts-node -P scripts/shadowing/tsconfig.json scripts/shadowing/build-clips.ts scripts/shadowing/packs/job-interview.json
  *
  * TTS: set SHADOWING_TTS_CMD to a command template that writes an MP3.
- * {{text}} and {{out}} are substituted. Example using piper:
+ * The template is split into argv tokens (double-quoted segments are kept
+ * together as one token; unquoted whitespace separates tokens) and each
+ * token containing {{text}} or {{out}} has that placeholder substituted as
+ * a literal string value — the whole thing is then run WITHOUT a shell
+ * (execFileSync), so no shell-escaping is needed or possible: quote a
+ * token in the template only to keep embedded spaces together, never to
+ * guard against $, `, or \. Example using piper:
  *   SHADOWING_TTS_CMD='piper --text "{{text}}" --output_file "{{out}}"'
  *
  * Hero clips (those used in ads and on the landing page) are re-recorded by a
@@ -2870,17 +2889,17 @@ Create `scripts/shadowing/build-clips.mjs`:
  * with --envelopes-only to recompute envelopes without regenerating audio.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
-import { extractEnvelope } from '../../packages/core/src/lib/shadowing/envelope.ts';
+import { extractEnvelope } from '../../packages/core/src/lib/shadowing/envelope';
 
 const manifestPath = process.argv[2];
 const envelopesOnly = process.argv.includes('--envelopes-only');
 
 if (!manifestPath) {
-  console.error('Usage: node build-clips.mjs <manifest.json> [--envelopes-only]');
+  console.error('Usage: npm run shadowing:build -- <manifest.json> [--envelopes-only]');
   process.exit(1);
 }
 
@@ -2894,26 +2913,58 @@ if (!envelopesOnly && !ttsTemplate) {
   process.exit(1);
 }
 
+/**
+ * Split a command template into argv tokens without invoking a shell.
+ * A double-quoted run (`"..."`) is kept as a single token with the quotes
+ * stripped; everything else is split on runs of whitespace. This is
+ * intentionally minimal — just enough to let a template like
+ * `piper --text "{{text}}" --output_file "{{out}}"` name its placeholders,
+ * not a general shell-syntax parser.
+ */
+function tokenizeTemplate(template: string): string[] {
+  const tokens: string[] = [];
+  const re = /"([^"]*)"|(\S+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(template)) !== null) {
+    tokens.push(match[1] !== undefined ? match[1] : match[2]);
+  }
+  return tokens;
+}
+
+/** Substitute {{text}} / {{out}} placeholders into one argv token. */
+function fillToken(token: string, text: string, out: string): string {
+  return token.replaceAll('{{text}}', text).replaceAll('{{out}}', out);
+}
+
 /** Decode an MP3 to mono Float32 PCM at 16 kHz using ffmpeg. */
-function decodeToPcm(mp3Path) {
-  const raw = execSync(
-    `ffmpeg -v quiet -i "${mp3Path}" -f f32le -ac 1 -ar 16000 -`,
+function decodeToPcm(mp3Path: string): Float32Array {
+  const raw = execFileSync(
+    'ffmpeg',
+    ['-v', 'quiet', '-i', mp3Path, '-f', 'f32le', '-ac', '1', '-ar', '16000', '-'],
     { maxBuffer: 1024 * 1024 * 64, encoding: 'buffer' },
   );
   return new Float32Array(raw.buffer, raw.byteOffset, Math.floor(raw.length / 4));
 }
 
-const rows = [];
+interface Row {
+  idx: number;
+  textEn: string;
+  textVi: string;
+  audioPath: string;
+  durationMs: number;
+  envelope: unknown;
+}
 
-manifest.clips.forEach((clip, idx) => {
+const rows: Row[] = [];
+
+manifest.clips.forEach((clip: { en: string; vi: string }, idx: number) => {
   const filename = `${String(idx).padStart(2, '0')}.mp3`;
   const outPath = join(outDir, filename);
 
   if (!envelopesOnly || !existsSync(outPath)) {
-    const cmd = ttsTemplate
-      .replaceAll('{{text}}', clip.en.replaceAll('"', '\\"'))
-      .replaceAll('{{out}}', outPath);
-    execSync(cmd, { stdio: 'inherit' });
+    const tokens = tokenizeTemplate(ttsTemplate as string).map((t) => fillToken(t, clip.en, outPath));
+    const [cmd, ...args] = tokens;
+    execFileSync(cmd, args, { stdio: 'inherit' });
   }
 
   const pcm = decodeToPcm(outPath);
@@ -2931,7 +2982,12 @@ manifest.clips.forEach((clip, idx) => {
   console.log(`[${idx}] ${basename(outPath)}  ${envelope.durationMs}ms`);
 });
 
-const sql = `-- 105_shadowing_seed.sql (generated by scripts/shadowing/build-clips.mjs)
+function sqlStr(v: unknown): string {
+  if (v === null || v === undefined) return 'NULL';
+  return `'${String(v).replaceAll("'", "''")}'`;
+}
+
+const sql = `-- 105_shadowing_seed.sql (generated by scripts/shadowing/build-clips.ts)
 -- Pack: ${manifest.slug}
 -- Regenerate rather than hand-editing.
 
@@ -2972,28 +3028,58 @@ ${rows
 END $$;
 `;
 
-function sqlStr(v) {
-  if (v === null || v === undefined) return 'NULL';
-  return `'${String(v).replaceAll("'", "''")}'`;
-}
-
 writeFileSync('supabase/migrations/105_shadowing_seed.sql', sql, 'utf8');
 console.log(`\nWrote supabase/migrations/105_shadowing_seed.sql (${rows.length} clips)`);
 console.log(`Upload ${outDir}/*.mp3 to material-assets under shadowing/${manifest.slug}/`);
 ```
 
-- [ ] **Step 3: Verify the script reports its usage when called with no arguments**
+- [ ] **Step 3: Add a scoped tsconfig for the script**
+
+Create `scripts/shadowing/tsconfig.json`. Kept local to `scripts/shadowing/` rather than touching the repo-wide `tsconfig.base.json`, `packages/core`'s tsconfig, or the web app's tsconfig:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": false,
+    "types": ["node"]
+  },
+  "ts-node": {
+    "transpileOnly": true
+  },
+  "include": ["./build-clips.ts", "../../packages/core/src/lib/shadowing/**/*.ts"]
+}
+```
+
+- [ ] **Step 4: Add the root npm script**
+
+Add to the root `package.json` `scripts` block:
+
+```json
+"shadowing:build": "ts-node -P scripts/shadowing/tsconfig.json scripts/shadowing/build-clips.ts"
+```
+
+`ts-node` is already present (a devDependency of `apps/web`, hoisted to the root `node_modules/.bin` by pnpm) — no new dependency is required.
+
+- [ ] **Step 5: Verify the script reports its usage when called with no arguments**
 
 Run:
 ```bash
-node scripts/shadowing/build-clips.mjs
+npm run shadowing:build
 ```
-Expected: prints the usage line and exits non-zero.
+Expected: prints the usage line and exits non-zero — reaching the script's own argument-handling logic rather than crashing in the module loader on the `.ts` import.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/shadowing
+git add scripts/shadowing package.json
 git commit -m "feat(scripts): add shadowing content build pipeline"
 ```
 
