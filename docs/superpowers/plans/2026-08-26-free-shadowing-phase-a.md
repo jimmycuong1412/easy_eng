@@ -1929,7 +1929,7 @@ export function WaveformCompare({ reference, attempt }: WaveformCompareProps) {
 
   return (
     <div className="space-y-3">
-      <Row label="🔊 Người bản xứ" bins={reference.bins} color="var(--et-blue, #4c6bff)" />
+      <Row label="🔊 Người bản xứ" bins={reference.bins} color="var(--et-blue)" />
       <Row label="Bạn" bins={attempt.bins} color="var(--et-coral)" />
 
       {hint && (
