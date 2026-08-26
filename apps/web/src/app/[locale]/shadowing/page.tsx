@@ -12,6 +12,13 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchShadowingPacks } from '@easyeng/core';
 import { locales, type Locale } from '@/i18n/config';
 
+// SAFE ONLY because this page's content is identical for every visitor:
+// fetchShadowingPacks() selects nothing user-scoped (no auth.uid()-dependent
+// columns). Next.js caches rendered output by PATH, not by session, so this
+// page must stay free of any per-user data for the cache to be safe. If you
+// add a query here that depends on auth.uid() (e.g. per-user progress),
+// switch this to `export const dynamic = 'force-dynamic'` — see the pack
+// page at [packSlug]/page.tsx for the leak this pattern caused there.
 export const revalidate = 300;
 
 export function generateStaticParams() {

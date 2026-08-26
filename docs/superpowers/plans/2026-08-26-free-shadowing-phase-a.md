@@ -2623,6 +2623,13 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchShadowingPacks } from '@easyeng/core';
 import { locales, type Locale } from '@/i18n/config';
 
+// SAFE ONLY because this page's content is identical for every visitor:
+// fetchShadowingPacks() selects nothing user-scoped (no auth.uid()-dependent
+// columns). Next.js caches rendered output by PATH, not by session, so this
+// page must stay free of any per-user data for the cache to be safe. If you
+// add a query here that depends on auth.uid() (e.g. per-user progress),
+// switch this to `export const dynamic = 'force-dynamic'` — see the pack
+// page at [packSlug]/page.tsx for the leak this pattern caused there.
 export const revalidate = 300;
 
 export function generateStaticParams() {
@@ -2640,7 +2647,8 @@ interface PageProps {
 }
 
 export default async function ShadowingHubPage({ params }: PageProps) {
-  const supabase = createClient();
+  // createClient() is async in this app (see lib/supabase/server.ts).
+  const supabase = await createClient();
   const packs = await fetchShadowingPacks(supabase);
 
   return (
@@ -2713,7 +2721,13 @@ import type { Locale } from '@/i18n/config';
 
 import { ShadowingRep } from '@/components/shadowing/ShadowingRep';
 
-export const revalidate = 300;
+// This page reads a cookie-bound Supabase client (`supabase.auth.getUser()`)
+// and a per-user `best_score` (via `get_shadowing_pack`, scoped to
+// `auth.uid()` — see supabase/migrations/104_shadowing.sql). Next.js caches
+// rendered output by PATH, not by session, so any time-based `revalidate`
+// here would bake one visitor's auth state and scores into the HTML served
+// to every later visitor for that pack URL. Must stay dynamic.
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: { locale: Locale; packSlug: string };
@@ -2730,7 +2744,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 const AUDIO_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/material-assets/`;
 
 export default async function ShadowingPackPage({ params }: PageProps) {
-  const supabase = createClient();
+  // createClient() is async in this app (see lib/supabase/server.ts).
+  const supabase = await createClient();
 
   const clips = await fetchShadowingPack(supabase, params.packSlug);
   if (clips.length === 0) notFound();

@@ -14,7 +14,13 @@ import type { Locale } from '@/i18n/config';
 
 import { ShadowingRep } from '@/components/shadowing/ShadowingRep';
 
-export const revalidate = 300;
+// This page reads a cookie-bound Supabase client (`supabase.auth.getUser()`)
+// and a per-user `best_score` (via `get_shadowing_pack`, scoped to
+// `auth.uid()` — see supabase/migrations/104_shadowing.sql). Next.js caches
+// rendered output by PATH, not by session, so any time-based `revalidate`
+// here would bake one visitor's auth state and scores into the HTML served
+// to every later visitor for that pack URL. Must stay dynamic.
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: { locale: Locale; packSlug: string };
