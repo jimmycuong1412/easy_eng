@@ -3140,8 +3140,11 @@ test.describe('anonymous shadowing', () => {
   });
 
   test('does not redirect anonymous visitors to login', async ({ page }) => {
-    await page.goto(`/vi/shadowing/${PACK_SLUG}`);
+    const response = await page.goto(`/vi/shadowing/${PACK_SLUG}`);
     await expect(page).not.toHaveURL(/\/auth\/login/);
+    // The URL check alone also passes on a 500, which would make a broken page
+    // indistinguishable from a working one. Assert the page actually served.
+    expect(response?.status()).toBeLessThan(400);
   });
 
   test('shows the signup wall once the daily limit is stored', async ({ page }) => {
