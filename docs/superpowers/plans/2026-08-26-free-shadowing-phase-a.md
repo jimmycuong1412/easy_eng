@@ -830,6 +830,13 @@ export interface ShadowingScore {
 /** Weight of the word dimension when both dimensions are available. */
 const WORD_WEIGHT = 0.6;
 
+/**
+ * Weight of the duration term within the rhythm score; the remainder goes to
+ * envelope shape. Shape carries slightly more because matching a clip's length
+ * while stressing the wrong syllables is the failure this feature exists to catch.
+ */
+const DURATION_WEIGHT = 0.45;
+
 const normWord = (w: string) => w.toLowerCase().replace(/[^a-z0-9']/g, '');
 const tokenize = (s: string) => s.split(/\s+/).map(normWord).filter(Boolean);
 
@@ -900,18 +907,25 @@ export function scoreWords(
 /**
  * Compare an attempt's envelope against the reference.
  *
- * Half the score is duration agreement (are you pacing it like the speaker?),
- * half is bin-by-bin shape agreement (are your pauses and stresses in the same
- * places?). Both are needed: matching duration with the wrong internal rhythm
- * is a common and important failure mode.
+ * Two terms, weighted slightly toward shape: duration agreement (are you pacing
+ * it like the speaker?) and bin-by-bin shape agreement (are your pauses and
+ * stresses in the same places?). Both are needed — matching the duration with
+ * the wrong internal rhythm is a common and important failure mode, so shape
+ * carries the larger weight.
+ *
+ * The duration term is SQUARED. A linear ratio is far too forgiving: speaking a
+ * clip in half the reference time would otherwise still score 75, which is not
+ * a passing rhythm. Squaring makes the penalty grow with the size of the error.
  */
 export function scoreRhythm(reference: Envelope, attempt: Envelope): number {
   if (reference.durationMs <= 0 || attempt.durationMs <= 0) return 0;
 
   // Duration agreement: ratio of shorter to longer, so it is symmetric.
-  const ratio =
+  // Squared so large pacing errors are penalised sharply (see above).
+  const rawRatio =
     Math.min(reference.durationMs, attempt.durationMs) /
     Math.max(reference.durationMs, attempt.durationMs);
+  const ratio = rawRatio * rawRatio;
 
   // Shape agreement: 1 - mean absolute difference across bins.
   const n = Math.min(reference.bins.length, attempt.bins.length);
@@ -922,7 +936,7 @@ export function scoreRhythm(reference: Envelope, attempt: Envelope): number {
   }
   const shape = Math.max(0, 1 - diff / n);
 
-  const blended = 0.5 * ratio + 0.5 * shape;
+  const blended = DURATION_WEIGHT * ratio + (1 - DURATION_WEIGHT) * shape;
   return Math.max(0, Math.min(100, Math.round(blended * 100)));
 }
 
