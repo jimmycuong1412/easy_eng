@@ -52,6 +52,15 @@ export function useCarryOverAnonProgress(userId: string | null) {
       } catch (e) {
         // Keep the stored scores so a later visit can retry. Allow another
         // attempt on the next mount rather than burning the one-shot guard.
+        //
+        // A partial failure (some attempts replayed, then a throw) means those
+        // already-replayed clips are recorded again on the retry. That is
+        // deliberate: duplicates are harmless here — shadowing_attempts is an
+        // append-only history, pack completion counts MAX(overall_score) per
+        // clip so a duplicate cannot change pass/fail, and award_shadowing_pack
+        // is idempotent via material_progress.completed_at. Clearing on partial
+        // success would instead LOSE scores, which is the one thing the signup
+        // wall promised not to do.
         ranRef.current = false;
         console.error('shadowing carry-over failed:', e);
       }
