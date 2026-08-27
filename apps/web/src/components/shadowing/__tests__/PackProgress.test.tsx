@@ -63,4 +63,54 @@ describe('PackProgress', () => {
     const { container } = render(<PackProgress clips={[]} currentIndex={0} carriedOver={null} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('gives a passed clip and an unattempted clip distinct accessible labels', () => {
+    render(
+      <PackProgress clips={[clip(0, 82), clip(1, null)]} currentIndex={0} carriedOver={null} />,
+    );
+    const dots = screen.getAllByTestId('progress-dot');
+    expect(dots[0]).toHaveAttribute('role', 'img');
+    expect(dots[0].getAttribute('aria-label')).toMatch(/đã đạt/);
+    expect(dots[0].getAttribute('aria-label')).toMatch(/82/);
+    expect(dots[1].getAttribute('aria-label')).toMatch(/chưa luyện/);
+    expect(dots[0].getAttribute('aria-label')).not.toBe(dots[1].getAttribute('aria-label'));
+  });
+
+  it('overrides the server-derived passed count with a live count when provided', () => {
+    render(
+      <PackProgress
+        clips={[clip(0, 80), clip(1, null), clip(2, 40)]}
+        currentIndex={0}
+        carriedOver={null}
+        livePassedCount={3}
+      />,
+    );
+    expect(screen.getByTestId('progress-count')).toHaveTextContent('3/3');
+  });
+
+  it('fires the completion banner from liveComplete even when bestScore-derived counts disagree', () => {
+    render(
+      <PackProgress
+        clips={[clip(0, 80), clip(1, 20)]}
+        currentIndex={0}
+        carriedOver={null}
+        liveComplete
+      />,
+    );
+    expect(screen.getByTestId('progress-complete')).toBeInTheDocument();
+  });
+
+  it('reflects the just-scored clip in its own dot via liveResult', () => {
+    render(
+      <PackProgress
+        clips={[clip(0, null), clip(1, null)]}
+        currentIndex={0}
+        carriedOver={null}
+        liveResult={{ clipId: 'c0', passed: true }}
+      />,
+    );
+    const dots = screen.getAllByTestId('progress-dot');
+    expect(dots[0].getAttribute('aria-label')).toMatch(/đã đạt/);
+    expect(dots[1].getAttribute('aria-label')).toMatch(/chưa luyện/);
+  });
 });

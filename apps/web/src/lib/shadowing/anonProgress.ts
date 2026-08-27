@@ -59,32 +59,65 @@ function empty(): AnonProgress {
   return { date: today(), attempts: [] };
 }
 
-export function readAnonProgress(): AnonProgress {
-  if (typeof window === 'undefined') return empty();
+/**
+ * Shared parse/validate core for both readers below. Never throws; returns
+ * `null` when there is nothing usable in storage (missing key, storage
+ * disabled, corrupt JSON, or wrong shape) so each caller can decide what
+ * "nothing usable" means for its own date policy.
+ */
+function readRaw(): AnonProgress | null {
+  if (typeof window === 'undefined') return null;
 
   let raw: string | null = null;
   try {
     raw = window.localStorage.getItem(STORAGE_KEY);
   } catch {
     // Storage disabled (private mode, blocked cookies) — behave as if empty.
-    return empty();
+    return null;
   }
-  if (!raw) return empty();
+  if (!raw) return null;
 
   try {
     const parsed = JSON.parse(raw) as Partial<AnonProgress>;
-    if (
-      typeof parsed?.date !== 'string' ||
-      !Array.isArray(parsed?.attempts) ||
-      parsed.date !== today()
-    ) {
-      // Missing, malformed, or from a previous day — start fresh.
-      return empty();
+    if (typeof parsed?.date !== 'string' || !Array.isArray(parsed?.attempts)) {
+      // Missing or malformed — nothing usable.
+      return null;
     }
     return { date: parsed.date, attempts: parsed.attempts.filter(isValidAttempt) };
   } catch {
+    return null;
+  }
+}
+
+/**
+ * Quota-aware reader: attempts from any day other than today do not count.
+ * This is what `anonClipsUsed()` / `isAnonLimitReached()` are built on, and
+ * it must keep resetting daily — do not weaken the date check here.
+ */
+export function readAnonProgress(): AnonProgress {
+  const parsed = readRaw();
+  if (!parsed || parsed.date !== today()) {
+    // Missing, malformed, or from a previous day — start fresh.
     return empty();
   }
+  return parsed;
+}
+
+/**
+ * Carry-over reader: returns whatever attempts are stored, regardless of
+ * which day they were recorded on.
+ *
+ * The date gate in `readAnonProgress()` exists to reset the daily quota, not
+ * to expire the attempts themselves. But the registration flow makes
+ * crossing midnight the NORMAL case — signUp shows "check your email" and
+ * redirects to /auth/login; the user confirms by email and logs back in,
+ * often the next day. Gating carry-over on "today" would silently drop their
+ * scores right when SignupWall's promise ("save your results") is supposed
+ * to be honoured. So this reader applies the same corruption/shape
+ * validation as readAnonProgress but never the date check.
+ */
+export function readAnonProgressForCarryOver(): AnonAttempt[] {
+  return readRaw()?.attempts ?? [];
 }
 
 function write(progress: AnonProgress): void {

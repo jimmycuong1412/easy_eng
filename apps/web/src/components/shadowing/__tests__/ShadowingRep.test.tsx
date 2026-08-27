@@ -20,8 +20,9 @@ jest.mock('../useRecorder', () => ({
 }));
 
 const mockRecordAttempt = jest.fn();
+let mockRecordResult: unknown = null;
 jest.mock('../useRecordAttempt', () => ({
-  useRecordAttempt: () => ({ record: mockRecordAttempt, result: null, error: null }),
+  useRecordAttempt: () => ({ record: mockRecordAttempt, result: mockRecordResult, error: null }),
 }));
 
 jest.mock('../useCarryOverAnonProgress', () => ({
@@ -54,6 +55,7 @@ describe('ShadowingRep', () => {
     mockRecorder.state = 'idle';
     mockRecorder.hasRecognition = true;
     mockRecorder.liveSamples = [];
+    mockRecordResult = null;
   });
 
   it('shows the first clip text and position', () => {
@@ -216,5 +218,36 @@ describe('ShadowingRep', () => {
     );
     await waitFor(() => expect(screen.getByTestId('rep-score')).toBeInTheDocument());
     expect(mockRecordAttempt).not.toHaveBeenCalled();
+  });
+
+  it('overrides the server-rendered progress count with the live result in-session', () => {
+    // clips[].bestScore is server-rendered and never changes client-side;
+    // the live count from useRecordAttempt's result must take over so the
+    // strip updates without a reload.
+    mockRecordResult = { packComplete: false, clipsPassed: 3, clipsTotal: 4 };
+    render(
+      <ShadowingRep
+        clips={clips}
+        audioBaseUrl="https://cdn.test/"
+        locale="vi"
+        isAuthenticated
+        userId="u1"
+      />,
+    );
+    expect(screen.getByTestId('progress-count')).toHaveTextContent('3/4');
+  });
+
+  it('fires the completion banner from a live result in the same session', () => {
+    mockRecordResult = { packComplete: true, clipsPassed: 4, clipsTotal: 4 };
+    render(
+      <ShadowingRep
+        clips={clips}
+        audioBaseUrl="https://cdn.test/"
+        locale="vi"
+        isAuthenticated
+        userId="u1"
+      />,
+    );
+    expect(screen.getByTestId('progress-complete')).toBeInTheDocument();
   });
 });

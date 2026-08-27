@@ -705,8 +705,10 @@ Signup redirects to `/auth/login` rather than creating a session, so there is no
 - Test: `apps/web/src/components/shadowing/__tests__/useCarryOverAnonProgress.test.ts`
 
 **Interfaces:**
-- Consumes: `readAnonProgress`, `clearAnonProgress` from `@/lib/shadowing/anonProgress`; `recordShadowingAttempt` from Task 2.
+- Consumes: `readAnonProgressForCarryOver`, `clearAnonProgress` from `@/lib/shadowing/anonProgress`; `recordShadowingAttempt` from Task 2.
 - Produces: `useCarryOverAnonProgress(userId: string | null): { carriedOver: number | null }`
+
+**Important:** use `readAnonProgressForCarryOver()`, not `readAnonProgress()`, to read the stored attempts. `readAnonProgress()` is quota-aware — it discards attempts from any day other than today, which is correct for the daily clip limit but wrong here: the registration flow redirects to `/auth/login` after signup, so the user often confirms by email and logs back in on a LATER day. Gating carry-over on "today" would silently drop their scores, breaking the signup wall's "keep your score" promise. `readAnonProgressForCarryOver()` applies the same corruption/shape validation but returns stored attempts regardless of date.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -717,6 +719,10 @@ import { renderHook, waitFor } from '@testing-library/react';
 
 import { useCarryOverAnonProgress } from '../useCarryOverAnonProgress';
 import { recordAnonAttempt, readAnonProgress } from '@/lib/shadowing/anonProgress';
+// readAnonProgress() is used only for the test assertions below (checking
+// what remains in storage); the hook itself reads via
+// readAnonProgressForCarryOver() so that a previous-day attempt still
+// replays. See useCarryOverAnonProgress.ts for why.
 
 const mockRecord = jest.fn();
 
@@ -805,6 +811,20 @@ describe('useCarryOverAnonProgress', () => {
     rerender();
     expect(mockRecord).toHaveBeenCalledTimes(1);
   });
+
+  it('replays attempts stored on a previous day', async () => {
+    // The registration flow makes crossing midnight the normal case: signUp
+    // redirects to /auth/login, the user confirms by email and logs back in
+    // — often the next day. Carry-over must not be gated on "today".
+    window.localStorage.setItem(
+      'easyeng.shadowing.anon',
+      JSON.stringify({ date: '2000-01-01', attempts: [{ clipId: 'c1', overall: 82 }] })
+    );
+    renderHook(() => useCarryOverAnonProgress('u1'));
+    await waitFor(() => expect(mockRecord).toHaveBeenCalledTimes(1));
+    expect(mockRecord.mock.calls[0][1].clipId).toBe('c1');
+    await waitFor(() => expect(readAnonProgress().attempts).toHaveLength(0));
+  });
 });
 ```
 
@@ -840,7 +860,7 @@ import { useEffect, useRef, useState } from 'react';
 import { recordShadowingAttempt } from '@easyeng/core';
 
 import { createClient } from '@/lib/supabase/client';
-import { readAnonProgress, clearAnonProgress } from '@/lib/shadowing/anonProgress';
+import { readAnonProgressForCarryOver, clearAnonProgress } from '@/lib/shadowing/anonProgress';
 
 export function useCarryOverAnonProgress(userId: string | null) {
   const [carriedOver, setCarriedOver] = useState<number | null>(null);
@@ -849,7 +869,9 @@ export function useCarryOverAnonProgress(userId: string | null) {
   useEffect(() => {
     if (!userId || ranRef.current) return;
 
-    const stored = readAnonProgress().attempts;
+    // Deliberately date-agnostic: crossing midnight between signup and email
+    // confirmation is the normal case, not an edge case — see anonProgress.ts.
+    const stored = readAnonProgressForCarryOver();
     if (stored.length === 0) return;
 
     ranRef.current = true;
@@ -993,6 +1015,56 @@ describe('PackProgress', () => {
     const { container } = render(<PackProgress clips={[]} currentIndex={0} carriedOver={null} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('gives a passed clip and an unattempted clip distinct accessible labels', () => {
+    render(
+      <PackProgress clips={[clip(0, 82), clip(1, null)]} currentIndex={0} carriedOver={null} />,
+    );
+    const dots = screen.getAllByTestId('progress-dot');
+    expect(dots[0]).toHaveAttribute('role', 'img');
+    expect(dots[0].getAttribute('aria-label')).toMatch(/đã đạt/);
+    expect(dots[0].getAttribute('aria-label')).toMatch(/82/);
+    expect(dots[1].getAttribute('aria-label')).toMatch(/chưa luyện/);
+    expect(dots[0].getAttribute('aria-label')).not.toBe(dots[1].getAttribute('aria-label'));
+  });
+
+  it('overrides the server-derived passed count with a live count when provided', () => {
+    render(
+      <PackProgress
+        clips={[clip(0, 80), clip(1, null), clip(2, 40)]}
+        currentIndex={0}
+        carriedOver={null}
+        livePassedCount={3}
+      />,
+    );
+    expect(screen.getByTestId('progress-count')).toHaveTextContent('3/3');
+  });
+
+  it('fires the completion banner from liveComplete even when bestScore-derived counts disagree', () => {
+    render(
+      <PackProgress
+        clips={[clip(0, 80), clip(1, 20)]}
+        currentIndex={0}
+        carriedOver={null}
+        liveComplete
+      />,
+    );
+    expect(screen.getByTestId('progress-complete')).toBeInTheDocument();
+  });
+
+  it('reflects the just-scored clip in its own dot via liveResult', () => {
+    render(
+      <PackProgress
+        clips={[clip(0, null), clip(1, null)]}
+        currentIndex={0}
+        carriedOver={null}
+        liveResult={{ clipId: 'c0', passed: true }}
+      />,
+    );
+    const dots = screen.getAllByTestId('progress-dot');
+    expect(dots[0].getAttribute('aria-label')).toMatch(/đã đạt/);
+    expect(dots[1].getAttribute('aria-label')).toMatch(/chưa luyện/);
+  });
 });
 ```
 
@@ -1025,15 +1097,37 @@ export interface PackProgressProps {
   currentIndex: number;
   /** Number of anonymous attempts just replayed into the account, if any. */
   carriedOver: number | null;
+  /**
+   * Live count of passed clips from the current session's recording result,
+   * overriding the server-rendered `bestScore`-derived count. Optional and
+   * additive: when omitted, counts fall back to `clips[].bestScore` exactly
+   * as before, so callers that don't track live results are unaffected.
+   */
+  livePassedCount?: number | null;
+  /** Live pack-complete flag from the current session's recording result. */
+  liveComplete?: boolean | null;
+  /**
+   * The clip just scored this session and its pass/fail, so its dot can
+   * reflect the result immediately without waiting on a reload.
+   */
+  liveResult?: { clipId: string; passed: boolean } | null;
 }
 
-export function PackProgress({ clips, currentIndex, carriedOver }: PackProgressProps) {
+export function PackProgress({
+  clips,
+  currentIndex,
+  carriedOver,
+  livePassedCount = null,
+  liveComplete = null,
+  liveResult = null,
+}: PackProgressProps) {
   if (clips.length === 0) return null;
 
-  const passed = clips.filter(
+  const serverPassed = clips.filter(
     (c) => c.bestScore !== null && c.bestScore >= SHADOWING_PASS_THRESHOLD,
   ).length;
-  const complete = passed === clips.length;
+  const passed = livePassedCount ?? serverPassed;
+  const complete = liveComplete ?? passed === clips.length;
 
   return (
     <div className="space-y-2">
@@ -1050,17 +1144,33 @@ export function PackProgress({ clips, currentIndex, carriedOver }: PackProgressP
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
           {clips.map((c, i) => {
-            const done = c.bestScore !== null && c.bestScore >= SHADOWING_PASS_THRESHOLD;
+            const liveDone =
+              liveResult && liveResult.clipId === c.clipId ? liveResult.passed : null;
+            const done =
+              liveDone ?? (c.bestScore !== null && c.bestScore >= SHADOWING_PASS_THRESHOLD);
+            const label =
+              c.bestScore === null && liveDone === null
+                ? `Câu ${i + 1}: chưa luyện`
+                : `Câu ${i + 1}: ${done ? 'đã đạt' : 'chưa đạt'}${
+                    c.bestScore !== null ? ` ${c.bestScore}%` : ''
+                  }`;
             return (
               <span
                 key={c.clipId}
                 data-testid="progress-dot"
+                role="img"
+                aria-label={label}
                 title={c.bestScore === null ? 'Chưa luyện' : `${c.bestScore}%`}
                 style={{
                   width: 10,
                   height: 10,
                   borderRadius: '50%',
-                  background: done ? 'var(--et-green)' : 'var(--et-bg-4)',
+                  // --et-bg-4 is invisible against the card in light theme
+                  // (both resolve near-white), so the empty state uses
+                  // --et-line-2 instead — a translucent tint that contrasts
+                  // against --et-bg-2 in both themes. See the fixes report
+                  // for the measured contrast values.
+                  background: done ? 'var(--et-green)' : 'var(--et-line-2)',
                   outline: i === currentIndex ? '2px solid var(--et-coral)' : 'none',
                   outlineOffset: 2,
                 }}
@@ -1125,8 +1235,9 @@ In `apps/web/src/components/shadowing/__tests__/ShadowingRep.test.tsx`, add thes
 
 ```tsx
 const mockRecordAttempt = jest.fn();
+let mockRecordResult: unknown = null;
 jest.mock('../useRecordAttempt', () => ({
-  useRecordAttempt: () => ({ record: mockRecordAttempt, result: null, error: null }),
+  useRecordAttempt: () => ({ record: mockRecordAttempt, result: mockRecordResult, error: null }),
 }));
 
 jest.mock('../useCarryOverAnonProgress', () => ({
@@ -1134,7 +1245,7 @@ jest.mock('../useCarryOverAnonProgress', () => ({
 }));
 ```
 
-Add `mockRecordAttempt.mockClear();` to the existing `beforeEach` block, then append these tests inside the existing `describe('ShadowingRep', …)`:
+Add `mockRecordAttempt.mockClear(); mockRecordResult = null;` to the existing `beforeEach` block, then append these tests inside the existing `describe('ShadowingRep', …)`:
 
 ```tsx
   it('shows pack progress to an authenticated user', () => {
@@ -1196,6 +1307,37 @@ Add `mockRecordAttempt.mockClear();` to the existing `beforeEach` block, then ap
     await waitFor(() => expect(screen.getByTestId('rep-score')).toBeInTheDocument());
     expect(mockRecordAttempt).not.toHaveBeenCalled();
   });
+
+  it('overrides the server-rendered progress count with the live result in-session', () => {
+    // clips[].bestScore is server-rendered and never changes client-side;
+    // the live count from useRecordAttempt's result must take over so the
+    // strip updates without a reload.
+    mockRecordResult = { packComplete: false, clipsPassed: 3, clipsTotal: 4 };
+    render(
+      <ShadowingRep
+        clips={clips}
+        audioBaseUrl="https://cdn.test/"
+        locale="vi"
+        isAuthenticated
+        userId="u1"
+      />,
+    );
+    expect(screen.getByTestId('progress-count')).toHaveTextContent('3/4');
+  });
+
+  it('fires the completion banner from a live result in the same session', () => {
+    mockRecordResult = { packComplete: true, clipsPassed: 4, clipsTotal: 4 };
+    render(
+      <ShadowingRep
+        clips={clips}
+        audioBaseUrl="https://cdn.test/"
+        locale="vi"
+        isAuthenticated
+        userId="u1"
+      />,
+    );
+    expect(screen.getByTestId('progress-complete')).toBeInTheDocument();
+  });
 ```
 
 Add `waitFor` to the existing `@testing-library/react` import.
@@ -1219,6 +1361,8 @@ import { useRecordAttempt } from './useRecordAttempt';
 import { useCarryOverAnonProgress } from './useCarryOverAnonProgress';
 import { PackProgress } from './PackProgress';
 ```
+
+Also add `SHADOWING_PASS_THRESHOLD` to the existing `@easyeng/core` import — it is needed below to decide whether the just-scored clip's own dot should read as passed.
 
 Add `userId` to the props interface:
 
@@ -1249,9 +1393,11 @@ export function ShadowingRep({
 Immediately after the `const recorder = useRecorder('en-US');` line, add:
 
 ```tsx
-  const { record } = useRecordAttempt(userId);
+  const { record, result } = useRecordAttempt(userId);
   const { carriedOver } = useCarryOverAnonProgress(userId);
 ```
+
+`result` (not just `record`) must be destructured — `PackProgress` needs the live `clipsPassed`/`packComplete` it carries, otherwise the progress strip only reflects the server-rendered `bestScore` and never updates within the session (see Step 3 render call below).
 
 In the scoring effect, replace the comment line `// Phase B wires record_shadowing_attempt here for authenticated users.` with the real call, so the effect body ends:
 
@@ -1277,9 +1423,22 @@ Finally, render the progress strip for signed-in users only. Immediately after t
 
 ```tsx
       {isAuthenticated && (
-        <PackProgress clips={clips} currentIndex={index} carriedOver={carriedOver} />
+        <PackProgress
+          clips={clips}
+          currentIndex={index}
+          carriedOver={carriedOver}
+          livePassedCount={result?.clipsPassed ?? null}
+          liveComplete={result?.packComplete ?? null}
+          liveResult={
+            score && clip
+              ? { clipId: clip.clipId, passed: score.overall >= SHADOWING_PASS_THRESHOLD }
+              : null
+          }
+        />
       )}
 ```
+
+The `livePassedCount`/`liveComplete` props come from the server-confirmed `result` returned by `useRecordAttempt` once the save round-trips. `liveResult` comes from `score` — the local scoring result available immediately after an attempt, before the network call resolves — so the just-scored clip's own dot turns green the instant it passes rather than waiting on the round-trip.
 
 - [ ] **Step 4: Run the tests to verify they pass**
 

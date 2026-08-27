@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { recordShadowingAttempt } from '@easyeng/core';
 
 import { createClient } from '@/lib/supabase/client';
-import { readAnonProgress, clearAnonProgress } from '@/lib/shadowing/anonProgress';
+import { readAnonProgressForCarryOver, clearAnonProgress } from '@/lib/shadowing/anonProgress';
 
 export function useCarryOverAnonProgress(userId: string | null) {
   const [carriedOver, setCarriedOver] = useState<number | null>(null);
@@ -26,7 +26,9 @@ export function useCarryOverAnonProgress(userId: string | null) {
   useEffect(() => {
     if (!userId || ranRef.current) return;
 
-    const stored = readAnonProgress().attempts;
+    // Deliberately date-agnostic: crossing midnight between signup and email
+    // confirmation is the normal case, not an edge case — see anonProgress.ts.
+    const stored = readAnonProgressForCarryOver();
     if (stored.length === 0) return;
 
     ranRef.current = true;

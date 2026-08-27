@@ -1,6 +1,7 @@
 import {
   ANON_DAILY_CLIP_LIMIT,
   readAnonProgress,
+  readAnonProgressForCarryOver,
   recordAnonAttempt,
   anonClipsUsed,
   isAnonLimitReached,
@@ -133,6 +134,62 @@ describe('anonProgress', () => {
         })
       );
       expect(readAnonProgress().attempts).toEqual([{ clipId: 'c4', overall: 77 }]);
+    });
+  });
+
+  describe('readAnonProgressForCarryOver', () => {
+    it('returns attempts stored yesterday even though readAnonProgress would treat them as expired', () => {
+      // Stored "yesterday" relative to the fake system time set in beforeEach.
+      window.localStorage.setItem(
+        'easyeng.shadowing.anon',
+        JSON.stringify({ date: '2026-08-25', attempts: [{ clipId: 'c1', overall: 82 }] })
+      );
+
+      // The quota-aware reader must still treat this as expired...
+      expect(readAnonProgress().attempts).toEqual([]);
+      // ...but the carry-over reader must still surface it, because crossing
+      // a day boundary between signup and email confirmation is the normal
+      // path, not an edge case.
+      expect(readAnonProgressForCarryOver()).toEqual([{ clipId: 'c1', overall: 82 }]);
+    });
+
+    it('returns attempts stored today identically to readAnonProgress', () => {
+      recordAnonAttempt('c1', 90);
+      expect(readAnonProgressForCarryOver()).toEqual(readAnonProgress().attempts);
+    });
+
+    it('does not resurrect the daily quota — anonClipsUsed still resets across the day boundary', () => {
+      // Guard against a fix that accidentally makes the quota date-agnostic too.
+      recordAnonAttempt('c1', 82);
+      jest.setSystemTime(new Date('2026-08-27T01:00:00Z'));
+      expect(anonClipsUsed()).toBe(0);
+      expect(isAnonLimitReached()).toBe(false);
+      // But the carry-over reader still sees the old attempt.
+      expect(readAnonProgressForCarryOver()).toEqual([{ clipId: 'c1', overall: 82 }]);
+    });
+
+    it('recovers from corrupt stored JSON instead of throwing', () => {
+      window.localStorage.setItem('easyeng.shadowing.anon', 'not json');
+      expect(readAnonProgressForCarryOver()).toEqual([]);
+    });
+
+    it('drops entries with wrong-typed fields, same as readAnonProgress', () => {
+      window.localStorage.setItem(
+        'easyeng.shadowing.anon',
+        JSON.stringify({
+          date: '2020-01-01',
+          attempts: [
+            { clipId: 123, overall: 50 },
+            { clipId: 'c2', overall: 'bad' },
+            { clipId: 'c3', overall: 77 },
+          ],
+        })
+      );
+      expect(readAnonProgressForCarryOver()).toEqual([{ clipId: 'c3', overall: 77 }]);
+    });
+
+    it('returns an empty array when nothing is stored', () => {
+      expect(readAnonProgressForCarryOver()).toEqual([]);
     });
   });
 });

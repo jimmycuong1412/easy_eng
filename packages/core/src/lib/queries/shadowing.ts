@@ -83,6 +83,7 @@ export async function fetchShadowingPacks(
     .select('id, slug, title_vi, title_en, summary_vi, level, shadowing_clips(count)')
     .eq('type', 'shadowing')
     .eq('status', 'published')
+    .is('deleted_at', null)
     .order('published_at', { ascending: false });
 
   if (error) throw error;

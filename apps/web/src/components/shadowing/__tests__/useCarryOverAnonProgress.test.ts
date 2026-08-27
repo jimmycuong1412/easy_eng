@@ -90,4 +90,18 @@ describe('useCarryOverAnonProgress', () => {
     rerender();
     expect(mockRecord).toHaveBeenCalledTimes(1);
   });
+
+  it('replays attempts stored on a previous day', async () => {
+    // The registration flow makes crossing midnight the normal case: signUp
+    // redirects to /auth/login, the user confirms by email and logs back in
+    // — often the next day. Carry-over must not be gated on "today".
+    window.localStorage.setItem(
+      'easyeng.shadowing.anon',
+      JSON.stringify({ date: '2000-01-01', attempts: [{ clipId: 'c1', overall: 82 }] })
+    );
+    renderHook(() => useCarryOverAnonProgress('u1'));
+    await waitFor(() => expect(mockRecord).toHaveBeenCalledTimes(1));
+    expect(mockRecord.mock.calls[0][1].clipId).toBe('c1');
+    await waitFor(() => expect(readAnonProgress().attempts).toHaveLength(0));
+  });
 });

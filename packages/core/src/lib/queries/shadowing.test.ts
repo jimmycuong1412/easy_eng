@@ -60,19 +60,21 @@ describe('fetchShadowingPack', () => {
 describe('fetchShadowingPacks', () => {
   function mockSelect(result: { data?: unknown; error?: unknown }) {
     const order = jest.fn().mockResolvedValue(result);
-    const eq2 = jest.fn(() => ({ order }));
+    const is = jest.fn(() => ({ order }));
+    const eq2 = jest.fn(() => ({ is }));
     const eq1 = jest.fn(() => ({ eq: eq2 }));
     const select = jest.fn(() => ({ eq: eq1 }));
     const from = jest.fn(() => ({ select }));
-    return { client: { from } as any, from, select, eq1, eq2, order };
+    return { client: { from } as any, from, select, eq1, eq2, is, order };
   }
 
-  it('selects published shadowing packs only', async () => {
+  it('selects published, non-deleted shadowing packs only', async () => {
     const m = mockSelect({ data: [], error: null });
     await fetchShadowingPacks(m.client);
     expect(m.from).toHaveBeenCalledWith('materials');
     expect(m.eq1).toHaveBeenCalledWith('type', 'shadowing');
     expect(m.eq2).toHaveBeenCalledWith('status', 'published');
+    expect(m.is).toHaveBeenCalledWith('deleted_at', null);
   });
 
   it('maps rows and counts clips', async () => {

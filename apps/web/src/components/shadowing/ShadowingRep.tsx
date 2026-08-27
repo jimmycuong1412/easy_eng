@@ -14,7 +14,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Mic, Square, Volume2, RotateCcw, ChevronRight } from 'lucide-react';
 
-import { scoreAttempt, type ShadowingClip, type ShadowingScore } from '@easyeng/core';
+import {
+  scoreAttempt,
+  SHADOWING_PASS_THRESHOLD,
+  type ShadowingClip,
+  type ShadowingScore,
+} from '@easyeng/core';
 
 import { useRecorder } from './useRecorder';
 import { WaveformCompare } from './WaveformCompare';
@@ -59,7 +64,7 @@ export function ShadowingRep({
   const [walled, setWalled] = useState(false);
 
   const recorder = useRecorder('en-US');
-  const { record } = useRecordAttempt(userId);
+  const { record, result } = useRecordAttempt(userId);
   const { carriedOver } = useCarryOverAnonProgress(userId);
   const clip = clips[index];
 
@@ -143,7 +148,18 @@ export function ShadowingRep({
       </p>
 
       {isAuthenticated && (
-        <PackProgress clips={clips} currentIndex={index} carriedOver={carriedOver} />
+        <PackProgress
+          clips={clips}
+          currentIndex={index}
+          carriedOver={carriedOver}
+          livePassedCount={result?.clipsPassed ?? null}
+          liveComplete={result?.packComplete ?? null}
+          liveResult={
+            score && clip
+              ? { clipId: clip.clipId, passed: score.overall >= SHADOWING_PASS_THRESHOLD }
+              : null
+          }
+        />
       )}
 
       {/* Target sentence — recoloured per word once scored. */}
