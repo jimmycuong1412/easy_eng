@@ -94,6 +94,13 @@ Separately, `shadowing_attempts.user_id` references `auth.users(id)` while `mate
 -- ============================================================
 -- profiles.id is itself FK'd to auth.users, so this is a narrowing, not a
 -- widening: every profiles row already corresponds to an auth user.
+--
+-- PRECONDITION: shadowing_attempts is expected to be empty here (nothing called
+-- record_shadowing_attempt before Phase B). If this ever runs against seeded
+-- data, any row whose user_id has an auth.users entry but no profiles row will
+-- violate the new constraint. Check before applying:
+--   SELECT COUNT(*) FROM shadowing_attempts a
+--   LEFT JOIN profiles p ON p.id = a.user_id WHERE p.id IS NULL;
 ALTER TABLE public.shadowing_attempts
   DROP CONSTRAINT IF EXISTS shadowing_attempts_user_id_fkey;
 
