@@ -199,6 +199,22 @@ export default function DashboardPage() {
           <DailyLessonCard />
         </div>
 
+        {/* Shadowing cross-link */}
+        <div style={{ marginBottom: 18 }}>
+          <Link
+            href={`/${locale}/shadowing`}
+            className="block rounded-xl p-4"
+            style={{ background: 'var(--et-bg-2)', border: '1px solid var(--et-line)' }}
+          >
+            <span className="text-sm font-semibold" style={{ color: 'var(--et-fg)' }}>
+              🎧 Luyện nói theo người bản xứ
+            </span>
+            <p className="mt-1 text-xs" style={{ color: 'var(--et-fg-2)' }}>
+              Chấm điểm từ vựng và nhịp điệu — giữ chuỗi ngày luyện tập của bạn.
+            </p>
+          </Link>
+        </div>
+
         {/* Editorial header */}
         <section
           style={{

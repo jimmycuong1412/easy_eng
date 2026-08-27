@@ -57,4 +57,13 @@ test.describe('anonymous shadowing', () => {
     await expect(page.getByTestId('wall-signup')).toBeVisible();
     await expect(page.getByText('90%')).toBeVisible();
   });
+
+  test('shows no signed-in progress UI to an anonymous visitor', async ({ page }) => {
+    // Phase B added a progress strip and attempt recording. Neither may appear
+    // for a visitor with no session — the anonymous path is the ad landing
+    // surface and must stay exactly as it was.
+    await page.goto(`/vi/shadowing/${PACK_SLUG}`);
+    await expect(page.getByTestId('progress-count')).toHaveCount(0);
+    await expect(page.getByTestId('progress-carried')).toHaveCount(0);
+  });
 });
