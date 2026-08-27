@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { ShadowingRep } from '../ShadowingRep';
@@ -19,6 +19,15 @@ jest.mock('../useRecorder', () => ({
   useRecorder: () => mockRecorder,
 }));
 
+const mockRecordAttempt = jest.fn();
+jest.mock('../useRecordAttempt', () => ({
+  useRecordAttempt: () => ({ record: mockRecordAttempt, result: null, error: null }),
+}));
+
+jest.mock('../useCarryOverAnonProgress', () => ({
+  useCarryOverAnonProgress: () => ({ carriedOver: null }),
+}));
+
 const clip = (idx: number): ShadowingClip => ({
   clipId: `c${idx}`,
   idx,
@@ -36,6 +45,7 @@ describe('ShadowingRep', () => {
   beforeEach(() => {
     window.localStorage.clear();
     jest.clearAllMocks();
+    mockRecordAttempt.mockClear();
     // Reset EVERY mutable mock field here, not in test bodies: a test that
     // throws before its cleanup line would otherwise leak state into the rest
     // of the file.
@@ -146,5 +156,65 @@ describe('ShadowingRep', () => {
       <ShadowingRep clips={clips} audioBaseUrl="https://cdn.test/" locale="vi" isAuthenticated />,
     );
     expect(screen.queryByTestId('wall-signup')).not.toBeInTheDocument();
+  });
+
+  it('shows pack progress to an authenticated user', () => {
+    render(
+      <ShadowingRep
+        clips={clips}
+        audioBaseUrl="https://cdn.test/"
+        locale="vi"
+        isAuthenticated
+        userId="u1"
+      />,
+    );
+    expect(screen.getByTestId('progress-count')).toBeInTheDocument();
+  });
+
+  it('hides pack progress from an anonymous visitor', () => {
+    render(
+      <ShadowingRep
+        clips={clips}
+        audioBaseUrl="https://cdn.test/"
+        locale="vi"
+        isAuthenticated={false}
+      />,
+    );
+    expect(screen.queryByTestId('progress-count')).not.toBeInTheDocument();
+  });
+
+  it('records the attempt when a signed-in user scores', async () => {
+    mockRecorder.result = {
+      envelope: { bins: new Array(BIN_COUNT).fill(0.5), durationMs: 2000 },
+      transcript: 'Sentence number 0.',
+    };
+    render(
+      <ShadowingRep
+        clips={clips}
+        audioBaseUrl="https://cdn.test/"
+        locale="vi"
+        isAuthenticated
+        userId="u1"
+      />,
+    );
+    await waitFor(() => expect(mockRecordAttempt).toHaveBeenCalledTimes(1));
+    expect(mockRecordAttempt.mock.calls[0][0].clipId).toBe('c0');
+  });
+
+  it('does not record anything for an anonymous visitor', async () => {
+    mockRecorder.result = {
+      envelope: { bins: new Array(BIN_COUNT).fill(0.5), durationMs: 2000 },
+      transcript: 'Sentence number 0.',
+    };
+    render(
+      <ShadowingRep
+        clips={clips}
+        audioBaseUrl="https://cdn.test/"
+        locale="vi"
+        isAuthenticated={false}
+      />,
+    );
+    await waitFor(() => expect(screen.getByTestId('rep-score')).toBeInTheDocument());
+    expect(mockRecordAttempt).not.toHaveBeenCalled();
   });
 });

@@ -19,6 +19,9 @@ import { scoreAttempt, type ShadowingClip, type ShadowingScore } from '@easyeng/
 import { useRecorder } from './useRecorder';
 import { WaveformCompare } from './WaveformCompare';
 import { SignupWall } from './SignupWall';
+import { useRecordAttempt } from './useRecordAttempt';
+import { useCarryOverAnonProgress } from './useCarryOverAnonProgress';
+import { PackProgress } from './PackProgress';
 import {
   isAnonLimitReached,
   recordAnonAttempt,
@@ -31,6 +34,8 @@ export interface ShadowingRepProps {
   audioBaseUrl: string;
   locale: string;
   isAuthenticated: boolean;
+  /** Present only for signed-in users; drives attempt recording. */
+  userId?: string | null;
 }
 
 const FALLBACK_ERROR_COPY = 'Đã có lỗi xảy ra khi ghi âm. Hãy thử lại nhé.';
@@ -47,12 +52,15 @@ export function ShadowingRep({
   audioBaseUrl,
   locale,
   isAuthenticated,
+  userId = null,
 }: ShadowingRepProps) {
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState<ShadowingScore | null>(null);
   const [walled, setWalled] = useState(false);
 
   const recorder = useRecorder('en-US');
+  const { record } = useRecordAttempt(userId);
+  const { carriedOver } = useCarryOverAnonProgress(userId);
   const clip = clips[index];
 
   // Anonymous visitors hit the wall once they have used their daily clips.
@@ -73,9 +81,17 @@ export function ShadowingRep({
     if (!isAuthenticated) {
       recordAnonAttempt(clip.clipId, s.overall);
       setWalled(isAnonLimitReached());
+    } else {
+      record({
+        clipId: clip.clipId,
+        wordScore: s.wordScore,
+        rhythmScore: s.rhythmScore,
+        overall: s.overall,
+        heardText: recorder.result.transcript ?? '',
+        weakWords: s.weakWords,
+      });
     }
-    // Phase B wires record_shadowing_attempt here for authenticated users.
-  }, [recorder.result, clip, isAuthenticated]);
+  }, [recorder.result, clip, isAuthenticated, record]);
 
   const playReference = useCallback(() => {
     const audio = new Audio(`${audioBaseUrl}${clip.audioPath}`);
@@ -125,6 +141,10 @@ export function ShadowingRep({
       <p className="text-xs" style={{ color: 'var(--et-fg-3)' }}>
         Câu {index + 1} / {clips.length}
       </p>
+
+      {isAuthenticated && (
+        <PackProgress clips={clips} currentIndex={index} carriedOver={carriedOver} />
+      )}
 
       {/* Target sentence — recoloured per word once scored. */}
       <p className="text-lg font-semibold leading-relaxed" style={{ color: 'var(--et-fg)' }}>
