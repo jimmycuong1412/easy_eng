@@ -1287,7 +1287,7 @@ Run:
 ```bash
 pnpm --filter web exec jest src/components/shadowing
 ```
-Expected: PASS. The ShadowingRep suite grows from 10 to 14 tests; the directory total is 37.
+Expected: PASS. The ShadowingRep suite grows from 10 to 14 tests; the directory total is 47 (Tasks 3-5 each added their own suite).
 
 - [ ] **Step 5: Commit**
 
@@ -1335,7 +1335,7 @@ Run:
 ```bash
 pnpm --filter web exec jest src/components/shadowing
 ```
-Expected: PASS, 37 tests — including the anonymous cases, which must be unaffected.
+Expected: PASS, 47 tests — including the anonymous cases, which must be unaffected.
 
 - [ ] **Step 4: Commit**
 
