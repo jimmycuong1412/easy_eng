@@ -83,6 +83,7 @@ export default async function ShadowingPackPage({ params }: PageProps) {
         audioBaseUrl={AUDIO_BASE}
         locale={params.locale}
         isAuthenticated={Boolean(user)}
+        userId={user?.id ?? null}
       />
 
       {/* Server-rendered transcript: indexable content for organic search. */}
