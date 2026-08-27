@@ -22,6 +22,7 @@ export * from './lib/grammar/rules';
 export * from './lib/queries';
 export * from './lib/queries/materials';
 export * from './lib/queries/shadowing';
+export * from './lib/queries/shadowingAttempts';
 export * from './lib/shadowing';
 export * from './lib/cometchat';
 
