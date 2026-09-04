@@ -1,0 +1,183 @@
+/**
+ * Shadowing content pipeline.
+ *
+ * Reads a pack manifest, generates one audio file per clip, computes each
+ * clip's reference envelope, and emits a seed migration.
+ *
+ * This script imports `extractEnvelope` directly from `@easyeng/core`
+ * (shipped as raw TypeScript, no build step) so the reference envelopes it
+ * generates are always produced by the exact same code that scores attempts
+ * in the browser. Do not inline or duplicate that function here.
+ *
+ * Usage (run under ts-node, via the root npm script):
+ *   npm run shadowing:build -- scripts/shadowing/packs/job-interview.json
+ * or directly:
+ *   node_modules/.bin/ts-node -P scripts/shadowing/tsconfig.json scripts/shadowing/build-clips.ts scripts/shadowing/packs/job-interview.json
+ *
+ * TTS: set SHADOWING_TTS_CMD to a command template that writes an MP3.
+ * The template is split into argv tokens (double-quoted segments are kept
+ * together as one token; unquoted whitespace separates tokens) and each
+ * token containing {{text}} or {{out}} has that placeholder substituted as
+ * a literal string value — the whole thing is then run WITHOUT a shell
+ * (execFileSync), so no shell-escaping is needed or possible: quote a
+ * token in the template only to keep embedded spaces together, never to
+ * guard against $, `, or \. Example using piper:
+ *   SHADOWING_TTS_CMD='piper --text "{{text}}" --output_file "{{out}}"'
+ *
+ * Hero clips (those used in ads and on the landing page) are re-recorded by a
+ * human afterwards: drop the replacement MP3 over the generated file and re-run
+ * with --envelopes-only to recompute envelopes without regenerating audio.
+ */
+
+import { execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { basename, join } from 'node:path';
+
+import { extractEnvelope } from '../../packages/core/src/lib/shadowing/envelope';
+
+const manifestPath = process.argv[2];
+const envelopesOnly = process.argv.includes('--envelopes-only');
+
+if (!manifestPath) {
+  console.error('Usage: npm run shadowing:build -- <manifest.json> [--envelopes-only]');
+  process.exit(1);
+}
+
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+const outDir = join('scripts', 'shadowing', 'out', manifest.slug);
+mkdirSync(outDir, { recursive: true });
+
+const ttsTemplate = process.env.SHADOWING_TTS_CMD;
+if (!envelopesOnly && !ttsTemplate) {
+  console.error('SHADOWING_TTS_CMD is not set. See the header of this file.');
+  process.exit(1);
+}
+
+/**
+ * Split a command template into argv tokens without invoking a shell.
+ * A double-quoted run (`"..."`) is kept as a single token with the quotes
+ * stripped; everything else is split on runs of whitespace. This is
+ * intentionally minimal — just enough to let a template like
+ * `piper --text "{{text}}" --output_file "{{out}}"` name its placeholders,
+ * not a general shell-syntax parser.
+ */
+function tokenizeTemplate(template: string): string[] {
+  const tokens: string[] = [];
+  const re = /"([^"]*)"|(\S+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(template)) !== null) {
+    tokens.push(match[1] !== undefined ? match[1] : match[2]);
+  }
+  return tokens;
+}
+
+/** Substitute {{text}} / {{out}} placeholders into one argv token. */
+function fillToken(token: string, text: string, out: string): string {
+  return token.replaceAll('{{text}}', text).replaceAll('{{out}}', out);
+}
+
+/** Decode an MP3 to mono Float32 PCM at 16 kHz using ffmpeg. */
+function decodeToPcm(mp3Path: string): Float32Array {
+  const raw = execFileSync(
+    'ffmpeg',
+    ['-v', 'quiet', '-i', mp3Path, '-f', 'f32le', '-ac', '1', '-ar', '16000', '-'],
+    { maxBuffer: 1024 * 1024 * 64, encoding: 'buffer' },
+  );
+  // `raw` is a Node Buffer, which is a view into a shared, pooled
+  // ArrayBuffer — its byteOffset is not guaranteed to be a multiple of 4.
+  // Float32Array requires a 4-byte-aligned offset into its backing buffer,
+  // so constructing one directly over `raw.buffer` throws intermittently
+  // (RangeError) depending on where the pool happened to place this
+  // allocation. Copying into a fresh, tightly-sized buffer guarantees a
+  // zero (aligned) offset. Do not "optimise" this back to a zero-copy view.
+  const sampleCount = Math.floor(raw.length / 4);
+  const aligned = Buffer.alloc(sampleCount * 4);
+  raw.copy(aligned, 0, 0, sampleCount * 4);
+  return new Float32Array(aligned.buffer, aligned.byteOffset, sampleCount);
+}
+
+interface Row {
+  idx: number;
+  textEn: string;
+  textVi: string;
+  audioPath: string;
+  durationMs: number;
+  envelope: unknown;
+}
+
+const rows: Row[] = [];
+
+manifest.clips.forEach((clip: { en: string; vi: string }, idx: number) => {
+  const filename = `${String(idx).padStart(2, '0')}.mp3`;
+  const outPath = join(outDir, filename);
+
+  if (!envelopesOnly || !existsSync(outPath)) {
+    const tokens = tokenizeTemplate(ttsTemplate as string).map((t) => fillToken(t, clip.en, outPath));
+    const [cmd, ...args] = tokens;
+    execFileSync(cmd, args, { stdio: 'inherit' });
+  }
+
+  const pcm = decodeToPcm(outPath);
+  const envelope = extractEnvelope(pcm, 16000);
+
+  rows.push({
+    idx,
+    textEn: clip.en,
+    textVi: clip.vi,
+    audioPath: `shadowing/${manifest.slug}/${filename}`,
+    durationMs: envelope.durationMs,
+    envelope,
+  });
+
+  console.log(`[${idx}] ${basename(outPath)}  ${envelope.durationMs}ms`);
+});
+
+function sqlStr(v: unknown): string {
+  if (v === null || v === undefined) return 'NULL';
+  return `'${String(v).replaceAll("'", "''")}'`;
+}
+
+const sql = `-- 105_shadowing_seed.sql (generated by scripts/shadowing/build-clips.ts)
+-- Pack: ${manifest.slug}
+-- Regenerate rather than hand-editing.
+
+DO $$
+DECLARE
+  v_author uuid;
+  v_material uuid;
+BEGIN
+  SELECT id INTO v_author FROM profiles WHERE role = 'admin' ORDER BY created_at LIMIT 1;
+  IF v_author IS NULL THEN
+    RAISE EXCEPTION 'no admin profile to own the seeded pack';
+  END IF;
+
+  INSERT INTO materials (
+    slug, type, level, status, goal,
+    title_vi, title_en, summary_vi, summary_en, body_vi, body_en,
+    duration_min, gems_reward, xp_reward, author_id, published_at, published_by
+  )
+  VALUES (
+    ${sqlStr(manifest.slug)}, 'shadowing', ${sqlStr(manifest.level)}, 'published', ${sqlStr(manifest.goal)},
+    ${sqlStr(manifest.titleVi)}, ${sqlStr(manifest.titleEn)},
+    ${sqlStr(manifest.summaryVi)}, ${sqlStr(manifest.summaryEn)},
+    ${sqlStr(manifest.bodyVi)}, ${sqlStr(manifest.bodyEn)},
+    ${Math.max(1, Math.round(rows.reduce((n, r) => n + r.durationMs, 0) / 60000))},
+    0, ${manifest.xpReward}, v_author, now(), v_author
+  )
+  ON CONFLICT (slug) DO UPDATE SET updated_at = now()
+  RETURNING id INTO v_material;
+
+  DELETE FROM shadowing_clips WHERE material_id = v_material;
+
+${rows
+  .map(
+    (r) => `  INSERT INTO shadowing_clips (material_id, idx, text_en, text_vi, audio_path, duration_ms, reference_envelope)
+  VALUES (v_material, ${r.idx}, ${sqlStr(r.textEn)}, ${sqlStr(r.textVi)}, ${sqlStr(r.audioPath)}, ${r.durationMs}, ${sqlStr(JSON.stringify(r.envelope))}::jsonb);`,
+  )
+  .join('\n')}
+END $$;
+`;
+
+writeFileSync('supabase/migrations/105_shadowing_seed.sql', sql, 'utf8');
+console.log(`\nWrote supabase/migrations/105_shadowing_seed.sql (${rows.length} clips)`);
+console.log(`Upload ${outDir}/*.mp3 to material-assets under shadowing/${manifest.slug}/`);

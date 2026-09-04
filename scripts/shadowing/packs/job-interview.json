@@ -1,0 +1,24 @@
+{
+  "slug": "job-interview",
+  "titleVi": "Phỏng vấn xin việc",
+  "titleEn": "Job interview",
+  "summaryVi": "10 câu thường gặp khi phỏng vấn xin việc bằng tiếng Anh.",
+  "summaryEn": "Ten common English job-interview lines.",
+  "bodyVi": "Nghe và nói theo từng câu. Chú ý nhịp điệu và trọng âm.",
+  "bodyEn": "Listen and shadow each line. Focus on rhythm and stress.",
+  "level": "b1",
+  "goal": "business",
+  "xpReward": 40,
+  "clips": [
+    { "en": "Thanks for taking the time to meet me today.", "vi": "Cảm ơn anh/chị đã dành thời gian gặp tôi hôm nay." },
+    { "en": "I'm really excited about this opportunity.", "vi": "Tôi rất hào hứng với cơ hội này." },
+    { "en": "I have three years of experience in this field.", "vi": "Tôi có ba năm kinh nghiệm trong lĩnh vực này." },
+    { "en": "My greatest strength is attention to detail.", "vi": "Điểm mạnh nhất của tôi là sự tỉ mỉ." },
+    { "en": "I work well under pressure and tight deadlines.", "vi": "Tôi làm việc tốt dưới áp lực và hạn chót gấp." },
+    { "en": "Could you tell me more about the team?", "vi": "Anh/chị có thể nói thêm về đội ngũ không?" },
+    { "en": "I'm looking for a role where I can grow.", "vi": "Tôi đang tìm một vị trí giúp tôi phát triển." },
+    { "en": "I led a project that increased sales by twenty percent.", "vi": "Tôi đã dẫn dắt một dự án tăng doanh số hai mươi phần trăm." },
+    { "en": "What does a typical day look like in this role?", "vi": "Một ngày làm việc điển hình ở vị trí này thế nào?" },
+    { "en": "When can I expect to hear back from you?", "vi": "Khi nào tôi có thể nhận được phản hồi ạ?" }
+  ]
+}

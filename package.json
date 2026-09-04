@@ -25,7 +25,8 @@
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
     "supabase:logs": "supabase functions logs",
-    "supabase:deploy": "supabase functions deploy"
+    "supabase:deploy": "supabase functions deploy",
+    "shadowing:build": "ts-node -P scripts/shadowing/tsconfig.json scripts/shadowing/build-clips.ts"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.93.3",

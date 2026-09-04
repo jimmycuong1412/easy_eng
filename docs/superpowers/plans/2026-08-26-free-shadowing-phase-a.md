@@ -46,7 +46,7 @@
 - `apps/web/src/app/[locale]/shadowing/page.tsx` — hub
 - `apps/web/src/app/[locale]/shadowing/[packSlug]/page.tsx` — pack page
 - `apps/web/e2e/shadowing-anonymous.spec.ts` — E2E
-- `scripts/shadowing/build-clips.mjs` — content pipeline
+- `scripts/shadowing/build-clips.ts` — content pipeline (run under `ts-node`; see Task 13)
 
 **Modify:**
 - `apps/web/src/middleware.ts:20` — add `/shadowing` to `PUBLIC_ROUTES`
@@ -461,9 +461,15 @@ GRANT EXECUTE ON FUNCTION public.record_shadowing_attempt(uuid, int, int, int, t
 
 Run:
 ```bash
-grep -n "gem_transactions\|award_material_completion" supabase/migrations/104_shadowing.sql
+grep -vn '^\s*--' supabase/migrations/104_shadowing.sql | grep -nE "gem_transactions|award_material_completion\("
 ```
 Expected: no output (exit code 1). Any match is a bug — shadowing must never touch the gem ledger.
+
+Comment lines are excluded because the file's own explanatory comments name
+`award_material_completion` to record why it is NOT used; a bare grep would
+match its own documentation. `gems_awarded = 0` written to `material_progress`
+is expected and is not a gem grant — that column is NOT NULL on an existing
+table.
 
 - [ ] **Step 3: Verify the XP insert uses the real column names**
 
@@ -824,6 +830,13 @@ export interface ShadowingScore {
 /** Weight of the word dimension when both dimensions are available. */
 const WORD_WEIGHT = 0.6;
 
+/**
+ * Weight of the duration term within the rhythm score; the remainder goes to
+ * envelope shape. Shape carries slightly more because matching a clip's length
+ * while stressing the wrong syllables is the failure this feature exists to catch.
+ */
+const DURATION_WEIGHT = 0.45;
+
 const normWord = (w: string) => w.toLowerCase().replace(/[^a-z0-9']/g, '');
 const tokenize = (s: string) => s.split(/\s+/).map(normWord).filter(Boolean);
 
@@ -894,18 +907,25 @@ export function scoreWords(
 /**
  * Compare an attempt's envelope against the reference.
  *
- * Half the score is duration agreement (are you pacing it like the speaker?),
- * half is bin-by-bin shape agreement (are your pauses and stresses in the same
- * places?). Both are needed: matching duration with the wrong internal rhythm
- * is a common and important failure mode.
+ * Two terms, weighted slightly toward shape: duration agreement (are you pacing
+ * it like the speaker?) and bin-by-bin shape agreement (are your pauses and
+ * stresses in the same places?). Both are needed — matching the duration with
+ * the wrong internal rhythm is a common and important failure mode, so shape
+ * carries the larger weight.
+ *
+ * The duration term is SQUARED. A linear ratio is far too forgiving: speaking a
+ * clip in half the reference time would otherwise still score 75, which is not
+ * a passing rhythm. Squaring makes the penalty grow with the size of the error.
  */
 export function scoreRhythm(reference: Envelope, attempt: Envelope): number {
   if (reference.durationMs <= 0 || attempt.durationMs <= 0) return 0;
 
   // Duration agreement: ratio of shorter to longer, so it is symmetric.
-  const ratio =
+  // Squared so large pacing errors are penalised sharply (see above).
+  const rawRatio =
     Math.min(reference.durationMs, attempt.durationMs) /
     Math.max(reference.durationMs, attempt.durationMs);
+  const ratio = rawRatio * rawRatio;
 
   // Shape agreement: 1 - mean absolute difference across bins.
   const n = Math.min(reference.bins.length, attempt.bins.length);
@@ -916,7 +936,7 @@ export function scoreRhythm(reference: Envelope, attempt: Envelope): number {
   }
   const shape = Math.max(0, 1 - diff / n);
 
-  const blended = 0.5 * ratio + 0.5 * shape;
+  const blended = DURATION_WEIGHT * ratio + (1 - DURATION_WEIGHT) * shape;
   return Math.max(0, Math.min(100, Math.round(blended * 100)));
 }
 
@@ -1426,8 +1446,16 @@ export interface AnonProgress {
   attempts: AnonAttempt[];
 }
 
+/**
+ * Day boundary is fixed to Vietnam time, matching the rest of the app
+ * (StreakWidget.tsx and migrations 089/102 both use Asia/Ho_Chi_Minh).
+ * Using UTC here would reset the quota at 07:00 local instead of midnight.
+ */
+const ANON_PROGRESS_TIMEZONE = 'Asia/Ho_Chi_Minh';
+
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  // 'en-CA' yields YYYY-MM-DD.
+  return new Date().toLocaleDateString('en-CA', { timeZone: ANON_PROGRESS_TIMEZONE });
 }
 
 function empty(): AnonProgress {
@@ -1621,6 +1649,12 @@ export function useRecorder(lang = 'en-US') {
     chunksRef.current = [];
     transcriptRef.current = null;
     setLiveSamples([]);
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('unsupported');
+      setState('idle');
+      return;
+    }
 
     let stream: MediaStream;
     try {
@@ -1901,7 +1935,7 @@ export function WaveformCompare({ reference, attempt }: WaveformCompareProps) {
 
   return (
     <div className="space-y-3">
-      <Row label="🔊 Người bản xứ" bins={reference.bins} color="var(--et-blue, #4c6bff)" />
+      <Row label="🔊 Người bản xứ" bins={reference.bins} color="var(--et-blue)" />
       <Row label="Bạn" bins={attempt.bins} color="var(--et-coral)" />
 
       {hint && (
@@ -2123,9 +2157,14 @@ describe('ShadowingRep', () => {
   beforeEach(() => {
     window.localStorage.clear();
     jest.clearAllMocks();
+    // Reset EVERY mutable mock field here, not in test bodies: a test that
+    // throws before its cleanup line would otherwise leak state into the rest
+    // of the file.
     mockRecorder.result = null;
     mockRecorder.error = null;
     mockRecorder.state = 'idle';
+    mockRecorder.hasRecognition = true;
+    mockRecorder.liveSamples = [];
   });
 
   it('shows the first clip text and position', () => {
@@ -2165,7 +2204,6 @@ describe('ShadowingRep', () => {
       <ShadowingRep clips={clips} audioBaseUrl="https://cdn.test/" locale="vi" isAuthenticated={false} />,
     );
     expect(screen.getAllByTestId('live-bar')).toHaveLength(3);
-    mockRecorder.liveSamples = [];
   });
 
   it('explains a denied mic instead of dead-ending', () => {
@@ -2191,14 +2229,14 @@ describe('ShadowingRep', () => {
       <ShadowingRep clips={clips} audioBaseUrl="https://cdn.test/" locale="vi" isAuthenticated={false} />,
     );
     expect(screen.getByTestId('rep-rhythm-only')).toBeInTheDocument();
-    mockRecorder.hasRecognition = true;
   });
 
   it('walls an anonymous user after the daily clip limit', () => {
     window.localStorage.setItem(
       'easyeng.shadowing.anon',
       JSON.stringify({
-        date: new Date().toISOString().slice(0, 10),
+        // Vietnam-local date, matching anonProgress.today() (see Task 7).
+        date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }),
         attempts: [
           { clipId: 'c0', overall: 80 },
           { clipId: 'c1', overall: 70 },
@@ -2216,7 +2254,8 @@ describe('ShadowingRep', () => {
     window.localStorage.setItem(
       'easyeng.shadowing.anon',
       JSON.stringify({
-        date: new Date().toISOString().slice(0, 10),
+        // Vietnam-local date, matching anonProgress.today() (see Task 7).
+        date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }),
         attempts: [
           { clipId: 'c0', overall: 80 },
           { clipId: 'c1', overall: 70 },
@@ -2279,6 +2318,8 @@ export interface ShadowingRepProps {
   locale: string;
   isAuthenticated: boolean;
 }
+
+const FALLBACK_ERROR_COPY = 'Đã có lỗi xảy ra khi ghi âm. Hãy thử lại nhé.';
 
 const ERROR_COPY: Record<string, string> = {
   'mic-denied':
@@ -2402,7 +2443,7 @@ export function ShadowingRep({
           className="rounded-lg px-3 py-2 text-xs"
           style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
         >
-          {ERROR_COPY[recorder.error] ?? ERROR_COPY.unsupported}
+          {ERROR_COPY[recorder.error] ?? FALLBACK_ERROR_COPY}
         </p>
       )}
 
@@ -2590,6 +2631,13 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchShadowingPacks } from '@easyeng/core';
 import { locales, type Locale } from '@/i18n/config';
 
+// SAFE ONLY because this page's content is identical for every visitor:
+// fetchShadowingPacks() selects nothing user-scoped (no auth.uid()-dependent
+// columns). Next.js caches rendered output by PATH, not by session, so this
+// page must stay free of any per-user data for the cache to be safe. If you
+// add a query here that depends on auth.uid() (e.g. per-user progress),
+// switch this to `export const dynamic = 'force-dynamic'` — see the pack
+// page at [packSlug]/page.tsx for the leak this pattern caused there.
 export const revalidate = 300;
 
 export function generateStaticParams() {
@@ -2607,8 +2655,19 @@ interface PageProps {
 }
 
 export default async function ShadowingHubPage({ params }: PageProps) {
-  const supabase = createClient();
-  const packs = await fetchShadowingPacks(supabase);
+  // createClient() is async in this app (see lib/supabase/server.ts).
+  const supabase = await createClient();
+
+  // fetchShadowingPacks() throws on any Supabase error (by design). This page
+  // is the hub for a paid-ads campaign, so a transient DB failure must degrade
+  // to the same "no packs" empty state below rather than 500 the whole page —
+  // still logged here so the failure stays visible server-side.
+  let packs: Awaited<ReturnType<typeof fetchShadowingPacks>> = [];
+  try {
+    packs = await fetchShadowingPacks(supabase);
+  } catch (error) {
+    console.error('[shadowing hub] fetchShadowingPacks failed:', error);
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
@@ -2675,29 +2734,66 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 import { createClient } from '@/lib/supabase/server';
-import { fetchShadowingPack } from '@easyeng/core';
+import { fetchShadowingPack, fetchShadowingPacks } from '@easyeng/core';
 import type { Locale } from '@/i18n/config';
 
 import { ShadowingRep } from '@/components/shadowing/ShadowingRep';
 
-export const revalidate = 300;
+// This page reads a cookie-bound Supabase client (`supabase.auth.getUser()`)
+// and a per-user `best_score` (via `get_shadowing_pack`, scoped to
+// `auth.uid()` — see supabase/migrations/104_shadowing.sql). Next.js caches
+// rendered output by PATH, not by session, so any time-based `revalidate`
+// here would bake one visitor's auth state and scores into the HTML served
+// to every later visitor for that pack URL. Must stay dynamic.
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: { locale: Locale; packSlug: string };
 }
 
+const DEFAULT_DESCRIPTION =
+  'Nghe người bản xứ, nói theo và nhận điểm phát âm cùng nhịp điệu ngay lập tức. Miễn phí, không cần đăng ký.';
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  return {
+  const fallback: Metadata = {
     title: `Luyện nói theo: ${params.packSlug} | EasyEng`,
-    description:
-      'Nghe người bản xứ, nói theo và nhận điểm phát âm cùng nhịp điệu ngay lập tức. Miễn phí, không cần đăng ký.',
+    description: DEFAULT_DESCRIPTION,
   };
+
+  try {
+    const supabase = await createClient();
+    const packs = await fetchShadowingPacks(supabase);
+    const pack = packs.find((p) => p.slug === params.packSlug);
+    if (!pack) return fallback;
+
+    const title = pack.titleVi || pack.titleEn;
+    if (!title) return fallback;
+
+    return {
+      title: `Luyện nói theo: ${title} | EasyEng`,
+      description: pack.summaryVi || DEFAULT_DESCRIPTION,
+    };
+  } catch {
+    // A metadata lookup must never break the page — fall back to the slug.
+    return fallback;
+  }
+}
+
+// NEXT_PUBLIC_SUPABASE_URL must be defined at build/boot time. Without it,
+// every clip URL silently becomes "undefined/storage/...", audio.play()
+// rejects, and playReference() falls back to robotic browser TTS with no
+// visible error — on the exact page paid ads point at. Fail loudly instead.
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  throw new Error(
+    'NEXT_PUBLIC_SUPABASE_URL is not set — required to build shadowing clip audio URLs.',
+  );
 }
 
 const AUDIO_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/material-assets/`;
 
 export default async function ShadowingPackPage({ params }: PageProps) {
-  const supabase = createClient();
+  // createClient() is async in this app (see lib/supabase/server.ts).
+  const supabase = await createClient();
 
   const clips = await fetchShadowingPack(supabase, params.packSlug);
   if (clips.length === 0) notFound();
@@ -2761,12 +2857,16 @@ git commit -m "feat(web): add public shadowing hub and pack pages"
 Turns a JSON manifest of clip texts into audio files plus precomputed envelopes and a seed migration. The repeatable script matters more than the first batch — clip libraries grow, and hand-running envelope computation will not scale.
 
 **Files:**
-- Create: `scripts/shadowing/build-clips.mjs`
+- Create: `scripts/shadowing/build-clips.ts`
+- Create: `scripts/shadowing/tsconfig.json`
 - Create: `scripts/shadowing/packs/job-interview.json`
+- Edit: root `package.json` — add a `shadowing:build` script
 
 **Interfaces:**
-- Consumes: `extractEnvelope` from `@easyeng/core`.
+- Consumes: `extractEnvelope` from `@easyeng/core` (imported directly from `packages/core/src/lib/shadowing/envelope`, not duplicated — the same function scores attempts in the browser, so a copy would silently drift).
 - Produces: `.mp3` files under `scripts/shadowing/out/<slug>/`, and `supabase/migrations/105_shadowing_seed.sql`.
+
+**Why TypeScript, not `.mjs`:** `@easyeng/core` ships raw TypeScript with no build step (`"main": "src/index.ts"`), so any Node script that imports it needs a TS loader regardless. Plain `node` cannot load a `.ts` file — importing `envelope.ts` from a `.mjs` script crashes with `ERR_UNKNOWN_FILE_EXTENSION` before the script's own logic ever runs. Write the script as `.ts` and run it under `ts-node` (already a dependency in this repo) using a tsconfig scoped to `scripts/shadowing/` — do not change `packages/core`'s or the web app's tsconfig for this.
 
 - [ ] **Step 1: Write the manifest**
 
@@ -2801,20 +2901,35 @@ Create `scripts/shadowing/packs/job-interview.json`:
 
 - [ ] **Step 2: Write the build script**
 
-Create `scripts/shadowing/build-clips.mjs`:
+Create `scripts/shadowing/build-clips.ts`. It is written as TypeScript (not `.mjs`) because it imports `extractEnvelope` straight from `@easyeng/core`'s source, and `@easyeng/core` ships raw `.ts` with no build step — plain `node` cannot load that import. Run it under `ts-node` instead of `node`.
 
-```js
+The TTS command handling avoids the shell entirely: the `SHADOWING_TTS_CMD` template is tokenized into argv (double-quoted runs become one token, no other shell syntax is interpreted), placeholders are substituted per-token, and the result is invoked with `execFileSync(cmd, args)` — never `execSync` on a concatenated string. That way a clip's text can contain `$`, backticks, or anything else without it ever being interpreted by a shell, because there is no shell in the loop.
+
+```ts
 /**
  * Shadowing content pipeline.
  *
  * Reads a pack manifest, generates one audio file per clip, computes each
  * clip's reference envelope, and emits a seed migration.
  *
- * Usage:
- *   node scripts/shadowing/build-clips.mjs scripts/shadowing/packs/job-interview.json
+ * This script imports `extractEnvelope` directly from `@easyeng/core`
+ * (shipped as raw TypeScript, no build step) so the reference envelopes it
+ * generates are always produced by the exact same code that scores attempts
+ * in the browser. Do not inline or duplicate that function here.
+ *
+ * Usage (run under ts-node, via the root npm script):
+ *   npm run shadowing:build -- scripts/shadowing/packs/job-interview.json
+ * or directly:
+ *   node_modules/.bin/ts-node -P scripts/shadowing/tsconfig.json scripts/shadowing/build-clips.ts scripts/shadowing/packs/job-interview.json
  *
  * TTS: set SHADOWING_TTS_CMD to a command template that writes an MP3.
- * {{text}} and {{out}} are substituted. Example using piper:
+ * The template is split into argv tokens (double-quoted segments are kept
+ * together as one token; unquoted whitespace separates tokens) and each
+ * token containing {{text}} or {{out}} has that placeholder substituted as
+ * a literal string value — the whole thing is then run WITHOUT a shell
+ * (execFileSync), so no shell-escaping is needed or possible: quote a
+ * token in the template only to keep embedded spaces together, never to
+ * guard against $, `, or \. Example using piper:
  *   SHADOWING_TTS_CMD='piper --text "{{text}}" --output_file "{{out}}"'
  *
  * Hero clips (those used in ads and on the landing page) are re-recorded by a
@@ -2822,17 +2937,17 @@ Create `scripts/shadowing/build-clips.mjs`:
  * with --envelopes-only to recompute envelopes without regenerating audio.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
-import { extractEnvelope } from '../../packages/core/src/lib/shadowing/envelope.ts';
+import { extractEnvelope } from '../../packages/core/src/lib/shadowing/envelope';
 
 const manifestPath = process.argv[2];
 const envelopesOnly = process.argv.includes('--envelopes-only');
 
 if (!manifestPath) {
-  console.error('Usage: node build-clips.mjs <manifest.json> [--envelopes-only]');
+  console.error('Usage: npm run shadowing:build -- <manifest.json> [--envelopes-only]');
   process.exit(1);
 }
 
@@ -2846,26 +2961,68 @@ if (!envelopesOnly && !ttsTemplate) {
   process.exit(1);
 }
 
-/** Decode an MP3 to mono Float32 PCM at 16 kHz using ffmpeg. */
-function decodeToPcm(mp3Path) {
-  const raw = execSync(
-    `ffmpeg -v quiet -i "${mp3Path}" -f f32le -ac 1 -ar 16000 -`,
-    { maxBuffer: 1024 * 1024 * 64, encoding: 'buffer' },
-  );
-  return new Float32Array(raw.buffer, raw.byteOffset, Math.floor(raw.length / 4));
+/**
+ * Split a command template into argv tokens without invoking a shell.
+ * A double-quoted run (`"..."`) is kept as a single token with the quotes
+ * stripped; everything else is split on runs of whitespace. This is
+ * intentionally minimal — just enough to let a template like
+ * `piper --text "{{text}}" --output_file "{{out}}"` name its placeholders,
+ * not a general shell-syntax parser.
+ */
+function tokenizeTemplate(template: string): string[] {
+  const tokens: string[] = [];
+  const re = /"([^"]*)"|(\S+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(template)) !== null) {
+    tokens.push(match[1] !== undefined ? match[1] : match[2]);
+  }
+  return tokens;
 }
 
-const rows = [];
+/** Substitute {{text}} / {{out}} placeholders into one argv token. */
+function fillToken(token: string, text: string, out: string): string {
+  return token.replaceAll('{{text}}', text).replaceAll('{{out}}', out);
+}
 
-manifest.clips.forEach((clip, idx) => {
+/** Decode an MP3 to mono Float32 PCM at 16 kHz using ffmpeg. */
+function decodeToPcm(mp3Path: string): Float32Array {
+  const raw = execFileSync(
+    'ffmpeg',
+    ['-v', 'quiet', '-i', mp3Path, '-f', 'f32le', '-ac', '1', '-ar', '16000', '-'],
+    { maxBuffer: 1024 * 1024 * 64, encoding: 'buffer' },
+  );
+  // `raw` is a Node Buffer, which is a view into a shared, pooled
+  // ArrayBuffer — its byteOffset is not guaranteed to be a multiple of 4.
+  // Float32Array requires a 4-byte-aligned offset into its backing buffer,
+  // so constructing one directly over `raw.buffer` throws intermittently
+  // (RangeError) depending on where the pool happened to place this
+  // allocation. Copying into a fresh, tightly-sized buffer guarantees a
+  // zero (aligned) offset. Do not "optimise" this back to a zero-copy view.
+  const sampleCount = Math.floor(raw.length / 4);
+  const aligned = Buffer.alloc(sampleCount * 4);
+  raw.copy(aligned, 0, 0, sampleCount * 4);
+  return new Float32Array(aligned.buffer, aligned.byteOffset, sampleCount);
+}
+
+interface Row {
+  idx: number;
+  textEn: string;
+  textVi: string;
+  audioPath: string;
+  durationMs: number;
+  envelope: unknown;
+}
+
+const rows: Row[] = [];
+
+manifest.clips.forEach((clip: { en: string; vi: string }, idx: number) => {
   const filename = `${String(idx).padStart(2, '0')}.mp3`;
   const outPath = join(outDir, filename);
 
   if (!envelopesOnly || !existsSync(outPath)) {
-    const cmd = ttsTemplate
-      .replaceAll('{{text}}', clip.en.replaceAll('"', '\\"'))
-      .replaceAll('{{out}}', outPath);
-    execSync(cmd, { stdio: 'inherit' });
+    const tokens = tokenizeTemplate(ttsTemplate as string).map((t) => fillToken(t, clip.en, outPath));
+    const [cmd, ...args] = tokens;
+    execFileSync(cmd, args, { stdio: 'inherit' });
   }
 
   const pcm = decodeToPcm(outPath);
@@ -2883,7 +3040,12 @@ manifest.clips.forEach((clip, idx) => {
   console.log(`[${idx}] ${basename(outPath)}  ${envelope.durationMs}ms`);
 });
 
-const sql = `-- 105_shadowing_seed.sql (generated by scripts/shadowing/build-clips.mjs)
+function sqlStr(v: unknown): string {
+  if (v === null || v === undefined) return 'NULL';
+  return `'${String(v).replaceAll("'", "''")}'`;
+}
+
+const sql = `-- 105_shadowing_seed.sql (generated by scripts/shadowing/build-clips.ts)
 -- Pack: ${manifest.slug}
 -- Regenerate rather than hand-editing.
 
@@ -2924,28 +3086,58 @@ ${rows
 END $$;
 `;
 
-function sqlStr(v) {
-  if (v === null || v === undefined) return 'NULL';
-  return `'${String(v).replaceAll("'", "''")}'`;
-}
-
 writeFileSync('supabase/migrations/105_shadowing_seed.sql', sql, 'utf8');
 console.log(`\nWrote supabase/migrations/105_shadowing_seed.sql (${rows.length} clips)`);
 console.log(`Upload ${outDir}/*.mp3 to material-assets under shadowing/${manifest.slug}/`);
 ```
 
-- [ ] **Step 3: Verify the script reports its usage when called with no arguments**
+- [ ] **Step 3: Add a scoped tsconfig for the script**
+
+Create `scripts/shadowing/tsconfig.json`. Kept local to `scripts/shadowing/` rather than touching the repo-wide `tsconfig.base.json`, `packages/core`'s tsconfig, or the web app's tsconfig:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": false,
+    "types": ["node"]
+  },
+  "ts-node": {
+    "transpileOnly": true
+  },
+  "include": ["./build-clips.ts", "../../packages/core/src/lib/shadowing/**/*.ts"]
+}
+```
+
+- [ ] **Step 4: Add the root npm script**
+
+Add to the root `package.json` `scripts` block:
+
+```json
+"shadowing:build": "ts-node -P scripts/shadowing/tsconfig.json scripts/shadowing/build-clips.ts"
+```
+
+`ts-node` is already present (a devDependency of `apps/web`, hoisted to the root `node_modules/.bin` by pnpm) — no new dependency is required.
+
+- [ ] **Step 5: Verify the script reports its usage when called with no arguments**
 
 Run:
 ```bash
-node scripts/shadowing/build-clips.mjs
+npm run shadowing:build
 ```
-Expected: prints the usage line and exits non-zero.
+Expected: prints the usage line and exits non-zero — reaching the script's own argument-handling logic rather than crashing in the module loader on the `.ts` import.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/shadowing
+git add scripts/shadowing package.json
 git commit -m "feat(scripts): add shadowing content build pipeline"
 ```
 
@@ -2996,15 +3188,19 @@ test.describe('anonymous shadowing', () => {
   });
 
   test('does not redirect anonymous visitors to login', async ({ page }) => {
-    await page.goto(`/vi/shadowing/${PACK_SLUG}`);
+    const response = await page.goto(`/vi/shadowing/${PACK_SLUG}`);
     await expect(page).not.toHaveURL(/\/auth\/login/);
+    // The URL check alone also passes on a 500, which would make a broken page
+    // indistinguishable from a working one. Assert the page actually served.
+    expect(response?.status()).toBeLessThan(400);
   });
 
   test('shows the signup wall once the daily limit is stored', async ({ page }) => {
     await page.goto(`/vi/shadowing/${PACK_SLUG}`);
 
     await page.evaluate(() => {
-      const today = new Date().toISOString().slice(0, 10);
+      // Vietnam-local date, matching anonProgress.today() (see Task 7).
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
       window.localStorage.setItem(
         'easyeng.shadowing.anon',
         JSON.stringify({
@@ -3108,9 +3304,14 @@ Expected: no new errors (pre-existing `no-explicit-any` warnings elsewhere are u
 
 Run:
 ```bash
-grep -rn "gem" supabase/migrations/104_shadowing.sql apps/web/src/components/shadowing packages/core/src/lib/shadowing
+grep -rn --exclude-dir=__tests__ -E "gem_transactions|award_material_completion\(" supabase/migrations/104_shadowing.sql apps/web/src/components/shadowing packages/core/src/lib/shadowing
 ```
 Expected: no output. Shadowing must never touch the gem ledger.
+
+Matches `gem_transactions` and calls to `award_material_completion` only —
+not the substring "gem". The migration legitimately writes `gems_awarded = 0`
+to `material_progress` (a NOT NULL column on an existing table) and names
+`award_material_completion` in a comment explaining why it is not used.
 
 - [ ] **Step 6: Commit**
 
